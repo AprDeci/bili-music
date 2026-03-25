@@ -1,11 +1,16 @@
+import 'package:bilimusic/core/hive/hive.dart';
 import 'package:bilimusic/myApp.dart';
 import 'package:bilimusic/router/routers.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-Future<void> bootstrap() async {}
+Future<void> bootstrap() async {
+  await initHive();
+}
 
-void main() {
-  runApp(const MyApp());
+void main() async {
+  await bootstrap();
+  runApp(const ProviderScope(child: MyApp()));
 }
 
 class MyHomePage extends StatefulWidget {
