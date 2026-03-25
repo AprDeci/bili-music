@@ -13,6 +13,14 @@ class MyApp extends ConsumerWidget {
     return MaterialApp.router(
       routerConfig: router,
       themeMode: currentTheme.themeMode,
+      theme: ThemeData(
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: const Color(0xFF133B5C),
+          brightness: Brightness.light,
+        ),
+        scaffoldBackgroundColor: const Color(0xFFF4F7FB),
+        useMaterial3: true,
+      ),
     );
   }
 }
