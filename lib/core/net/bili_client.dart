@@ -1,8 +1,13 @@
 import 'package:bilimusic/core/net/net_config.dart';
 import 'package:dio/dio.dart';
+import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-class BiliClient {
-  BiliClient._internal() {
+part 'bili_client.g.dart';
+
+@riverpod
+class BiliClient extends _$BiliClient {
+  @override
+  Dio build() {
     _dio = Dio(
       BaseOptions(
         baseUrl: NetConfig.baseUrl,
@@ -20,12 +25,10 @@ class BiliClient {
         responseBody: true,
       ),
     );
+    return _dio;
   }
-
-  static final BiliClient _instance = BiliClient._internal();
   late final Dio _dio;
 
-  factory BiliClient() => _instance;
 
   Dio get dio => _dio;
 
