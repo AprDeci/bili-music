@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class UserCard extends StatelessWidget {
+class UserCard extends ConsumerWidget {
   const UserCard({super.key, this.name = '用户名', this.avatarImage});
 
   final String name;
   final ImageProvider<Object>? avatarImage;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final Color themeColor = Theme.of(context).colorScheme.primary;
     return Container(
       constraints: const BoxConstraints(maxWidth: 360),
