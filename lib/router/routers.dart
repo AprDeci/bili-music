@@ -1,5 +1,7 @@
 import 'package:bilimusic/feature/auth/ui/auth_page.dart';
 import 'package:bilimusic/feature/home/ui/home_page.dart';
+import 'package:bilimusic/feature/player/domain/playable_item.dart';
+import 'package:bilimusic/feature/player/ui/player_page.dart';
 import 'package:bilimusic/feature/profile/ui/profile_page.dart';
 import 'package:bilimusic/feature/search/ui/search_page.dart';
 import 'package:bilimusic/router/ScaffoldWithNavBar.dart';
@@ -21,6 +23,14 @@ GoRouter router(Ref ref) => GoRouter(
       path: '/search',
       parentNavigatorKey: _rootNavigatorKey,
       builder: (context, state) => const SearchPage(),
+    ),
+    GoRoute(
+      path: '/player',
+      parentNavigatorKey: _rootNavigatorKey,
+      builder: (context, state) {
+        final PlayableItem? item = state.extra as PlayableItem?;
+        return PlayerPage(initialItem: item);
+      },
     ),
     StatefulShellRoute.indexedStack(
       parentNavigatorKey: _rootNavigatorKey,

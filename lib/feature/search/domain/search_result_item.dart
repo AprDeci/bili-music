@@ -1,3 +1,5 @@
+import 'package:bilimusic/feature/player/domain/playable_item.dart';
+
 class SearchResultItem {
   const SearchResultItem({
     required this.aid,
@@ -24,4 +26,15 @@ class SearchResultItem {
   final String publishTimeText;
   final String tagText;
   final String? description;
+
+  PlayableItem toPlayableItem() {
+    return PlayableItem(
+      aid: aid,
+      bvid: bvid,
+      title: title,
+      author: author,
+      coverUrl: coverUrl,
+      durationText: duration,
+    );
+  }
 }

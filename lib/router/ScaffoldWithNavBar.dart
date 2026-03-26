@@ -1,17 +1,21 @@
+import 'package:bilimusic/feature/player/logic/player_controller.dart';
+import 'package:bilimusic/feature/player/ui/components/mini_player_bar.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_floating_bottom_bar/flutter_floating_bottom_bar.dart';
 import 'package:go_router/go_router.dart';
 
-class ScaffoldWithNavBar extends StatefulWidget {
+class ScaffoldWithNavBar extends ConsumerStatefulWidget {
   final StatefulNavigationShell navigationShell;
 
   const ScaffoldWithNavBar({super.key, required this.navigationShell});
 
   @override
-  State<ScaffoldWithNavBar> createState() => _ScaffoldWithNavBarState();
+  ConsumerState<ScaffoldWithNavBar> createState() =>
+      _ScaffoldWithNavBarState();
 }
 
-class _ScaffoldWithNavBarState extends State<ScaffoldWithNavBar> {
+class _ScaffoldWithNavBarState extends ConsumerState<ScaffoldWithNavBar> {
   int _currentIndex = 0;
 
   @override
@@ -22,7 +26,8 @@ class _ScaffoldWithNavBarState extends State<ScaffoldWithNavBar> {
 
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
+    final double screenWidth = MediaQuery.of(context).size.width;
+    final playerState = ref.watch(playerControllerProvider);
 
     return Scaffold(
       body: BottomBar(
@@ -65,7 +70,27 @@ class _ScaffoldWithNavBarState extends State<ScaffoldWithNavBar> {
           ),
         ),
 
-        body: (context, scrollController) => widget.navigationShell,
+        body: (context, scrollController) {
+          return Stack(
+            fit: StackFit.expand,
+            children: <Widget>[
+              widget.navigationShell,
+              if (playerState.hasItem)
+                Align(
+                  alignment: Alignment.bottomCenter,
+                  child: MiniPlayerBar(
+                    state: playerState,
+                    onTap: () => context.push('/player'),
+                    onTogglePlayback: () {
+                      ref
+                          .read(playerControllerProvider.notifier)
+                          .togglePlayback();
+                    },
+                  ),
+                ),
+            ],
+          );
+        },
       ),
     );
   }

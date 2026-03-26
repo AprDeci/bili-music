@@ -45,6 +45,8 @@ dependencies:
   path_provider: ^2.1.5
   flutter_floating_bottom_bar: ^1.4.0
   just_audio: ^0.10.5
+  just_audio_media_kit: ^2.1.0
+  media_kit_libs_windows_audio: ^1.0.9
 
 dev_dependencies:
   flutter_test:

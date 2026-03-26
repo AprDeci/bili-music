@@ -3,6 +3,7 @@ import 'package:bilimusic/feature/search/domain/search_result_item.dart';
 import 'package:bilimusic/feature/search/logic/search_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 class SearchPage extends ConsumerStatefulWidget {
   const SearchPage({super.key});
@@ -358,101 +359,130 @@ class _SearchResultSection extends StatelessWidget {
 
     return Column(
       children: results.map((SearchResultItem item) {
-        return Container(
-          margin: const EdgeInsets.only(bottom: 12),
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            color: Colors.white,
+        return Material(
+          color: Colors.transparent,
+          child: InkWell(
             borderRadius: BorderRadius.circular(22),
-            border: Border.all(color: const Color(0xFFE2E8F0)),
-          ),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFEFF6FF),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: item.coverUrl.isEmpty
-                    ? const Icon(
-                        Icons.play_circle_outline_rounded,
-                        color: Color(0xFF2563EB),
-                        size: 24,
-                      )
-                    : ClipRRect(
-                        borderRadius: BorderRadius.circular(16),
-                        child: Image.network(
-                          item.coverUrl,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) {
-                            return const Icon(
-                              Icons.music_video_rounded,
-                              color: Color(0xFF2563EB),
-                            );
-                          },
-                        ),
-                      ),
+            onTap: () => context.push('/player', extra: item.toPlayableItem()),
+            child: Container(
+              margin: const EdgeInsets.only(bottom: 12),
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(22),
+                border: Border.all(color: const Color(0xFFE2E8F0)),
               ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    Row(
-                      children: <Widget>[
-                        Expanded(
-                          child: Text(
-                            item.title,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: theme.textTheme.titleSmall?.copyWith(
-                              fontWeight: FontWeight.w700,
-                              color: const Color(0xFF0F172A),
-                              height: 1.35,
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFEFF6FF),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: item.coverUrl.isEmpty
+                        ? const Icon(
+                            Icons.play_circle_outline_rounded,
+                            color: Color(0xFF2563EB),
+                            size: 24,
+                          )
+                        : ClipRRect(
+                            borderRadius: BorderRadius.circular(16),
+                            child: Image.network(
+                              item.coverUrl,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) {
+                                return const Icon(
+                                  Icons.music_video_rounded,
+                                  color: Color(0xFF2563EB),
+                                );
+                              },
                             ),
                           ),
-                        ),
-                        const SizedBox(width: 8),
-                        _ResultTag(label: item.tagText),
-                      ],
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      '${item.author} · ${item.publishTimeText}',
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: const Color(0xFF475569),
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: <Widget>[
-                        _MetaChip(icon: Icons.play_arrow_rounded, text: item.playCountText),
-                        _MetaChip(icon: Icons.subtitles_rounded, text: item.danmakuCountText),
-                        _MetaChip(icon: Icons.schedule_rounded, text: item.duration),
+                        Row(
+                          children: <Widget>[
+                            Expanded(
+                              child: Text(
+                                item.title,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: theme.textTheme.titleSmall?.copyWith(
+                                  fontWeight: FontWeight.w700,
+                                  color: const Color(0xFF0F172A),
+                                  height: 1.35,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            _ResultTag(label: item.tagText),
+                          ],
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          '${item.author} · ${item.publishTimeText}',
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: const Color(0xFF475569),
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: <Widget>[
+                            _MetaChip(
+                              icon: Icons.play_arrow_rounded,
+                              text: item.playCountText,
+                            ),
+                            _MetaChip(
+                              icon: Icons.subtitles_rounded,
+                              text: item.danmakuCountText,
+                            ),
+                            _MetaChip(
+                              icon: Icons.schedule_rounded,
+                              text: item.duration,
+                            ),
+                          ],
+                        ),
+                        if (item.description != null) ...<Widget>[
+                          const SizedBox(height: 8),
+                          Text(
+                            item.description!,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: const Color(0xFF64748B),
+                              height: 1.45,
+                            ),
+                          ),
+                        ],
                       ],
                     ),
-                    if (item.description != null) ...<Widget>[
-                      const SizedBox(height: 8),
-                      Text(
-                        item.description!,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: const Color(0xFF64748B),
-                          height: 1.45,
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
+                  ),
+                  const SizedBox(width: 10),
+                  Container(
+                    width: 34,
+                    height: 34,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFEFF6FF),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(
+                      Icons.play_arrow_rounded,
+                      color: Color(0xFF2563EB),
+                    ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
         );
       }).toList(),
