@@ -44,6 +44,7 @@ dependencies:
   hive_ce_flutter: 2.3.4
   path_provider: ^2.1.5
   flutter_floating_bottom_bar: ^1.4.0
+  just_audio: ^0.10.5
 
 dev_dependencies:
   flutter_test:
