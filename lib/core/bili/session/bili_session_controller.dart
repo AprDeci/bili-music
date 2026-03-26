@@ -8,7 +8,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'bili_session_controller.g.dart';
 
-@riverpod
+@Riverpod(keepAlive: true)
 class BiliSessionController extends _$BiliSessionController {
   late final BiliSessionStore _store = ref.read(biliSessionStoreProvider);
   late final BiliClient _client = ref.read(biliClientProvider.notifier);

@@ -21,7 +21,7 @@ final class BiliApiClientProvider
         argument: null,
         retry: null,
         name: r'biliApiClientProvider',
-        isAutoDispose: true,
+        isAutoDispose: false,
         dependencies: null,
         $allTransitiveDependencies: null,
       );
@@ -48,4 +48,4 @@ final class BiliApiClientProvider
   }
 }
 
-String _$biliApiClientHash() => r'47ab646db7ea1dc30e71ebd0e4989feea898a72f';
+String _$biliApiClientHash() => r'af4abfe08ef1a06002949f2117c712facc6192e4';

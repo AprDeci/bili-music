@@ -7,7 +7,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'bili_api_client.g.dart';
 
-@riverpod
+@Riverpod(keepAlive: true)
 BiliApiClient biliApiClient(Ref ref) {
   return BiliApiClient(
     ref: ref,
