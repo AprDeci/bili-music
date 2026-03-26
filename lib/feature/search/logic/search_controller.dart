@@ -1,5 +1,6 @@
 import 'package:bilimusic/core/bili/net/bili_api_client.dart';
 import 'package:bilimusic/feature/search/data/bili_search_repository.dart';
+import 'package:bilimusic/feature/search/data/search_history_store.dart';
 import 'package:bilimusic/feature/search/domain/search_result_item.dart';
 import 'package:bilimusic/feature/search/domain/search_state.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -16,10 +17,13 @@ class SearchPageController extends _$SearchPageController {
   late final BiliSearchRepository _repository = ref.read(
     biliSearchRepositoryProvider,
   );
+  late final SearchHistoryStore _historyStore = ref.read(
+    searchHistoryStoreProvider,
+  );
 
   @override
   SearchState build() {
-    return const SearchState();
+    return SearchState(recentKeywords: _historyStore.load());
   }
 
   void updateQuery(String value) {
@@ -42,7 +46,7 @@ class SearchPageController extends _$SearchPageController {
     final List<String> nextRecentKeywords = <String>[
       nextQuery,
       ...state.recentKeywords.where((String item) => item != nextQuery),
-    ].take(8).toList();
+    ].take(20).toList();
 
     state = state.copyWith(
       query: nextQuery,
@@ -51,6 +55,8 @@ class SearchPageController extends _$SearchPageController {
       isLoading: true,
       clearErrorMessage: true,
     );
+
+    await _historyStore.save(nextRecentKeywords);
 
     try {
       final List<SearchResultItem> results = await _repository.searchVideos(
@@ -83,5 +89,6 @@ class SearchPageController extends _$SearchPageController {
 
   void clearHistory() {
     state = state.copyWith(recentKeywords: <String>[]);
+    _historyStore.clear();
   }
 }

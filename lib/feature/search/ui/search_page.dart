@@ -118,49 +118,23 @@ class _SearchPageState extends ConsumerState<SearchPage> {
               child: ListView(
                 padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
                 children: <Widget>[
-                  Row(
-                    children: <Widget>[
-                      Text(
-                        '搜索历史',
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w700,
+                  if (state.recentKeywords.isNotEmpty) ...<Widget>[
+                    Row(
+                      children: <Widget>[
+                        Text(
+                          '搜索历史',
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w700,
+                          ),
                         ),
-                      ),
-                      const Spacer(),
-                      if (state.recentKeywords.isNotEmpty)
+                        const Spacer(),
                         TextButton(
                           onPressed: controller.clearHistory,
                           child: const Text('清空'),
                         ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  if (state.recentKeywords.isEmpty)
-                    Container(
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: const Color(0xFFE2E8F0)),
-                      ),
-                      child: Column(
-                        children: <Widget>[
-                          const Icon(
-                            Icons.history_toggle_off_rounded,
-                            size: 32,
-                            color: Color(0xFF94A3B8),
-                          ),
-                          const SizedBox(height: 12),
-                          Text(
-                            '还没有搜索记录',
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                              color: const Color(0xFF475569),
-                            ),
-                          ),
-                        ],
-                      ),
-                    )
-                  else
+                      ],
+                    ),
+                    const SizedBox(height: 12),
                     Wrap(
                       spacing: 10,
                       runSpacing: 10,
@@ -179,7 +153,8 @@ class _SearchPageState extends ConsumerState<SearchPage> {
                         );
                       }).toList(),
                     ),
-                  const SizedBox(height: 24),
+                    const SizedBox(height: 24),
+                  ],
                   Row(
                     children: <Widget>[
                       Text(
