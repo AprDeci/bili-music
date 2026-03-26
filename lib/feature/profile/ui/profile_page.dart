@@ -1,6 +1,7 @@
 import 'package:bilimusic/common/components/searchBar.dart';
 import 'package:bilimusic/feature/profile/ui/components/user_card.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 class ProfilePage extends StatelessWidget {
   const ProfilePage({super.key});
@@ -12,7 +13,7 @@ class ProfilePage extends StatelessWidget {
       appBar: AppBar(
         // 调整高度
         toolbarHeight: 48,
-        title: CommonSearchBar(),
+        title: CommonSearchBar(onTap: () => context.push('/search')),
         actions: [IconButton(icon: Icon(Icons.settings), onPressed: () {})],
       ),
       body: Padding(

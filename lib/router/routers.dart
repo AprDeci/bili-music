@@ -1,6 +1,7 @@
 import 'package:bilimusic/feature/auth/ui/auth_page.dart';
 import 'package:bilimusic/feature/home/ui/home_page.dart';
 import 'package:bilimusic/feature/profile/ui/profile_page.dart';
+import 'package:bilimusic/feature/search/ui/search_page.dart';
 import 'package:bilimusic/router/ScaffoldWithNavBar.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -8,12 +9,21 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'routers.g.dart';
 
+final GlobalKey<NavigatorState> _rootNavigatorKey = GlobalKey<NavigatorState>();
+
 @riverpod
 GoRouter router(Ref ref) => GoRouter(
+  navigatorKey: _rootNavigatorKey,
   initialLocation: '/home',
   routes: [
     GoRoute(path: '/auth', builder: (context, state) => const AuthPage()),
+    GoRoute(
+      path: '/search',
+      parentNavigatorKey: _rootNavigatorKey,
+      builder: (context, state) => const SearchPage(),
+    ),
     StatefulShellRoute.indexedStack(
+      parentNavigatorKey: _rootNavigatorKey,
       builder: (context, state, navigationShell) {
         return ScaffoldWithNavBar(navigationShell: navigationShell);
       },
