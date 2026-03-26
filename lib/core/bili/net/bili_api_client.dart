@@ -35,7 +35,7 @@ class BiliApiClient {
     Options? options,
   }) async {
     final BiliSession? session = ref.read(biliSessionControllerProvider);
-    if (requiresAuth && session == null) {
+    if (requiresAuth && (session == null || !session.isLoggedIn)) {
       throw const BiliApiException('Bilibili session is required.');
     }
 

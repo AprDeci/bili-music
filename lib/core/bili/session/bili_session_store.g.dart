@@ -2,9 +2,9 @@
 
 part of 'bili_session_store.dart';
 
-// ***************************************************************************
+// **************************************************************************
 // RiverpodGenerator
-// ***************************************************************************
+// **************************************************************************
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
@@ -36,9 +36,8 @@ final class BiliSessionStoreProvider
 
   @$internal
   @override
-  $ProviderElement<BiliSessionStore> $createElement(
-    $ProviderPointer pointer,
-  ) => $ProviderElement(pointer);
+  $ProviderElement<BiliSessionStore> $createElement($ProviderPointer pointer) =>
+      $ProviderElement(pointer);
 
   @override
   BiliSessionStore create(Ref ref) {
@@ -54,5 +53,4 @@ final class BiliSessionStoreProvider
   }
 }
 
-String _$biliSessionStoreHash() =>
-    r'01f0c5f5e7e8b4e7e1e80f8acd7c37953b1cd12d';
+String _$biliSessionStoreHash() => r'b6d1cb9c106071606621703623a59e5e9db2bc44';

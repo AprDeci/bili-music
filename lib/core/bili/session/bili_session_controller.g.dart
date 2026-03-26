@@ -2,9 +2,9 @@
 
 part of 'bili_session_controller.dart';
 
-// ***************************************************************************
+// **************************************************************************
 // RiverpodGenerator
-// ***************************************************************************
+// **************************************************************************
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
@@ -42,7 +42,7 @@ final class BiliSessionControllerProvider
 }
 
 String _$biliSessionControllerHash() =>
-    r'9cf5d7f30ccd1e3d86c1a2bdcb1fce9742c5419a';
+    r'a532c4124f1f7544b1747c96da879da7d1386705';
 
 abstract class _$BiliSessionController extends $Notifier<BiliSession?> {
   BiliSession? build();

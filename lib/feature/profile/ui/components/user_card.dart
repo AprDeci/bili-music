@@ -10,17 +10,20 @@ class UserCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final BiliSession? session = ref.watch(biliSessionControllerProvider);
-    final bool isLoggedIn = session != null;
+    final bool isLoggedIn = session?.isLoggedIn ?? false;
     final Color themeColor = Theme.of(context).colorScheme.primary;
+    final String? face = session?.face;
+    final String? uname = session?.uname;
+    final int? mid = session?.mid;
     final ImageProvider<Object>? avatarImage =
-        isLoggedIn && session.face != null && session.face!.isNotEmpty
-        ? NetworkImage(session.face!)
+        isLoggedIn && face != null && face.isNotEmpty
+        ? NetworkImage(face)
         : null;
     final String title = isLoggedIn
-        ? (session.uname?.isNotEmpty == true ? session.uname! : '已登录 B 站账号')
+        ? (uname?.isNotEmpty == true ? uname! : '已登录 B 站账号')
         : '点击登录';
     final String subtitle = isLoggedIn
-        ? 'mid: ${session.mid ?? '-'}'
+        ? 'mid: ${mid ?? '-'}'
         : '扫码同步 B 站账号信息';
 
     return Material(

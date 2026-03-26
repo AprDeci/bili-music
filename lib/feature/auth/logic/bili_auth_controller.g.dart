@@ -90,7 +90,7 @@ final class BiliAuthControllerProvider
 }
 
 String _$biliAuthControllerHash() =>
-    r'0e38e57448a512be7f5f632f0b8f68d67ee02b98';
+    r'64b12cbe12eedb62717c2d0a26fa86f7fc4bd5d4';
 
 abstract class _$BiliAuthController extends $Notifier<BiliAuthState> {
   BiliAuthState build();

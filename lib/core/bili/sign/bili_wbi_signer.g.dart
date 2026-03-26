@@ -2,9 +2,9 @@
 
 part of 'bili_wbi_signer.dart';
 
-// ***************************************************************************
+// **************************************************************************
 // RiverpodGenerator
-// ***************************************************************************
+// **************************************************************************
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
@@ -48,5 +48,4 @@ final class BiliWbiSignerProvider
   }
 }
 
-String _$biliWbiSignerHash() =>
-    r'6c168a72f246441ae8f1d1c0b5870ff861d6328a';
+String _$biliWbiSignerHash() => r'251eb5ca3ece2d53606aedb03b38142b30edc939';

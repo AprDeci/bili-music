@@ -2,9 +2,9 @@
 
 part of 'bili_api_client.dart';
 
-// ***************************************************************************
+// **************************************************************************
 // RiverpodGenerator
-// ***************************************************************************
+// **************************************************************************
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
@@ -48,5 +48,4 @@ final class BiliApiClientProvider
   }
 }
 
-String _$biliApiClientHash() =>
-    r'e431e12ce9dfd3d556765be1f851a60d18949036';
+String _$biliApiClientHash() => r'47ab646db7ea1dc30e71ebd0e4989feea898a72f';

@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:bilimusic/core/bili/session/bili_cookie.dart';
 import 'package:bilimusic/core/bili/session/bili_session.dart';
 import 'package:bilimusic/core/net/bili_client.dart';
 import 'package:bilimusic/feature/auth/domain/bili_auth_models.dart';
@@ -40,7 +41,7 @@ class BiliAuthRepository {
       return PollQrCodeResult(code: code, message: message);
     }
 
-    final Map<String, String> cookies = _extractCookies(response.headers);
+    final Map<String, String> cookies = extractCookiesFromHeaders(response.headers);
     final String sessData = cookies['SESSDATA'] ?? '';
     final String biliJct = cookies['bili_jct'] ?? '';
     final String dedeUserId = cookies['DedeUserID'] ?? '';
@@ -50,7 +51,7 @@ class BiliAuthRepository {
       throw const BiliAuthException('Login succeeded, but cookies are missing.');
     }
 
-    final String cookie = _buildCookie(cookies);
+    final String cookie = buildCookieHeader(cookies);
     return PollQrCodeResult(
       code: code,
       message: message,
@@ -62,35 +63,6 @@ class BiliAuthRepository {
         cookie: cookie,
       ),
     );
-  }
-
-  Future<BiliSession> enrichSession(BiliSession session) async {
-    _client.setCookie(session.cookie);
-    final Response<dynamic> response = await _client.get<dynamic>(
-      '/x/web-interface/nav',
-    );
-
-    final Map<String, dynamic> json = _asMap(response.data);
-    _ensureSuccess(json);
-    final Map<String, dynamic> data = _asMap(json['data']);
-    final bool isLogin = data['isLogin'] as bool? ?? false;
-
-    if (!isLogin) {
-      throw const BiliAuthException('Cookie is not valid after QR login.');
-    }
-
-    final Map<String, dynamic> wbiImg = _asMap(data['wbi_img']);
-    return session.copyWith(
-      mid: (data['mid'] as num?)?.toInt(),
-      uname: data['uname'] as String?,
-      face: data['face'] as String?,
-      imgKey: _extractKeyFromUrl(wbiImg['img_url'] as String?),
-      subKey: _extractKeyFromUrl(wbiImg['sub_url'] as String?),
-    );
-  }
-
-  void applySession(BiliSession session) {
-    _client.setCookie(session.cookie);
   }
 
   Map<String, dynamic> _asMap(dynamic value) {
@@ -111,44 +83,6 @@ class BiliAuthRepository {
     if (code != 0) {
       throw BiliAuthException(json['message'] as String? ?? 'Request failed.');
     }
-  }
-
-  Map<String, String> _extractCookies(Headers headers) {
-    final List<String> setCookies = headers.map['set-cookie'] ?? <String>[];
-    final Map<String, String> cookies = <String, String>{};
-
-    for (final String item in setCookies) {
-      final String pair = item.split(';').first.trim();
-      final int separator = pair.indexOf('=');
-      if (separator <= 0) {
-        continue;
-      }
-      final String name = pair.substring(0, separator).trim();
-      final String value = pair.substring(separator + 1).trim();
-      if (name.isNotEmpty && value.isNotEmpty) {
-        cookies[name] = value;
-      }
-    }
-
-    return cookies;
-  }
-
-  String _buildCookie(Map<String, String> cookies) {
-    return cookies.entries
-        .map((MapEntry<String, String> item) => '${item.key}=${item.value}')
-        .join('; ');
-  }
-
-  String? _extractKeyFromUrl(String? url) {
-    if (url == null || url.isEmpty) {
-      return null;
-    }
-    final Uri uri = Uri.parse(url);
-    final String lastSegment = uri.pathSegments.isEmpty
-        ? ''
-        : uri.pathSegments.last;
-    final int dotIndex = lastSegment.lastIndexOf('.');
-    return dotIndex > 0 ? lastSegment.substring(0, dotIndex) : lastSegment;
   }
 }
 

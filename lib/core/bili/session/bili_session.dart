@@ -26,6 +26,10 @@ class BiliSession {
   final String? buvid3;
 
   bool get hasCookie => cookie.isNotEmpty;
+  bool get isLoggedIn =>
+      sessData.isNotEmpty && biliJct.isNotEmpty && dedeUserId.isNotEmpty;
+  bool get hasWbiKeys =>
+      (imgKey?.isNotEmpty ?? false) && (subKey?.isNotEmpty ?? false);
 
   BiliSession copyWith({
     String? sessData,
@@ -52,6 +56,17 @@ class BiliSession {
       imgKey: imgKey ?? this.imgKey,
       subKey: subKey ?? this.subKey,
       buvid3: buvid3 ?? this.buvid3,
+    );
+  }
+
+  BiliSession clearAuth() {
+    return BiliSession(
+      sessData: '',
+      biliJct: '',
+      dedeUserId: '',
+      refreshToken: '',
+      cookie: cookie,
+      buvid3: buvid3,
     );
   }
 }

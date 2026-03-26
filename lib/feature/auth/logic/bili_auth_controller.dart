@@ -27,8 +27,7 @@ class BiliAuthController extends _$BiliAuthController {
     ref.onDispose(_cancelPolling);
 
     final BiliSession? savedSession = ref.watch(biliSessionControllerProvider);
-    if (savedSession != null) {
-      _repository.applySession(savedSession);
+    if (savedSession != null && savedSession.isLoggedIn) {
       return BiliAuthState(
         status: BiliQrLoginStatus.success,
         session: savedSession,
@@ -90,11 +89,12 @@ class BiliAuthController extends _$BiliAuthController {
       switch (result.code) {
         case 0:
           _cancelPolling();
-          final BiliSession enrichedSession = await _repository
-              .enrichSession(result.session!);
-          await ref
-              .read(biliSessionControllerProvider.notifier)
-              .setSession(enrichedSession);
+          final BiliSessionController sessionController = ref.read(
+            biliSessionControllerProvider.notifier,
+          );
+          await sessionController.adoptAuthenticatedSession(result.session!);
+          final BiliSession enrichedSession =
+              await sessionController.refreshSessionFromNav();
           state = state.copyWith(
             status: BiliQrLoginStatus.success,
             session: enrichedSession,
