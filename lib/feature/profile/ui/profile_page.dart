@@ -1,4 +1,4 @@
-import 'package:bilimusic/common/components/search.dart';
+import 'package:bilimusic/common/components/searchBar.dart';
 import 'package:bilimusic/feature/profile/ui/components/user_card.dart';
 import 'package:flutter/material.dart';
 
