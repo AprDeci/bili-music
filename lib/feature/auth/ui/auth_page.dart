@@ -274,37 +274,6 @@ class _QrCard extends StatelessWidget {
   }
 }
 
-class _StepHint extends StatelessWidget {
-  const _StepHint();
-
-  @override
-  Widget build(BuildContext context) {
-    final TextStyle? style = Theme.of(context).textTheme.bodySmall?.copyWith(
-      color: const Color(0xFF60788C),
-      height: 1.5,
-    );
-
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF9FBFD),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFFE0E8F0)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Text('登录步骤', style: style?.copyWith(fontWeight: FontWeight.w700)),
-          const SizedBox(height: 8),
-          Text('1. 打开 B 站 App 的扫一扫', style: style),
-          Text('2. 扫描当前页面二维码', style: style),
-          Text('3. 在手机上确认后自动返回', style: style),
-        ],
-      ),
-    );
-  }
-}
-
 class _StatusBanner extends StatelessWidget {
   const _StatusBanner({required this.state});
 
@@ -379,41 +348,3 @@ class _StatusBanner extends StatelessWidget {
   }
 }
 
-class _QrUrlRow extends StatelessWidget {
-  const _QrUrlRow({required this.qrUrl});
-
-  final String qrUrl;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF7FAFD),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFD7E3F0)),
-      ),
-      child: Row(
-        children: <Widget>[
-          const Icon(Icons.link_rounded, color: Color(0xFF4A6075)),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(qrUrl, maxLines: 1, overflow: TextOverflow.ellipsis),
-          ),
-          const SizedBox(width: 10),
-          TextButton(
-            onPressed: () async {
-              await Clipboard.setData(ClipboardData(text: qrUrl));
-              if (context.mounted) {
-                ScaffoldMessenger.of(
-                  context,
-                ).showSnackBar(const SnackBar(content: Text('登录链接已复制')));
-              }
-            },
-            child: const Text('复制'),
-          ),
-        ],
-      ),
-    );
-  }
-}
