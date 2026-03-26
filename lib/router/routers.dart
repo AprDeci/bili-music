@@ -4,8 +4,12 @@ import 'package:bilimusic/feature/profile/ui/profile_page.dart';
 import 'package:bilimusic/router/ScaffoldWithNavBar.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-final GoRouter router = GoRouter(
+part 'routers.g.dart';
+
+@riverpod
+GoRouter router(Ref ref) => GoRouter(
   initialLocation: '/home',
   routes: [
     StatefulShellRoute.indexedStack(
@@ -35,12 +39,6 @@ final List<Map<String, dynamic>> tabs = [
     'builder': (context, state) => const HomePage(),
     'icon': Icons.home,
     'label': '首页',
-  },
-  {
-    'path': '/search',
-    'builder': (context, state) => const AuthPage(),
-    'icon': Icons.search,
-    'label': '搜索',
   },
   {
     'path': '/profile',
