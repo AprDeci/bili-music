@@ -127,36 +127,6 @@ class _AuthContent extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
-        Container(
-          width: 68,
-          height: 68,
-          decoration: BoxDecoration(
-            color: const Color(0xFFE8F2FC),
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: const Icon(
-            Icons.qr_code_scanner_rounded,
-            size: 34,
-            color: Color(0xFF184C79),
-          ),
-        ),
-        const SizedBox(height: 20),
-        Text(
-          '登录 B 站账号',
-          style: theme.textTheme.headlineSmall?.copyWith(
-            fontWeight: FontWeight.w800,
-            color: const Color(0xFF17324D),
-          ),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          '使用 B 站 App 扫描二维码，完成后会自动返回个人页并同步头像、昵称和登录信息。',
-          style: theme.textTheme.bodyMedium?.copyWith(
-            color: const Color(0xFF567086),
-            height: 1.6,
-          ),
-        ),
-        const SizedBox(height: 24),
         AnimatedSwitcher(
           duration: const Duration(milliseconds: 220),
           child: hasQr
@@ -168,12 +138,6 @@ class _AuthContent extends StatelessWidget {
         const SizedBox(height: 18),
         _StatusBanner(state: state),
         const SizedBox(height: 18),
-        const _StepHint(),
-        if (hasQr) ...<Widget>[
-          const SizedBox(height: 18),
-          _QrUrlRow(qrUrl: qrUrl),
-        ],
-        const SizedBox(height: 24),
         FilledButton(
           onPressed: state.isBusy
               ? null
