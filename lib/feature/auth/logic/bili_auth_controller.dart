@@ -26,8 +26,8 @@ class BiliAuthController extends _$BiliAuthController {
   BiliAuthState build() {
     ref.onDispose(_cancelPolling);
 
-    final BiliSession? savedSession = ref.watch(biliSessionControllerProvider);
-    if (savedSession != null && savedSession.isLoggedIn) {
+    final BiliSession? savedSession = ref.read(biliSessionControllerProvider);
+    if (savedSession != null && savedSession.isReady) {
       return BiliAuthState(
         status: BiliQrLoginStatus.success,
         session: savedSession,

@@ -42,7 +42,7 @@ final class BiliSessionControllerProvider
 }
 
 String _$biliSessionControllerHash() =>
-    r'be8c52159d0cff2969e5511bd610fe40a7c2dcf5';
+    r'2347ff19c5912cddcd1114a9ca41a83fec2e6ac9';
 
 abstract class _$BiliSessionController extends $Notifier<BiliSession?> {
   BiliSession? build();

@@ -1,4 +1,9 @@
-class BiliSession {
+import 'package:freezed_annotation/freezed_annotation.dart';
+
+part 'bili_session.freezed.dart';
+
+@freezed
+class BiliSession with _$BiliSession {
   const BiliSession({
     required this.sessData,
     required this.biliJct,
@@ -28,36 +33,11 @@ class BiliSession {
   bool get hasCookie => cookie.isNotEmpty;
   bool get isLoggedIn =>
       sessData.isNotEmpty && biliJct.isNotEmpty && dedeUserId.isNotEmpty;
+  bool get hasProfile => mid != null || (uname?.isNotEmpty ?? false);
   bool get hasWbiKeys =>
       (imgKey?.isNotEmpty ?? false) && (subKey?.isNotEmpty ?? false);
+  bool get isReady => isLoggedIn && hasProfile && hasWbiKeys;
 
-  BiliSession copyWith({
-    String? sessData,
-    String? biliJct,
-    String? dedeUserId,
-    String? refreshToken,
-    String? cookie,
-    int? mid,
-    String? uname,
-    String? face,
-    String? imgKey,
-    String? subKey,
-    String? buvid3,
-  }) {
-    return BiliSession(
-      sessData: sessData ?? this.sessData,
-      biliJct: biliJct ?? this.biliJct,
-      dedeUserId: dedeUserId ?? this.dedeUserId,
-      refreshToken: refreshToken ?? this.refreshToken,
-      cookie: cookie ?? this.cookie,
-      mid: mid ?? this.mid,
-      uname: uname ?? this.uname,
-      face: face ?? this.face,
-      imgKey: imgKey ?? this.imgKey,
-      subKey: subKey ?? this.subKey,
-      buvid3: buvid3 ?? this.buvid3,
-    );
-  }
 
   BiliSession clearAuth() {
     return BiliSession(

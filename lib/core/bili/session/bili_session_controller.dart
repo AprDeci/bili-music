@@ -1,4 +1,3 @@
-import 'package:bilimusic/core/bili/net/bili_api_client.dart';
 import 'package:bilimusic/core/bili/session/bili_cookie.dart';
 import 'package:bilimusic/core/bili/session/bili_session.dart';
 import 'package:bilimusic/core/bili/session/bili_session_store.dart';
@@ -12,7 +11,6 @@ part 'bili_session_controller.g.dart';
 class BiliSessionController extends _$BiliSessionController {
   late final BiliSessionStore _store = ref.read(biliSessionStoreProvider);
   late final BiliClient _client = ref.read(biliClientProvider.notifier);
-  late final BiliApiClient _apiClient = ref.read(biliApiClientProvider);
 
   @override
   BiliSession? build() {
@@ -106,10 +104,11 @@ class BiliSessionController extends _$BiliSessionController {
       throw const BiliSessionException('No logged-in Bilibili session available.');
     }
 
-    final Map<String, dynamic> json = await _apiClient.getJson(
+    final Response<dynamic> response = await _client.get<dynamic>(
       '/x/web-interface/nav',
-      requiresAuth: true,
     );
+    final Map<String, dynamic> json = _asMap(response.data);
+    _ensureSuccess(json);
     final Map<String, dynamic> data = _asMap(json['data']);
     final bool isLogin = data['isLogin'] as bool? ?? false;
     if (!isLogin) {
@@ -171,6 +170,15 @@ class BiliSessionController extends _$BiliSessionController {
       );
     }
     throw const BiliSessionException('Unexpected response format.');
+  }
+
+  void _ensureSuccess(Map<String, dynamic> json) {
+    final int code = (json['code'] as num? ?? -1).toInt();
+    if (code != 0) {
+      throw BiliSessionException(
+        json['message'] as String? ?? 'Request failed.',
+      );
+    }
   }
 
   String? _extractKeyFromUrl(String? url) {
