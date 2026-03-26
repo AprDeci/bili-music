@@ -3,61 +3,96 @@ import 'package:bilimusic/feature/auth/logic/bili_auth_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
-class AuthPage extends ConsumerWidget {
+class AuthPage extends ConsumerStatefulWidget {
   const AuthPage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<AuthPage> createState() => _AuthPageState();
+}
+
+class _AuthPageState extends ConsumerState<AuthPage> {
+  bool _didScheduleStart = false;
+  bool _didPopAfterSuccess = false;
+
+  @override
+  Widget build(BuildContext context) {
+    ref.listen<BiliAuthState>(biliAuthControllerProvider, (previous, next) {
+      final bool becameSuccessful =
+          previous?.status != BiliQrLoginStatus.success &&
+          next.status == BiliQrLoginStatus.success;
+
+      if (!becameSuccessful || _didPopAfterSuccess) {
+        return;
+      }
+
+      _didPopAfterSuccess = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) {
+          return;
+        }
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('登录成功')));
+        if (context.canPop()) {
+          context.pop();
+        }
+      });
+    });
+
     final BiliAuthState authState = ref.watch(biliAuthControllerProvider);
     final BiliAuthController controller = ref.read(
       biliAuthControllerProvider.notifier,
     );
 
+    if (!_didScheduleStart &&
+        authState.status == BiliQrLoginStatus.initial &&
+        authState.qrSession == null) {
+      _didScheduleStart = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) {
+          return;
+        }
+        controller.startQrLogin();
+      });
+    }
+
     return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: <Color>[
-              Color(0xFFF4F7FB),
-              Color(0xFFE5EEF8),
-              Color(0xFFDDE7F4),
-            ],
-          ),
-        ),
-        child: SafeArea(
-          child: Center(
+      backgroundColor: const Color(0xFFF3F7FB),
+      appBar: AppBar(
+        title: const Text('扫码登录'),
+        elevation: 0,
+        backgroundColor: Colors.transparent,
+        foregroundColor: const Color(0xFF17324D),
+      ),
+      body: SafeArea(
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(20),
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 460),
-              child: Padding(
+              child: Container(
                 padding: const EdgeInsets.all(24),
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.92),
-                    borderRadius: BorderRadius.circular(28),
-                    boxShadow: const <BoxShadow>[
-                      BoxShadow(
-                        color: Color(0x140D1B2A),
-                        blurRadius: 32,
-                        offset: Offset(0, 18),
-                      ),
-                    ],
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: <Color>[Color(0xFFFFFFFF), Color(0xFFF8FBFE)],
                   ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(28),
-                    child: authState.status == BiliQrLoginStatus.success
-                        ? _LoggedInView(
-                            state: authState,
-                            onLogout: controller.logout,
-                          )
-                        : _QrLoginView(
-                            state: authState,
-                            onStart: controller.startQrLogin,
-                            onRetry: controller.restartQrLogin,
-                          ),
-                  ),
+                  borderRadius: BorderRadius.circular(28),
+                  boxShadow: const <BoxShadow>[
+                    BoxShadow(
+                      color: Color(0x120A2239),
+                      blurRadius: 30,
+                      offset: Offset(0, 16),
+                    ),
+                  ],
+                ),
+                child: _AuthContent(
+                  state: authState,
+                  onStart: controller.startQrLogin,
+                  onRetry: controller.restartQrLogin,
                 ),
               ),
             ),
@@ -68,8 +103,8 @@ class AuthPage extends ConsumerWidget {
   }
 }
 
-class _QrLoginView extends StatelessWidget {
-  const _QrLoginView({
+class _AuthContent extends StatelessWidget {
+  const _AuthContent({
     required this.state,
     required this.onStart,
     required this.onRetry,
@@ -87,50 +122,55 @@ class _QrLoginView extends StatelessWidget {
     final bool canRetry =
         state.status == BiliQrLoginStatus.expired ||
         state.status == BiliQrLoginStatus.failure;
-    final bool showLoading =
-        state.status == BiliQrLoginStatus.loading && !hasQr;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
+        Container(
+          width: 68,
+          height: 68,
+          decoration: BoxDecoration(
+            color: const Color(0xFFE8F2FC),
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: const Icon(
+            Icons.qr_code_scanner_rounded,
+            size: 34,
+            color: Color(0xFF184C79),
+          ),
+        ),
+        const SizedBox(height: 20),
         Text(
-          'BiliMusic',
-          style: theme.textTheme.headlineMedium?.copyWith(
-            fontWeight: FontWeight.w700,
-            color: const Color(0xFF18324B),
+          '登录 B 站账号',
+          style: theme.textTheme.headlineSmall?.copyWith(
+            fontWeight: FontWeight.w800,
+            color: const Color(0xFF17324D),
           ),
         ),
         const SizedBox(height: 8),
         Text(
-          '使用 B 站 App 扫码登录，成功后会自动保存 SESSDATA、bili_jct 和 refresh_token。',
+          '使用 B 站 App 扫描二维码，完成后会自动返回个人页并同步头像、昵称和登录信息。',
           style: theme.textTheme.bodyMedium?.copyWith(
-            color: const Color(0xFF52657A),
-            height: 1.5,
+            color: const Color(0xFF567086),
+            height: 1.6,
           ),
         ),
-        const SizedBox(height: 28),
+        const SizedBox(height: 24),
         AnimatedSwitcher(
           duration: const Duration(milliseconds: 220),
           child: hasQr
               ? _QrCard(qrUrl: qrUrl)
-              : showLoading
-              ? Container(
-                  height: 280,
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF7FAFD),
-                    borderRadius: BorderRadius.circular(24),
-                    border: Border.all(color: const Color(0xFFD7E3F0)),
-                  ),
-                  child: const CircularProgressIndicator(),
-                )
+              : state.status == BiliQrLoginStatus.loading
+              ? const _QrLoadingCard()
               : const _QrPlaceholder(),
         ),
-        const SizedBox(height: 20),
+        const SizedBox(height: 18),
         _StatusBanner(state: state),
+        const SizedBox(height: 18),
+        const _StepHint(),
         if (hasQr) ...<Widget>[
-          const SizedBox(height: 16),
+          const SizedBox(height: 18),
           _QrUrlRow(qrUrl: qrUrl),
         ],
         const SizedBox(height: 24),
@@ -145,7 +185,7 @@ class _QrLoginView extends StatelessWidget {
                   }
                 },
           style: FilledButton.styleFrom(
-            backgroundColor: const Color(0xFF133B5C),
+            backgroundColor: const Color(0xFF163B5C),
             foregroundColor: Colors.white,
             padding: const EdgeInsets.symmetric(vertical: 18),
             shape: RoundedRectangleBorder(
@@ -156,7 +196,7 @@ class _QrLoginView extends StatelessWidget {
             _primaryButtonText(state.status),
             style: theme.textTheme.titleMedium?.copyWith(
               color: Colors.white,
-              fontWeight: FontWeight.w600,
+              fontWeight: FontWeight.w700,
             ),
           ),
         ),
@@ -169,16 +209,36 @@ class _QrLoginView extends StatelessWidget {
       case BiliQrLoginStatus.expired:
         return '重新获取二维码';
       case BiliQrLoginStatus.failure:
-        return '重试登录';
+        return '重新开始登录';
       case BiliQrLoginStatus.loading:
-        return '正在请求二维码...';
+        return '正在生成二维码...';
       case BiliQrLoginStatus.waitingForScan:
         return '等待扫码中';
       case BiliQrLoginStatus.waitingForConfirm:
         return '等待确认中';
+      case BiliQrLoginStatus.success:
+        return '登录成功';
       default:
-        return '开始二维码登录';
+        return '立即登录';
     }
+  }
+}
+
+class _QrLoadingCard extends StatelessWidget {
+  const _QrLoadingCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      key: const ValueKey<String>('loading'),
+      height: 320,
+      decoration: BoxDecoration(
+        color: const Color(0xFFF7FAFD),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: const Color(0xFFD5E2EE)),
+      ),
+      child: const Center(child: CircularProgressIndicator()),
+    );
   }
 }
 
@@ -188,19 +248,19 @@ class _QrPlaceholder extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 280,
-      alignment: Alignment.center,
+      key: const ValueKey<String>('placeholder'),
+      height: 320,
       decoration: BoxDecoration(
         color: const Color(0xFFF7FAFD),
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: const Color(0xFFD7E3F0)),
+        border: Border.all(color: const Color(0xFFD5E2EE)),
       ),
       child: Column(
-        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
         children: const <Widget>[
           Icon(Icons.qr_code_2_rounded, size: 72, color: Color(0xFF4A6075)),
           SizedBox(height: 14),
-          Text('点击下方按钮生成登录二维码'),
+          Text('正在准备登录二维码'),
         ],
       ),
     );
@@ -220,7 +280,7 @@ class _QrCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: const Color(0xFFF7FAFD),
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: const Color(0xFFD7E3F0)),
+        border: Border.all(color: const Color(0xFFD5E2EE)),
       ),
       child: Column(
         children: <Widget>[
@@ -231,7 +291,7 @@ class _QrCard extends StatelessWidget {
               width: 240,
               height: 240,
               fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) {
+              errorBuilder: (_, _, _) {
                 return Container(
                   width: 240,
                   height: 240,
@@ -243,10 +303,38 @@ class _QrCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 16),
-          const Text(
-            '打开 B 站 App，使用扫码功能完成登录',
-            textAlign: TextAlign.center,
-          ),
+          const Text('请打开 B 站 App 扫码，并在手机上确认登录', textAlign: TextAlign.center),
+        ],
+      ),
+    );
+  }
+}
+
+class _StepHint extends StatelessWidget {
+  const _StepHint();
+
+  @override
+  Widget build(BuildContext context) {
+    final TextStyle? style = Theme.of(context).textTheme.bodySmall?.copyWith(
+      color: const Color(0xFF60788C),
+      height: 1.5,
+    );
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF9FBFD),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFFE0E8F0)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Text('登录步骤', style: style?.copyWith(fontWeight: FontWeight.w700)),
+          const SizedBox(height: 8),
+          Text('1. 打开 B 站 App 的扫一扫', style: style),
+          Text('2. 扫描当前页面二维码', style: style),
+          Text('3. 在手机上确认后自动返回', style: style),
         ],
       ),
     );
@@ -297,13 +385,13 @@ class _StatusBanner extends StatelessWidget {
         return (
           background: const Color(0xFFFFF5E8),
           foreground: const Color(0xFFA35B00),
-          text: state.message ?? '已扫码，等待确认',
+          text: state.message ?? '已扫码，等待手机确认',
         );
       case BiliQrLoginStatus.expired:
         return (
           background: const Color(0xFFFFEFEF),
           foreground: const Color(0xFFB42318),
-          text: state.message ?? '二维码已失效',
+          text: state.message ?? '二维码已失效，请重新获取',
         );
       case BiliQrLoginStatus.failure:
         return (
@@ -311,11 +399,17 @@ class _StatusBanner extends StatelessWidget {
           foreground: const Color(0xFFB42318),
           text: state.message ?? '登录失败，请稍后重试',
         );
+      case BiliQrLoginStatus.success:
+        return (
+          background: const Color(0xFFEAF8EF),
+          foreground: const Color(0xFF276749),
+          text: '登录成功，正在返回个人页...',
+        );
       default:
         return (
           background: const Color(0xFFF5F7FA),
           foreground: const Color(0xFF4B5D70),
-          text: '点击下方按钮开始二维码登录',
+          text: '二维码生成后即可扫码登录',
         );
     }
   }
@@ -340,135 +434,20 @@ class _QrUrlRow extends StatelessWidget {
           const Icon(Icons.link_rounded, color: Color(0xFF4A6075)),
           const SizedBox(width: 10),
           Expanded(
-            child: Text(
-              qrUrl,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
+            child: Text(qrUrl, maxLines: 1, overflow: TextOverflow.ellipsis),
           ),
           const SizedBox(width: 10),
           TextButton(
             onPressed: () async {
               await Clipboard.setData(ClipboardData(text: qrUrl));
               if (context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('登录链接已复制')),
-                );
+                ScaffoldMessenger.of(
+                  context,
+                ).showSnackBar(const SnackBar(content: Text('登录链接已复制')));
               }
             },
             child: const Text('复制'),
           ),
-        ],
-      ),
-    );
-  }
-}
-
-class _LoggedInView extends StatelessWidget {
-  const _LoggedInView({required this.state, required this.onLogout});
-
-  final BiliAuthState state;
-  final Future<void> Function() onLogout;
-
-  @override
-  Widget build(BuildContext context) {
-    final BiliAuthSession session = state.authSession!;
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: <Widget>[
-        Row(
-          children: <Widget>[
-            CircleAvatar(
-              radius: 28,
-              backgroundColor: const Color(0xFFD9E6F2),
-              backgroundImage: session.face != null && session.face!.isNotEmpty
-                  ? NetworkImage(session.face!)
-                  : null,
-              child: session.face == null || session.face!.isEmpty
-                  ? const Icon(Icons.person_rounded, color: Color(0xFF34516E))
-                  : null,
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Text(
-                    session.uname?.isNotEmpty == true
-                        ? session.uname!
-                        : '已登录 B 站账号',
-                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.w700,
-                      color: const Color(0xFF18324B),
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'mid: ${session.mid ?? '-'}',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: const Color(0xFF52657A),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 24),
-        _SessionTile(label: 'SESSDATA', value: session.sessData),
-        const SizedBox(height: 12),
-        _SessionTile(label: 'bili_jct', value: session.biliJct),
-        const SizedBox(height: 12),
-        _SessionTile(label: 'refresh_token', value: session.refreshToken),
-        const SizedBox(height: 12),
-        _SessionTile(label: 'WBI img_key', value: session.imgKey ?? '-'),
-        const SizedBox(height: 28),
-        OutlinedButton(
-          onPressed: () {
-            onLogout();
-          },
-          style: OutlinedButton.styleFrom(
-            foregroundColor: const Color(0xFF18324B),
-            side: const BorderSide(color: Color(0xFFB7C9DB)),
-            padding: const EdgeInsets.symmetric(vertical: 18),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(18),
-            ),
-          ),
-          child: const Text('退出登录'),
-        ),
-      ],
-    );
-  }
-}
-
-class _SessionTile extends StatelessWidget {
-  const _SessionTile({required this.label, required this.value});
-
-  final String label;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF7FAFD),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFFD7E3F0)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Text(
-            label,
-            style: Theme.of(context).textTheme.labelLarge?.copyWith(
-              color: const Color(0xFF52657A),
-            ),
-          ),
-          const SizedBox(height: 8),
-          SelectableText(value),
         ],
       ),
     );

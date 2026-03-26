@@ -12,22 +12,17 @@ part 'routers.g.dart';
 GoRouter router(Ref ref) => GoRouter(
   initialLocation: '/home',
   routes: [
+    GoRoute(path: '/auth', builder: (context, state) => const AuthPage()),
     StatefulShellRoute.indexedStack(
       builder: (context, state, navigationShell) {
         return ScaffoldWithNavBar(navigationShell: navigationShell);
       },
       branches: [
-        ...tabs
-            .map(
-              (tab) => StatefulShellBranch(
-          routes: [
-            GoRoute(
-              path: tab['path'], builder: tab['builder'],
-            ),
-          ],
-              ),
-            )
-            .toList(),
+        ...tabs.map(
+          (tab) => StatefulShellBranch(
+            routes: [GoRoute(path: tab['path'], builder: tab['builder'])],
+          ),
+        ),
       ],
     ),
   ],

@@ -1,46 +1,84 @@
+import 'package:bilimusic/feature/auth/domain/bili_auth_models.dart';
+import 'package:bilimusic/feature/auth/logic/bili_auth_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 class UserCard extends ConsumerWidget {
-  const UserCard({super.key, this.name = '用户名', this.avatarImage});
-
-  final String name;
-  final ImageProvider<Object>? avatarImage;
+  const UserCard({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final BiliAuthState authState = ref.watch(biliAuthControllerProvider);
+    final BiliAuthSession? session = authState.authSession;
+    final bool isLoggedIn =
+        authState.status == BiliQrLoginStatus.success && session != null;
     final Color themeColor = Theme.of(context).colorScheme.primary;
-    return Container(
-      constraints: const BoxConstraints(maxWidth: 360),
-      padding: const EdgeInsets.all(16),
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      decoration: BoxDecoration(
-        color: Colors.white,
+    final ImageProvider<Object>? avatarImage =
+        isLoggedIn && session.face != null && session.face!.isNotEmpty
+        ? NetworkImage(session.face!)
+        : null;
+    final String title = isLoggedIn
+        ? (session.uname?.isNotEmpty == true ? session.uname! : '已登录 B 站账号')
+        : '点击登录';
+    final String subtitle = isLoggedIn
+        ? 'mid: ${session.mid ?? '-'}'
+        : '扫码同步 B 站账号信息';
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
         borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        children: [
-          CircleAvatar(
-            radius: 24,
-            backgroundColor: Colors.white,
-            backgroundImage: avatarImage,
-            child: avatarImage == null
-                ? Icon(Icons.person, size: 24, color: themeColor)
-                : null,
+        onTap: isLoggedIn ? null : () => context.push('/auth'),
+        child: Container(
+          constraints: const BoxConstraints(maxWidth: 360),
+          padding: const EdgeInsets.all(16),
+          margin: const EdgeInsets.symmetric(horizontal: 16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
           ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Text(
-              name,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w700,
-                color: Colors.black87,
+          child: Row(
+            children: [
+              CircleAvatar(
+                radius: 24,
+                backgroundColor: const Color(0xFFF2F6FA),
+                backgroundImage: avatarImage,
+                child: avatarImage == null
+                    ? Icon(Icons.person, size: 24, color: themeColor)
+                    : null,
               ),
-            ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                        color: Colors.black87,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      subtitle,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(
+                        context,
+                      ).textTheme.bodyMedium?.copyWith(color: Colors.black54),
+                    ),
+                  ],
+                ),
+              ),
+              if (!isLoggedIn)
+                Icon(Icons.chevron_right_rounded, color: themeColor),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
