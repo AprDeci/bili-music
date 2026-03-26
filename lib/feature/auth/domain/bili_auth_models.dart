@@ -1,3 +1,5 @@
+import 'package:bilimusic/core/bili/session/bili_session.dart';
+
 enum BiliQrLoginStatus {
   initial,
   loading,
@@ -18,70 +20,18 @@ class BiliQrCodeSession {
   final String qrcodeKey;
 }
 
-class BiliAuthSession {
-  const BiliAuthSession({
-    required this.sessData,
-    required this.biliJct,
-    required this.dedeUserId,
-    required this.refreshToken,
-    required this.cookie,
-    this.mid,
-    this.uname,
-    this.face,
-    this.imgKey,
-    this.subKey,
-  });
-
-  final String sessData;
-  final String biliJct;
-  final String dedeUserId;
-  final String refreshToken;
-  final String cookie;
-  final int? mid;
-  final String? uname;
-  final String? face;
-  final String? imgKey;
-  final String? subKey;
-
-  BiliAuthSession copyWith({
-    String? sessData,
-    String? biliJct,
-    String? dedeUserId,
-    String? refreshToken,
-    String? cookie,
-    int? mid,
-    String? uname,
-    String? face,
-    String? imgKey,
-    String? subKey,
-  }) {
-    return BiliAuthSession(
-      sessData: sessData ?? this.sessData,
-      biliJct: biliJct ?? this.biliJct,
-      dedeUserId: dedeUserId ?? this.dedeUserId,
-      refreshToken: refreshToken ?? this.refreshToken,
-      cookie: cookie ?? this.cookie,
-      mid: mid ?? this.mid,
-      uname: uname ?? this.uname,
-      face: face ?? this.face,
-      imgKey: imgKey ?? this.imgKey,
-      subKey: subKey ?? this.subKey,
-    );
-  }
-}
-
 class BiliAuthState {
   const BiliAuthState({
     this.status = BiliQrLoginStatus.initial,
     this.qrSession,
-    this.authSession,
+    this.session,
     this.message,
     this.lastPollCode,
   });
 
   final BiliQrLoginStatus status;
   final BiliQrCodeSession? qrSession;
-  final BiliAuthSession? authSession;
+  final BiliSession? session;
   final String? message;
   final int? lastPollCode;
 
@@ -94,8 +44,8 @@ class BiliAuthState {
     BiliQrLoginStatus? status,
     BiliQrCodeSession? qrSession,
     bool clearQrSession = false,
-    BiliAuthSession? authSession,
-    bool clearAuthSession = false,
+    BiliSession? session,
+    bool clearSession = false,
     String? message,
     bool clearMessage = false,
     int? lastPollCode,
@@ -104,8 +54,7 @@ class BiliAuthState {
     return BiliAuthState(
       status: status ?? this.status,
       qrSession: clearQrSession ? null : (qrSession ?? this.qrSession),
-      authSession:
-          clearAuthSession ? null : (authSession ?? this.authSession),
+      session: clearSession ? null : (session ?? this.session),
       message: clearMessage ? null : (message ?? this.message),
       lastPollCode:
           clearLastPollCode ? null : (lastPollCode ?? this.lastPollCode),

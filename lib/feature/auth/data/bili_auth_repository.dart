@@ -1,26 +1,14 @@
 import 'dart:async';
 
+import 'package:bilimusic/core/bili/session/bili_session.dart';
 import 'package:bilimusic/core/net/bili_client.dart';
 import 'package:bilimusic/feature/auth/domain/bili_auth_models.dart';
 import 'package:dio/dio.dart';
-import 'package:hive_ce/hive.dart';
 
 class BiliAuthRepository {
-  const BiliAuthRepository(this._client, this._prefsBox);
+  const BiliAuthRepository(this._client);
 
   final BiliClient _client;
-  final Box<String> _prefsBox;
-
-  static const String _cookieKey = 'bili.cookie';
-  static const String _sessDataKey = 'bili.sessdata';
-  static const String _biliJctKey = 'bili.bili_jct';
-  static const String _dedeUserIdKey = 'bili.dede_user_id';
-  static const String _refreshTokenKey = 'bili.refresh_token';
-  static const String _midKey = 'bili.mid';
-  static const String _unameKey = 'bili.uname';
-  static const String _faceKey = 'bili.face';
-  static const String _imgKey = 'bili.img_key';
-  static const String _subKey = 'bili.sub_key';
   static const String _passportBaseUrl = 'https://passport.bilibili.com';
 
   Future<BiliQrCodeSession> generateQrCode() async {
@@ -66,7 +54,7 @@ class BiliAuthRepository {
     return PollQrCodeResult(
       code: code,
       message: message,
-      session: BiliAuthSession(
+      session: BiliSession(
         sessData: sessData,
         biliJct: biliJct,
         dedeUserId: dedeUserId,
@@ -76,7 +64,7 @@ class BiliAuthRepository {
     );
   }
 
-  Future<BiliAuthSession> enrichSession(BiliAuthSession session) async {
+  Future<BiliSession> enrichSession(BiliSession session) async {
     _client.setCookie(session.cookie);
     final Response<dynamic> response = await _client.get<dynamic>(
       '/x/web-interface/nav',
@@ -101,61 +89,8 @@ class BiliAuthRepository {
     );
   }
 
-  Future<void> saveSession(BiliAuthSession session) async {
+  void applySession(BiliSession session) {
     _client.setCookie(session.cookie);
-    await Future.wait(<Future<void>>[
-      _prefsBox.put(_cookieKey, session.cookie),
-      _prefsBox.put(_sessDataKey, session.sessData),
-      _prefsBox.put(_biliJctKey, session.biliJct),
-      _prefsBox.put(_dedeUserIdKey, session.dedeUserId),
-      _prefsBox.put(_refreshTokenKey, session.refreshToken),
-      _prefsBox.put(_midKey, session.mid?.toString() ?? ''),
-      _prefsBox.put(_unameKey, session.uname ?? ''),
-      _prefsBox.put(_faceKey, session.face ?? ''),
-      _prefsBox.put(_imgKey, session.imgKey ?? ''),
-      _prefsBox.put(_subKey, session.subKey ?? ''),
-    ]);
-  }
-
-  BiliAuthSession? loadSession() {
-    final String cookie = _prefsBox.get(_cookieKey, defaultValue: '') ?? '';
-    if (cookie.isEmpty) {
-      return null;
-    }
-
-    final String midValue = _prefsBox.get(_midKey, defaultValue: '') ?? '';
-    return BiliAuthSession(
-      sessData: _prefsBox.get(_sessDataKey, defaultValue: '') ?? '',
-      biliJct: _prefsBox.get(_biliJctKey, defaultValue: '') ?? '',
-      dedeUserId: _prefsBox.get(_dedeUserIdKey, defaultValue: '') ?? '',
-      refreshToken: _prefsBox.get(_refreshTokenKey, defaultValue: '') ?? '',
-      cookie: cookie,
-      mid: int.tryParse(midValue),
-      uname: _prefsBox.get(_unameKey, defaultValue: ''),
-      face: _prefsBox.get(_faceKey, defaultValue: ''),
-      imgKey: _prefsBox.get(_imgKey, defaultValue: ''),
-      subKey: _prefsBox.get(_subKey, defaultValue: ''),
-    );
-  }
-
-  void applySession(BiliAuthSession session) {
-    _client.setCookie(session.cookie);
-  }
-
-  Future<void> clearSession() async {
-    await Future.wait(<Future<void>>[
-      _prefsBox.delete(_cookieKey),
-      _prefsBox.delete(_sessDataKey),
-      _prefsBox.delete(_biliJctKey),
-      _prefsBox.delete(_dedeUserIdKey),
-      _prefsBox.delete(_refreshTokenKey),
-      _prefsBox.delete(_midKey),
-      _prefsBox.delete(_unameKey),
-      _prefsBox.delete(_faceKey),
-      _prefsBox.delete(_imgKey),
-      _prefsBox.delete(_subKey),
-    ]);
-    _client.clearCookie();
   }
 
   Map<String, dynamic> _asMap(dynamic value) {
@@ -226,7 +161,7 @@ class PollQrCodeResult {
 
   final int code;
   final String message;
-  final BiliAuthSession? session;
+  final BiliSession? session;
 }
 
 class BiliAuthException implements Exception {

@@ -55,7 +55,7 @@ final class BiliAuthRepositoryProvider
 }
 
 String _$biliAuthRepositoryHash() =>
-    r'eb42b04bb836a382138c5b55baf7348bdb64b33e';
+    r'86da4b28153ad7ca0faa2d3d812c7aab5cdf6092';
 
 @ProviderFor(BiliAuthController)
 final biliAuthControllerProvider = BiliAuthControllerProvider._();
@@ -90,7 +90,7 @@ final class BiliAuthControllerProvider
 }
 
 String _$biliAuthControllerHash() =>
-    r'83d8e781749f9e2e8ee59b0b5306862f43281d5d';
+    r'0e38e57448a512be7f5f632f0b8f68d67ee02b98';
 
 abstract class _$BiliAuthController extends $Notifier<BiliAuthState> {
   BiliAuthState build();

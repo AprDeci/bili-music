@@ -1,5 +1,5 @@
-import 'package:bilimusic/feature/auth/domain/bili_auth_models.dart';
-import 'package:bilimusic/feature/auth/logic/bili_auth_controller.dart';
+import 'package:bilimusic/core/bili/session/bili_session.dart';
+import 'package:bilimusic/core/bili/session/bili_session_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -9,10 +9,8 @@ class UserCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final BiliAuthState authState = ref.watch(biliAuthControllerProvider);
-    final BiliAuthSession? session = authState.authSession;
-    final bool isLoggedIn =
-        authState.status == BiliQrLoginStatus.success && session != null;
+    final BiliSession? session = ref.watch(biliSessionControllerProvider);
+    final bool isLoggedIn = session != null;
     final Color themeColor = Theme.of(context).colorScheme.primary;
     final ImageProvider<Object>? avatarImage =
         isLoggedIn && session.face != null && session.face!.isNotEmpty

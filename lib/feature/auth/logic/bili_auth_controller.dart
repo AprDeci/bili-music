@@ -1,19 +1,17 @@
 import 'dart:async';
 
+import 'package:bilimusic/core/bili/session/bili_session.dart';
+import 'package:bilimusic/core/bili/session/bili_session_controller.dart';
 import 'package:bilimusic/core/net/bili_client.dart';
 import 'package:bilimusic/feature/auth/data/bili_auth_repository.dart';
 import 'package:bilimusic/feature/auth/domain/bili_auth_models.dart';
-import 'package:hive_ce/hive.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'bili_auth_controller.g.dart';
 
 @riverpod
 BiliAuthRepository biliAuthRepository(Ref ref) {
-  return BiliAuthRepository(
-    ref.read(biliClientProvider.notifier),
-    Hive.box<String>('prefs'),
-  );
+  return BiliAuthRepository(ref.read(biliClientProvider.notifier));
 }
 
 @riverpod
@@ -28,12 +26,12 @@ class BiliAuthController extends _$BiliAuthController {
   BiliAuthState build() {
     ref.onDispose(_cancelPolling);
 
-    final BiliAuthSession? savedSession = _repository.loadSession();
+    final BiliSession? savedSession = ref.watch(biliSessionControllerProvider);
     if (savedSession != null) {
       _repository.applySession(savedSession);
       return BiliAuthState(
         status: BiliQrLoginStatus.success,
-        authSession: savedSession,
+        session: savedSession,
       );
     }
 
@@ -73,7 +71,7 @@ class BiliAuthController extends _$BiliAuthController {
 
   Future<void> logout() async {
     _cancelPolling();
-    await _repository.clearSession();
+    await ref.read(biliSessionControllerProvider.notifier).clearSession();
     state = const BiliAuthState();
   }
 
@@ -92,12 +90,14 @@ class BiliAuthController extends _$BiliAuthController {
       switch (result.code) {
         case 0:
           _cancelPolling();
-          final BiliAuthSession enrichedSession = await _repository
+          final BiliSession enrichedSession = await _repository
               .enrichSession(result.session!);
-          await _repository.saveSession(enrichedSession);
+          await ref
+              .read(biliSessionControllerProvider.notifier)
+              .setSession(enrichedSession);
           state = state.copyWith(
             status: BiliQrLoginStatus.success,
-            authSession: enrichedSession,
+            session: enrichedSession,
             message: '登录成功',
             lastPollCode: result.code,
           );
