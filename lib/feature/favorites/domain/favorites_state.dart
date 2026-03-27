@@ -37,6 +37,49 @@ abstract class FavoritesState with _$FavoritesState {
     return likedItemIds.contains(item.stableId);
   }
 
+  bool hasCollection(String collectionId) {
+    return collections.any(
+      (FavoriteCollection collection) => collection.id == collectionId,
+    );
+  }
+
+  bool isItemInCollection({
+    required String collectionId,
+    required String itemId,
+  }) {
+    return memberships.any(
+      (FavoriteMembership membership) =>
+          membership.collectionId == collectionId &&
+          membership.itemId == itemId,
+    );
+  }
+
+  bool containsItemInCollection({
+    required String collectionId,
+    required PlayableItem item,
+  }) {
+    return isItemInCollection(
+      collectionId: collectionId,
+      itemId: item.stableId,
+    );
+  }
+
+  List<FavoriteCollection> collectionsForItem(PlayableItem item) {
+    final Set<String> collectionIds = memberships
+        .where(
+          (FavoriteMembership membership) => membership.itemId == item.stableId,
+        )
+        .map((FavoriteMembership membership) => membership.collectionId)
+        .toSet();
+
+    return collections
+        .where(
+          (FavoriteCollection collection) =>
+              collectionIds.contains(collection.id),
+        )
+        .toList(growable: false);
+  }
+
   int itemCountForCollection(String collectionId) {
     return memberships.where((FavoriteMembership membership) {
       return membership.collectionId == collectionId;
