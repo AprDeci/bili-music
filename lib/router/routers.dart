@@ -32,6 +32,8 @@ GoRoute(
         return CustomTransitionPage<void>(
           key: state.pageKey,
           child: PlayerPage(initialItem: item),
+          transitionDuration: const Duration(milliseconds: 450),
+          reverseTransitionDuration: const Duration(milliseconds: 400), 
           transitionsBuilder: (context, animation, secondaryAnimation, child) {
             final Animation<Offset> offsetAnimation =
                 Tween<Offset>(

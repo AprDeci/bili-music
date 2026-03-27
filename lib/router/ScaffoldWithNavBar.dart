@@ -11,8 +11,7 @@ class ScaffoldWithNavBar extends ConsumerStatefulWidget {
   const ScaffoldWithNavBar({super.key, required this.navigationShell});
 
   @override
-  ConsumerState<ScaffoldWithNavBar> createState() =>
-      _ScaffoldWithNavBarState();
+  ConsumerState<ScaffoldWithNavBar> createState() => _ScaffoldWithNavBarState();
 }
 
 class _ScaffoldWithNavBarState extends ConsumerState<ScaffoldWithNavBar> {
@@ -27,6 +26,8 @@ class _ScaffoldWithNavBarState extends ConsumerState<ScaffoldWithNavBar> {
   @override
   Widget build(BuildContext context) {
     final double screenWidth = MediaQuery.of(context).size.width;
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
     final playerState = ref.watch(playerControllerProvider);
 
     return Scaffold(
@@ -37,36 +38,64 @@ class _ScaffoldWithNavBarState extends ConsumerState<ScaffoldWithNavBar> {
         barColor: Colors.transparent,
         duration: const Duration(milliseconds: 300),
         width: screenWidth * 0.92,
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(40), // 裁剪 NavigationBar 为圆角
-          child: NavigationBar(
-            selectedIndex: _currentIndex,
-            onDestinationSelected: (index) {
-              setState(() => _currentIndex = index);
-              widget.navigationShell.goBranch(
-                index,
-                initialLocation: index == widget.navigationShell.currentIndex,
-              );
-            },
-            labelBehavior: NavigationDestinationLabelBehavior.alwaysHide,
-            backgroundColor: Colors.white, // NavigationBar 背景颜色
-            elevation: 0,
-            height: 60,
-            indicatorShape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(30),
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.96),
+            borderRadius: BorderRadius.circular(40),
+            border: Border.all(
+              color: colorScheme.primary.withValues(alpha: 0.08),
             ),
-            destinations: const [
-              NavigationDestination(
-                icon: Icon(Icons.home_outlined),
-                selectedIcon: Icon(Icons.home),
-                label: '首页',
-              ),
-              NavigationDestination(
-                icon: Icon(Icons.person_outlined),
-                selectedIcon: Icon(Icons.person),
-                label: '我的',
+            boxShadow: const <BoxShadow>[
+              BoxShadow(
+                color: Color(0x14000000),
+                blurRadius: 30,
+                offset: Offset(0, 16),
               ),
             ],
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(40),
+            child: NavigationBarTheme(
+              data: NavigationBarThemeData(
+                backgroundColor: Colors.transparent,
+                elevation: 0,
+                height: 60,
+                indicatorColor: colorScheme.primary.withValues(alpha: 0.12),
+                iconTheme: WidgetStateProperty.resolveWith<IconThemeData>((
+                  Set<WidgetState> states,
+                ) {
+                  if (states.contains(WidgetState.selected)) {
+                    return IconThemeData(color: colorScheme.primary);
+                  }
+
+                  return const IconThemeData(color: Color(0xFF7B8698));
+                }),
+              ),
+              child: NavigationBar(
+                selectedIndex: _currentIndex,
+                onDestinationSelected: (index) {
+                  setState(() => _currentIndex = index);
+                  widget.navigationShell.goBranch(
+                    index,
+                    initialLocation:
+                        index == widget.navigationShell.currentIndex,
+                  );
+                },
+                labelBehavior: NavigationDestinationLabelBehavior.alwaysHide,
+                destinations: const [
+                  NavigationDestination(
+                    icon: Icon(Icons.home_outlined),
+                    selectedIcon: Icon(Icons.home),
+                    label: '首页',
+                  ),
+                  NavigationDestination(
+                    icon: Icon(Icons.person_outlined),
+                    selectedIcon: Icon(Icons.person),
+                    label: '我的',
+                  ),
+                ],
+              ),
+            ),
           ),
         ),
 
