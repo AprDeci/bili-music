@@ -50,7 +50,10 @@ class _SearchPageState extends ConsumerState<SearchPage> {
     }
   }
 
-  Future<void> _submitSearch(SearchPageController controller, [String? value]) async {
+  Future<void> _submitSearch(
+    SearchPageController controller, [
+    String? value,
+  ]) async {
     await controller.submitSearch(value);
     if (!mounted || !_scrollController.hasClients) {
       return;
@@ -263,19 +266,13 @@ class _SearchResultSection extends StatelessWidget {
       return Container(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 28),
         decoration: BoxDecoration(
-          color: Colors.white,
           borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: const Color(0xFFE2E8F0)),
         ),
         child: Column(
           children: <Widget>[
             Container(
               width: 56,
               height: 56,
-              decoration: BoxDecoration(
-                color: const Color(0xFFEFF6FF),
-                borderRadius: BorderRadius.circular(18),
-              ),
               child: const Icon(
                 Icons.search_rounded,
                 color: Color(0xFF2563EB),
@@ -292,14 +289,6 @@ class _SearchResultSection extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 8),
-            Text(
-              '当前页面已接好搜索交互，提交后会显示结果列表。',
-              textAlign: TextAlign.center,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: const Color(0xFF64748B),
-                height: 1.5,
-              ),
-            ),
           ],
         ),
       );
@@ -412,7 +401,8 @@ class _SearchResultSection extends StatelessWidget {
             color: Colors.transparent,
             child: InkWell(
               borderRadius: BorderRadius.circular(22),
-              onTap: () => context.push('/player', extra: item.toPlayableItem()),
+              onTap: () =>
+                  context.push('/player', extra: item.toPlayableItem()),
               child: Container(
                 margin: const EdgeInsets.only(bottom: 12),
                 padding: const EdgeInsets.all(14),
