@@ -14,6 +14,7 @@ class FavoriteCollectionPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final FavoritesState state = ref.watch(favoritesControllerProvider);
+    final Color primary = Theme.of(context).colorScheme.primary;
     FavoriteCollection? collection;
     for (final FavoriteCollection item in state.collections) {
       if (item.id == collectionId) {
@@ -57,7 +58,7 @@ class FavoriteCollectionPage extends ConsumerWidget {
                         resolvedCollection.isLikedCollection
                             ? Icons.favorite_border_rounded
                             : Icons.folder_open_rounded,
-                        color: const Color(0xFF3B82F6),
+                        color: primary,
                         size: 34,
                       ),
                     ),
@@ -100,10 +101,10 @@ class FavoriteCollectionPage extends ConsumerWidget {
                         ? Container(
                             width: 56,
                             height: 56,
-                            color: const Color(0xFFEFF4FF),
-                            child: const Icon(
+                            color: primary.withValues(alpha: 0.14),
+                            child: Icon(
                               Icons.music_note_rounded,
-                              color: Color(0xFF2563EB),
+                              color: primary,
                             ),
                           )
                         : Image.network(
@@ -115,10 +116,10 @@ class FavoriteCollectionPage extends ConsumerWidget {
                               return Container(
                                 width: 56,
                                 height: 56,
-                                color: const Color(0xFFEFF4FF),
-                                child: const Icon(
+                                color: primary.withValues(alpha: 0.14),
+                                child: Icon(
                                   Icons.music_note_rounded,
-                                  color: Color(0xFF2563EB),
+                                  color: primary,
                                 ),
                               );
                             },
@@ -140,10 +141,7 @@ class FavoriteCollectionPage extends ConsumerWidget {
                     overflow: TextOverflow.ellipsis,
                   ),
                   trailing: resolvedCollection.isLikedCollection
-                      ? const Icon(
-                          Icons.favorite_rounded,
-                          color: Color(0xFFF97316),
-                        )
+                      ? Icon(Icons.favorite_rounded, color: primary)
                       : const Icon(Icons.play_arrow_rounded),
                   onTap: () =>
                       context.push('/player', extra: item.toPlayableItem()),

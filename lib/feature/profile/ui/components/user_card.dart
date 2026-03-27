@@ -40,6 +40,7 @@ class UserCard extends ConsumerWidget {
             borderRadius: BorderRadius.circular(12),
           ),
           child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               CircleAvatar(
                 radius: 24,
@@ -49,7 +50,7 @@ class UserCard extends ConsumerWidget {
                     ? Icon(Icons.person, size: 24, color: themeColor)
                     : null,
               ),
-              const SizedBox(width: 16),
+              const SizedBox(width: 20),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -75,6 +76,7 @@ class UserCard extends ConsumerWidget {
                   ],
                 ),
               ),
+
               if (!isLoggedIn)
                 Icon(Icons.chevron_right_rounded, color: themeColor),
             ],

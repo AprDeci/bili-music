@@ -1,6 +1,5 @@
 import 'package:bilimusic/feature/auth/ui/auth_page.dart';
 import 'package:bilimusic/feature/favorites/ui/favorite_collection_page.dart';
-import 'package:bilimusic/feature/favorites/ui/favorites_page.dart';
 import 'package:bilimusic/feature/home/ui/home_page.dart';
 import 'package:bilimusic/feature/player/domain/playable_item.dart';
 import 'package:bilimusic/feature/player/ui/player_page.dart';
@@ -55,19 +54,12 @@ GoRouter router(Ref ref) => GoRouter(
       },
     ),
     GoRoute(
-      path: '/favorites',
+      path: '/favorites/:collectionId',
       parentNavigatorKey: _rootNavigatorKey,
-      builder: (context, state) => const FavoritesPage(),
-      routes: <RouteBase>[
-        GoRoute(
-          path: ':collectionId',
-          parentNavigatorKey: _rootNavigatorKey,
-          builder: (context, state) {
-            final String collectionId = state.pathParameters['collectionId']!;
-            return FavoriteCollectionPage(collectionId: collectionId);
-          },
-        ),
-      ],
+      builder: (context, state) {
+        final String collectionId = state.pathParameters['collectionId']!;
+        return FavoriteCollectionPage(collectionId: collectionId);
+      },
     ),
     StatefulShellRoute.indexedStack(
       parentNavigatorKey: _rootNavigatorKey,

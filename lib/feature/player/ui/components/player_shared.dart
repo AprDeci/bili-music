@@ -59,7 +59,7 @@ class PlayerTrackHeader extends StatelessWidget {
             isFavorite ? Icons.favorite_rounded : Icons.favorite_border_rounded,
           ),
           color: isFavorite
-              ? const Color(0xFFF97316)
+              ? colorScheme.primary
               : colorScheme.primary.withValues(alpha: 0.55),
           iconSize: 28,
         ),
