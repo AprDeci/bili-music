@@ -35,13 +35,6 @@ class MiniPlayerBar extends StatelessWidget {
                 end: Alignment.bottomRight,
               ),
               borderRadius: BorderRadius.circular(24),
-              boxShadow: const <BoxShadow>[
-                BoxShadow(
-                  color: Color(0x330F2742),
-                  blurRadius: 22,
-                  offset: Offset(0, 12),
-                ),
-              ],
             ),
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),

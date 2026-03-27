@@ -24,12 +24,30 @@ GoRouter router(Ref ref) => GoRouter(
       parentNavigatorKey: _rootNavigatorKey,
       builder: (context, state) => const SearchPage(),
     ),
-    GoRoute(
+GoRoute(
       path: '/player',
       parentNavigatorKey: _rootNavigatorKey,
-      builder: (context, state) {
+      pageBuilder: (context, state) {
         final PlayableItem? item = state.extra as PlayableItem?;
-        return PlayerPage(initialItem: item);
+        return CustomTransitionPage<void>(
+          key: state.pageKey,
+          child: PlayerPage(initialItem: item),
+          transitionsBuilder: (context, animation, secondaryAnimation, child) {
+            final Animation<Offset> offsetAnimation =
+                Tween<Offset>(
+                  begin: const Offset(0, 1),
+                  end: Offset.zero,
+                ).animate(
+                  CurvedAnimation(
+                    parent: animation,
+                    curve: Curves.easeOutCubic,
+                    reverseCurve: Curves.easeInCubic,
+                  ),
+                );
+
+            return SlideTransition(position: offsetAnimation, child: child);
+          },
+        );
       },
     ),
     StatefulShellRoute.indexedStack(
