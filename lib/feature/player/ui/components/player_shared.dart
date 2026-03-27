@@ -6,11 +6,15 @@ class PlayerTrackHeader extends StatelessWidget {
     required this.title,
     required this.subtitle,
     required this.isFavoriteEnabled,
+    required this.isFavorite,
+    required this.onFavoriteToggle,
   });
 
   final String title;
   final String subtitle;
   final bool isFavoriteEnabled;
+  final bool isFavorite;
+  final VoidCallback? onFavoriteToggle;
 
   @override
   Widget build(BuildContext context) {
@@ -50,9 +54,13 @@ class PlayerTrackHeader extends StatelessWidget {
         ),
         const SizedBox(width: 16),
         IconButton(
-          onPressed: isFavoriteEnabled ? () {} : null,
-          icon: const Icon(Icons.favorite_border_rounded),
-          color: colorScheme.primary.withValues(alpha: 0.55),
+          onPressed: isFavoriteEnabled ? onFavoriteToggle : null,
+          icon: Icon(
+            isFavorite ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+          ),
+          color: isFavorite
+              ? const Color(0xFFF97316)
+              : colorScheme.primary.withValues(alpha: 0.55),
           iconSize: 28,
         ),
       ],

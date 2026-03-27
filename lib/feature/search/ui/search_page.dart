@@ -1,3 +1,4 @@
+import 'package:bilimusic/feature/favorites/logic/favorites_controller.dart';
 import 'package:bilimusic/feature/search/domain/search_state.dart';
 import 'package:bilimusic/feature/search/domain/search_result_item.dart';
 import 'package:bilimusic/feature/search/logic/search_controller.dart';
@@ -265,9 +266,7 @@ class _SearchResultSection extends StatelessWidget {
     if (!hasQuery) {
       return Container(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 28),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(24),
-        ),
+        decoration: BoxDecoration(borderRadius: BorderRadius.circular(24)),
         child: Column(
           children: <Widget>[
             Container(
@@ -394,144 +393,194 @@ class _SearchResultSection extends StatelessWidget {
       );
     }
 
-    return Column(
-      children: <Widget>[
-        ...results.map((SearchResultItem item) {
-          return Material(
-            color: Colors.transparent,
-            child: InkWell(
-              borderRadius: BorderRadius.circular(22),
-              onTap: () =>
-                  context.push('/player', extra: item.toPlayableItem()),
-              child: Container(
-                margin: const EdgeInsets.only(bottom: 12),
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: Colors.white,
+    return Consumer(
+      builder: (BuildContext context, WidgetRef ref, Widget? child) {
+        final favoritesState = ref.watch(favoritesControllerProvider);
+
+        return Column(
+          children: <Widget>[
+            ...results.map((SearchResultItem item) {
+              final playableItem = item.toPlayableItem();
+              final bool isFavorite = favoritesState.isLiked(playableItem);
+
+              return Material(
+                color: Colors.transparent,
+                child: InkWell(
                   borderRadius: BorderRadius.circular(22),
-                  border: Border.all(color: const Color(0xFFE2E8F0)),
-                ),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    Container(
-                      width: 48,
-                      height: 48,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFEFF6FF),
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: item.coverUrl.isEmpty
-                          ? const Icon(
-                              Icons.play_circle_outline_rounded,
-                              color: Color(0xFF2563EB),
-                              size: 24,
-                            )
-                          : ClipRRect(
-                              borderRadius: BorderRadius.circular(16),
-                              child: Image.network(
-                                item.coverUrl,
-                                fit: BoxFit.cover,
-                                errorBuilder: (context, error, stackTrace) {
-                                  return const Icon(
-                                    Icons.music_video_rounded,
-                                    color: Color(0xFF2563EB),
-                                  );
-                                },
-                              ),
-                            ),
+                  onTap: () => context.push('/player', extra: playableItem),
+                  child: Container(
+                    margin: const EdgeInsets.only(bottom: 12),
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(22),
+                      border: Border.all(color: const Color(0xFFE2E8F0)),
                     ),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: <Widget>[
-                          Row(
-                            children: <Widget>[
-                              Expanded(
-                                child: Text(
-                                  item.title,
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: theme.textTheme.titleSmall?.copyWith(
-                                    fontWeight: FontWeight.w700,
-                                    color: const Color(0xFF0F172A),
-                                    height: 1.35,
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        Container(
+                          width: 48,
+                          height: 48,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFEFF6FF),
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: item.coverUrl.isEmpty
+                              ? const Icon(
+                                  Icons.play_circle_outline_rounded,
+                                  color: Color(0xFF2563EB),
+                                  size: 24,
+                                )
+                              : ClipRRect(
+                                  borderRadius: BorderRadius.circular(16),
+                                  child: Image.network(
+                                    item.coverUrl,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (context, error, stackTrace) {
+                                      return const Icon(
+                                        Icons.music_video_rounded,
+                                        color: Color(0xFF2563EB),
+                                      );
+                                    },
                                   ),
                                 ),
-                              ),
-                              const SizedBox(width: 8),
-                              _ResultTag(label: item.tagText),
-                            ],
-                          ),
-                          const SizedBox(height: 6),
-                          Text(
-                            '${item.author} · ${item.publishTimeText}',
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                              color: const Color(0xFF475569),
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          const SizedBox(height: 6),
-                          Wrap(
-                            spacing: 8,
-                            runSpacing: 8,
+                        ),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: <Widget>[
-                              _MetaChip(
-                                icon: Icons.play_arrow_rounded,
-                                text: item.playCountText,
+                              Row(
+                                children: <Widget>[
+                                  Expanded(
+                                    child: Text(
+                                      item.title,
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: theme.textTheme.titleSmall
+                                          ?.copyWith(
+                                            fontWeight: FontWeight.w700,
+                                            color: const Color(0xFF0F172A),
+                                            height: 1.35,
+                                          ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  _ResultTag(label: item.tagText),
+                                ],
                               ),
-                              _MetaChip(
-                                icon: Icons.subtitles_rounded,
-                                text: item.danmakuCountText,
+                              const SizedBox(height: 6),
+                              Text(
+                                '${item.author} · ${item.publishTimeText}',
+                                style: theme.textTheme.bodyMedium?.copyWith(
+                                  color: const Color(0xFF475569),
+                                  fontWeight: FontWeight.w600,
+                                ),
                               ),
-                              _MetaChip(
-                                icon: Icons.schedule_rounded,
-                                text: item.duration,
+                              const SizedBox(height: 6),
+                              Wrap(
+                                spacing: 8,
+                                runSpacing: 8,
+                                children: <Widget>[
+                                  _MetaChip(
+                                    icon: Icons.play_arrow_rounded,
+                                    text: item.playCountText,
+                                  ),
+                                  _MetaChip(
+                                    icon: Icons.subtitles_rounded,
+                                    text: item.danmakuCountText,
+                                  ),
+                                  _MetaChip(
+                                    icon: Icons.schedule_rounded,
+                                    text: item.duration,
+                                  ),
+                                ],
                               ),
+                              if (item.description != null) ...<Widget>[
+                                const SizedBox(height: 8),
+                                Text(
+                                  item.description!,
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: theme.textTheme.bodySmall?.copyWith(
+                                    color: const Color(0xFF64748B),
+                                    height: 1.45,
+                                  ),
+                                ),
+                              ],
                             ],
                           ),
-                          if (item.description != null) ...<Widget>[
+                        ),
+                        const SizedBox(width: 10),
+                        Column(
+                          children: <Widget>[
+                            InkResponse(
+                              onTap: () async {
+                                final bool liked = await ref
+                                    .read(favoritesControllerProvider.notifier)
+                                    .toggleLiked(playableItem);
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context)
+                                    ..hideCurrentSnackBar()
+                                    ..showSnackBar(
+                                      SnackBar(
+                                        content: Text(
+                                          liked ? '已加入“我喜欢”' : '已从“我喜欢”移除',
+                                        ),
+                                      ),
+                                    );
+                                }
+                              },
+                              radius: 18,
+                              child: Container(
+                                width: 34,
+                                height: 34,
+                                decoration: BoxDecoration(
+                                  color: isFavorite
+                                      ? const Color(0xFFFFF1E8)
+                                      : const Color(0xFFFFF7ED),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Icon(
+                                  isFavorite
+                                      ? Icons.favorite_rounded
+                                      : Icons.favorite_border_rounded,
+                                  color: const Color(0xFFF97316),
+                                  size: 18,
+                                ),
+                              ),
+                            ),
                             const SizedBox(height: 8),
-                            Text(
-                              item.description!,
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                color: const Color(0xFF64748B),
-                                height: 1.45,
+                            Container(
+                              width: 34,
+                              height: 34,
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFEFF6FF),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: const Icon(
+                                Icons.play_arrow_rounded,
+                                color: Color(0xFF2563EB),
                               ),
                             ),
                           ],
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(width: 10),
-                    Container(
-                      width: 34,
-                      height: 34,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFEFF6FF),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: const Icon(
-                        Icons.play_arrow_rounded,
-                        color: Color(0xFF2563EB),
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
-              ),
+              );
+            }),
+            _SearchResultFooter(
+              isLoadingMore: isLoadingMore,
+              hasMore: hasMore,
+              errorMessage: loadMoreErrorMessage,
+              onRetry: onRetryLoadMore,
             ),
-          );
-        }),
-        _SearchResultFooter(
-          isLoadingMore: isLoadingMore,
-          hasMore: hasMore,
-          errorMessage: loadMoreErrorMessage,
-          onRetry: onRetryLoadMore,
-        ),
-      ],
+          ],
+        );
+      },
     );
   }
 }

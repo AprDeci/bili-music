@@ -38,7 +38,7 @@ void main() {
     await tester.fling(find.byType(PageView), const Offset(400, 0), 1000);
     await tester.pumpAndSettle();
 
-    expect(find.text('音频信息'), findsOneWidget);
+    expect(find.text('播放信息'), findsOneWidget);
     expect(find.text('播放'), findsOneWidget);
   });
 }

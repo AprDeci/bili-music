@@ -11,6 +11,8 @@ class PlayerMainPage extends StatelessWidget {
     super.key,
     required this.state,
     required this.item,
+    required this.isFavorite,
+    required this.onFavoriteToggle,
     required this.onSeek,
     required this.onBackward,
     required this.onTogglePlayback,
@@ -19,6 +21,8 @@ class PlayerMainPage extends StatelessWidget {
 
   final PlayerState state;
   final PlayableItem? item;
+  final bool isFavorite;
+  final VoidCallback? onFavoriteToggle;
   final ValueChanged<double> onSeek;
   final VoidCallback onBackward;
   final VoidCallback onTogglePlayback;
@@ -42,6 +46,8 @@ class PlayerMainPage extends StatelessWidget {
               ? '从搜索页选一条视频或音频后，这里会显示当前播放信息。'
               : buildPlayerSubtitle(item!.author, state),
           isFavoriteEnabled: item != null,
+          isFavorite: isFavorite,
+          onFavoriteToggle: onFavoriteToggle,
         ),
         const SizedBox(height: 8),
         SwipeHint(label: state.currentItem == null ? '左右滑动切换页面' : '右滑回到播放页'),

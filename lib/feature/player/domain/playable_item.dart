@@ -35,6 +35,13 @@ class PlayableItem {
 
   bool get hasIdentity => aid > 0 || bvid.isNotEmpty;
 
+  String get stableId {
+    if (bvid.isNotEmpty) {
+      return 'bvid:$bvid';
+    }
+    return 'aid:$aid';
+  }
+
   PlayableItem copyWith({
     int? aid,
     String? bvid,

@@ -1,3 +1,4 @@
+import 'package:bilimusic/feature/favorites/logic/favorites_controller.dart';
 import 'package:bilimusic/feature/player/domain/playable_item.dart';
 import 'package:bilimusic/feature/player/domain/player_state.dart';
 import 'package:bilimusic/feature/player/logic/player_controller.dart';
@@ -57,10 +58,12 @@ class _PlayerPageState extends ConsumerState<PlayerPage> {
   @override
   Widget build(BuildContext context) {
     final PlayerState state = ref.watch(playerControllerProvider);
+    final favoritesState = ref.watch(favoritesControllerProvider);
     final PlayerController playerController = ref.read(
       playerControllerProvider.notifier,
     );
     final PlayableItem? item = state.currentItem ?? widget.initialItem;
+    final bool isFavorite = item != null ? favoritesState.isLiked(item) : false;
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
 
@@ -90,25 +93,25 @@ class _PlayerPageState extends ConsumerState<PlayerPage> {
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 520),
 
-                    child: Column(
-                      children: <Widget>[
-                        PlayerTopBar(
-                          currentPage: _currentPage,
-                          onBack: () => Navigator.of(context).maybePop(),
-                          onMore: item == null
-                              ? null
-                              : () => playerController.loadFromItem(item),
-                        ),
-                        const SizedBox(height: 18),
-                        Expanded(
-                          child: PageView(
-                            controller: _pageController,
-                            onPageChanged: (int index) {
-                              setState(() {
-                                _currentPage = index;
-                              });
-                            },
-                            children: <Widget>[
+                  child: Column(
+                    children: <Widget>[
+                      PlayerTopBar(
+                        currentPage: _currentPage,
+                        onBack: () => Navigator.of(context).maybePop(),
+                        onMore: item == null
+                            ? null
+                            : () => playerController.loadFromItem(item),
+                      ),
+                      const SizedBox(height: 18),
+                      Expanded(
+                        child: PageView(
+                          controller: _pageController,
+                          onPageChanged: (int index) {
+                            setState(() {
+                              _currentPage = index;
+                            });
+                          },
+                          children: <Widget>[
                             Padding(
                               padding: const EdgeInsets.symmetric(
                                 horizontal: 16,
@@ -122,6 +125,10 @@ class _PlayerPageState extends ConsumerState<PlayerPage> {
                               child: PlayerMainPage(
                                 state: state,
                                 item: item,
+                                isFavorite: isFavorite,
+                                onFavoriteToggle: item == null
+                                    ? null
+                                    : () => _toggleFavorite(item),
                                 onSeek: (double value) {
                                   final int totalMs =
                                       (state.duration ?? Duration.zero)
@@ -140,19 +147,32 @@ class _PlayerPageState extends ConsumerState<PlayerPage> {
                                   const Duration(seconds: 10),
                                 ),
                               ),
-                              ),
-                            ],
-                          ),
+                            ),
+                          ],
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
                 ),
               ),
-            
+            ),
           ],
         ),
       ),
     );
+  }
+
+  Future<void> _toggleFavorite(PlayableItem item) async {
+    final bool isLiked = await ref
+        .read(favoritesControllerProvider.notifier)
+        .toggleLiked(item);
+    if (!mounted) {
+      return;
+    }
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(content: Text(isLiked ? '已加入“我喜欢”' : '已从“我喜欢”移除')),
+      );
   }
 }
