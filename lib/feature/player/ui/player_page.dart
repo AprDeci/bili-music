@@ -89,8 +89,7 @@ class _PlayerPageState extends ConsumerState<PlayerPage> {
               child: Center(
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 520),
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+
                     child: Column(
                       children: <Widget>[
                         PlayerTopBar(
@@ -110,8 +109,17 @@ class _PlayerPageState extends ConsumerState<PlayerPage> {
                               });
                             },
                             children: <Widget>[
-                              PlayerMetaPage(state: state, item: item),
-                              PlayerMainPage(
+                            Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                              ),
+                              child: PlayerMetaPage(state: state, item: item),
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                              ),
+                              child: PlayerMainPage(
                                 state: state,
                                 item: item,
                                 onSeek: (double value) {
@@ -132,6 +140,7 @@ class _PlayerPageState extends ConsumerState<PlayerPage> {
                                   const Duration(seconds: 10),
                                 ),
                               ),
+                              ),
                             ],
                           ),
                         ),
@@ -140,7 +149,7 @@ class _PlayerPageState extends ConsumerState<PlayerPage> {
                   ),
                 ),
               ),
-            ),
+            
           ],
         ),
       ),
