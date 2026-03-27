@@ -16,25 +16,25 @@ class MiniPlayerBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
     final String subtitle = state.isLoading
         ? '正在解析音频流...'
         : state.audioStream?.qualityLabel ?? state.currentItem?.author ?? '';
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 0, 20, 90),
+      padding: const EdgeInsets.fromLTRB(20, 0, 20, 82),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          borderRadius: BorderRadius.circular(24),
+          borderRadius: BorderRadius.circular(26),
           onTap: onTap,
           child: Ink(
             decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: <Color>[Color(0xFF0F2742), Color(0xFF1D4D72)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(26),
+              border: Border.all(
+                color: colorScheme.primary.withValues(alpha: 0.10),
               ),
-              borderRadius: BorderRadius.circular(24),
             ),
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -52,7 +52,7 @@ class MiniPlayerBar extends StatelessWidget {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: theme.textTheme.titleSmall?.copyWith(
-                            color: Colors.white,
+                            color: const Color(0xFF1F2937),
                             fontWeight: FontWeight.w700,
                           ),
                         ),
@@ -62,7 +62,7 @@ class MiniPlayerBar extends StatelessWidget {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: theme.textTheme.bodySmall?.copyWith(
-                            color: const Color(0xFFD5E8F6),
+                            color: const Color(0xFF6B7280),
                           ),
                         ),
                       ],
@@ -72,8 +72,10 @@ class MiniPlayerBar extends StatelessWidget {
                   IconButton(
                     onPressed: onTogglePlayback,
                     style: IconButton.styleFrom(
-                      backgroundColor: const Color(0x22FFFFFF),
-                      foregroundColor: Colors.white,
+                      backgroundColor: colorScheme.primary.withValues(
+                        alpha: 0.12,
+                      ),
+                      foregroundColor: colorScheme.primary,
                     ),
                     icon: Icon(
                       state.isPlaying
@@ -103,22 +105,20 @@ class _Artwork extends StatelessWidget {
       height: 48,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
-        color: const Color(0x22FFFFFF),
+        color: const Color(0xFFF3F6FB),
+        border: Border.all(color: const Color(0xFFE7EEF8)),
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(16),
         child: coverUrl.isEmpty
-            ? const Icon(
-                Icons.music_note_rounded,
-                color: Colors.white,
-              )
+            ? const Icon(Icons.music_note_rounded, color: Color(0xFF7A8CA5))
             : Image.network(
                 coverUrl,
                 fit: BoxFit.cover,
                 errorBuilder: (context, error, stackTrace) {
                   return const Icon(
                     Icons.music_note_rounded,
-                    color: Colors.white,
+                    color: Color(0xFF7A8CA5),
                   );
                 },
               ),

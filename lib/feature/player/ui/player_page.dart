@@ -86,7 +86,11 @@ class _PlayerPageState extends ConsumerState<PlayerPage> {
                             : () => playerController.loadFromItem(item),
                       ),
                       const SizedBox(height: 22),
-                      _ArtworkFrame(coverUrl: item?.coverUrl ?? ''),
+                      SizedBox(
+                        width: 200,
+                        height: 200,
+                        child: _ArtworkFrame(coverUrl: item?.coverUrl ?? ''),
+                      ),
                       const SizedBox(height: 28),
                       _TrackHeader(
                         title: item?.title ?? '还没有选择播放内容',
@@ -119,14 +123,9 @@ class _PlayerPageState extends ConsumerState<PlayerPage> {
                         ),
                       ),
                       const SizedBox(height: 30),
-                      _UtilityActions(
-                        state: state,
-                        onStop: state.isReady ? playerController.stop : null,
-                      ),
-                      const SizedBox(height: 28),
                       _PlaybackStatusChip(state: state),
                       const SizedBox(height: 18),
-                      _MetaSheet(state: state, item: item),
+                      //_MetaSheet(state: state, item: item),
                     ],
                   ),
                 ),
@@ -320,15 +319,6 @@ class _TrackHeader extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 8),
-              Text(
-                subtitle,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: theme.textTheme.titleMedium?.copyWith(
-                  color: colorScheme.onSurface.withValues(alpha: 0.65),
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
             ],
           ),
         ),
@@ -427,6 +417,11 @@ class _TransportControls extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: <Widget>[
         _CircleActionButton(
+          icon: Icons.repeat_rounded,
+          color: iconColor,
+          onPressed: null,
+        ),
+        _CircleActionButton(
           icon: Icons.skip_previous_rounded,
           color: iconColor,
           onPressed: state.isReady ? onBackward : null,
@@ -445,7 +440,7 @@ class _TransportControls extends StatelessWidget {
           child: FilledButton(
             onPressed: state.isReady ? onTogglePlayback : null,
             style: FilledButton.styleFrom(
-              minimumSize: const Size(88, 88),
+              minimumSize: const Size(54, 54),
               shape: const CircleBorder(),
               backgroundColor: colorScheme.primary,
               disabledBackgroundColor: colorScheme.primary.withValues(
@@ -463,6 +458,11 @@ class _TransportControls extends StatelessWidget {
           icon: Icons.skip_next_rounded,
           color: iconColor,
           onPressed: state.isReady ? onForward : null,
+        ),
+        _CircleActionButton(
+          icon: Icons.list,
+          color: iconColor,
+          onPressed: null,
         ),
       ],
     );
