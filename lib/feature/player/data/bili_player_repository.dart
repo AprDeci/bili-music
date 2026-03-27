@@ -9,7 +9,7 @@ class BiliPlayerRepository {
 
   final BiliApiClient _apiClient;
 
-  Future<AudioStreamInfo> resolveAudioStream(
+  Future<PlayerLoadResult> resolveAudioStream(
     PlayableItem item, {
     required BiliSession? session,
   }) async {
@@ -63,14 +63,19 @@ class BiliPlayerRepository {
     final int durationSeconds =
         (data['timelength'] as num? ?? 0).toInt() ~/ 1000;
 
-    return AudioStreamInfo(
-      streamUrl: streamUrl,
-      backupUrls: backupUrls,
-      headers: _buildPlaybackHeaders(session),
-      cid: pageInfo.cid,
-      duration: durationSeconds > 0 ? Duration(seconds: durationSeconds) : null,
-      pageTitle: pageInfo.part,
-      qualityLabel: _buildQualityLabel(selected),
+    return PlayerLoadResult(
+      item: viewInfo.enrich(item),
+      audioStream: AudioStreamInfo(
+        streamUrl: streamUrl,
+        backupUrls: backupUrls,
+        headers: _buildPlaybackHeaders(session),
+        cid: pageInfo.cid,
+        duration: durationSeconds > 0
+            ? Duration(seconds: durationSeconds)
+            : null,
+        pageTitle: pageInfo.part,
+        qualityLabel: _buildQualityLabel(selected),
+      ),
     );
   }
 
@@ -92,7 +97,40 @@ class BiliPlayerRepository {
       throw const BiliPlayerException('No playable page found for this video.');
     }
 
-    return _VideoViewInfo(pages: pages);
+    final Map<String, dynamic> stat = _asMapOrEmpty(data['stat']);
+
+    return _VideoViewInfo(
+      pages: pages,
+      title: data['title'] as String? ?? item.title,
+      author: _readOwnerName(data['owner']) ?? item.author,
+      description: _readDescription(data) ?? item.description,
+      playCountText:
+          _formatCount((stat['view'] as num? ?? 0).toInt()) ??
+          item.playCountText,
+      danmakuCountText:
+          _formatCount((stat['danmaku'] as num? ?? 0).toInt()) ??
+          item.danmakuCountText,
+      likeCountText:
+          _formatCount((stat['like'] as num? ?? 0).toInt()) ??
+          item.likeCountText,
+      coinCountText:
+          _formatCount((stat['coin'] as num? ?? 0).toInt()) ??
+          item.coinCountText,
+      favoriteCountText:
+          _formatCount((stat['favorite'] as num? ?? 0).toInt()) ??
+          item.favoriteCountText,
+      shareCountText:
+          _formatCount((stat['share'] as num? ?? 0).toInt()) ??
+          item.shareCountText,
+      replyCountText:
+          _formatCount((stat['reply'] as num? ?? 0).toInt()) ??
+          item.replyCountText,
+      publishTimeText:
+          _formatPublishTime(
+            (data['pubdate'] as num? ?? data['ctime'] as num? ?? 0).toInt(),
+          ) ??
+          item.publishTimeText,
+    );
   }
 
   _VideoPageInfo _mapPageInfo(Map<String, dynamic> json) {
@@ -137,6 +175,13 @@ class BiliPlayerRepository {
     throw const BiliPlayerException('Unexpected player response format.');
   }
 
+  Map<String, dynamic> _asMapOrEmpty(dynamic value) {
+    if (value == null) {
+      return <String, dynamic>{};
+    }
+    return _asMap(value);
+  }
+
   List<Map<String, dynamic>> _asListOfMaps(dynamic value) {
     final List<dynamic> list = value as List<dynamic>? ?? <dynamic>[];
     return list.whereType<Map>().map((Map item) {
@@ -153,6 +198,50 @@ class BiliPlayerRepository {
         .where((String item) => item.isNotEmpty)
         .toList();
   }
+
+  String? _readOwnerName(dynamic value) {
+    final Map<String, dynamic> owner = _asMapOrEmpty(value);
+    final String name = owner['name'] as String? ?? '';
+    return name.isEmpty ? null : name;
+  }
+
+  String? _readDescription(Map<String, dynamic> data) {
+    final String description =
+        data['desc'] as String? ?? data['description'] as String? ?? '';
+    final String trimmed = description.trim();
+    return trimmed.isEmpty ? null : trimmed;
+  }
+
+  String? _formatPublishTime(int timestamp) {
+    if (timestamp <= 0) {
+      return null;
+    }
+
+    final DateTime dateTime = DateTime.fromMillisecondsSinceEpoch(
+      timestamp * 1000,
+    );
+    return '${dateTime.year}-${dateTime.month.toString().padLeft(2, '0')}-${dateTime.day.toString().padLeft(2, '0')}';
+  }
+
+  String? _formatCount(int value) {
+    if (value <= 0) {
+      return null;
+    }
+    if (value >= 100000000) {
+      return '${(value / 100000000).toStringAsFixed(1)}亿';
+    }
+    if (value >= 10000) {
+      return '${(value / 10000).toStringAsFixed(1)}万';
+    }
+    return value.toString();
+  }
+}
+
+class PlayerLoadResult {
+  const PlayerLoadResult({required this.item, required this.audioStream});
+
+  final PlayableItem item;
+  final AudioStreamInfo audioStream;
 }
 
 class BiliPlayerException implements Exception {
@@ -165,9 +254,49 @@ class BiliPlayerException implements Exception {
 }
 
 class _VideoViewInfo {
-  const _VideoViewInfo({required this.pages});
+  const _VideoViewInfo({
+    required this.pages,
+    required this.title,
+    required this.author,
+    this.description,
+    this.playCountText,
+    this.danmakuCountText,
+    this.likeCountText,
+    this.coinCountText,
+    this.favoriteCountText,
+    this.shareCountText,
+    this.replyCountText,
+    this.publishTimeText,
+  });
 
   final List<_VideoPageInfo> pages;
+  final String title;
+  final String author;
+  final String? description;
+  final String? playCountText;
+  final String? danmakuCountText;
+  final String? likeCountText;
+  final String? coinCountText;
+  final String? favoriteCountText;
+  final String? shareCountText;
+  final String? replyCountText;
+  final String? publishTimeText;
+
+  PlayableItem enrich(PlayableItem item) {
+    return item.copyWith(
+      title: title,
+      author: author,
+      description: description,
+      playCountText: playCountText,
+      danmakuCountText: danmakuCountText,
+      likeCountText: likeCountText,
+      coinCountText: coinCountText,
+      favoriteCountText: favoriteCountText,
+      shareCountText: shareCountText,
+      replyCountText: replyCountText,
+      publishTimeText: publishTimeText,
+    );
+  }
 }
 
 class _VideoPageInfo {

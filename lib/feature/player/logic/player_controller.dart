@@ -108,15 +108,17 @@ class PlayerController extends Notifier<PlayerState> {
     try {
       await _audioPlayer.stop();
       final BiliSession? session = ref.read(biliSessionControllerProvider);
-      final audioStream = await _repository.resolveAudioStream(
+      final PlayerLoadResult loadResult = await _repository.resolveAudioStream(
         item,
         session: session,
       );
+      final PlayableItem resolvedItem = loadResult.item;
+      final audioStream = loadResult.audioStream;
 
       final Map<String, String>? headers =
           _shouldDisableRequestHeadersProxy || audioStream.headers.isEmpty
-              ? null
-              : audioStream.headers;
+          ? null
+          : audioStream.headers;
 
       final audio.AudioSource source = audio.AudioSource.uri(
         Uri.parse(audioStream.streamUrl),
@@ -126,6 +128,7 @@ class PlayerController extends Notifier<PlayerState> {
       final Duration? duration = await _audioPlayer.setAudioSource(source);
 
       state = state.copyWith(
+        currentItem: resolvedItem,
         audioStream: audioStream,
         isLoading: false,
         isReady: true,

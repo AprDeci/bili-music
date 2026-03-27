@@ -35,6 +35,10 @@ class SearchResultItem {
       author: author,
       coverUrl: coverUrl,
       durationText: duration,
+      playCountText: playCountText,
+      danmakuCountText: danmakuCountText,
+      publishTimeText: publishTimeText,
+      description: description,
     );
   }
 }

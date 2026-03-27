@@ -14,12 +14,22 @@ class PlayerPage extends ConsumerStatefulWidget {
 }
 
 class _PlayerPageState extends ConsumerState<PlayerPage> {
+  late final PageController _pageController;
+  int _currentPage = 0;
+
   @override
   void initState() {
     super.initState();
+    _pageController = PageController();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadInitialItem();
     });
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
   }
 
   @override
@@ -75,58 +85,54 @@ class _PlayerPageState extends ConsumerState<PlayerPage> {
               child: Center(
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 520),
-                  child: ListView(
-                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
-                    children: <Widget>[
-                      _TopBar(
-                        title: _buildHeaderTitle(state, item),
-                        onBack: () => Navigator.of(context).maybePop(),
-                        onMore: item == null
-                            ? null
-                            : () => playerController.loadFromItem(item),
-                      ),
-                      const SizedBox(height: 22),
-                      SizedBox(
-                        width: 200,
-                        height: 200,
-                        child: _ArtworkFrame(coverUrl: item?.coverUrl ?? ''),
-                      ),
-                      const SizedBox(height: 28),
-                      _TrackHeader(
-                        title: item?.title ?? '还没有选择播放内容',
-                        subtitle: item == null
-                            ? '从搜索页选一条视频或音频后，这里会显示当前播放信息。'
-                            : _buildSubtitle(item.author, state),
-                        isFavoriteEnabled: item != null,
-                      ),
-                      const SizedBox(height: 26),
-                      _ProgressSection(
-                        state: state,
-                        onChanged: (double value) {
-                          final int totalMs =
-                              (state.duration ?? Duration.zero).inMilliseconds;
-                          final Duration position = Duration(
-                            milliseconds: (totalMs * value).round(),
-                          );
-                          playerController.seek(position);
-                        },
-                      ),
-                      const SizedBox(height: 30),
-                      _TransportControls(
-                        state: state,
-                        onBackward: () => playerController.seekBy(
-                          const Duration(seconds: -10),
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                    child: Column(
+                      children: <Widget>[
+                        _TopBar(
+                          currentPage: _currentPage,
+                          onBack: () => Navigator.of(context).maybePop(),
+                          onMore: item == null
+                              ? null
+                              : () => playerController.loadFromItem(item),
                         ),
-                        onTogglePlayback: playerController.togglePlayback,
-                        onForward: () => playerController.seekBy(
-                          const Duration(seconds: 10),
+                        const SizedBox(height: 18),
+                        Expanded(
+                          child: PageView(
+                            controller: _pageController,
+                            onPageChanged: (int index) {
+                              setState(() {
+                                _currentPage = index;
+                              });
+                            },
+                            children: <Widget>[
+                              _PlayerMainPage(
+                                state: state,
+                                item: item,
+                                onSeek: (double value) {
+                                  final int totalMs =
+                                      (state.duration ?? Duration.zero)
+                                          .inMilliseconds;
+                                  final Duration position = Duration(
+                                    milliseconds: (totalMs * value).round(),
+                                  );
+                                  playerController.seek(position);
+                                },
+                                onBackward: () => playerController.seekBy(
+                                  const Duration(seconds: -10),
+                                ),
+                                onTogglePlayback:
+                                    playerController.togglePlayback,
+                                onForward: () => playerController.seekBy(
+                                  const Duration(seconds: 10),
+                                ),
+                              ),
+                              _PlayerMetaPage(state: state, item: item),
+                            ],
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 30),
-                      _PlaybackStatusChip(state: state),
-                      const SizedBox(height: 18),
-                      //_MetaSheet(state: state, item: item),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -140,12 +146,12 @@ class _PlayerPageState extends ConsumerState<PlayerPage> {
 
 class _TopBar extends StatelessWidget {
   const _TopBar({
-    required this.title,
+    required this.currentPage,
     required this.onBack,
     required this.onMore,
   });
 
-  final String title;
+  final int currentPage;
   final VoidCallback onBack;
   final VoidCallback? onMore;
 
@@ -164,19 +170,475 @@ class _TopBar extends StatelessWidget {
             color: iconColor,
           ),
           Expanded(
-            child: Text(
-              title,
-              textAlign: TextAlign.center,
-              style: theme.textTheme.titleMedium?.copyWith(
-                color: iconColor,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
+            child: Center(child: _PageIndicator(currentPage: currentPage)),
           ),
           IconButton(
             onPressed: onMore,
             icon: const Icon(Icons.more_vert_rounded),
             color: iconColor,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PageIndicator extends StatelessWidget {
+  const _PageIndicator({required this.currentPage});
+
+  final int currentPage;
+
+  @override
+  Widget build(BuildContext context) {
+    final ColorScheme colorScheme = Theme.of(context).colorScheme;
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: List<Widget>.generate(2, (int index) {
+        final bool isActive = index == currentPage;
+        return AnimatedContainer(
+          duration: const Duration(milliseconds: 220),
+          curve: Curves.easeOutCubic,
+          width: isActive ? 18 : 6,
+          height: 6,
+          margin: EdgeInsets.only(right: index == 0 ? 8 : 0),
+          decoration: BoxDecoration(
+            color: isActive
+                ? colorScheme.primary
+                : colorScheme.primary.withValues(alpha: 0.28),
+            borderRadius: BorderRadius.circular(999),
+          ),
+        );
+      }),
+    );
+  }
+}
+
+class _PlayerMainPage extends StatelessWidget {
+  const _PlayerMainPage({
+    required this.state,
+    required this.item,
+    required this.onSeek,
+    required this.onBackward,
+    required this.onTogglePlayback,
+    required this.onForward,
+  });
+
+  final PlayerState state;
+  final PlayableItem? item;
+  final ValueChanged<double> onSeek;
+  final VoidCallback onBackward;
+  final VoidCallback onTogglePlayback;
+  final VoidCallback onForward;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      physics: const BouncingScrollPhysics(),
+      children: <Widget>[
+        const SizedBox(height: 4),
+        SizedBox(
+          width: 200,
+          height: 200,
+          child: _ArtworkFrame(coverUrl: item?.coverUrl ?? ''),
+        ),
+        const SizedBox(height: 28),
+        _TrackHeader(
+          title: item?.title ?? '还没有选择播放内容',
+          subtitle: item == null
+              ? '从搜索页选一条视频或音频后，这里会显示当前播放信息。'
+              : _buildSubtitle(item!.author, state),
+          isFavoriteEnabled: item != null,
+        ),
+        const SizedBox(height: 8),
+        _SwipeHint(label: state.currentItem == null ? '左右滑动切换页面' : '左滑查看音频信息'),
+        const SizedBox(height: 18),
+        _ProgressSection(state: state, onChanged: onSeek),
+        const SizedBox(height: 30),
+        _TransportControls(
+          state: state,
+          onBackward: onBackward,
+          onTogglePlayback: onTogglePlayback,
+          onForward: onForward,
+        ),
+        const SizedBox(height: 30),
+        _PlaybackStatusChip(state: state),
+        const SizedBox(height: 18),
+      ],
+    );
+  }
+}
+
+class _PlayerMetaPage extends StatelessWidget {
+  const _PlayerMetaPage({required this.state, required this.item});
+
+  final PlayerState state;
+  final PlayableItem? item;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      physics: const BouncingScrollPhysics(),
+      children: <Widget>[
+        _MetaHero(item: item, state: state),
+        const SizedBox(height: 18),
+        _StatsGrid(item: item),
+        const SizedBox(height: 18),
+        _MetaSheet(state: state, item: item),
+        const SizedBox(height: 18),
+        if ((item?.description ?? '').trim().isNotEmpty)
+          _DescriptionCard(description: item!.description!),
+      ],
+    );
+  }
+}
+
+class _MetaHero extends StatelessWidget {
+  const _MetaHero({required this.item, required this.state});
+
+  final PlayableItem? item;
+  final PlayerState state;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+
+    return Container(
+      padding: const EdgeInsets.all(22),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(30),
+        gradient: LinearGradient(
+          colors: <Color>[
+            colorScheme.primaryContainer.withValues(alpha: 0.82),
+            colorScheme.surface.withValues(alpha: 0.92),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        border: Border.all(color: colorScheme.primary.withValues(alpha: 0.12)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Row(
+            children: <Widget>[
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: colorScheme.primary.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Icon(
+                  Icons.queue_music_rounded,
+                  color: colorScheme.primary,
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Text(
+                      '音频信息',
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        color: colorScheme.primary,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      item?.publishTimeText ?? '当前播放内容详情',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: colorScheme.onSurface.withValues(alpha: 0.62),
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          Text(
+            item?.title ?? '还没有选择播放内容',
+            maxLines: 3,
+            overflow: TextOverflow.ellipsis,
+            style: theme.textTheme.headlineSmall?.copyWith(
+              color: colorScheme.onSurface,
+              fontWeight: FontWeight.w900,
+              height: 1.16,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: <Widget>[
+              _InfoPill(
+                icon: Icons.account_circle_rounded,
+                label: item?.author ?? '--',
+              ),
+              _InfoPill(
+                icon: Icons.schedule_rounded,
+                label: _resolveDurationLabel(state, item),
+              ),
+              _InfoPill(
+                icon: Icons.graphic_eq_rounded,
+                label: state.audioStream?.qualityLabel ?? '音质待解析',
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _StatsGrid extends StatelessWidget {
+  const _StatsGrid({required this.item});
+
+  final PlayableItem? item;
+
+  @override
+  Widget build(BuildContext context) {
+    final List<_StatEntry> stats = <_StatEntry>[
+      _StatEntry(
+        icon: Icons.play_circle_outline_rounded,
+        label: '播放',
+        value: item?.playCountText ?? '--',
+      ),
+      _StatEntry(
+        icon: Icons.subtitles_outlined,
+        label: '弹幕',
+        value: item?.danmakuCountText ?? '--',
+      ),
+      _StatEntry(
+        icon: Icons.thumb_up_alt_outlined,
+        label: '点赞',
+        value: item?.likeCountText ?? '--',
+      ),
+      _StatEntry(
+        icon: Icons.monetization_on_outlined,
+        label: '投币',
+        value: item?.coinCountText ?? '--',
+      ),
+      _StatEntry(
+        icon: Icons.star_border_rounded,
+        label: '收藏',
+        value: item?.favoriteCountText ?? '--',
+      ),
+      _StatEntry(
+        icon: Icons.reply_all_rounded,
+        label: '分享',
+        value: item?.shareCountText ?? '--',
+      ),
+      _StatEntry(
+        icon: Icons.chat_bubble_outline_rounded,
+        label: '评论',
+        value: item?.replyCountText ?? '--',
+      ),
+      _StatEntry(
+        icon: Icons.timelapse_rounded,
+        label: '时长',
+        value: item?.durationText ?? '--:--',
+      ),
+    ];
+
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: stats.length,
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        mainAxisSpacing: 12,
+        crossAxisSpacing: 12,
+        childAspectRatio: 1.85,
+      ),
+      itemBuilder: (BuildContext context, int index) {
+        return _StatCard(entry: stats[index]);
+      },
+    );
+  }
+}
+
+class _StatEntry {
+  const _StatEntry({
+    required this.icon,
+    required this.label,
+    required this.value,
+  });
+
+  final IconData icon;
+  final String label;
+  final String value;
+}
+
+class _StatCard extends StatelessWidget {
+  const _StatCard({required this.entry});
+
+  final _StatEntry entry;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: colorScheme.surface.withValues(alpha: 0.78),
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: colorScheme.primary.withValues(alpha: 0.1)),
+      ),
+      child: Row(
+        children: <Widget>[
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: colorScheme.primary.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Icon(entry.icon, color: colorScheme.primary, size: 20),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text(
+                  entry.label,
+                  style: theme.textTheme.labelMedium?.copyWith(
+                    color: colorScheme.onSurface.withValues(alpha: 0.58),
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  entry.value,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    color: colorScheme.onSurface,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _DescriptionCard extends StatelessWidget {
+  const _DescriptionCard({required this.description});
+
+  final String description;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: colorScheme.surface.withValues(alpha: 0.76),
+        borderRadius: BorderRadius.circular(28),
+        border: Border.all(color: colorScheme.primary.withValues(alpha: 0.1)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Text(
+            '简介',
+            style: theme.textTheme.titleMedium?.copyWith(
+              color: colorScheme.onSurface,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            description,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: colorScheme.onSurface.withValues(alpha: 0.78),
+              height: 1.55,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SwipeHint extends StatelessWidget {
+  const _SwipeHint({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+
+    return Row(
+      children: <Widget>[
+        Icon(
+          Icons.swipe_left_alt_rounded,
+          size: 18,
+          color: colorScheme.primary.withValues(alpha: 0.72),
+        ),
+        const SizedBox(width: 6),
+        Text(
+          label,
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: colorScheme.onSurface.withValues(alpha: 0.55),
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _InfoPill extends StatelessWidget {
+  const _InfoPill({required this.icon, required this.label});
+
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: colorScheme.surface.withValues(alpha: 0.72),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          Icon(icon, size: 16, color: colorScheme.primary),
+          const SizedBox(width: 8),
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 180),
+            child: Text(
+              label,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: colorScheme.onSurface,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
           ),
         ],
       ),
@@ -202,7 +664,7 @@ class _ArtworkFrame extends StatelessWidget {
             BoxShadow(
               color: colorScheme.primary.withValues(alpha: 0.16),
               blurRadius: 32,
-              offset: Offset(0, 20),
+              offset: const Offset(0, 20),
             ),
           ],
         ),
@@ -254,10 +716,7 @@ class _ArtworkFallback extends StatelessWidget {
     return DecoratedBox(
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: <Color>[
-            colorScheme.primary,
-            colorScheme.primaryContainer,
-          ],
+          colors: <Color>[colorScheme.primary, colorScheme.primaryContainer],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -319,6 +778,16 @@ class _TrackHeader extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 8),
+              Text(
+                subtitle,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: theme.textTheme.bodyLarge?.copyWith(
+                  color: colorScheme.onSurface.withValues(alpha: 0.62),
+                  fontWeight: FontWeight.w600,
+                  height: 1.35,
+                ),
+              ),
             ],
           ),
         ),
@@ -433,7 +902,7 @@ class _TransportControls extends StatelessWidget {
               BoxShadow(
                 color: colorScheme.primary.withValues(alpha: 0.18),
                 blurRadius: 24,
-                offset: Offset(0, 14),
+                offset: const Offset(0, 14),
               ),
             ],
           ),
@@ -495,56 +964,6 @@ class _CircleActionButton extends StatelessWidget {
   }
 }
 
-class _UtilityActions extends StatelessWidget {
-  const _UtilityActions({required this.state, required this.onStop});
-
-  final PlayerState state;
-  final VoidCallback? onStop;
-
-  @override
-  Widget build(BuildContext context) {
-    final ColorScheme colorScheme = Theme.of(context).colorScheme;
-    final Color activeColor = colorScheme.onSurface.withValues(alpha: 0.58);
-    final Color disabledColor = colorScheme.onSurface.withValues(alpha: 0.22);
-
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-      children: <Widget>[
-        _UtilityIcon(
-          icon: Icons.open_in_full_rounded,
-          color: state.isReady ? activeColor : disabledColor,
-        ),
-        _UtilityIcon(
-          icon: Icons.repeat_rounded,
-          color: state.isReady ? activeColor : disabledColor,
-        ),
-        _UtilityIcon(
-          icon: Icons.stop_rounded,
-          color: onStop == null ? disabledColor : activeColor,
-          onTap: onStop,
-        ),
-      ],
-    );
-  }
-}
-
-class _UtilityIcon extends StatelessWidget {
-  const _UtilityIcon({required this.icon, required this.color, this.onTap});
-
-  final IconData icon;
-  final Color color;
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return InkResponse(
-      onTap: onTap,
-      radius: 24,
-      child: Icon(icon, color: color, size: 24),
-    );
-  }
-}
-
 class _PlaybackStatusChip extends StatelessWidget {
   const _PlaybackStatusChip({required this.state});
 
@@ -584,9 +1003,7 @@ class _PlaybackStatusChip extends StatelessWidget {
       icon = Icons.graphic_eq_rounded;
     } else if (state.isReady) {
       label = '已暂停，可继续播放';
-      background = colorScheme.surfaceContainerHighest.withValues(
-        alpha: 0.8,
-      );
+      background = colorScheme.surfaceContainerHighest.withValues(alpha: 0.8);
       foreground = colorScheme.onSurface.withValues(alpha: 0.72);
       icon = Icons.pause_circle_outline_rounded;
     }
@@ -647,6 +1064,9 @@ class _MetaSheet extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 16),
+          _MetaRow(label: '标题', value: item?.title ?? '--'),
+          _MetaRow(label: 'UP主', value: item?.author ?? '--'),
+          _MetaRow(label: '发布时间', value: item?.publishTimeText ?? '--'),
           _MetaRow(label: 'BV', value: item?.bvid ?? '--'),
           _MetaRow(
             label: 'AID',
@@ -658,6 +1078,7 @@ class _MetaSheet extends StatelessWidget {
                 ? '--'
                 : state.audioStream!.cid.toString(),
           ),
+          _MetaRow(label: '时长', value: _resolveDurationLabel(state, item)),
           _MetaRow(label: '音质', value: state.audioStream?.qualityLabel ?? '--'),
           _MetaRow(
             label: '分P',
@@ -701,14 +1122,14 @@ class _MetaRow extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
           SizedBox(
-            width: 56,
-              child: Text(
-                label,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: colorScheme.onSurface.withValues(alpha: 0.58),
-                  fontWeight: FontWeight.w700,
-                ),
+            width: 64,
+            child: Text(
+              label,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: colorScheme.onSurface.withValues(alpha: 0.58),
+                fontWeight: FontWeight.w700,
               ),
+            ),
           ),
           Expanded(
             child: Text(
@@ -894,12 +1315,10 @@ String _buildSubtitle(String author, PlayerState state) {
   return '$author · $pageTitle';
 }
 
-String _buildHeaderTitle(PlayerState state, PlayableItem? item) {
-  if (state.isPlaying) {
-    return 'Now Playing';
+String _resolveDurationLabel(PlayerState state, PlayableItem? item) {
+  final Duration? duration = state.duration ?? state.audioStream?.duration;
+  if (duration != null && duration > Duration.zero) {
+    return _formatDuration(duration);
   }
-  if (item != null) {
-    return 'Player';
-  }
-  return 'Ready to Play';
+  return item?.durationText ?? '--:--';
 }
