@@ -117,17 +117,25 @@
 
 ## Riverpod Conventions
 - This repo uses generator-based Riverpod via `@riverpod` and generated `*.g.dart` files.
+- Prefer Riverpod generator APIs by default; when adding or refactoring providers, use `@riverpod`/generated notifiers unless there is a clear technical reason not to.
 - Prefer keeping provider declaration and implementation in the same source file.
 - For notifier-style providers, extend the generated base class such as `_$BiliAuthController`.
 - Read dependencies through `ref.read(...)` and subscribe with `ref.watch(...)`.
 - Register cleanup with `ref.onDispose(...)` for timers, streams, or controllers.
 - Keep state transitions explicit and localized inside the notifier.
+- Avoid introducing manual `Provider`, `StateNotifierProvider`, `NotifierProvider`, or hand-written provider wiring when the same result can be expressed with Riverpod generator conventions.
 
 ## Model Conventions
 - Freezed is already present and used in `lib/core/theme/theme_ui_model.dart`.
-- If a model benefits from equality, immutability helpers, or JSON support, prefer Freezed.
-- Simpler domain models may remain plain immutable classes if that is less noisy.
+- Prefer Freezed for immutable domain models, state objects, DTO-like value types, and any class that would otherwise need manual equality, `copyWith`, unions, or JSON helpers.
+- Plain immutable classes should be the exception, not the default; only keep them when the type is truly trivial and Freezed would add no meaningful value.
 - Keep `copyWith` semantics predictable and avoid hidden side effects.
+
+## Default Generation Bias
+- When choosing between generated and manual patterns, prefer generated patterns first.
+- Default to Riverpod generator for providers and controller/notifier definitions.
+- Default to Freezed for immutable models and state classes.
+- If you intentionally avoid Riverpod generator or Freezed in a new or refactored type, the code should have a concrete reason such as interop constraints, generator limitations, or the type being intentionally minimal.
 
 ## UI Conventions
 - Prefer small widgets over one giant build method when a section has its own purpose.
