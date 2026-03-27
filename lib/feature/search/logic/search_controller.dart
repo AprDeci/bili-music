@@ -1,7 +1,7 @@
 import 'package:bilimusic/core/bili/net/bili_api_client.dart';
 import 'package:bilimusic/feature/search/data/bili_search_repository.dart';
-import 'package:bilimusic/feature/search/domain/search_page_result.dart';
 import 'package:bilimusic/feature/search/data/search_history_store.dart';
+import 'package:bilimusic/feature/search/domain/search_page_result.dart';
 import 'package:bilimusic/feature/search/domain/search_result_item.dart';
 import 'package:bilimusic/feature/search/domain/search_state.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
