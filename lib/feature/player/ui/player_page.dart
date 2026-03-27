@@ -48,13 +48,17 @@ class _PlayerPageState extends ConsumerState<PlayerPage> {
     );
     final PlayableItem? item = state.currentItem ?? widget.initialItem;
     final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F6F3),
+      backgroundColor: colorScheme.surface,
       body: DecoratedBox(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           gradient: LinearGradient(
-            colors: <Color>[Color(0xFFFFFCF7), Color(0xFFF3F0EA)],
+            colors: <Color>[
+              colorScheme.surface,
+              colorScheme.primary.withValues(alpha: 0.08),
+            ],
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
           ),
@@ -148,8 +152,8 @@ class _TopBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const Color iconColor = Color(0xFF1A5B46);
     final ThemeData theme = Theme.of(context);
+    final Color iconColor = theme.colorScheme.primary;
 
     return SizedBox(
       height: 48,
@@ -188,14 +192,16 @@ class _ArtworkFrame extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ColorScheme colorScheme = Theme.of(context).colorScheme;
+
     return AspectRatio(
       aspectRatio: 1,
       child: DecoratedBox(
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(34),
-          boxShadow: const <BoxShadow>[
+          boxShadow: <BoxShadow>[
             BoxShadow(
-              color: Color(0x1F0A4738),
+              color: colorScheme.primary.withValues(alpha: 0.16),
               blurRadius: 32,
               offset: Offset(0, 20),
             ),
@@ -220,9 +226,9 @@ class _ArtworkFrame extends StatelessWidget {
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: <Color>[
-                      const Color(0xFF0A3E31).withValues(alpha: 0.78),
+                      colorScheme.primary.withValues(alpha: 0.78),
                       const Color(0x00000000),
-                      const Color(0xFF99D8CB).withValues(alpha: 0.44),
+                      colorScheme.primaryContainer.withValues(alpha: 0.44),
                     ],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
@@ -244,10 +250,15 @@ class _ArtworkFallback extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ColorScheme colorScheme = Theme.of(context).colorScheme;
+
     return DecoratedBox(
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: <Color>[Color(0xFF0E4336), Color(0xFF87D2C6)],
+          colors: <Color>[
+            colorScheme.primary,
+            colorScheme.primaryContainer,
+          ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -264,7 +275,14 @@ class _ArtworkLiquidPattern extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return CustomPaint(painter: _LiquidArtworkPainter());
+    final ColorScheme colorScheme = Theme.of(context).colorScheme;
+
+    return CustomPaint(
+      painter: _LiquidArtworkPainter(
+        darkColor: colorScheme.primary.withValues(alpha: 0.58),
+        lightColor: colorScheme.primaryContainer.withValues(alpha: 0.68),
+      ),
+    );
   }
 }
 
@@ -282,6 +300,7 @@ class _TrackHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -295,7 +314,7 @@ class _TrackHeader extends StatelessWidget {
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
                 style: theme.textTheme.headlineSmall?.copyWith(
-                  color: const Color(0xFF15324A),
+                  color: colorScheme.onSurface,
                   fontWeight: FontWeight.w800,
                   height: 1.15,
                 ),
@@ -306,7 +325,7 @@ class _TrackHeader extends StatelessWidget {
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
                 style: theme.textTheme.titleMedium?.copyWith(
-                  color: const Color(0xFF6A7280),
+                  color: colorScheme.onSurface.withValues(alpha: 0.65),
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -317,7 +336,7 @@ class _TrackHeader extends StatelessWidget {
         IconButton(
           onPressed: isFavoriteEnabled ? () {} : null,
           icon: const Icon(Icons.favorite_border_rounded),
-          color: const Color(0xFF8FB8B3),
+          color: colorScheme.primary.withValues(alpha: 0.55),
           iconSize: 28,
         ),
       ],
@@ -334,6 +353,7 @@ class _ProgressSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
     final Duration total = state.duration ?? Duration.zero;
     final double progress = total.inMilliseconds <= 0
         ? 0
@@ -344,12 +364,12 @@ class _ProgressSection extends StatelessWidget {
         SliderTheme(
           data: SliderTheme.of(context).copyWith(
             trackHeight: 5,
-            inactiveTrackColor: const Color(0xFFD9DCDD),
-            activeTrackColor: const Color(0xFF0A8450),
-            thumbColor: const Color(0xFFF4FFF9),
+            inactiveTrackColor: colorScheme.primary.withValues(alpha: 0.18),
+            activeTrackColor: colorScheme.primary,
+            thumbColor: colorScheme.surface,
             thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
             overlayShape: const RoundSliderOverlayShape(overlayRadius: 16),
-            overlayColor: const Color(0x220A8450),
+            overlayColor: colorScheme.primary.withValues(alpha: 0.14),
           ),
           child: Slider(
             value: progress.clamp(0.0, 1.0),
@@ -363,7 +383,7 @@ class _ProgressSection extends StatelessWidget {
               Text(
                 _formatDuration(state.position),
                 style: theme.textTheme.labelMedium?.copyWith(
-                  color: const Color(0xFF8B7D66),
+                  color: colorScheme.onSurface.withValues(alpha: 0.55),
                   fontWeight: FontWeight.w700,
                 ),
               ),
@@ -371,7 +391,7 @@ class _ProgressSection extends StatelessWidget {
               Text(
                 _formatDuration(total),
                 style: theme.textTheme.labelMedium?.copyWith(
-                  color: const Color(0xFF8B7D66),
+                  color: colorScheme.onSurface.withValues(alpha: 0.55),
                   fontWeight: FontWeight.w700,
                 ),
               ),
@@ -398,9 +418,10 @@ class _TransportControls extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ColorScheme colorScheme = Theme.of(context).colorScheme;
     final Color iconColor = state.isReady
-        ? const Color(0xFF1B2B44)
-        : const Color(0xFFB6B9C0);
+        ? colorScheme.onSurface
+        : colorScheme.onSurface.withValues(alpha: 0.3);
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -411,11 +432,11 @@ class _TransportControls extends StatelessWidget {
           onPressed: state.isReady ? onBackward : null,
         ),
         DecoratedBox(
-          decoration: const BoxDecoration(
+          decoration: BoxDecoration(
             shape: BoxShape.circle,
             boxShadow: <BoxShadow>[
               BoxShadow(
-                color: Color(0x2B0A8450),
+                color: colorScheme.primary.withValues(alpha: 0.18),
                 blurRadius: 24,
                 offset: Offset(0, 14),
               ),
@@ -426,8 +447,10 @@ class _TransportControls extends StatelessWidget {
             style: FilledButton.styleFrom(
               minimumSize: const Size(88, 88),
               shape: const CircleBorder(),
-              backgroundColor: const Color(0xFF0A8450),
-              disabledBackgroundColor: const Color(0xFFB7CCC5),
+              backgroundColor: colorScheme.primary,
+              disabledBackgroundColor: colorScheme.primary.withValues(
+                alpha: 0.3,
+              ),
               foregroundColor: Colors.white,
             ),
             child: Icon(
@@ -480,8 +503,9 @@ class _UtilityActions extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const Color activeColor = Color(0xFF98A0AD);
-    const Color disabledColor = Color(0xFFD0D4DA);
+    final ColorScheme colorScheme = Theme.of(context).colorScheme;
+    final Color activeColor = colorScheme.onSurface.withValues(alpha: 0.58);
+    final Color disabledColor = colorScheme.onSurface.withValues(alpha: 0.22);
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -529,36 +553,41 @@ class _PlaybackStatusChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
 
     String label = '等待选择内容';
-    Color background = const Color(0xFFE9EEEB);
-    Color foreground = const Color(0xFF4D5D58);
+    Color background = colorScheme.surfaceContainerHighest.withValues(
+      alpha: 0.75,
+    );
+    Color foreground = colorScheme.onSurface.withValues(alpha: 0.7);
     IconData icon = Icons.music_note_rounded;
 
     if (state.isLoading) {
       label = '正在解析音频流';
-      background = const Color(0xFFE3F1ED);
-      foreground = const Color(0xFF1D6E58);
+      background = colorScheme.primaryContainer.withValues(alpha: 0.72);
+      foreground = colorScheme.primary;
       icon = Icons.radio_button_checked_rounded;
     } else if (state.hasError) {
       label = state.errorMessage ?? '播放失败';
-      background = const Color(0xFFFCE8E7);
-      foreground = const Color(0xFFB53A31);
+      background = colorScheme.errorContainer.withValues(alpha: 0.8);
+      foreground = colorScheme.error;
       icon = Icons.error_outline_rounded;
     } else if (state.isBuffering) {
       label = '缓冲中';
-      background = const Color(0xFFE6F0F5);
-      foreground = const Color(0xFF29687B);
+      background = colorScheme.secondaryContainer.withValues(alpha: 0.75);
+      foreground = colorScheme.secondary;
       icon = Icons.hourglass_top_rounded;
     } else if (state.isPlaying) {
       label = '正在播放';
-      background = const Color(0xFFE2F4EC);
-      foreground = const Color(0xFF0A8450);
+      background = colorScheme.primaryContainer.withValues(alpha: 0.72);
+      foreground = colorScheme.primary;
       icon = Icons.graphic_eq_rounded;
     } else if (state.isReady) {
       label = '已暂停，可继续播放';
-      background = const Color(0xFFEEF1F3);
-      foreground = const Color(0xFF465764);
+      background = colorScheme.surfaceContainerHighest.withValues(
+        alpha: 0.8,
+      );
+      foreground = colorScheme.onSurface.withValues(alpha: 0.72);
       icon = Icons.pause_circle_outline_rounded;
     }
 
@@ -598,13 +627,14 @@ class _MetaSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
 
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.72),
+        color: colorScheme.surface.withValues(alpha: 0.78),
         borderRadius: BorderRadius.circular(28),
-        border: Border.all(color: const Color(0xFFF0E8DB)),
+        border: Border.all(color: colorScheme.primary.withValues(alpha: 0.12)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -612,7 +642,7 @@ class _MetaSheet extends StatelessWidget {
           Text(
             '播放信息',
             style: theme.textTheme.titleMedium?.copyWith(
-              color: const Color(0xFF213547),
+              color: colorScheme.onSurface,
               fontWeight: FontWeight.w800,
             ),
           ),
@@ -628,10 +658,7 @@ class _MetaSheet extends StatelessWidget {
                 ? '--'
                 : state.audioStream!.cid.toString(),
           ),
-          _MetaRow(
-            label: '音质',
-            value: state.audioStream?.qualityLabel ?? '--',
-          ),
+          _MetaRow(label: '音质', value: state.audioStream?.qualityLabel ?? '--'),
           _MetaRow(
             label: '分P',
             value: state.audioStream?.pageTitle ?? '--',
@@ -657,32 +684,37 @@ class _MetaRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
 
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 10),
       decoration: BoxDecoration(
         border: isLast
             ? null
-            : const Border(bottom: BorderSide(color: Color(0xFFF2EEE5))),
+            : Border(
+                bottom: BorderSide(
+                  color: colorScheme.primary.withValues(alpha: 0.1),
+                ),
+              ),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
           SizedBox(
             width: 56,
-            child: Text(
-              label,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: const Color(0xFF8D7F69),
-                fontWeight: FontWeight.w700,
+              child: Text(
+                label,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: colorScheme.onSurface.withValues(alpha: 0.58),
+                  fontWeight: FontWeight.w700,
+                ),
               ),
-            ),
           ),
           Expanded(
             child: Text(
               value,
               style: theme.textTheme.bodyMedium?.copyWith(
-                color: const Color(0xFF23313F),
+                color: colorScheme.onSurface,
                 fontWeight: FontWeight.w700,
               ),
             ),
@@ -701,6 +733,8 @@ class _BackdropOrb extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final Color primary = Theme.of(context).colorScheme.primary;
+
     return IgnorePointer(
       child: Container(
         width: size,
@@ -709,8 +743,8 @@ class _BackdropOrb extends StatelessWidget {
           shape: BoxShape.circle,
           gradient: RadialGradient(
             colors: <Color>[
-              const Color(0xFFDBF1E5).withValues(alpha: opacity),
-              const Color(0x00DBF1E5),
+              primary.withValues(alpha: opacity * 0.45),
+              primary.withValues(alpha: 0),
             ],
           ),
         ),
@@ -720,14 +754,19 @@ class _BackdropOrb extends StatelessWidget {
 }
 
 class _LiquidArtworkPainter extends CustomPainter {
+  _LiquidArtworkPainter({required this.darkColor, required this.lightColor});
+
+  final Color darkColor;
+  final Color lightColor;
+
   @override
   void paint(Canvas canvas, Size size) {
     final Paint darkPaint = Paint()
-      ..color = const Color(0xFF082F28).withValues(alpha: 0.58)
+      ..color = darkColor
       ..style = PaintingStyle.fill;
 
     final Paint lightPaint = Paint()
-      ..color = const Color(0xFFC6FFF3).withValues(alpha: 0.68)
+      ..color = lightColor
       ..style = PaintingStyle.stroke
       ..strokeWidth = size.width * 0.11
       ..strokeCap = StrokeCap.round;
