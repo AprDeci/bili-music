@@ -37,16 +37,6 @@ class PlayerMetaSheet extends StatelessWidget {
           PlayerMetaRow(label: '发布时间', value: item?.publishTimeText ?? '--'),
           PlayerMetaRow(label: 'BV', value: item?.bvid ?? '--'),
           PlayerMetaRow(
-            label: 'AID',
-            value: item == null ? '--' : item!.aid.toString(),
-          ),
-          PlayerMetaRow(
-            label: 'CID',
-            value: state.audioStream == null
-                ? '--'
-                : state.audioStream!.cid.toString(),
-          ),
-          PlayerMetaRow(
             label: '时长',
             value: resolvePlayerDurationLabel(state, item),
           ),
