@@ -43,112 +43,146 @@ class _PlayerPageState extends ConsumerState<PlayerPage> {
   @override
   Widget build(BuildContext context) {
     final PlayerState state = ref.watch(playerControllerProvider);
-    final playerController = ref.read(playerControllerProvider.notifier);
-    final ThemeData theme = Theme.of(context);
+    final PlayerController playerController = ref.read(
+      playerControllerProvider.notifier,
+    );
     final PlayableItem? item = state.currentItem ?? widget.initialItem;
+    final ThemeData theme = Theme.of(context);
 
     return Scaffold(
+      backgroundColor: const Color(0xFFF7F6F3),
       body: DecoratedBox(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
-            colors: <Color>[Color(0xFFF3F8FC), Color(0xFFE4EEF8), Color(0xFFD4E3F2)],
+            colors: <Color>[Color(0xFFFFFCF7), Color(0xFFF3F0EA)],
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
           ),
         ),
-        child: SafeArea(
-          child: Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 560),
-              child: ListView(
-                padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
-                children: <Widget>[
-                  Row(
+        child: Stack(
+          children: <Widget>[
+            const Positioned(top: -120, left: -90, child: _BackdropOrb()),
+            const Positioned(
+              right: -70,
+              top: 180,
+              child: _BackdropOrb(size: 220, opacity: 0.35),
+            ),
+            SafeArea(
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 520),
+                  child: ListView(
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
                     children: <Widget>[
-                      IconButton(
-                        onPressed: () => Navigator.of(context).maybePop(),
-                        icon: const Icon(Icons.arrow_back_rounded),
-                      ),
-                      Expanded(
-                        child: Text(
-                          '正在播放',
-                          textAlign: TextAlign.center,
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w700,
-                            color: const Color(0xFF14324A),
-                          ),
-                        ),
-                      ),
-                      IconButton(
-                        onPressed: item == null
+                      _TopBar(
+                        title: _buildHeaderTitle(state, item),
+                        onBack: () => Navigator.of(context).maybePop(),
+                        onMore: item == null
                             ? null
                             : () => playerController.loadFromItem(item),
-                        icon: const Icon(Icons.refresh_rounded),
                       ),
+                      const SizedBox(height: 22),
+                      _ArtworkFrame(coverUrl: item?.coverUrl ?? ''),
+                      const SizedBox(height: 28),
+                      _TrackHeader(
+                        title: item?.title ?? '还没有选择播放内容',
+                        subtitle: item == null
+                            ? '从搜索页选一条视频或音频后，这里会显示当前播放信息。'
+                            : _buildSubtitle(item.author, state),
+                        isFavoriteEnabled: item != null,
+                      ),
+                      const SizedBox(height: 26),
+                      _ProgressSection(
+                        state: state,
+                        onChanged: (double value) {
+                          final int totalMs =
+                              (state.duration ?? Duration.zero).inMilliseconds;
+                          final Duration position = Duration(
+                            milliseconds: (totalMs * value).round(),
+                          );
+                          playerController.seek(position);
+                        },
+                      ),
+                      const SizedBox(height: 30),
+                      _TransportControls(
+                        state: state,
+                        onBackward: () => playerController.seekBy(
+                          const Duration(seconds: -10),
+                        ),
+                        onTogglePlayback: playerController.togglePlayback,
+                        onForward: () => playerController.seekBy(
+                          const Duration(seconds: 10),
+                        ),
+                      ),
+                      const SizedBox(height: 30),
+                      _UtilityActions(
+                        state: state,
+                        onStop: state.isReady ? playerController.stop : null,
+                      ),
+                      const SizedBox(height: 28),
+                      _PlaybackStatusChip(state: state),
+                      const SizedBox(height: 18),
+                      _MetaSheet(state: state, item: item),
                     ],
                   ),
-                  const SizedBox(height: 18),
-                  _HeroArtwork(coverUrl: item?.coverUrl ?? ''),
-                  const SizedBox(height: 28),
-                  Text(
-                    item?.title ?? '从搜索结果选择一条内容开始播放',
-                    textAlign: TextAlign.center,
-                    style: theme.textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.w800,
-                      color: const Color(0xFF0F2742),
-                      height: 1.25,
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  Text(
-                    item == null
-                        ? '全局播放器已就位，接下来只需要从搜索页点一个结果。'
-                        : _buildSubtitle(item.author, state),
-                    textAlign: TextAlign.center,
-                    style: theme.textTheme.bodyLarge?.copyWith(
-                      color: const Color(0xFF52708A),
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 28),
-                  _StatusCard(state: state),
-                  const SizedBox(height: 24),
-                  _ProgressCard(
-                    state: state,
-                    onChanged: (double value) {
-                      final int totalMs =
-                          (state.duration ?? Duration.zero).inMilliseconds;
-                      final Duration position = Duration(
-                        milliseconds: (totalMs * value).round(),
-                      );
-                      playerController.seek(position);
-                    },
-                  ),
-                  const SizedBox(height: 18),
-                  _ControlsCard(
-                    state: state,
-                    onBackward: () => playerController.seekBy(
-                      const Duration(seconds: -10),
-                    ),
-                    onTogglePlayback: playerController.togglePlayback,
-                    onForward: () => playerController.seekBy(
-                      const Duration(seconds: 10),
-                    ),
-                  ),
-                  const SizedBox(height: 18),
-                  _MetaPanel(state: state, item: item),
-                ],
+                ),
               ),
             ),
-          ),
+          ],
         ),
       ),
     );
   }
 }
 
-class _HeroArtwork extends StatelessWidget {
-  const _HeroArtwork({required this.coverUrl});
+class _TopBar extends StatelessWidget {
+  const _TopBar({
+    required this.title,
+    required this.onBack,
+    required this.onMore,
+  });
+
+  final String title;
+  final VoidCallback onBack;
+  final VoidCallback? onMore;
+
+  @override
+  Widget build(BuildContext context) {
+    const Color iconColor = Color(0xFF1A5B46);
+    final ThemeData theme = Theme.of(context);
+
+    return SizedBox(
+      height: 48,
+      child: Row(
+        children: <Widget>[
+          IconButton(
+            onPressed: onBack,
+            icon: const Icon(Icons.keyboard_arrow_down_rounded),
+            color: iconColor,
+          ),
+          Expanded(
+            child: Text(
+              title,
+              textAlign: TextAlign.center,
+              style: theme.textTheme.titleMedium?.copyWith(
+                color: iconColor,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ),
+          IconButton(
+            onPressed: onMore,
+            icon: const Icon(Icons.more_vert_rounded),
+            color: iconColor,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ArtworkFrame extends StatelessWidget {
+  const _ArtworkFrame({required this.coverUrl});
 
   final String coverUrl;
 
@@ -158,45 +192,46 @@ class _HeroArtwork extends StatelessWidget {
       aspectRatio: 1,
       child: DecoratedBox(
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(36),
-          gradient: const LinearGradient(
-            colors: <Color>[Color(0xFF0F2742), Color(0xFF3A6A8E)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
+          borderRadius: BorderRadius.circular(34),
           boxShadow: const <BoxShadow>[
             BoxShadow(
-              color: Color(0x330F2742),
-              blurRadius: 40,
-              offset: Offset(0, 24),
+              color: Color(0x1F0A4738),
+              blurRadius: 32,
+              offset: Offset(0, 20),
             ),
           ],
         ),
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(28),
-            child: coverUrl.isEmpty
-                ? const Center(
-                    child: Icon(
-                      Icons.album_rounded,
-                      size: 84,
-                      color: Colors.white,
-                    ),
-                  )
-                : Image.network(
-                    coverUrl,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) {
-                      return const Center(
-                        child: Icon(
-                          Icons.album_rounded,
-                          size: 84,
-                          color: Colors.white,
-                        ),
-                      );
-                    },
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(34),
+          child: Stack(
+            fit: StackFit.expand,
+            children: <Widget>[
+              if (coverUrl.isNotEmpty)
+                Image.network(
+                  coverUrl,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) {
+                    return const _ArtworkFallback();
+                  },
+                )
+              else
+                const _ArtworkFallback(),
+              Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: <Color>[
+                      const Color(0xFF0A3E31).withValues(alpha: 0.78),
+                      const Color(0x00000000),
+                      const Color(0xFF99D8CB).withValues(alpha: 0.44),
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    stops: const <double>[0, 0.55, 1],
                   ),
+                ),
+              ),
+              const _ArtworkLiquidPattern(),
+            ],
           ),
         ),
       ),
@@ -204,92 +239,94 @@ class _HeroArtwork extends StatelessWidget {
   }
 }
 
-class _StatusCard extends StatelessWidget {
-  const _StatusCard({required this.state});
+class _ArtworkFallback extends StatelessWidget {
+  const _ArtworkFallback();
 
-  final PlayerState state;
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          colors: <Color>[Color(0xFF0E4336), Color(0xFF87D2C6)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+      ),
+      child: const Center(
+        child: Icon(Icons.music_note_rounded, size: 84, color: Colors.white),
+      ),
+    );
+  }
+}
+
+class _ArtworkLiquidPattern extends StatelessWidget {
+  const _ArtworkLiquidPattern();
+
+  @override
+  Widget build(BuildContext context) {
+    return CustomPaint(painter: _LiquidArtworkPainter());
+  }
+}
+
+class _TrackHeader extends StatelessWidget {
+  const _TrackHeader({
+    required this.title,
+    required this.subtitle,
+    required this.isFavoriteEnabled,
+  });
+
+  final String title;
+  final String subtitle;
+  final bool isFavoriteEnabled;
 
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
 
-    String title = '准备播放';
-    String message = '点击搜索结果后会自动解析视频音频流。';
-    Color accent = const Color(0xFF2563EB);
-    IconData icon = Icons.waves_rounded;
-
-    if (state.isLoading) {
-      title = '正在解析';
-      message = '正在拉取视频详情与音频流信息，请稍候。';
-      icon = Icons.radar_rounded;
-      accent = const Color(0xFF1D4ED8);
-    } else if (state.hasError) {
-      title = '播放失败';
-      message = state.errorMessage!;
-      icon = Icons.error_outline_rounded;
-      accent = const Color(0xFFDC2626);
-    } else if (state.isPlaying) {
-      title = '正在播放';
-      message = '全局播放器已启动，离开当前页也可以继续保持状态。';
-      icon = Icons.graphic_eq_rounded;
-      accent = const Color(0xFF059669);
-    } else if (state.isReady) {
-      title = '已准备好';
-      message = '音频流已就绪，可以开始或恢复播放。';
-      icon = Icons.check_circle_outline_rounded;
-      accent = const Color(0xFF0F766E);
-    }
-
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(28),
-        border: Border.all(color: const Color(0xFFD9E4EE)),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Container(
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(
-              color: accent.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Icon(icon, color: accent),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Text(
-                  title,
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w800,
-                    color: const Color(0xFF0F172A),
-                  ),
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Text(
+                title,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: theme.textTheme.headlineSmall?.copyWith(
+                  color: const Color(0xFF15324A),
+                  fontWeight: FontWeight.w800,
+                  height: 1.15,
                 ),
-                const SizedBox(height: 6),
-                Text(
-                  message,
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: const Color(0xFF526577),
-                    height: 1.45,
-                  ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                subtitle,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: theme.textTheme.titleMedium?.copyWith(
+                  color: const Color(0xFF6A7280),
+                  fontWeight: FontWeight.w500,
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
-        ],
-      ),
+        ),
+        const SizedBox(width: 16),
+        IconButton(
+          onPressed: isFavoriteEnabled ? () {} : null,
+          icon: const Icon(Icons.favorite_border_rounded),
+          color: const Color(0xFF8FB8B3),
+          iconSize: 28,
+        ),
+      ],
     );
   }
 }
 
-class _ProgressCard extends StatelessWidget {
-  const _ProgressCard({required this.state, required this.onChanged});
+class _ProgressSection extends StatelessWidget {
+  const _ProgressSection({required this.state, required this.onChanged});
 
   final PlayerState state;
   final ValueChanged<double> onChanged;
@@ -301,66 +338,53 @@ class _ProgressCard extends StatelessWidget {
     final double progress = total.inMilliseconds <= 0
         ? 0
         : state.position.inMilliseconds / total.inMilliseconds;
-    final double buffered = total.inMilliseconds <= 0
-        ? 0
-        : state.bufferedPosition.inMilliseconds / total.inMilliseconds;
 
-    return Container(
-      padding: const EdgeInsets.fromLTRB(20, 18, 20, 16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(28),
-        border: Border.all(color: const Color(0xFFD9E4EE)),
-      ),
-      child: Column(
-        children: <Widget>[
-          ClipRRect(
-            borderRadius: BorderRadius.circular(999),
-            child: LinearProgressIndicator(
-              value: buffered.clamp(0.0, 1.0),
-              minHeight: 4,
-              backgroundColor: const Color(0xFFE2E8F0),
-              color: const Color(0xFFC2D7EA),
-            ),
+    return Column(
+      children: <Widget>[
+        SliderTheme(
+          data: SliderTheme.of(context).copyWith(
+            trackHeight: 5,
+            inactiveTrackColor: const Color(0xFFD9DCDD),
+            activeTrackColor: const Color(0xFF0A8450),
+            thumbColor: const Color(0xFFF4FFF9),
+            thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
+            overlayShape: const RoundSliderOverlayShape(overlayRadius: 16),
+            overlayColor: const Color(0x220A8450),
           ),
-          SliderTheme(
-            data: SliderTheme.of(context).copyWith(
-              trackHeight: 4,
-              thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 7),
-              overlayShape: const RoundSliderOverlayShape(overlayRadius: 18),
-            ),
-            child: Slider(
-              value: progress.clamp(0.0, 1.0),
-              onChanged: state.isReady ? onChanged : null,
-            ),
+          child: Slider(
+            value: progress.clamp(0.0, 1.0),
+            onChanged: state.isReady ? onChanged : null,
           ),
-          Row(
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 2),
+          child: Row(
             children: <Widget>[
               Text(
                 _formatDuration(state.position),
-                style: theme.textTheme.labelLarge?.copyWith(
-                  color: const Color(0xFF526577),
+                style: theme.textTheme.labelMedium?.copyWith(
+                  color: const Color(0xFF8B7D66),
                   fontWeight: FontWeight.w700,
                 ),
               ),
               const Spacer(),
               Text(
                 _formatDuration(total),
-                style: theme.textTheme.labelLarge?.copyWith(
-                  color: const Color(0xFF526577),
+                style: theme.textTheme.labelMedium?.copyWith(
+                  color: const Color(0xFF8B7D66),
                   fontWeight: FontWeight.w700,
                 ),
               ),
             ],
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
 
-class _ControlsCard extends StatelessWidget {
-  const _ControlsCard({
+class _TransportControls extends StatelessWidget {
+  const _TransportControls({
     required this.state,
     required this.onBackward,
     required this.onTogglePlayback,
@@ -374,37 +398,190 @@ class _ControlsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(28),
-        border: Border.all(color: const Color(0xFFD9E4EE)),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: <Widget>[
-          IconButton.filledTonal(
-            onPressed: state.isReady ? onBackward : null,
-            icon: const Icon(Icons.replay_10_rounded),
-            iconSize: 28,
+    final Color iconColor = state.isReady
+        ? const Color(0xFF1B2B44)
+        : const Color(0xFFB6B9C0);
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      children: <Widget>[
+        _CircleActionButton(
+          icon: Icons.skip_previous_rounded,
+          color: iconColor,
+          onPressed: state.isReady ? onBackward : null,
+        ),
+        DecoratedBox(
+          decoration: const BoxDecoration(
+            shape: BoxShape.circle,
+            boxShadow: <BoxShadow>[
+              BoxShadow(
+                color: Color(0x2B0A8450),
+                blurRadius: 24,
+                offset: Offset(0, 14),
+              ),
+            ],
           ),
-          FilledButton(
+          child: FilledButton(
             onPressed: state.isReady ? onTogglePlayback : null,
             style: FilledButton.styleFrom(
               minimumSize: const Size(88, 88),
               shape: const CircleBorder(),
-              backgroundColor: const Color(0xFF123857),
+              backgroundColor: const Color(0xFF0A8450),
+              disabledBackgroundColor: const Color(0xFFB7CCC5),
+              foregroundColor: Colors.white,
             ),
             child: Icon(
               state.isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
-              size: 42,
+              size: 40,
             ),
           ),
-          IconButton.filledTonal(
-            onPressed: state.isReady ? onForward : null,
-            icon: const Icon(Icons.forward_10_rounded),
-            iconSize: 28,
+        ),
+        _CircleActionButton(
+          icon: Icons.skip_next_rounded,
+          color: iconColor,
+          onPressed: state.isReady ? onForward : null,
+        ),
+      ],
+    );
+  }
+}
+
+class _CircleActionButton extends StatelessWidget {
+  const _CircleActionButton({
+    required this.icon,
+    required this.color,
+    required this.onPressed,
+  });
+
+  final IconData icon;
+  final Color color;
+  final VoidCallback? onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return IconButton(
+      onPressed: onPressed,
+      icon: Icon(icon),
+      iconSize: 34,
+      color: color,
+      style: IconButton.styleFrom(
+        minimumSize: const Size(56, 56),
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      ),
+    );
+  }
+}
+
+class _UtilityActions extends StatelessWidget {
+  const _UtilityActions({required this.state, required this.onStop});
+
+  final PlayerState state;
+  final VoidCallback? onStop;
+
+  @override
+  Widget build(BuildContext context) {
+    const Color activeColor = Color(0xFF98A0AD);
+    const Color disabledColor = Color(0xFFD0D4DA);
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      children: <Widget>[
+        _UtilityIcon(
+          icon: Icons.open_in_full_rounded,
+          color: state.isReady ? activeColor : disabledColor,
+        ),
+        _UtilityIcon(
+          icon: Icons.repeat_rounded,
+          color: state.isReady ? activeColor : disabledColor,
+        ),
+        _UtilityIcon(
+          icon: Icons.stop_rounded,
+          color: onStop == null ? disabledColor : activeColor,
+          onTap: onStop,
+        ),
+      ],
+    );
+  }
+}
+
+class _UtilityIcon extends StatelessWidget {
+  const _UtilityIcon({required this.icon, required this.color, this.onTap});
+
+  final IconData icon;
+  final Color color;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkResponse(
+      onTap: onTap,
+      radius: 24,
+      child: Icon(icon, color: color, size: 24),
+    );
+  }
+}
+
+class _PlaybackStatusChip extends StatelessWidget {
+  const _PlaybackStatusChip({required this.state});
+
+  final PlayerState state;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+
+    String label = '等待选择内容';
+    Color background = const Color(0xFFE9EEEB);
+    Color foreground = const Color(0xFF4D5D58);
+    IconData icon = Icons.music_note_rounded;
+
+    if (state.isLoading) {
+      label = '正在解析音频流';
+      background = const Color(0xFFE3F1ED);
+      foreground = const Color(0xFF1D6E58);
+      icon = Icons.radio_button_checked_rounded;
+    } else if (state.hasError) {
+      label = state.errorMessage ?? '播放失败';
+      background = const Color(0xFFFCE8E7);
+      foreground = const Color(0xFFB53A31);
+      icon = Icons.error_outline_rounded;
+    } else if (state.isBuffering) {
+      label = '缓冲中';
+      background = const Color(0xFFE6F0F5);
+      foreground = const Color(0xFF29687B);
+      icon = Icons.hourglass_top_rounded;
+    } else if (state.isPlaying) {
+      label = '正在播放';
+      background = const Color(0xFFE2F4EC);
+      foreground = const Color(0xFF0A8450);
+      icon = Icons.graphic_eq_rounded;
+    } else if (state.isReady) {
+      label = '已暂停，可继续播放';
+      background = const Color(0xFFEEF1F3);
+      foreground = const Color(0xFF465764);
+      icon = Icons.pause_circle_outline_rounded;
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: background,
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: Row(
+        children: <Widget>[
+          Icon(icon, color: foreground, size: 20),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              label,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: foreground,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
           ),
         ],
       ),
@@ -412,8 +589,8 @@ class _ControlsCard extends StatelessWidget {
   }
 }
 
-class _MetaPanel extends StatelessWidget {
-  const _MetaPanel({required this.state, required this.item});
+class _MetaSheet extends StatelessWidget {
+  const _MetaSheet({required this.state, required this.item});
 
   final PlayerState state;
   final PlayableItem? item;
@@ -425,9 +602,9 @@ class _MetaPanel extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Colors.white.withValues(alpha: 0.72),
         borderRadius: BorderRadius.circular(28),
-        border: Border.all(color: const Color(0xFFD9E4EE)),
+        border: Border.all(color: const Color(0xFFF0E8DB)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -435,12 +612,12 @@ class _MetaPanel extends StatelessWidget {
           Text(
             '播放信息',
             style: theme.textTheme.titleMedium?.copyWith(
+              color: const Color(0xFF213547),
               fontWeight: FontWeight.w800,
-              color: const Color(0xFF123857),
             ),
           ),
-          const SizedBox(height: 14),
-          _MetaRow(label: 'BV 号', value: item?.bvid ?? '--'),
+          const SizedBox(height: 16),
+          _MetaRow(label: 'BV', value: item?.bvid ?? '--'),
           _MetaRow(
             label: 'AID',
             value: item == null ? '--' : item!.aid.toString(),
@@ -456,8 +633,9 @@ class _MetaPanel extends StatelessWidget {
             value: state.audioStream?.qualityLabel ?? '--',
           ),
           _MetaRow(
-            label: '时长',
-            value: _formatDuration(state.duration ?? Duration.zero),
+            label: '分P',
+            value: state.audioStream?.pageTitle ?? '--',
+            isLast: true,
           ),
         ],
       ),
@@ -466,26 +644,37 @@ class _MetaPanel extends StatelessWidget {
 }
 
 class _MetaRow extends StatelessWidget {
-  const _MetaRow({required this.label, required this.value});
+  const _MetaRow({
+    required this.label,
+    required this.value,
+    this.isLast = false,
+  });
 
   final String label;
   final String value;
+  final bool isLast;
 
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
 
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 10),
+      decoration: BoxDecoration(
+        border: isLast
+            ? null
+            : const Border(bottom: BorderSide(color: Color(0xFFF2EEE5))),
+      ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
           SizedBox(
             width: 56,
             child: Text(
               label,
               style: theme.textTheme.bodyMedium?.copyWith(
-                color: const Color(0xFF64748B),
-                fontWeight: FontWeight.w600,
+                color: const Color(0xFF8D7F69),
+                fontWeight: FontWeight.w700,
               ),
             ),
           ),
@@ -493,7 +682,7 @@ class _MetaRow extends StatelessWidget {
             child: Text(
               value,
               style: theme.textTheme.bodyMedium?.copyWith(
-                color: const Color(0xFF0F172A),
+                color: const Color(0xFF23313F),
                 fontWeight: FontWeight.w700,
               ),
             ),
@@ -502,6 +691,144 @@ class _MetaRow extends StatelessWidget {
       ),
     );
   }
+}
+
+class _BackdropOrb extends StatelessWidget {
+  const _BackdropOrb({this.size = 260, this.opacity = 0.45});
+
+  final double size;
+  final double opacity;
+
+  @override
+  Widget build(BuildContext context) {
+    return IgnorePointer(
+      child: Container(
+        width: size,
+        height: size,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          gradient: RadialGradient(
+            colors: <Color>[
+              const Color(0xFFDBF1E5).withValues(alpha: opacity),
+              const Color(0x00DBF1E5),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _LiquidArtworkPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final Paint darkPaint = Paint()
+      ..color = const Color(0xFF082F28).withValues(alpha: 0.58)
+      ..style = PaintingStyle.fill;
+
+    final Paint lightPaint = Paint()
+      ..color = const Color(0xFFC6FFF3).withValues(alpha: 0.68)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = size.width * 0.11
+      ..strokeCap = StrokeCap.round;
+
+    final Path topWave = Path()
+      ..moveTo(-size.width * 0.1, size.height * 0.2)
+      ..cubicTo(
+        size.width * 0.18,
+        -size.height * 0.05,
+        size.width * 0.52,
+        size.height * 0.28,
+        size.width * 0.92,
+        size.height * 0.02,
+      )
+      ..cubicTo(
+        size.width * 1.1,
+        size.height * 0.16,
+        size.width * 1.08,
+        size.height * 0.44,
+        size.width * 0.86,
+        size.height * 0.5,
+      )
+      ..cubicTo(
+        size.width * 0.56,
+        size.height * 0.62,
+        size.width * 0.24,
+        size.height * 0.34,
+        -size.width * 0.08,
+        size.height * 0.48,
+      )
+      ..lineTo(-size.width * 0.12, -size.height * 0.08)
+      ..close();
+
+    final Path bottomWave = Path()
+      ..moveTo(-size.width * 0.1, size.height * 0.82)
+      ..cubicTo(
+        size.width * 0.18,
+        size.height * 0.56,
+        size.width * 0.46,
+        size.height * 1.04,
+        size.width * 0.8,
+        size.height * 0.78,
+      )
+      ..cubicTo(
+        size.width * 0.98,
+        size.height * 0.64,
+        size.width * 1.06,
+        size.height * 0.88,
+        size.width * 1.08,
+        size.height * 1.08,
+      )
+      ..lineTo(-size.width * 0.12, size.height * 1.08)
+      ..close();
+
+    canvas.drawPath(topWave, darkPaint);
+    canvas.drawPath(bottomWave, darkPaint);
+
+    final Path ribbon = Path()
+      ..moveTo(-size.width * 0.02, size.height * 0.62)
+      ..cubicTo(
+        size.width * 0.16,
+        size.height * 0.48,
+        size.width * 0.42,
+        size.height * 0.7,
+        size.width * 0.58,
+        size.height * 0.52,
+      )
+      ..cubicTo(
+        size.width * 0.78,
+        size.height * 0.28,
+        size.width * 0.92,
+        size.height * 0.38,
+        size.width * 1.04,
+        size.height * 0.22,
+      );
+
+    canvas.drawPath(ribbon, lightPaint);
+
+    final Paint glowPaint = Paint()
+      ..shader =
+          RadialGradient(
+            colors: <Color>[
+              const Color(0xFFFFFFFF).withValues(alpha: 0.32),
+              const Color(0x00FFFFFF),
+            ],
+          ).createShader(
+            Rect.fromCircle(
+              center: Offset(size.width * 0.72, size.height * 0.56),
+              radius: size.width * 0.34,
+            ),
+          );
+
+    canvas.drawCircle(
+      Offset(size.width * 0.72, size.height * 0.56),
+      size.width * 0.34,
+      glowPaint,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
 String _formatDuration(Duration value) {
@@ -526,4 +853,14 @@ String _buildSubtitle(String author, PlayerState state) {
     return author;
   }
   return '$author · $pageTitle';
+}
+
+String _buildHeaderTitle(PlayerState state, PlayableItem? item) {
+  if (state.isPlaying) {
+    return 'Now Playing';
+  }
+  if (item != null) {
+    return 'Player';
+  }
+  return 'Ready to Play';
 }
