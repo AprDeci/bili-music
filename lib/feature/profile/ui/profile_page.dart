@@ -9,11 +9,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-class ProfilePage extends ConsumerWidget {
+class ProfilePage extends ConsumerStatefulWidget {
   const ProfilePage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ProfilePage> createState() => _ProfilePageState();
+}
+
+class _ProfilePageState extends ConsumerState<ProfilePage> {
+  bool _showAllCollections = false;
+
+  @override
+  Widget build(BuildContext context) {
     ref.watch(biliSessionControllerProvider);
     final FavoritesState favoritesState = ref.watch(
       favoritesControllerProvider,
@@ -25,6 +32,11 @@ class ProfilePage extends ConsumerWidget {
         .collections
         .where((FavoriteCollection collection) => !collection.isSystem)
         .toList(growable: false);
+    final bool shouldCollapse = customCollections.length > 5;
+    final List<FavoriteCollection> visibleCollections =
+        shouldCollapse && !_showAllCollections
+        ? customCollections.take(5).toList(growable: false)
+        : customCollections;
 
     return Scaffold(
       appBar: AppBar(
@@ -48,36 +60,59 @@ class ProfilePage extends ConsumerWidget {
           const SizedBox(height: 16),
           _ProfileSectionHeader(
             title: '自建歌单',
-            onAddPressed: () => _showCreateCollectionDialog(context, ref),
+            count: customCollections.length,
+            onAddPressed: () => _showCreateCollectionDialog(context),
           ),
-          if (customCollections.isNotEmpty) const SizedBox(height: 14),
-          if (customCollections.isNotEmpty)
-            ...customCollections.map((FavoriteCollection collection) {
-              final List<FavoriteEntry> items = favoritesState
-                  .itemsForCollection(collection.id);
-              final FavoriteEntry? latestItem = items.isEmpty
-                  ? null
-                  : items.first;
+          if (visibleCollections.isNotEmpty) const SizedBox(height: 14),
+          ...visibleCollections.map((FavoriteCollection collection) {
+            final List<FavoriteEntry> items = favoritesState.itemsForCollection(
+              collection.id,
+            );
+            final FavoriteEntry? latestItem = items.isEmpty
+                ? null
+                : items.first;
 
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: _PlaylistTile(
-                  title: collection.name,
-                  count: items.length,
-                  coverUrl: latestItem?.coverUrl,
-                  onTap: () => context.push('/favorites/${collection.id}'),
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: _PlaylistTile(
+                title: collection.name,
+                count: items.length,
+                coverUrl: latestItem?.coverUrl,
+                onTap: () => context.push('/favorites/${collection.id}'),
+                onLongPress: () => _showDeleteCollectionDialog(collection),
+              ),
+            );
+          }),
+          if (shouldCollapse)
+            Center(
+              child: TextButton.icon(
+                onPressed: () {
+                  setState(() {
+                    _showAllCollections = !_showAllCollections;
+                  });
+                },
+                iconAlignment: IconAlignment.end,
+                icon: Icon(
+                  _showAllCollections
+                      ? Icons.keyboard_arrow_up_rounded
+                      : Icons.keyboard_arrow_down_rounded,
+                  size: 22,
                 ),
-              );
-            }),
+                label: Text(_showAllCollections ? '收起歌单' : '展开全部歌单'),
+                style: TextButton.styleFrom(
+                  foregroundColor: const Color(0xFF7A8598),
+                  textStyle: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            ),
         ],
       ),
     );
   }
 
-  Future<void> _showCreateCollectionDialog(
-    BuildContext context,
-    WidgetRef ref,
-  ) async {
+  Future<void> _showCreateCollectionDialog(BuildContext context) async {
     final TextEditingController controller = TextEditingController();
     final String? result = await showDialog<String>(
       context: context,
@@ -112,6 +147,48 @@ class ProfilePage extends ConsumerWidget {
     await ref
         .read(favoritesControllerProvider.notifier)
         .createCollection(result);
+  }
+
+  Future<void> _showDeleteCollectionDialog(
+    FavoriteCollection collection,
+  ) async {
+    final bool? confirmed = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('删除歌单'),
+          content: Text('确认删除“${collection.name}”？删除后无法恢复。'),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('取消'),
+            ),
+            FilledButton(
+              style: FilledButton.styleFrom(
+                backgroundColor: Theme.of(context).colorScheme.error,
+                foregroundColor: Theme.of(context).colorScheme.onError,
+              ),
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text('删除'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmed != true) {
+      return;
+    }
+
+    final bool deleted = await ref
+        .read(favoritesControllerProvider.notifier)
+        .deleteCollection(collection.id);
+    if (!mounted) {
+      return;
+    }
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(deleted ? '已删除歌单' : '删除失败')));
   }
 }
 
@@ -213,10 +290,12 @@ class _ProfileQuickActionCard extends StatelessWidget {
 class _ProfileSectionHeader extends StatelessWidget {
   const _ProfileSectionHeader({
     required this.title,
+    required this.count,
     required this.onAddPressed,
   });
 
   final String title;
+  final int count;
   final VoidCallback onAddPressed;
 
   @override
@@ -227,11 +306,22 @@ class _ProfileSectionHeader extends StatelessWidget {
     return Row(
       children: <Widget>[
         Expanded(
-          child: Text(
-            title,
-            style: theme.textTheme.titleLarge?.copyWith(
-              fontWeight: FontWeight.w900,
-              color: const Color(0xFF111A2D),
+          child: RichText(
+            text: TextSpan(
+              style: theme.textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.w900,
+                color: const Color(0xFF111A2D),
+              ),
+              children: <InlineSpan>[
+                TextSpan(text: title),
+                TextSpan(
+                  text: count == 0 ? '' : ' $count',
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: const Color(0xFF8A93A3),
+                  ),
+                ),
+              ],
             ),
           ),
         ),
@@ -240,7 +330,7 @@ class _ProfileSectionHeader extends StatelessWidget {
           child: InkWell(
             borderRadius: BorderRadius.circular(999),
             onTap: onAddPressed,
-            child: Ink(
+            child: SizedBox(
               width: 38,
               height: 38,
               child: Icon(Icons.add_rounded, color: primary),
@@ -258,12 +348,14 @@ class _PlaylistTile extends StatelessWidget {
     required this.count,
     required this.coverUrl,
     required this.onTap,
+    required this.onLongPress,
   });
 
   final String title;
   final int count;
   final String? coverUrl;
   final VoidCallback onTap;
+  final VoidCallback onLongPress;
 
   @override
   Widget build(BuildContext context) {
@@ -274,6 +366,7 @@ class _PlaylistTile extends StatelessWidget {
       child: InkWell(
         borderRadius: BorderRadius.circular(18),
         onTap: onTap,
+        onLongPress: onLongPress,
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: 8),
           child: Row(

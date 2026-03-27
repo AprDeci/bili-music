@@ -181,6 +181,28 @@ class FavoritesController extends _$FavoritesController {
     state = _repository.loadState();
   }
 
+  Future<bool> deleteCollection(String collectionId) async {
+    if (collectionId == FavoriteCollection.likedCollectionId) {
+      return false;
+    }
+
+    FavoriteCollection? targetCollection;
+    for (final FavoriteCollection collection in state.collections) {
+      if (collection.id == collectionId) {
+        targetCollection = collection;
+        break;
+      }
+    }
+
+    if (targetCollection == null || targetCollection.isSystem) {
+      return false;
+    }
+
+    await _repository.deleteCollection(collectionId);
+    state = _repository.loadState();
+    return true;
+  }
+
   Future<void> _upsertEntry({
     required PlayableItem item,
     required DateTime now,
