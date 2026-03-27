@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:bilimusic/core/theme/theme_logic.dart';
 import 'package:bilimusic/core/theme/theme_ui_model.dart';
 import 'package:bilimusic/router/routers.dart';
@@ -23,6 +25,15 @@ class MyApp extends ConsumerWidget {
         scaffoldBackgroundColor: const Color(0xFFF4F7FB),
         useMaterial3: true,
       ),
+      scrollBehavior: new MyBehavior(),
     );
   }
+}
+
+class MyBehavior extends MaterialScrollBehavior {
+  @override
+  Set<PointerDeviceKind> get dragDevices => {
+    PointerDeviceKind.touch,
+    PointerDeviceKind.mouse,
+  };
 }
