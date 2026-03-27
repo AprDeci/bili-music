@@ -14,7 +14,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$SearchState {
 
- String get query; String? get submittedQuery; List<String> get recentKeywords; List<SearchResultItem> get results; bool get isLoading; String? get errorMessage;
+ String get query; String? get submittedQuery; List<String> get recentKeywords; List<SearchResultItem> get results; bool get isLoading; bool get isLoadingMore; int get currentPage; bool get hasMore; String? get errorMessage; String? get loadMoreErrorMessage;
 /// Create a copy of SearchState
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -25,16 +25,16 @@ $SearchStateCopyWith<SearchState> get copyWith => _$SearchStateCopyWithImpl<Sear
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is SearchState&&(identical(other.query, query) || other.query == query)&&(identical(other.submittedQuery, submittedQuery) || other.submittedQuery == submittedQuery)&&const DeepCollectionEquality().equals(other.recentKeywords, recentKeywords)&&const DeepCollectionEquality().equals(other.results, results)&&(identical(other.isLoading, isLoading) || other.isLoading == isLoading)&&(identical(other.errorMessage, errorMessage) || other.errorMessage == errorMessage));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is SearchState&&(identical(other.query, query) || other.query == query)&&(identical(other.submittedQuery, submittedQuery) || other.submittedQuery == submittedQuery)&&const DeepCollectionEquality().equals(other.recentKeywords, recentKeywords)&&const DeepCollectionEquality().equals(other.results, results)&&(identical(other.isLoading, isLoading) || other.isLoading == isLoading)&&(identical(other.isLoadingMore, isLoadingMore) || other.isLoadingMore == isLoadingMore)&&(identical(other.currentPage, currentPage) || other.currentPage == currentPage)&&(identical(other.hasMore, hasMore) || other.hasMore == hasMore)&&(identical(other.errorMessage, errorMessage) || other.errorMessage == errorMessage)&&(identical(other.loadMoreErrorMessage, loadMoreErrorMessage) || other.loadMoreErrorMessage == loadMoreErrorMessage));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,query,submittedQuery,const DeepCollectionEquality().hash(recentKeywords),const DeepCollectionEquality().hash(results),isLoading,errorMessage);
+int get hashCode => Object.hash(runtimeType,query,submittedQuery,const DeepCollectionEquality().hash(recentKeywords),const DeepCollectionEquality().hash(results),isLoading,isLoadingMore,currentPage,hasMore,errorMessage,loadMoreErrorMessage);
 
 @override
 String toString() {
-  return 'SearchState(query: $query, submittedQuery: $submittedQuery, recentKeywords: $recentKeywords, results: $results, isLoading: $isLoading, errorMessage: $errorMessage)';
+  return 'SearchState(query: $query, submittedQuery: $submittedQuery, recentKeywords: $recentKeywords, results: $results, isLoading: $isLoading, isLoadingMore: $isLoadingMore, currentPage: $currentPage, hasMore: $hasMore, errorMessage: $errorMessage, loadMoreErrorMessage: $loadMoreErrorMessage)';
 }
 
 
@@ -45,7 +45,7 @@ abstract mixin class $SearchStateCopyWith<$Res>  {
   factory $SearchStateCopyWith(SearchState value, $Res Function(SearchState) _then) = _$SearchStateCopyWithImpl;
 @useResult
 $Res call({
- String query, String? submittedQuery, List<String> recentKeywords, List<SearchResultItem> results, bool isLoading, String? errorMessage
+ String query, String? submittedQuery, List<String> recentKeywords, List<SearchResultItem> results, bool isLoading, bool isLoadingMore, int currentPage, bool hasMore, String? errorMessage, String? loadMoreErrorMessage
 });
 
 
@@ -62,14 +62,18 @@ class _$SearchStateCopyWithImpl<$Res>
 
 /// Create a copy of SearchState
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? query = null,Object? submittedQuery = freezed,Object? recentKeywords = null,Object? results = null,Object? isLoading = null,Object? errorMessage = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? query = null,Object? submittedQuery = freezed,Object? recentKeywords = null,Object? results = null,Object? isLoading = null,Object? isLoadingMore = null,Object? currentPage = null,Object? hasMore = null,Object? errorMessage = freezed,Object? loadMoreErrorMessage = freezed,}) {
   return _then(_self.copyWith(
 query: null == query ? _self.query : query // ignore: cast_nullable_to_non_nullable
 as String,submittedQuery: freezed == submittedQuery ? _self.submittedQuery : submittedQuery // ignore: cast_nullable_to_non_nullable
 as String?,recentKeywords: null == recentKeywords ? _self.recentKeywords : recentKeywords // ignore: cast_nullable_to_non_nullable
 as List<String>,results: null == results ? _self.results : results // ignore: cast_nullable_to_non_nullable
 as List<SearchResultItem>,isLoading: null == isLoading ? _self.isLoading : isLoading // ignore: cast_nullable_to_non_nullable
+as bool,isLoadingMore: null == isLoadingMore ? _self.isLoadingMore : isLoadingMore // ignore: cast_nullable_to_non_nullable
+as bool,currentPage: null == currentPage ? _self.currentPage : currentPage // ignore: cast_nullable_to_non_nullable
+as int,hasMore: null == hasMore ? _self.hasMore : hasMore // ignore: cast_nullable_to_non_nullable
 as bool,errorMessage: freezed == errorMessage ? _self.errorMessage : errorMessage // ignore: cast_nullable_to_non_nullable
+as String?,loadMoreErrorMessage: freezed == loadMoreErrorMessage ? _self.loadMoreErrorMessage : loadMoreErrorMessage // ignore: cast_nullable_to_non_nullable
 as String?,
   ));
 }
@@ -155,10 +159,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String query,  String? submittedQuery,  List<String> recentKeywords,  List<SearchResultItem> results,  bool isLoading,  String? errorMessage)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String query,  String? submittedQuery,  List<String> recentKeywords,  List<SearchResultItem> results,  bool isLoading,  bool isLoadingMore,  int currentPage,  bool hasMore,  String? errorMessage,  String? loadMoreErrorMessage)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _SearchState() when $default != null:
-return $default(_that.query,_that.submittedQuery,_that.recentKeywords,_that.results,_that.isLoading,_that.errorMessage);case _:
+return $default(_that.query,_that.submittedQuery,_that.recentKeywords,_that.results,_that.isLoading,_that.isLoadingMore,_that.currentPage,_that.hasMore,_that.errorMessage,_that.loadMoreErrorMessage);case _:
   return orElse();
 
 }
@@ -176,10 +180,10 @@ return $default(_that.query,_that.submittedQuery,_that.recentKeywords,_that.resu
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String query,  String? submittedQuery,  List<String> recentKeywords,  List<SearchResultItem> results,  bool isLoading,  String? errorMessage)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String query,  String? submittedQuery,  List<String> recentKeywords,  List<SearchResultItem> results,  bool isLoading,  bool isLoadingMore,  int currentPage,  bool hasMore,  String? errorMessage,  String? loadMoreErrorMessage)  $default,) {final _that = this;
 switch (_that) {
 case _SearchState():
-return $default(_that.query,_that.submittedQuery,_that.recentKeywords,_that.results,_that.isLoading,_that.errorMessage);case _:
+return $default(_that.query,_that.submittedQuery,_that.recentKeywords,_that.results,_that.isLoading,_that.isLoadingMore,_that.currentPage,_that.hasMore,_that.errorMessage,_that.loadMoreErrorMessage);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -196,10 +200,10 @@ return $default(_that.query,_that.submittedQuery,_that.recentKeywords,_that.resu
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String query,  String? submittedQuery,  List<String> recentKeywords,  List<SearchResultItem> results,  bool isLoading,  String? errorMessage)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String query,  String? submittedQuery,  List<String> recentKeywords,  List<SearchResultItem> results,  bool isLoading,  bool isLoadingMore,  int currentPage,  bool hasMore,  String? errorMessage,  String? loadMoreErrorMessage)?  $default,) {final _that = this;
 switch (_that) {
 case _SearchState() when $default != null:
-return $default(_that.query,_that.submittedQuery,_that.recentKeywords,_that.results,_that.isLoading,_that.errorMessage);case _:
+return $default(_that.query,_that.submittedQuery,_that.recentKeywords,_that.results,_that.isLoading,_that.isLoadingMore,_that.currentPage,_that.hasMore,_that.errorMessage,_that.loadMoreErrorMessage);case _:
   return null;
 
 }
@@ -211,7 +215,7 @@ return $default(_that.query,_that.submittedQuery,_that.recentKeywords,_that.resu
 
 
 class _SearchState implements SearchState {
-  const _SearchState({this.query = '', this.submittedQuery, final  List<String> recentKeywords = const <String>[], final  List<SearchResultItem> results = const <SearchResultItem>[], this.isLoading = false, this.errorMessage}): _recentKeywords = recentKeywords,_results = results;
+  const _SearchState({this.query = '', this.submittedQuery, final  List<String> recentKeywords = const <String>[], final  List<SearchResultItem> results = const <SearchResultItem>[], this.isLoading = false, this.isLoadingMore = false, this.currentPage = 0, this.hasMore = false, this.errorMessage, this.loadMoreErrorMessage}): _recentKeywords = recentKeywords,_results = results;
   
 
 @override@JsonKey() final  String query;
@@ -231,7 +235,11 @@ class _SearchState implements SearchState {
 }
 
 @override@JsonKey() final  bool isLoading;
+@override@JsonKey() final  bool isLoadingMore;
+@override@JsonKey() final  int currentPage;
+@override@JsonKey() final  bool hasMore;
 @override final  String? errorMessage;
+@override final  String? loadMoreErrorMessage;
 
 /// Create a copy of SearchState
 /// with the given fields replaced by the non-null parameter values.
@@ -243,16 +251,16 @@ _$SearchStateCopyWith<_SearchState> get copyWith => __$SearchStateCopyWithImpl<_
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _SearchState&&(identical(other.query, query) || other.query == query)&&(identical(other.submittedQuery, submittedQuery) || other.submittedQuery == submittedQuery)&&const DeepCollectionEquality().equals(other._recentKeywords, _recentKeywords)&&const DeepCollectionEquality().equals(other._results, _results)&&(identical(other.isLoading, isLoading) || other.isLoading == isLoading)&&(identical(other.errorMessage, errorMessage) || other.errorMessage == errorMessage));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _SearchState&&(identical(other.query, query) || other.query == query)&&(identical(other.submittedQuery, submittedQuery) || other.submittedQuery == submittedQuery)&&const DeepCollectionEquality().equals(other._recentKeywords, _recentKeywords)&&const DeepCollectionEquality().equals(other._results, _results)&&(identical(other.isLoading, isLoading) || other.isLoading == isLoading)&&(identical(other.isLoadingMore, isLoadingMore) || other.isLoadingMore == isLoadingMore)&&(identical(other.currentPage, currentPage) || other.currentPage == currentPage)&&(identical(other.hasMore, hasMore) || other.hasMore == hasMore)&&(identical(other.errorMessage, errorMessage) || other.errorMessage == errorMessage)&&(identical(other.loadMoreErrorMessage, loadMoreErrorMessage) || other.loadMoreErrorMessage == loadMoreErrorMessage));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,query,submittedQuery,const DeepCollectionEquality().hash(_recentKeywords),const DeepCollectionEquality().hash(_results),isLoading,errorMessage);
+int get hashCode => Object.hash(runtimeType,query,submittedQuery,const DeepCollectionEquality().hash(_recentKeywords),const DeepCollectionEquality().hash(_results),isLoading,isLoadingMore,currentPage,hasMore,errorMessage,loadMoreErrorMessage);
 
 @override
 String toString() {
-  return 'SearchState(query: $query, submittedQuery: $submittedQuery, recentKeywords: $recentKeywords, results: $results, isLoading: $isLoading, errorMessage: $errorMessage)';
+  return 'SearchState(query: $query, submittedQuery: $submittedQuery, recentKeywords: $recentKeywords, results: $results, isLoading: $isLoading, isLoadingMore: $isLoadingMore, currentPage: $currentPage, hasMore: $hasMore, errorMessage: $errorMessage, loadMoreErrorMessage: $loadMoreErrorMessage)';
 }
 
 
@@ -263,7 +271,7 @@ abstract mixin class _$SearchStateCopyWith<$Res> implements $SearchStateCopyWith
   factory _$SearchStateCopyWith(_SearchState value, $Res Function(_SearchState) _then) = __$SearchStateCopyWithImpl;
 @override @useResult
 $Res call({
- String query, String? submittedQuery, List<String> recentKeywords, List<SearchResultItem> results, bool isLoading, String? errorMessage
+ String query, String? submittedQuery, List<String> recentKeywords, List<SearchResultItem> results, bool isLoading, bool isLoadingMore, int currentPage, bool hasMore, String? errorMessage, String? loadMoreErrorMessage
 });
 
 
@@ -280,14 +288,18 @@ class __$SearchStateCopyWithImpl<$Res>
 
 /// Create a copy of SearchState
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? query = null,Object? submittedQuery = freezed,Object? recentKeywords = null,Object? results = null,Object? isLoading = null,Object? errorMessage = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? query = null,Object? submittedQuery = freezed,Object? recentKeywords = null,Object? results = null,Object? isLoading = null,Object? isLoadingMore = null,Object? currentPage = null,Object? hasMore = null,Object? errorMessage = freezed,Object? loadMoreErrorMessage = freezed,}) {
   return _then(_SearchState(
 query: null == query ? _self.query : query // ignore: cast_nullable_to_non_nullable
 as String,submittedQuery: freezed == submittedQuery ? _self.submittedQuery : submittedQuery // ignore: cast_nullable_to_non_nullable
 as String?,recentKeywords: null == recentKeywords ? _self._recentKeywords : recentKeywords // ignore: cast_nullable_to_non_nullable
 as List<String>,results: null == results ? _self._results : results // ignore: cast_nullable_to_non_nullable
 as List<SearchResultItem>,isLoading: null == isLoading ? _self.isLoading : isLoading // ignore: cast_nullable_to_non_nullable
+as bool,isLoadingMore: null == isLoadingMore ? _self.isLoadingMore : isLoadingMore // ignore: cast_nullable_to_non_nullable
+as bool,currentPage: null == currentPage ? _self.currentPage : currentPage // ignore: cast_nullable_to_non_nullable
+as int,hasMore: null == hasMore ? _self.hasMore : hasMore // ignore: cast_nullable_to_non_nullable
 as bool,errorMessage: freezed == errorMessage ? _self.errorMessage : errorMessage // ignore: cast_nullable_to_non_nullable
+as String?,loadMoreErrorMessage: freezed == loadMoreErrorMessage ? _self.loadMoreErrorMessage : loadMoreErrorMessage // ignore: cast_nullable_to_non_nullable
 as String?,
   ));
 }

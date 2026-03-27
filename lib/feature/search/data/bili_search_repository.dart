@@ -1,18 +1,21 @@
 import 'package:bilimusic/core/bili/net/bili_api_client.dart';
+import 'package:bilimusic/feature/search/domain/search_page_result.dart';
 import 'package:bilimusic/feature/search/domain/search_result_item.dart';
 
 class BiliSearchRepository {
   const BiliSearchRepository(this._apiClient);
 
+  static const int _defaultPageSize = 20;
+
   final BiliApiClient _apiClient;
 
-  Future<List<SearchResultItem>> searchVideos(String keyword) async {
+  Future<SearchPageResult> searchVideos(String keyword, {int page = 1}) async {
     final Map<String, dynamic> json = await _apiClient.getJson(
       '/x/web-interface/wbi/search/type',
       queryParameters: <String, dynamic>{
         'search_type': 'video',
         'keyword': keyword,
-        'page': 1,
+        'page': page,
       },
       requiresWbi: true,
     );
@@ -20,8 +23,7 @@ class BiliSearchRepository {
     final Map<String, dynamic> data = _asMap(json['data']);
     final List<dynamic> rawResults =
         data['result'] as List<dynamic>? ?? <dynamic>[];
-
-    return rawResults
+    final List<SearchResultItem> items = rawResults
         .whereType<Map>()
         .map(
           (Map rawItem) => _mapVideoItem(
@@ -31,6 +33,21 @@ class BiliSearchRepository {
           ),
         )
         .toList();
+    final int resolvedPage = _readPositiveInt(data['page']) ?? page;
+    final int? totalPages = _readTotalPages(data);
+    final int pageSize = _readPositiveInt(data['pagesize']) ?? _defaultPageSize;
+
+    return SearchPageResult(
+      items: items,
+      page: resolvedPage,
+      totalPages: totalPages,
+      hasMore: _hasMoreItems(
+        currentPage: resolvedPage,
+        totalPages: totalPages,
+        itemCount: items.length,
+        pageSize: pageSize,
+      ),
+    );
   }
 
   SearchResultItem _mapVideoItem(Map<String, dynamic> json) {
@@ -64,6 +81,55 @@ class BiliSearchRepository {
       );
     }
     throw const BiliSearchException('Unexpected search response format.');
+  }
+
+  Map<String, dynamic>? _asNullableMap(dynamic value) {
+    if (value is Map<String, dynamic>) {
+      return value;
+    }
+    if (value is Map) {
+      return value.map(
+        (dynamic key, dynamic mapValue) => MapEntry(key.toString(), mapValue),
+      );
+    }
+    return null;
+  }
+
+  int? _readTotalPages(Map<String, dynamic> data) {
+    final Map<String, dynamic>? pageInfo = _asNullableMap(data['pageinfo']);
+
+    return _readPositiveInt(data['numPages']) ??
+        _readPositiveInt(data['num_pages']) ??
+        _readPositiveInt(pageInfo?['numPages']) ??
+        _readPositiveInt(pageInfo?['num_pages']) ??
+        _readPositiveInt(pageInfo?['pages']);
+  }
+
+  int? _readPositiveInt(dynamic value) {
+    if (value is num) {
+      final int intValue = value.toInt();
+      return intValue > 0 ? intValue : null;
+    }
+    if (value is String) {
+      final int? parsed = int.tryParse(value);
+      if (parsed != null && parsed > 0) {
+        return parsed;
+      }
+    }
+    return null;
+  }
+
+  bool _hasMoreItems({
+    required int currentPage,
+    required int? totalPages,
+    required int itemCount,
+    required int pageSize,
+  }) {
+    if (totalPages != null) {
+      return currentPage < totalPages;
+    }
+
+    return itemCount >= pageSize && itemCount > 0;
   }
 
   String _stripKeywordTag(String value) {

@@ -11,6 +11,10 @@ abstract class SearchState with _$SearchState {
     @Default(<String>[]) List<String> recentKeywords,
     @Default(<SearchResultItem>[]) List<SearchResultItem> results,
     @Default(false) bool isLoading,
+    @Default(false) bool isLoadingMore,
+    @Default(0) int currentPage,
+    @Default(false) bool hasMore,
     String? errorMessage,
+    String? loadMoreErrorMessage,
   }) = _SearchState;
 }

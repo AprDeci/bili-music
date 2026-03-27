@@ -15,12 +15,14 @@ class SearchPage extends ConsumerStatefulWidget {
 class _SearchPageState extends ConsumerState<SearchPage> {
   late final TextEditingController _controller;
   late final FocusNode _focusNode;
+  late final ScrollController _scrollController;
 
   @override
   void initState() {
     super.initState();
     _controller = TextEditingController();
     _focusNode = FocusNode();
+    _scrollController = ScrollController()..addListener(_handleScroll);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         _focusNode.requestFocus();
@@ -32,7 +34,40 @@ class _SearchPageState extends ConsumerState<SearchPage> {
   void dispose() {
     _controller.dispose();
     _focusNode.dispose();
+    _scrollController
+      ..removeListener(_handleScroll)
+      ..dispose();
     super.dispose();
+  }
+
+  void _handleScroll() {
+    if (!_scrollController.hasClients) {
+      return;
+    }
+
+    if (_scrollController.position.extentAfter <= 200) {
+      ref.read(searchPageControllerProvider.notifier).loadNextPage();
+    }
+  }
+
+  Future<void> _submitSearch(SearchPageController controller, [String? value]) async {
+    await controller.submitSearch(value);
+    if (!mounted || !_scrollController.hasClients) {
+      return;
+    }
+
+    await _scrollController.animateTo(
+      0,
+      duration: const Duration(milliseconds: 250),
+      curve: Curves.easeOut,
+    );
+  }
+
+  Future<void> _selectKeyword(
+    SearchPageController controller,
+    String value,
+  ) async {
+    await _submitSearch(controller, value);
   }
 
   @override
@@ -83,7 +118,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
                         focusNode: _focusNode,
                         textInputAction: TextInputAction.search,
                         onChanged: controller.updateQuery,
-                        onSubmitted: (_) => controller.submitSearch(),
+                        onSubmitted: (_) => _submitSearch(controller),
                         decoration: InputDecoration(
                           hintText: '搜索歌曲、歌手或视频',
                           hintStyle: theme.textTheme.bodyMedium?.copyWith(
@@ -117,6 +152,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
             ),
             Expanded(
               child: ListView(
+                controller: _scrollController,
                 padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
                 children: <Widget>[
                   if (state.recentKeywords.isNotEmpty) ...<Widget>[
@@ -149,7 +185,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
                             fontWeight: FontWeight.w600,
                           ),
                           onPressed: () {
-                            controller.selectKeyword(item);
+                            _selectKeyword(controller, item);
                           },
                         );
                       }).toList(),
@@ -181,7 +217,11 @@ class _SearchPageState extends ConsumerState<SearchPage> {
                     submittedQuery: state.submittedQuery,
                     results: state.results,
                     isLoading: state.isLoading,
+                    isLoadingMore: state.isLoadingMore,
+                    hasMore: state.hasMore,
                     errorMessage: state.errorMessage,
+                    loadMoreErrorMessage: state.loadMoreErrorMessage,
+                    onRetryLoadMore: controller.loadNextPage,
                   ),
                 ],
               ),
@@ -198,13 +238,21 @@ class _SearchResultSection extends StatelessWidget {
     required this.submittedQuery,
     required this.results,
     required this.isLoading,
+    required this.isLoadingMore,
+    required this.hasMore,
     required this.errorMessage,
+    required this.loadMoreErrorMessage,
+    required this.onRetryLoadMore,
   });
 
   final String? submittedQuery;
   final List<SearchResultItem> results;
   final bool isLoading;
+  final bool isLoadingMore;
+  final bool hasMore;
   final String? errorMessage;
+  final String? loadMoreErrorMessage;
+  final VoidCallback onRetryLoadMore;
 
   @override
   Widget build(BuildContext context) {
@@ -358,135 +406,221 @@ class _SearchResultSection extends StatelessWidget {
     }
 
     return Column(
-      children: results.map((SearchResultItem item) {
-        return Material(
-          color: Colors.transparent,
-          child: InkWell(
-            borderRadius: BorderRadius.circular(22),
-            onTap: () => context.push('/player', extra: item.toPlayableItem()),
-            child: Container(
-              margin: const EdgeInsets.only(bottom: 12),
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(22),
-                border: Border.all(color: const Color(0xFFE2E8F0)),
-              ),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Container(
-                    width: 48,
-                    height: 48,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFEFF6FF),
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: item.coverUrl.isEmpty
-                        ? const Icon(
-                            Icons.play_circle_outline_rounded,
-                            color: Color(0xFF2563EB),
-                            size: 24,
-                          )
-                        : ClipRRect(
-                            borderRadius: BorderRadius.circular(16),
-                            child: Image.network(
-                              item.coverUrl,
-                              fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) {
-                                return const Icon(
-                                  Icons.music_video_rounded,
-                                  color: Color(0xFF2563EB),
-                                );
-                              },
-                            ),
-                          ),
-                  ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: <Widget>[
-                        Row(
-                          children: <Widget>[
-                            Expanded(
-                              child: Text(
-                                item.title,
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                                style: theme.textTheme.titleSmall?.copyWith(
-                                  fontWeight: FontWeight.w700,
-                                  color: const Color(0xFF0F172A),
-                                  height: 1.35,
-                                ),
+      children: <Widget>[
+        ...results.map((SearchResultItem item) {
+          return Material(
+            color: Colors.transparent,
+            child: InkWell(
+              borderRadius: BorderRadius.circular(22),
+              onTap: () => context.push('/player', extra: item.toPlayableItem()),
+              child: Container(
+                margin: const EdgeInsets.only(bottom: 12),
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(22),
+                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Container(
+                      width: 48,
+                      height: 48,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFEFF6FF),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: item.coverUrl.isEmpty
+                          ? const Icon(
+                              Icons.play_circle_outline_rounded,
+                              color: Color(0xFF2563EB),
+                              size: 24,
+                            )
+                          : ClipRRect(
+                              borderRadius: BorderRadius.circular(16),
+                              child: Image.network(
+                                item.coverUrl,
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) {
+                                  return const Icon(
+                                    Icons.music_video_rounded,
+                                    color: Color(0xFF2563EB),
+                                  );
+                                },
                               ),
                             ),
-                            const SizedBox(width: 8),
-                            _ResultTag(label: item.tagText),
-                          ],
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          '${item.author} · ${item.publishTimeText}',
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            color: const Color(0xFF475569),
-                            fontWeight: FontWeight.w600,
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: <Widget>[
+                          Row(
+                            children: <Widget>[
+                              Expanded(
+                                child: Text(
+                                  item.title,
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: theme.textTheme.titleSmall?.copyWith(
+                                    fontWeight: FontWeight.w700,
+                                    color: const Color(0xFF0F172A),
+                                    height: 1.35,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              _ResultTag(label: item.tagText),
+                            ],
                           ),
-                        ),
-                        const SizedBox(height: 6),
-                        Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
-                          children: <Widget>[
-                            _MetaChip(
-                              icon: Icons.play_arrow_rounded,
-                              text: item.playCountText,
-                            ),
-                            _MetaChip(
-                              icon: Icons.subtitles_rounded,
-                              text: item.danmakuCountText,
-                            ),
-                            _MetaChip(
-                              icon: Icons.schedule_rounded,
-                              text: item.duration,
-                            ),
-                          ],
-                        ),
-                        if (item.description != null) ...<Widget>[
-                          const SizedBox(height: 8),
+                          const SizedBox(height: 6),
                           Text(
-                            item.description!,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: const Color(0xFF64748B),
-                              height: 1.45,
+                            '${item.author} · ${item.publishTimeText}',
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: const Color(0xFF475569),
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
+                          const SizedBox(height: 6),
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: <Widget>[
+                              _MetaChip(
+                                icon: Icons.play_arrow_rounded,
+                                text: item.playCountText,
+                              ),
+                              _MetaChip(
+                                icon: Icons.subtitles_rounded,
+                                text: item.danmakuCountText,
+                              ),
+                              _MetaChip(
+                                icon: Icons.schedule_rounded,
+                                text: item.duration,
+                              ),
+                            ],
+                          ),
+                          if (item.description != null) ...<Widget>[
+                            const SizedBox(height: 8),
+                            Text(
+                              item.description!,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: const Color(0xFF64748B),
+                                height: 1.45,
+                              ),
+                            ),
+                          ],
                         ],
-                      ],
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 10),
-                  Container(
-                    width: 34,
-                    height: 34,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFEFF6FF),
-                      borderRadius: BorderRadius.circular(12),
+                    const SizedBox(width: 10),
+                    Container(
+                      width: 34,
+                      height: 34,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFEFF6FF),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(
+                        Icons.play_arrow_rounded,
+                        color: Color(0xFF2563EB),
+                      ),
                     ),
-                    child: const Icon(
-                      Icons.play_arrow_rounded,
-                      color: Color(0xFF2563EB),
-                    ),
-                  ),
-                ],
+                  ],
+                ),
+              ),
+            ),
+          );
+        }),
+        _SearchResultFooter(
+          isLoadingMore: isLoadingMore,
+          hasMore: hasMore,
+          errorMessage: loadMoreErrorMessage,
+          onRetry: onRetryLoadMore,
+        ),
+      ],
+    );
+  }
+}
+
+class _SearchResultFooter extends StatelessWidget {
+  const _SearchResultFooter({
+    required this.isLoadingMore,
+    required this.hasMore,
+    required this.errorMessage,
+    required this.onRetry,
+  });
+
+  final bool isLoadingMore;
+  final bool hasMore;
+  final String? errorMessage;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+
+    if (isLoadingMore) {
+      return Padding(
+        padding: const EdgeInsets.only(top: 8, bottom: 4),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: <Widget>[
+            const SizedBox(
+              width: 18,
+              height: 18,
+              child: CircularProgressIndicator(strokeWidth: 2.2),
+            ),
+            const SizedBox(width: 12),
+            Text(
+              '正在加载更多结果',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: const Color(0xFF64748B),
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (errorMessage != null && errorMessage!.isNotEmpty) {
+      return Padding(
+        padding: const EdgeInsets.only(top: 8),
+        child: Center(
+          child: TextButton.icon(
+            onPressed: onRetry,
+            icon: const Icon(Icons.refresh_rounded),
+            label: Text(
+              '加载更多失败，点击重试',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                fontWeight: FontWeight.w700,
               ),
             ),
           ),
-        );
-      }).toList(),
-    );
+        ),
+      );
+    }
+
+    if (!hasMore) {
+      return Padding(
+        padding: const EdgeInsets.only(top: 8, bottom: 4),
+        child: Center(
+          child: Text(
+            '已经到底了',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: const Color(0xFF94A3B8),
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+      );
+    }
+
+    return const SizedBox.shrink();
   }
 }
 
