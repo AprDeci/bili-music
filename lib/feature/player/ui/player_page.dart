@@ -1,7 +1,10 @@
 import 'package:bilimusic/feature/player/domain/playable_item.dart';
 import 'package:bilimusic/feature/player/domain/player_state.dart';
 import 'package:bilimusic/feature/player/logic/player_controller.dart';
-import 'package:bilimusic/feature/player/ui/components/player_page_parts.dart';
+import 'package:bilimusic/feature/player/ui/components/player_main_page.dart';
+import 'package:bilimusic/feature/player/ui/components/player_meta_page.dart';
+import 'package:bilimusic/feature/player/ui/components/player_shared.dart';
+import 'package:bilimusic/feature/player/ui/components/player_top_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
