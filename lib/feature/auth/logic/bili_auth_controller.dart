@@ -41,9 +41,9 @@ class BiliAuthController extends _$BiliAuthController {
     _cancelPolling();
     state = state.copyWith(
       status: BiliQrLoginStatus.loading,
-      clearQrSession: true,
-      clearMessage: true,
-      clearLastPollCode: true,
+      qrSession: null,
+      message: null,
+      lastPollCode: null,
     );
 
     try {

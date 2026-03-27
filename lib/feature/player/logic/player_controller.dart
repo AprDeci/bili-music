@@ -78,8 +78,8 @@ class PlayerController extends Notifier<PlayerState> {
         isReady: false,
         isPlaying: false,
         errorMessage: '当前搜索结果缺少可播放的视频标识。',
-        clearAudioStream: true,
-        clearDuration: true,
+        audioStream: null,
+        duration: null,
       );
       return;
     }
@@ -100,9 +100,9 @@ class PlayerController extends Notifier<PlayerState> {
       isBuffering: false,
       position: Duration.zero,
       bufferedPosition: Duration.zero,
-      clearAudioStream: true,
-      clearDuration: true,
-      clearErrorMessage: true,
+      audioStream: null,
+      duration: null,
+      errorMessage: null,
     );
 
     try {
@@ -130,7 +130,7 @@ class PlayerController extends Notifier<PlayerState> {
         isLoading: false,
         isReady: true,
         duration: duration ?? audioStream.duration,
-        clearErrorMessage: true,
+        errorMessage: null,
       );
 
       if (autoplay) {
@@ -143,8 +143,8 @@ class PlayerController extends Notifier<PlayerState> {
         isPlaying: false,
         isBuffering: false,
         errorMessage: error.toString(),
-        clearAudioStream: true,
-        clearDuration: true,
+        audioStream: null,
+        duration: null,
       );
     }
   }
@@ -206,7 +206,9 @@ class PlayerController extends Notifier<PlayerState> {
     );
     _subscriptions.add(
       _audioPlayer.durationStream.listen((Duration? duration) {
-        state = state.copyWith(duration: duration);
+        if (duration != null) {
+          state = state.copyWith(duration: duration);
+        }
       }),
     );
     _subscriptions.add(

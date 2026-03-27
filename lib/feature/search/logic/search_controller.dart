@@ -27,7 +27,7 @@ class SearchPageController extends _$SearchPageController {
   }
 
   void updateQuery(String value) {
-    state = state.copyWith(query: value, clearErrorMessage: true);
+    state = state.copyWith(query: value, errorMessage: null);
   }
 
   Future<void> submitSearch([String? value]) async {
@@ -35,10 +35,10 @@ class SearchPageController extends _$SearchPageController {
     if (nextQuery.isEmpty) {
       state = state.copyWith(
         query: '',
-        clearSubmittedQuery: true,
+        submittedQuery: null,
         results: const <SearchResultItem>[],
         isLoading: false,
-        clearErrorMessage: true,
+        errorMessage: null,
       );
       return;
     }
@@ -53,7 +53,7 @@ class SearchPageController extends _$SearchPageController {
       submittedQuery: nextQuery,
       recentKeywords: nextRecentKeywords,
       isLoading: true,
-      clearErrorMessage: true,
+      errorMessage: null,
     );
 
     await _historyStore.save(nextRecentKeywords);
@@ -80,10 +80,10 @@ class SearchPageController extends _$SearchPageController {
   void clearQuery() {
     state = state.copyWith(
       query: '',
-      clearSubmittedQuery: true,
+      submittedQuery: null,
       results: const <SearchResultItem>[],
       isLoading: false,
-      clearErrorMessage: true,
+      errorMessage: null,
     );
   }
 
