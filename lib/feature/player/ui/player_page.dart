@@ -341,6 +341,17 @@ class _PlayerPageState extends ConsumerState<PlayerPage> {
                                     ],
                                   ),
                                 ),
+                                if (liveState.hasQueue)
+                                  TextButton(
+                                    onPressed: () async {
+                                      await liveController.clearQueue();
+                                      if (!context.mounted) {
+                                        return;
+                                      }
+                                      Navigator.of(context).pop();
+                                    },
+                                    child: const Text('清空'),
+                                  ),
                                 IconButton.filledTonal(
                                   onPressed: liveState.hasQueue
                                       ? liveController.toggleQueueMode
@@ -358,12 +369,10 @@ class _PlayerPageState extends ConsumerState<PlayerPage> {
                             ),
                           ),
                           Expanded(
-                            child: ListView.separated(
+                            child: ListView.builder(
                               controller: scrollController,
                               padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
                               itemCount: liveState.queue.length,
-                              separatorBuilder: (_, _) =>
-                                  const SizedBox(height: 10),
                               itemBuilder: (BuildContext context, int index) {
                                 final PlayableItem queuedItem =
                                     liveState.queue[index];
@@ -376,105 +385,114 @@ class _PlayerPageState extends ConsumerState<PlayerPage> {
                                     ? queuedItem.author
                                     : 'P$page · $partTitle';
 
-                                return Material(
-                                  color: isCurrent
-                                      ? colorScheme.primary.withValues(
-                                          alpha: 0.1,
-                                        )
-                                      : colorScheme.surfaceContainerHighest
-                                            .withValues(alpha: 0.45),
-                                  borderRadius: BorderRadius.circular(20),
-                                  child: InkWell(
+                                return Padding(
+                                  padding: EdgeInsets.only(
+                                    bottom: index == liveState.queue.length - 1
+                                        ? 0
+                                        : 10,
+                                  ),
+                                  child: Material(
+                                    color: isCurrent
+                                        ? colorScheme.primary.withValues(
+                                            alpha: 0.1,
+                                          )
+                                        : colorScheme.surfaceContainerHighest
+                                              .withValues(alpha: 0.45),
                                     borderRadius: BorderRadius.circular(20),
-                                    onTap: () async {
-                                      Navigator.of(context).pop();
-                                      await liveController.skipToQueueIndex(
-                                        index,
-                                      );
-                                    },
-                                    child: Padding(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 14,
-                                        vertical: 10,
-                                      ),
-                                      child: Row(
-                                        children: <Widget>[
-                                          CircleAvatar(
-                                            radius: 18,
-                                            backgroundColor: isCurrent
-                                                ? colorScheme.primary
-                                                : colorScheme.primary
-                                                      .withValues(alpha: 0.12),
-                                            foregroundColor: isCurrent
-                                                ? colorScheme.onPrimary
-                                                : colorScheme.primary,
-                                            child: Text('${index + 1}'),
-                                          ),
-                                          const SizedBox(width: 12),
-                                          Expanded(
-                                            child: Column(
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.start,
-                                              children: <Widget>[
-                                                Text(
-                                                  queuedItem.title,
-                                                  maxLines: 1,
-                                                  overflow:
-                                                      TextOverflow.ellipsis,
-                                                  style: theme
-                                                      .textTheme
-                                                      .titleSmall
-                                                      ?.copyWith(
-                                                        fontWeight:
-                                                            FontWeight.w800,
-                                                      ),
-                                                ),
-                                                const SizedBox(height: 4),
-                                                Text(
-                                                  subtitle,
-                                                  maxLines: 1,
-                                                  overflow:
-                                                      TextOverflow.ellipsis,
-                                                  style: theme
-                                                      .textTheme
-                                                      .bodySmall
-                                                      ?.copyWith(
-                                                        color: colorScheme
-                                                            .onSurface
-                                                            .withValues(
-                                                              alpha: 0.64,
-                                                            ),
-                                                      ),
-                                                ),
-                                              ],
+                                    child: InkWell(
+                                      borderRadius: BorderRadius.circular(20),
+                                      onTap: () async {
+                                        Navigator.of(context).pop();
+                                        await liveController.skipToQueueIndex(
+                                          index,
+                                        );
+                                      },
+                                      child: Padding(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 14,
+                                          vertical: 10,
+                                        ),
+                                        child: Row(
+                                          children: <Widget>[
+                                            CircleAvatar(
+                                              radius: 18,
+                                              backgroundColor: isCurrent
+                                                  ? colorScheme.primary
+                                                  : colorScheme.primary
+                                                        .withValues(
+                                                          alpha: 0.12,
+                                                        ),
+                                              foregroundColor: isCurrent
+                                                  ? colorScheme.onPrimary
+                                                  : colorScheme.primary,
+                                              child: Text('${index + 1}'),
                                             ),
-                                          ),
-                                          if (isCurrent)
-                                            Icon(
-                                              Icons.graphic_eq_rounded,
-                                              color: colorScheme.primary,
+                                            const SizedBox(width: 12),
+                                            Expanded(
+                                              child: Column(
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
+                                                children: <Widget>[
+                                                  Text(
+                                                    queuedItem.title,
+                                                    maxLines: 1,
+                                                    overflow:
+                                                        TextOverflow.ellipsis,
+                                                    style: theme
+                                                        .textTheme
+                                                        .titleSmall
+                                                        ?.copyWith(
+                                                          fontWeight:
+                                                              FontWeight.w800,
+                                                        ),
+                                                  ),
+                                                  const SizedBox(height: 4),
+                                                  Text(
+                                                    subtitle,
+                                                    maxLines: 1,
+                                                    overflow:
+                                                        TextOverflow.ellipsis,
+                                                    style: theme
+                                                        .textTheme
+                                                        .bodySmall
+                                                        ?.copyWith(
+                                                          color: colorScheme
+                                                              .onSurface
+                                                              .withValues(
+                                                                alpha: 0.64,
+                                                              ),
+                                                        ),
+                                                  ),
+                                                ],
+                                              ),
                                             ),
-                                          IconButton(
-                                            tooltip: '移出队列',
-                                            onPressed: () async {
-                                              await liveController
-                                                  .removeQueueItemAt(index);
-                                              if (!context.mounted) {
-                                                return;
-                                              }
-                                              final PlayerState refreshedState =
-                                                  ref.read(
-                                                    playerControllerProvider,
-                                                  );
-                                              if (!refreshedState.hasQueue) {
-                                                Navigator.of(context).pop();
-                                              }
-                                            },
-                                            icon: const Icon(
-                                              Icons.close_rounded,
+                                            if (isCurrent)
+                                              Icon(
+                                                Icons.graphic_eq_rounded,
+                                                color: colorScheme.primary,
+                                              ),
+                                            IconButton(
+                                              tooltip: '移出队列',
+                                              onPressed: () async {
+                                                await liveController
+                                                    .removeQueueItemAt(index);
+                                                if (!context.mounted) {
+                                                  return;
+                                                }
+                                                final PlayerState
+                                                refreshedState = ref.read(
+                                                  playerControllerProvider,
+                                                );
+                                                if (!refreshedState.hasQueue) {
+                                                  Navigator.of(context).pop();
+                                                }
+                                              },
+                                              icon: const Icon(
+                                                Icons.close_rounded,
+                                              ),
                                             ),
-                                          ),
-                                        ],
+                                          ],
+                                        ),
                                       ),
                                     ),
                                   ),

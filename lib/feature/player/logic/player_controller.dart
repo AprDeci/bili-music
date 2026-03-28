@@ -318,6 +318,21 @@ class PlayerController extends Notifier<PlayerState> {
     await loadFromItem(nextQueue[targetIndex]);
   }
 
+  Future<void> clearQueue() async {
+    await stop();
+    state = state.copyWith(
+      queue: const <PlayableItem>[],
+      currentQueueIndex: null,
+      currentItem: null,
+      availableParts: const <PlayableItem>[],
+      audioStream: null,
+      queueSourceLabel: null,
+      isReady: false,
+      duration: null,
+      errorMessage: null,
+    );
+  }
+
   Future<void> skipToPrevious() async {
     if (state.position > const Duration(seconds: 3)) {
       await seek(Duration.zero);
