@@ -2,6 +2,8 @@ import 'package:bilimusic/feature/favorites/domain/favorite_collection.dart';
 import 'package:bilimusic/feature/favorites/domain/favorite_entry.dart';
 import 'package:bilimusic/feature/favorites/domain/favorites_state.dart';
 import 'package:bilimusic/feature/favorites/logic/favorites_controller.dart';
+import 'package:bilimusic/feature/player/domain/playable_item.dart';
+import 'package:bilimusic/feature/player/logic/player_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -35,6 +37,9 @@ class FavoriteCollectionPage extends ConsumerWidget {
     final List<FavoriteEntry> items = state.itemsForCollection(
       resolvedCollection.id,
     );
+    final List<PlayableItem> queueItems = items
+        .map((FavoriteEntry item) => item.toPlayableItem())
+        .toList(growable: false);
     final ThemeData theme = Theme.of(context);
 
     return Scaffold(
@@ -82,38 +87,29 @@ class FavoriteCollectionPage extends ConsumerWidget {
                 ),
               ),
             )
-          : ListView.separated(
+          : ListView(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-              itemBuilder: (BuildContext context, int index) {
-                final FavoriteEntry item = items[index];
-                return ListTile(
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 14,
-                    vertical: 6,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  tileColor: Colors.white,
-                  leading: ClipRRect(
-                    borderRadius: BorderRadius.circular(14),
-                    child: item.coverUrl.isEmpty
-                        ? Container(
-                            width: 56,
-                            height: 56,
-                            color: primary.withValues(alpha: 0.14),
-                            child: Icon(
-                              Icons.music_note_rounded,
-                              color: primary,
-                            ),
-                          )
-                        : Image.network(
-                            item.coverUrl,
-                            width: 56,
-                            height: 56,
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) {
-                              return Container(
+              children: <Widget>[
+                const SizedBox(height: 16),
+                ...List<Widget>.generate(items.length, (int index) {
+                  final FavoriteEntry item = items[index];
+                  return Padding(
+                    padding: EdgeInsets.only(
+                      bottom: index == items.length - 1 ? 0 : 10,
+                    ),
+                    child: ListTile(
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 6,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      tileColor: Colors.white,
+                      leading: ClipRRect(
+                        borderRadius: BorderRadius.circular(14),
+                        child: item.coverUrl.isEmpty
+                            ? Container(
                                 width: 56,
                                 height: 56,
                                 color: primary.withValues(alpha: 0.14),
@@ -121,32 +117,57 @@ class FavoriteCollectionPage extends ConsumerWidget {
                                   Icons.music_note_rounded,
                                   color: primary,
                                 ),
-                              );
-                            },
-                          ),
-                  ),
-                  title: Text(
-                    item.title,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.w700,
+                              )
+                            : Image.network(
+                                item.coverUrl,
+                                width: 56,
+                                height: 56,
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) {
+                                  return Container(
+                                    width: 56,
+                                    height: 56,
+                                    color: primary.withValues(alpha: 0.14),
+                                    child: Icon(
+                                      Icons.music_note_rounded,
+                                      color: primary,
+                                    ),
+                                  );
+                                },
+                              ),
+                      ),
+                      title: Text(
+                        item.title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      subtitle: Text(
+                        _buildSubtitle(item),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      trailing: resolvedCollection.isLikedCollection
+                          ? Icon(Icons.favorite_rounded, color: primary)
+                          : const Icon(Icons.play_arrow_rounded),
+                      onTap: () async {
+                        await ref
+                            .read(playerControllerProvider.notifier)
+                            .setQueue(
+                              queueItems,
+                              startIndex: index,
+                              sourceLabel: resolvedCollection.name,
+                            );
+                        if (context.mounted) {
+                          context.push('/player');
+                        }
+                      },
                     ),
-                  ),
-                  subtitle: Text(
-                    _buildSubtitle(item),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  trailing: resolvedCollection.isLikedCollection
-                      ? Icon(Icons.favorite_rounded, color: primary)
-                      : const Icon(Icons.play_arrow_rounded),
-                  onTap: () =>
-                      context.push('/player', extra: item.toPlayableItem()),
-                );
-              },
-              separatorBuilder: (_, _) => const SizedBox(height: 10),
-              itemCount: items.length,
+                  );
+                }),
+              ],
             ),
     );
   }
@@ -169,3 +190,4 @@ class FavoriteCollectionPage extends ConsumerWidget {
     return segments.join(' · ');
   }
 }
+

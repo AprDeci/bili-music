@@ -16,9 +16,11 @@ class PlayerMainPage extends StatelessWidget {
     required this.isFavorite,
     required this.onFavoriteToggle,
     required this.onSeek,
+    required this.onToggleQueueMode,
     required this.onBackward,
     required this.onTogglePlayback,
     required this.onForward,
+    required this.onOpenQueue,
   });
 
   final PlayerState state;
@@ -28,9 +30,11 @@ class PlayerMainPage extends StatelessWidget {
   final bool isFavorite;
   final VoidCallback? onFavoriteToggle;
   final ValueChanged<double> onSeek;
+  final VoidCallback onToggleQueueMode;
   final VoidCallback onBackward;
   final VoidCallback onTogglePlayback;
   final VoidCallback onForward;
+  final VoidCallback onOpenQueue;
 
   @override
   Widget build(BuildContext context) {
@@ -66,14 +70,63 @@ class PlayerMainPage extends StatelessWidget {
         const SizedBox(height: 18),
         PlayerTransportControls(
           state: state,
+          onToggleQueueMode: onToggleQueueMode,
           onBackward: onBackward,
           onTogglePlayback: onTogglePlayback,
           onForward: onForward,
+          onOpenQueue: onOpenQueue,
         ),
         const SizedBox(height: 30),
+        if (state.hasQueue) _PlayerQueueSummary(state: state),
+        if (state.hasQueue) const SizedBox(height: 18),
         PlayerPlaybackStatusChip(state: state),
         const SizedBox(height: 18),
       ],
+    );
+  }
+}
+
+class _PlayerQueueSummary extends StatelessWidget {
+  const _PlayerQueueSummary({required this.state});
+
+  final PlayerState state;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+    final int current = (state.currentQueueIndex ?? 0) + 1;
+    final String modeLabel = switch (state.queueMode) {
+      PlayerQueueMode.sequence => '顺序播放',
+      PlayerQueueMode.singleRepeat => '单曲循环',
+      PlayerQueueMode.shuffle => '随机播放',
+    };
+    final String source = state.queueSourceLabel?.trim() ?? '';
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: Row(
+        children: <Widget>[
+          Icon(Icons.queue_music_rounded, color: colorScheme.primary),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              source.isEmpty
+                  ? '队列 $current/${state.queue.length} · $modeLabel'
+                  : '$source · $current/${state.queue.length} · $modeLabel',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

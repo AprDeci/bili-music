@@ -69,15 +69,19 @@ class PlayerTransportControls extends StatelessWidget {
   const PlayerTransportControls({
     super.key,
     required this.state,
+    required this.onToggleQueueMode,
     required this.onBackward,
     required this.onTogglePlayback,
     required this.onForward,
+    required this.onOpenQueue,
   });
 
   final PlayerState state;
+  final VoidCallback onToggleQueueMode;
   final VoidCallback onBackward;
   final VoidCallback onTogglePlayback;
   final VoidCallback onForward;
+  final VoidCallback onOpenQueue;
 
   @override
   Widget build(BuildContext context) {
@@ -85,19 +89,31 @@ class PlayerTransportControls extends StatelessWidget {
     final Color iconColor = state.isReady
         ? colorScheme.onSurface
         : colorScheme.onSurface.withValues(alpha: 0.3);
+    final Color activeModeColor = state.isReady
+        ? colorScheme.primary
+        : colorScheme.primary.withValues(alpha: 0.4);
+    final bool canGoPrevious =
+        state.isReady &&
+        (state.hasPrevious || state.position > const Duration(seconds: 3));
+    final bool canGoNext =
+        state.isReady &&
+        (state.queueMode == PlayerQueueMode.singleRepeat ||
+            state.hasNext ||
+            (state.queueMode == PlayerQueueMode.shuffle &&
+                state.queue.isNotEmpty));
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: <Widget>[
         PlayerCircleActionButton(
-          icon: Icons.repeat_rounded,
-          color: iconColor,
-          onPressed: null,
+          icon: _buildQueueModeIcon(state.queueMode),
+          color: state.isReady ? activeModeColor : iconColor,
+          onPressed: state.hasQueue ? onToggleQueueMode : null,
         ),
         PlayerCircleActionButton(
           icon: Icons.skip_previous_rounded,
           color: iconColor,
-          onPressed: state.isReady ? onBackward : null,
+          onPressed: canGoPrevious ? onBackward : null,
         ),
         DecoratedBox(
           decoration: BoxDecoration(
@@ -130,15 +146,23 @@ class PlayerTransportControls extends StatelessWidget {
         PlayerCircleActionButton(
           icon: Icons.skip_next_rounded,
           color: iconColor,
-          onPressed: state.isReady ? onForward : null,
+          onPressed: canGoNext ? onForward : null,
         ),
         PlayerCircleActionButton(
           icon: Icons.list,
           color: iconColor,
-          onPressed: null,
+          onPressed: state.hasQueue ? onOpenQueue : null,
         ),
       ],
     );
+  }
+
+  IconData _buildQueueModeIcon(PlayerQueueMode mode) {
+    return switch (mode) {
+      PlayerQueueMode.sequence => Icons.repeat_rounded,
+      PlayerQueueMode.singleRepeat => Icons.repeat_one_rounded,
+      PlayerQueueMode.shuffle => Icons.shuffle_rounded,
+    };
   }
 }
 

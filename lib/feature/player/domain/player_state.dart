@@ -4,12 +4,18 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 
 part 'player_state.freezed.dart';
 
+enum PlayerQueueMode { sequence, singleRepeat, shuffle }
+
 @freezed
 abstract class PlayerState with _$PlayerState {
   const factory PlayerState({
     PlayableItem? currentItem,
     AudioStreamInfo? audioStream,
     @Default(<PlayableItem>[]) List<PlayableItem> availableParts,
+    @Default(<PlayableItem>[]) List<PlayableItem> queue,
+    int? currentQueueIndex,
+    String? queueSourceLabel,
+    @Default(PlayerQueueMode.sequence) PlayerQueueMode queueMode,
     @Default(false) bool isLoading,
     @Default(false) bool isReady,
     @Default(false) bool isPlaying,
@@ -24,4 +30,14 @@ abstract class PlayerState with _$PlayerState {
 
   bool get hasItem => currentItem != null;
   bool get hasError => errorMessage != null && errorMessage!.isNotEmpty;
+  bool get hasQueue => queue.isNotEmpty;
+  bool get hasActiveQueueIndex =>
+      currentQueueIndex != null &&
+      currentQueueIndex! >= 0 &&
+      currentQueueIndex! < queue.length;
+  PlayableItem? get currentQueueItem =>
+      hasActiveQueueIndex ? queue[currentQueueIndex!] : null;
+  bool get hasPrevious => hasActiveQueueIndex && currentQueueIndex! > 0;
+  bool get hasNext =>
+      hasActiveQueueIndex && currentQueueIndex! < queue.length - 1;
 }
