@@ -43,6 +43,7 @@ dependencies:
   hive_ce: 2.19.3
   hive_ce_flutter: 2.3.4
   path_provider: ^2.1.5
+  qr_flutter: ^4.1.0
   saver_gallery: ^4.1.0
   flutter_floating_bottom_bar: ^1.4.0
   just_audio: ^0.10.5
