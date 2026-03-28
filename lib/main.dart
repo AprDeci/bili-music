@@ -1,5 +1,6 @@
 import 'package:bilimusic/core/bili/session/bili_session_controller.dart';
 import 'package:bilimusic/core/hive/hive.dart';
+import 'package:bilimusic/feature/player/logic/player_controller.dart';
 import 'package:bilimusic/myApp.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -37,6 +38,9 @@ class _AppBootstrapState extends ConsumerState<_AppBootstrap> {
       }
       _didBootstrap = true;
       await ref.read(biliSessionControllerProvider.notifier).bootstrap();
+      await ref
+          .read(playerControllerProvider.notifier)
+          .restoreFromPersistence();
     });
   }
 

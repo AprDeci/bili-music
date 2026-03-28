@@ -10,6 +10,9 @@ extension HiveRegistrar on HiveInterface {
     registerAdapter(FavoriteCollectionAdapter());
     registerAdapter(FavoriteEntryAdapter());
     registerAdapter(FavoriteMembershipAdapter());
+    registerAdapter(PersistedPlayableItemAdapter());
+    registerAdapter(PersistedPlaybackQueueAdapter());
+    registerAdapter(PlayerQueueModeAdapter());
     registerAdapter(ThemeUiModelAdapter());
   }
 }
@@ -19,6 +22,9 @@ extension IsolatedHiveRegistrar on IsolatedHiveInterface {
     registerAdapter(FavoriteCollectionAdapter());
     registerAdapter(FavoriteEntryAdapter());
     registerAdapter(FavoriteMembershipAdapter());
+    registerAdapter(PersistedPlayableItemAdapter());
+    registerAdapter(PersistedPlaybackQueueAdapter());
+    registerAdapter(PlayerQueueModeAdapter());
     registerAdapter(ThemeUiModelAdapter());
   }
 }

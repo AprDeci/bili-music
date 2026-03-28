@@ -195,3 +195,183 @@ class FavoriteMembershipAdapter extends TypeAdapter<FavoriteMembership> {
           runtimeType == other.runtimeType &&
           typeId == other.typeId;
 }
+
+class PlayerQueueModeAdapter extends TypeAdapter<PlayerQueueMode> {
+  @override
+  final typeId = 4;
+
+  @override
+  PlayerQueueMode read(BinaryReader reader) {
+    switch (reader.readByte()) {
+      case 0:
+        return PlayerQueueMode.sequence;
+      case 1:
+        return PlayerQueueMode.singleRepeat;
+      case 2:
+        return PlayerQueueMode.shuffle;
+      default:
+        return PlayerQueueMode.sequence;
+    }
+  }
+
+  @override
+  void write(BinaryWriter writer, PlayerQueueMode obj) {
+    switch (obj) {
+      case PlayerQueueMode.sequence:
+        writer.writeByte(0);
+      case PlayerQueueMode.singleRepeat:
+        writer.writeByte(1);
+      case PlayerQueueMode.shuffle:
+        writer.writeByte(2);
+    }
+  }
+
+  @override
+  int get hashCode => typeId.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is PlayerQueueModeAdapter &&
+          runtimeType == other.runtimeType &&
+          typeId == other.typeId;
+}
+
+class PersistedPlayableItemAdapter extends TypeAdapter<PersistedPlayableItem> {
+  @override
+  final typeId = 5;
+
+  @override
+  PersistedPlayableItem read(BinaryReader reader) {
+    final numOfFields = reader.readByte();
+    final fields = <int, dynamic>{
+      for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
+    };
+    return PersistedPlayableItem(
+      aid: (fields[0] as num).toInt(),
+      bvid: fields[1] as String,
+      title: fields[2] as String,
+      author: fields[3] as String,
+      coverUrl: fields[4] as String,
+      cid: (fields[5] as num?)?.toInt(),
+      page: (fields[6] as num?)?.toInt(),
+      pageTitle: fields[7] as String?,
+      durationText: fields[8] as String?,
+      playCountText: fields[9] as String?,
+      danmakuCountText: fields[10] as String?,
+      likeCountText: fields[11] as String?,
+      coinCountText: fields[12] as String?,
+      favoriteCountText: fields[13] as String?,
+      shareCountText: fields[14] as String?,
+      replyCountText: fields[15] as String?,
+      publishTimeText: fields[16] as String?,
+      description: fields[17] as String?,
+    );
+  }
+
+  @override
+  void write(BinaryWriter writer, PersistedPlayableItem obj) {
+    writer
+      ..writeByte(18)
+      ..writeByte(0)
+      ..write(obj.aid)
+      ..writeByte(1)
+      ..write(obj.bvid)
+      ..writeByte(2)
+      ..write(obj.title)
+      ..writeByte(3)
+      ..write(obj.author)
+      ..writeByte(4)
+      ..write(obj.coverUrl)
+      ..writeByte(5)
+      ..write(obj.cid)
+      ..writeByte(6)
+      ..write(obj.page)
+      ..writeByte(7)
+      ..write(obj.pageTitle)
+      ..writeByte(8)
+      ..write(obj.durationText)
+      ..writeByte(9)
+      ..write(obj.playCountText)
+      ..writeByte(10)
+      ..write(obj.danmakuCountText)
+      ..writeByte(11)
+      ..write(obj.likeCountText)
+      ..writeByte(12)
+      ..write(obj.coinCountText)
+      ..writeByte(13)
+      ..write(obj.favoriteCountText)
+      ..writeByte(14)
+      ..write(obj.shareCountText)
+      ..writeByte(15)
+      ..write(obj.replyCountText)
+      ..writeByte(16)
+      ..write(obj.publishTimeText)
+      ..writeByte(17)
+      ..write(obj.description);
+  }
+
+  @override
+  int get hashCode => typeId.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is PersistedPlayableItemAdapter &&
+          runtimeType == other.runtimeType &&
+          typeId == other.typeId;
+}
+
+class PersistedPlaybackQueueAdapter
+    extends TypeAdapter<PersistedPlaybackQueue> {
+  @override
+  final typeId = 6;
+
+  @override
+  PersistedPlaybackQueue read(BinaryReader reader) {
+    final numOfFields = reader.readByte();
+    final fields = <int, dynamic>{
+      for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
+    };
+    return PersistedPlaybackQueue(
+      queue: fields[0] == null
+          ? []
+          : (fields[0] as List).cast<PersistedPlayableItem>(),
+      currentQueueIndex: (fields[1] as num?)?.toInt(),
+      queueMode: fields[2] == null
+          ? PlayerQueueMode.sequence
+          : fields[2] as PlayerQueueMode,
+      queueSourceLabel: fields[3] as String?,
+      resumePositionMs: fields[4] == null ? 0 : (fields[4] as num).toInt(),
+      savedAtEpochMs: (fields[5] as num?)?.toInt(),
+    );
+  }
+
+  @override
+  void write(BinaryWriter writer, PersistedPlaybackQueue obj) {
+    writer
+      ..writeByte(6)
+      ..writeByte(0)
+      ..write(obj.queue)
+      ..writeByte(1)
+      ..write(obj.currentQueueIndex)
+      ..writeByte(2)
+      ..write(obj.queueMode)
+      ..writeByte(3)
+      ..write(obj.queueSourceLabel)
+      ..writeByte(4)
+      ..write(obj.resumePositionMs)
+      ..writeByte(5)
+      ..write(obj.savedAtEpochMs);
+  }
+
+  @override
+  int get hashCode => typeId.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is PersistedPlaybackQueueAdapter &&
+          runtimeType == other.runtimeType &&
+          typeId == other.typeId;
+}

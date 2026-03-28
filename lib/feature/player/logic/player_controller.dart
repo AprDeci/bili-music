@@ -4,7 +4,9 @@ import 'dart:math';
 import 'package:bilimusic/core/bili/session/bili_session.dart';
 import 'package:bilimusic/core/bili/session/bili_session_controller.dart';
 import 'package:bilimusic/feature/player/data/bili_player_repository.dart';
+import 'package:bilimusic/feature/player/data/player_queue_local_repository.dart';
 import 'package:bilimusic/feature/player/domain/playable_item.dart';
+import 'package:bilimusic/feature/player/domain/persisted_playback_queue.dart';
 import 'package:bilimusic/feature/player/domain/player_state.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -19,6 +21,9 @@ class PlayerController extends Notifier<PlayerState> {
   late final BiliPlayerRepository _repository = ref.read(
     biliPlayerRepositoryProvider,
   );
+  late final PlayerQueueLocalRepository _queueRepository = ref.read(
+    playerQueueLocalRepositoryProvider,
+  );
   late final audio.AudioPlayer _audioPlayer = audio.AudioPlayer(
     useProxyForRequestHeaders: !_shouldDisableRequestHeadersProxy,
   );
@@ -27,6 +32,7 @@ class PlayerController extends Notifier<PlayerState> {
   bool _isDisposed = false;
   bool _isBound = false;
   bool _isAdvancingQueue = false;
+  bool _isRestoringFromPersistence = false;
   final Random _random;
 
   static bool get _shouldDisableRequestHeadersProxy {
@@ -70,6 +76,10 @@ class PlayerController extends Notifier<PlayerState> {
   }
 
   Future<void> loadFromItem(PlayableItem item, {bool autoplay = true}) async {
+    if (!_isRestoringFromPersistence) {
+      await _persistQueueSnapshot();
+    }
+
     if (!item.hasIdentity) {
       state = state.copyWith(
         currentItem: item,
@@ -81,6 +91,9 @@ class PlayerController extends Notifier<PlayerState> {
         audioStream: null,
         duration: null,
       );
+      if (!_isRestoringFromPersistence) {
+        await _persistQueueSnapshot();
+      }
       return;
     }
 
@@ -88,6 +101,8 @@ class PlayerController extends Notifier<PlayerState> {
     if (isSameItem && state.isReady) {
       if (autoplay && !state.isPlaying) {
         await play();
+      } else if (!_isRestoringFromPersistence) {
+        await _persistQueueSnapshot();
       }
       return;
     }
@@ -143,6 +158,9 @@ class PlayerController extends Notifier<PlayerState> {
       if (autoplay) {
         await play();
       }
+      if (!_isRestoringFromPersistence) {
+        await _persistQueueSnapshot();
+      }
     } on Object catch (error) {
       state = state.copyWith(
         isLoading: false,
@@ -154,6 +172,9 @@ class PlayerController extends Notifier<PlayerState> {
         audioStream: null,
         duration: null,
       );
+      if (!_isRestoringFromPersistence) {
+        await _persistQueueSnapshot();
+      }
     }
   }
 
@@ -166,6 +187,7 @@ class PlayerController extends Notifier<PlayerState> {
 
   Future<void> pause() async {
     await _audioPlayer.pause();
+    await _persistQueueSnapshot();
   }
 
   Future<void> togglePlayback() async {
@@ -199,6 +221,7 @@ class PlayerController extends Notifier<PlayerState> {
       position: Duration.zero,
       bufferedPosition: Duration.zero,
     );
+    await _persistQueueSnapshot();
   }
 
   Future<void> setQueue(
@@ -253,6 +276,7 @@ class PlayerController extends Notifier<PlayerState> {
         ...items,
       ]),
     );
+    await _persistQueueSnapshot();
   }
 
   Future<void> playNext(PlayableItem item) async {
@@ -265,6 +289,7 @@ class PlayerController extends Notifier<PlayerState> {
     final List<PlayableItem> nextQueue = List<PlayableItem>.of(state.queue);
     nextQueue.insert(insertIndex, item);
     state = state.copyWith(queue: List<PlayableItem>.unmodifiable(nextQueue));
+    await _persistQueueSnapshot();
   }
 
   Future<void> removeQueueItemAt(int index) async {
@@ -287,11 +312,13 @@ class PlayerController extends Notifier<PlayerState> {
         isReady: false,
         duration: null,
       );
+      await _queueRepository.clear();
       return;
     }
 
     if (currentIndex == null) {
       state = state.copyWith(queue: List<PlayableItem>.unmodifiable(nextQueue));
+      await _persistQueueSnapshot();
       return;
     }
 
@@ -300,11 +327,13 @@ class PlayerController extends Notifier<PlayerState> {
         queue: List<PlayableItem>.unmodifiable(nextQueue),
         currentQueueIndex: currentIndex - 1,
       );
+      await _persistQueueSnapshot();
       return;
     }
 
     if (index > currentIndex) {
       state = state.copyWith(queue: List<PlayableItem>.unmodifiable(nextQueue));
+      await _persistQueueSnapshot();
       return;
     }
 
@@ -331,6 +360,7 @@ class PlayerController extends Notifier<PlayerState> {
       duration: null,
       errorMessage: null,
     );
+    await _queueRepository.clear();
   }
 
   Future<void> skipToPrevious() async {
@@ -380,6 +410,63 @@ class PlayerController extends Notifier<PlayerState> {
       PlayerQueueMode.shuffle => PlayerQueueMode.sequence,
     };
     state = state.copyWith(queueMode: nextMode);
+    unawaited(_persistQueueSnapshot());
+  }
+
+  Future<void> restoreFromPersistence() async {
+    final PersistedPlaybackQueue? snapshot = _queueRepository.load();
+    if (snapshot == null) {
+      return;
+    }
+
+    final int? restoredIndex = snapshot.sanitizedCurrentQueueIndex;
+    final List<PlayableItem> restoredQueue = snapshot.queue
+        .map((PersistedPlayableItem item) => item.toPlayableItem())
+        .toList(growable: false);
+    if (restoredQueue.isEmpty || restoredIndex == null) {
+      await _queueRepository.clear();
+      return;
+    }
+
+    _isRestoringFromPersistence = true;
+    state = state.copyWith(
+      queue: List<PlayableItem>.unmodifiable(restoredQueue),
+      currentQueueIndex: restoredIndex,
+      currentItem: restoredQueue[restoredIndex],
+      queueMode: snapshot.queueMode,
+      queueSourceLabel: snapshot.queueSourceLabel,
+      errorMessage: null,
+    );
+
+    try {
+      await loadFromItem(restoredQueue[restoredIndex], autoplay: false);
+      if (!state.isReady) {
+        state = state.copyWith(
+          isPlaying: false,
+          isBuffering: false,
+          errorMessage: state.errorMessage ?? '恢复播放队列失败，请重试。',
+        );
+        return;
+      }
+      await _restorePosition(snapshot.resumePositionMs);
+      await pause();
+      state = state.copyWith(isPlaying: false, isBuffering: false);
+    } on Object catch (_) {
+      state = state.copyWith(
+        isLoading: false,
+        isReady: false,
+        isPlaying: false,
+        isBuffering: false,
+        audioStream: null,
+        availableParts: const <PlayableItem>[],
+        duration: null,
+        errorMessage: '恢复播放队列失败，请重试。',
+      );
+    } finally {
+      _isRestoringFromPersistence = false;
+    }
+
+    await _persistQueueSnapshot();
   }
 
   List<PlayableItem> _replaceCurrentQueueEntryIfNeeded(PlayableItem item) {
@@ -490,5 +577,77 @@ class PlayerController extends Notifier<PlayerState> {
     }
 
     await skipToNext();
+  }
+
+  Future<void> _persistQueueSnapshot() async {
+    final PersistedPlaybackQueue? snapshot = _buildSnapshot();
+    if (snapshot == null) {
+      await _queueRepository.clear();
+      return;
+    }
+    await _queueRepository.save(snapshot);
+  }
+
+  PersistedPlaybackQueue? _buildSnapshot() {
+    if (!state.hasQueue) {
+      return null;
+    }
+
+    return PersistedPlaybackQueue(
+      queue: state.queue
+          .map(PersistedPlayableItem.fromPlayableItem)
+          .toList(growable: false),
+      currentQueueIndex: state.currentQueueIndex,
+      queueMode: state.queueMode,
+      queueSourceLabel: state.queueSourceLabel,
+      resumePositionMs: _resolveResumePositionMs(),
+      savedAtEpochMs: DateTime.now().millisecondsSinceEpoch,
+    );
+  }
+
+  int _resolveResumePositionMs() {
+    if (!state.hasActiveQueueIndex) {
+      return 0;
+    }
+
+    final Duration position = state.position;
+    if (position <= Duration.zero) {
+      return 0;
+    }
+
+    final Duration? duration = state.duration;
+    if (duration == null || duration <= Duration.zero) {
+      return position.inMilliseconds;
+    }
+
+    final int remainingMs = duration.inMilliseconds - position.inMilliseconds;
+    if (remainingMs <= const Duration(seconds: 2).inMilliseconds) {
+      return 0;
+    }
+
+    if (position < const Duration(seconds: 3)) {
+      return 0;
+    }
+
+    return position.inMilliseconds.clamp(0, duration.inMilliseconds);
+  }
+
+  Future<void> _restorePosition(int resumePositionMs) async {
+    if (resumePositionMs <= 0) {
+      return;
+    }
+
+    final Duration? duration = state.duration;
+    if (duration == null || duration <= Duration.zero) {
+      await seek(Duration(milliseconds: resumePositionMs));
+      return;
+    }
+
+    final int targetMs = resumePositionMs.clamp(0, duration.inMilliseconds);
+    if (targetMs <= 0) {
+      return;
+    }
+
+    await seek(Duration(milliseconds: targetMs));
   }
 }
