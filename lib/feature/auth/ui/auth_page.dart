@@ -1,12 +1,13 @@
 import 'dart:io';
+import 'dart:ui' as ui;
 import 'dart:typed_data';
 
 import 'package:bilimusic/feature/auth/domain/bili_auth_models.dart';
 import 'package:bilimusic/feature/auth/logic/bili_auth_controller.dart';
-import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 import 'package:saver_gallery/saver_gallery.dart';
 
 class AuthPage extends ConsumerStatefulWidget {
@@ -237,20 +238,35 @@ class _QrCard extends StatelessWidget {
   const _QrCard({required this.qrUrl});
 
   final String qrUrl;
-  static final Dio _dio = Dio();
-
-  static String _qrImageUrl(String qrUrl) {
-    return 'https://api.qrserver.com/v1/create-qr-code/?size=280x280&data=${Uri.encodeComponent(qrUrl)}';
-  }
 
   Future<void> _saveQrImage(BuildContext context) async {
     final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
     try {
-      final Response<List<int>> response = await _dio.get<List<int>>(
-        _qrImageUrl(qrUrl),
-        options: Options(responseType: ResponseType.bytes),
+      if (!Platform.isAndroid && !Platform.isIOS) {
+        messenger.showSnackBar(
+          const SnackBar(content: Text('当前平台暂不支持直接保存到系统相册')),
+        );
+        return;
+      }
+
+      final QrPainter painter = QrPainter(
+        data: qrUrl,
+        version: QrVersions.auto,
+        gapless: true,
+        eyeStyle: const QrEyeStyle(
+          eyeShape: QrEyeShape.square,
+          color: Color(0xFF111111),
+        ),
+        dataModuleStyle: const QrDataModuleStyle(
+          dataModuleShape: QrDataModuleShape.square,
+          color: Color(0xFF111111),
+        ),
       );
-      final List<int>? bytes = response.data;
+      final ByteData? imageData = await painter.toImageData(
+        1200,
+        format: ui.ImageByteFormat.png,
+      );
+      final Uint8List? bytes = imageData?.buffer.asUint8List();
       if (bytes == null || bytes.isEmpty) {
         throw const FormatException('二维码数据为空');
       }
@@ -258,7 +274,7 @@ class _QrCard extends StatelessWidget {
       final String fileName =
           'bilimusic_qr_${DateTime.now().millisecondsSinceEpoch}.png';
       final SaveResult result = await SaverGallery.saveImage(
-        Uint8List.fromList(bytes),
+        bytes,
         fileName: fileName,
         skipIfExists: false,
         androidRelativePath: Platform.isAndroid ? 'Pictures/Bilimusic' : null,
@@ -293,20 +309,30 @@ class _QrCard extends StatelessWidget {
       ),
       child: Column(
         children: <Widget>[
-          Image.network(
-            _qrImageUrl(qrUrl),
+          Container(
             width: 240,
             height: 240,
-            fit: BoxFit.contain,
-            errorBuilder: (_, _, _) {
-              return Container(
-                width: 240,
-                height: 240,
-                alignment: Alignment.center,
-                color: Colors.white,
-                child: const Text('二维码加载失败'),
-              );
-            },
+            color: Colors.white,
+            alignment: Alignment.center,
+            child: QrImageView(
+              data: qrUrl,
+              version: QrVersions.auto,
+              size: 240,
+              padding: EdgeInsets.zero,
+              backgroundColor: Colors.white,
+              gapless: true,
+              eyeStyle: const QrEyeStyle(
+                eyeShape: QrEyeShape.square,
+                color: Color(0xFF111111),
+              ),
+              dataModuleStyle: const QrDataModuleStyle(
+                dataModuleShape: QrDataModuleShape.square,
+                color: Color(0xFF111111),
+              ),
+              errorStateBuilder: (_, __) {
+                return const Center(child: Text('二维码生成失败'));
+              },
+            ),
           ),
           const SizedBox(height: 16),
           const Text('请打开 B 站 App 扫码，并在手机上确认登录', textAlign: TextAlign.center),
@@ -399,4 +425,3 @@ class _StatusBanner extends StatelessWidget {
     }
   }
 }
-
