@@ -63,6 +63,7 @@ class _PlayerPageState extends ConsumerState<PlayerPage> {
       playerControllerProvider.notifier,
     );
     final PlayableItem? item = state.currentItem ?? widget.initialItem;
+    final List<PlayableItem> availableParts = state.availableParts;
     final bool isFavorite = item != null ? favoritesState.isLiked(item) : false;
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
@@ -125,6 +126,16 @@ class _PlayerPageState extends ConsumerState<PlayerPage> {
                               child: PlayerMainPage(
                                 state: state,
                                 item: item,
+                                availableParts: availableParts,
+                                onPartTap:
+                                    item == null || availableParts.length < 2
+                                    ? null
+                                    : () => _showPartSelector(
+                                        context: context,
+                                        parts: availableParts,
+                                        currentItem: item,
+                                        controller: playerController,
+                                      ),
                                 isFavorite: isFavorite,
                                 onFavoriteToggle: item == null
                                     ? null
@@ -174,5 +185,78 @@ class _PlayerPageState extends ConsumerState<PlayerPage> {
       ..showSnackBar(
         SnackBar(content: Text(isLiked ? '已加入“我喜欢”' : '已从“我喜欢”移除')),
       );
+  }
+
+  Future<void> _showPartSelector({
+    required BuildContext context,
+    required List<PlayableItem> parts,
+    required PlayableItem currentItem,
+    required PlayerController controller,
+  }) async {
+    await showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      builder: (BuildContext context) {
+        final ThemeData theme = Theme.of(context);
+        final ColorScheme colorScheme = theme.colorScheme;
+
+        return SafeArea(
+          child: ListView.separated(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+            itemBuilder: (BuildContext context, int index) {
+              final PlayableItem part = parts[index];
+              final bool isSelected = part == currentItem;
+              final String title = part.pageTitle?.trim() ?? '';
+              final int page = part.page ?? (index + 1);
+              final String label = title.isEmpty ? 'P$page' : 'P$page · $title';
+
+              return ListTile(
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 4,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(18),
+                ),
+                tileColor: isSelected
+                    ? colorScheme.primary.withValues(alpha: 0.1)
+                    : colorScheme.surfaceContainerHighest.withValues(
+                        alpha: 0.35,
+                      ),
+                leading: CircleAvatar(
+                  backgroundColor: isSelected
+                      ? colorScheme.primary
+                      : colorScheme.primary.withValues(alpha: 0.12),
+                  foregroundColor: isSelected
+                      ? colorScheme.onPrimary
+                      : colorScheme.primary,
+                  child: Text('P$page'),
+                ),
+                title: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                trailing: isSelected
+                    ? Icon(Icons.check_rounded, color: colorScheme.primary)
+                    : const Icon(Icons.play_arrow_rounded),
+                onTap: () {
+                  Navigator.of(context).pop();
+                  if (part != currentItem) {
+                    controller.loadFromItem(part);
+                  }
+                },
+              );
+            },
+            separatorBuilder: (_, _) => const SizedBox(height: 10),
+            itemCount: parts.length,
+          ),
+        );
+      },
+    );
   }
 }

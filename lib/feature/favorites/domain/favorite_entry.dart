@@ -41,6 +41,7 @@ abstract class FavoriteEntry with _$FavoriteEntry {
       title: title,
       author: author,
       coverUrl: coverUrl,
+      page: 1,
       durationText: durationText,
     );
   }

@@ -5,6 +5,9 @@ class PlayableItem {
     required this.title,
     required this.author,
     required this.coverUrl,
+    this.cid,
+    this.page,
+    this.pageTitle,
     this.durationText,
     this.playCountText,
     this.danmakuCountText,
@@ -17,11 +20,16 @@ class PlayableItem {
     this.description,
   });
 
+  static const Object _sentinel = Object();
+
   final int aid;
   final String bvid;
   final String title;
   final String author;
   final String coverUrl;
+  final int? cid;
+  final int? page;
+  final String? pageTitle;
   final String? durationText;
   final String? playCountText;
   final String? danmakuCountText;
@@ -36,6 +44,13 @@ class PlayableItem {
   bool get hasIdentity => aid > 0 || bvid.isNotEmpty;
 
   String get stableId {
+    final int? resolvedCid = cid;
+    if (resolvedCid != null && resolvedCid > 0) {
+      if (bvid.isNotEmpty) {
+        return 'bvid:$bvid:cid:$resolvedCid';
+      }
+      return 'aid:$aid:cid:$resolvedCid';
+    }
     if (bvid.isNotEmpty) {
       return 'bvid:$bvid';
     }
@@ -48,6 +63,9 @@ class PlayableItem {
     String? title,
     String? author,
     String? coverUrl,
+    Object? cid = _sentinel,
+    Object? page = _sentinel,
+    Object? pageTitle = _sentinel,
     String? durationText,
     String? playCountText,
     String? danmakuCountText,
@@ -65,6 +83,11 @@ class PlayableItem {
       title: title ?? this.title,
       author: author ?? this.author,
       coverUrl: coverUrl ?? this.coverUrl,
+      cid: identical(cid, _sentinel) ? this.cid : cid as int?,
+      page: identical(page, _sentinel) ? this.page : page as int?,
+      pageTitle: identical(pageTitle, _sentinel)
+          ? this.pageTitle
+          : pageTitle as String?,
       durationText: durationText ?? this.durationText,
       playCountText: playCountText ?? this.playCountText,
       danmakuCountText: danmakuCountText ?? this.danmakuCountText,
@@ -89,6 +112,9 @@ class PlayableItem {
         other.title == title &&
         other.author == author &&
         other.coverUrl == coverUrl &&
+        other.cid == cid &&
+        other.page == page &&
+        other.pageTitle == pageTitle &&
         other.durationText == durationText &&
         other.playCountText == playCountText &&
         other.danmakuCountText == danmakuCountText &&
@@ -108,6 +134,9 @@ class PlayableItem {
     title,
     author,
     coverUrl,
+    cid,
+    page,
+    pageTitle,
     durationText,
     playCountText,
     danmakuCountText,

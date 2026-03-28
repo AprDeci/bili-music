@@ -34,6 +34,7 @@ class SearchResultItem {
       title: title,
       author: author,
       coverUrl: coverUrl,
+      page: 1,
       durationText: duration,
       playCountText: playCountText,
       danmakuCountText: danmakuCountText,

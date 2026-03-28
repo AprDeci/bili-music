@@ -18,7 +18,7 @@ class BiliPlayerRepository {
     }
 
     final _VideoViewInfo viewInfo = await _fetchVideoView(item);
-    final _VideoPageInfo pageInfo = viewInfo.pages.first;
+    final _VideoPageInfo pageInfo = viewInfo.resolvePage(item);
 
     final Map<String, dynamic> json = await _apiClient.getJson(
       '/x/player/wbi/playurl',
@@ -64,7 +64,8 @@ class BiliPlayerRepository {
         (data['timelength'] as num? ?? 0).toInt() ~/ 1000;
 
     return PlayerLoadResult(
-      item: viewInfo.enrich(item),
+      item: viewInfo.enrich(item, pageInfo),
+      availableParts: viewInfo.buildPlayableItems(item),
       audioStream: AudioStreamInfo(
         streamUrl: streamUrl,
         backupUrls: backupUrls,
@@ -136,6 +137,7 @@ class BiliPlayerRepository {
   _VideoPageInfo _mapPageInfo(Map<String, dynamic> json) {
     return _VideoPageInfo(
       cid: (json['cid'] as num? ?? 0).toInt(),
+      page: (json['page'] as num? ?? 1).toInt(),
       part: json['part'] as String? ?? 'P1',
     );
   }
@@ -238,9 +240,14 @@ class BiliPlayerRepository {
 }
 
 class PlayerLoadResult {
-  const PlayerLoadResult({required this.item, required this.audioStream});
+  const PlayerLoadResult({
+    required this.item,
+    required this.availableParts,
+    required this.audioStream,
+  });
 
   final PlayableItem item;
+  final List<PlayableItem> availableParts;
   final AudioStreamInfo audioStream;
 }
 
@@ -282,10 +289,39 @@ class _VideoViewInfo {
   final String? replyCountText;
   final String? publishTimeText;
 
-  PlayableItem enrich(PlayableItem item) {
+  _VideoPageInfo resolvePage(PlayableItem item) {
+    final int? targetCid = item.cid;
+    if (targetCid != null && targetCid > 0) {
+      for (final _VideoPageInfo page in pages) {
+        if (page.cid == targetCid) {
+          return page;
+        }
+      }
+    }
+
+    final int? targetPage = item.page;
+    if (targetPage != null && targetPage > 0 && targetPage <= pages.length) {
+      return pages[targetPage - 1];
+    }
+
+    return pages.first;
+  }
+
+  List<PlayableItem> buildPlayableItems(PlayableItem item) {
+    return pages
+        .map((_VideoPageInfo pageInfo) {
+          return enrich(item, pageInfo);
+        })
+        .toList(growable: false);
+  }
+
+  PlayableItem enrich(PlayableItem item, _VideoPageInfo pageInfo) {
     return item.copyWith(
       title: title,
       author: author,
+      cid: pageInfo.cid,
+      page: pageInfo.page,
+      pageTitle: pageInfo.part,
       description: description,
       playCountText: playCountText,
       danmakuCountText: danmakuCountText,
@@ -300,8 +336,13 @@ class _VideoViewInfo {
 }
 
 class _VideoPageInfo {
-  const _VideoPageInfo({required this.cid, required this.part});
+  const _VideoPageInfo({
+    required this.cid,
+    required this.page,
+    required this.part,
+  });
 
   final int cid;
+  final int page;
   final String part;
 }

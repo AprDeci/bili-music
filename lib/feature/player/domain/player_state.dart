@@ -9,6 +9,7 @@ abstract class PlayerState with _$PlayerState {
   const factory PlayerState({
     PlayableItem? currentItem,
     AudioStreamInfo? audioStream,
+    @Default(<PlayableItem>[]) List<PlayableItem> availableParts,
     @Default(false) bool isLoading,
     @Default(false) bool isReady,
     @Default(false) bool isPlaying,

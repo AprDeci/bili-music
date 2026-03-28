@@ -74,6 +74,7 @@ class PlayerController extends Notifier<PlayerState> {
     if (!item.hasIdentity) {
       state = state.copyWith(
         currentItem: item,
+        availableParts: const <PlayableItem>[],
         isLoading: false,
         isReady: false,
         isPlaying: false,
@@ -94,6 +95,7 @@ class PlayerController extends Notifier<PlayerState> {
 
     state = state.copyWith(
       currentItem: item,
+      availableParts: state.availableParts,
       isLoading: true,
       isReady: false,
       isPlaying: false,
@@ -113,6 +115,7 @@ class PlayerController extends Notifier<PlayerState> {
         session: session,
       );
       final PlayableItem resolvedItem = loadResult.item;
+      final List<PlayableItem> availableParts = loadResult.availableParts;
       final audioStream = loadResult.audioStream;
 
       final Map<String, String>? headers =
@@ -129,6 +132,7 @@ class PlayerController extends Notifier<PlayerState> {
 
       state = state.copyWith(
         currentItem: resolvedItem,
+        availableParts: availableParts,
         audioStream: audioStream,
         isLoading: false,
         isReady: true,
@@ -145,6 +149,7 @@ class PlayerController extends Notifier<PlayerState> {
         isReady: false,
         isPlaying: false,
         isBuffering: false,
+        availableParts: const <PlayableItem>[],
         errorMessage: error.toString(),
         audioStream: null,
         duration: null,
