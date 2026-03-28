@@ -1,9 +1,13 @@
+import 'dart:io';
+import 'dart:typed_data';
+
 import 'package:bilimusic/feature/auth/domain/bili_auth_models.dart';
 import 'package:bilimusic/feature/auth/logic/bili_auth_controller.dart';
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:saver_gallery/saver_gallery.dart';
 
 class AuthPage extends ConsumerStatefulWidget {
   const AuthPage({super.key});
@@ -73,7 +77,7 @@ class _AuthPageState extends ConsumerState<AuthPage> {
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 460),
               child: Container(
-                padding: const EdgeInsets.all(24),
+                padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   gradient: const LinearGradient(
                     begin: Alignment.topCenter,
@@ -135,9 +139,7 @@ class _AuthContent extends StatelessWidget {
               ? const _QrLoadingCard()
               : const _QrPlaceholder(),
         ),
-        const SizedBox(height: 18),
         _StatusBanner(state: state),
-        const SizedBox(height: 18),
         FilledButton(
           onPressed: state.isBusy
               ? null
@@ -235,6 +237,52 @@ class _QrCard extends StatelessWidget {
   const _QrCard({required this.qrUrl});
 
   final String qrUrl;
+  static final Dio _dio = Dio();
+
+  static String _qrImageUrl(String qrUrl) {
+    return 'https://api.qrserver.com/v1/create-qr-code/?size=280x280&data=${Uri.encodeComponent(qrUrl)}';
+  }
+
+  Future<void> _saveQrImage(BuildContext context) async {
+    final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
+    try {
+      final Response<List<int>> response = await _dio.get<List<int>>(
+        _qrImageUrl(qrUrl),
+        options: Options(responseType: ResponseType.bytes),
+      );
+      final List<int>? bytes = response.data;
+      if (bytes == null || bytes.isEmpty) {
+        throw const FormatException('二维码数据为空');
+      }
+
+      final String fileName =
+          'bilimusic_qr_${DateTime.now().millisecondsSinceEpoch}.png';
+      final SaveResult result = await SaverGallery.saveImage(
+        Uint8List.fromList(bytes),
+        fileName: fileName,
+        skipIfExists: false,
+        androidRelativePath: Platform.isAndroid ? 'Pictures/Bilimusic' : null,
+      );
+
+      if (!context.mounted) {
+        return;
+      }
+
+      if (result.isSuccess) {
+        messenger.showSnackBar(const SnackBar(content: Text('二维码已保存到系统相册')));
+        return;
+      }
+
+      messenger.showSnackBar(
+        SnackBar(content: Text(result.errorMessage ?? '保存二维码失败')),
+      );
+    } on Object catch (_) {
+      if (!context.mounted) {
+        return;
+      }
+      messenger.showSnackBar(const SnackBar(content: Text('保存二维码失败，请稍后重试')));
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -242,32 +290,40 @@ class _QrCard extends StatelessWidget {
       key: ValueKey<String>(qrUrl),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: const Color(0xFFF7FAFD),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: const Color(0xFFD5E2EE)),
       ),
       child: Column(
         children: <Widget>[
-          ClipRRect(
-            borderRadius: BorderRadius.circular(20),
-            child: Image.network(
-              'https://api.qrserver.com/v1/create-qr-code/?size=280x280&data=${Uri.encodeComponent(qrUrl)}',
-              width: 240,
-              height: 240,
-              fit: BoxFit.cover,
-              errorBuilder: (_, _, _) {
-                return Container(
-                  width: 240,
-                  height: 240,
-                  alignment: Alignment.center,
-                  color: Colors.white,
-                  child: const Text('二维码加载失败'),
-                );
-              },
-            ),
+          Image.network(
+            _qrImageUrl(qrUrl),
+            width: 240,
+            height: 240,
+            fit: BoxFit.contain,
+            errorBuilder: (_, _, _) {
+              return Container(
+                width: 240,
+                height: 240,
+                alignment: Alignment.center,
+                color: Colors.white,
+                child: const Text('二维码加载失败'),
+              );
+            },
           ),
           const SizedBox(height: 16),
           const Text('请打开 B 站 App 扫码，并在手机上确认登录', textAlign: TextAlign.center),
+          const SizedBox(height: 14),
+          OutlinedButton.icon(
+            onPressed: () => _saveQrImage(context),
+            icon: const Icon(Icons.download_rounded),
+            label: const Text('保存图片'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: const Color(0xFF163B5C),
+              side: const BorderSide(color: Color(0xFFD5E2EE)),
+              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -286,10 +342,6 @@ class _StatusBanner extends StatelessWidget {
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      decoration: BoxDecoration(
-        color: appearance.background,
-        borderRadius: BorderRadius.circular(16),
-      ),
       child: Text(
         appearance.text,
         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
