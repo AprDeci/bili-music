@@ -1,5 +1,7 @@
 import 'package:bilimusic/feature/favorites/logic/favorites_controller.dart';
 import 'package:bilimusic/feature/player/data/bili_player_repository.dart';
+import 'package:bilimusic/feature/player/domain/playable_item.dart';
+import 'package:bilimusic/feature/player/logic/player_controller.dart';
 import 'package:bilimusic/feature/search/domain/search_state.dart';
 import 'package:bilimusic/feature/search/domain/search_result_item.dart';
 import 'package:bilimusic/feature/search/logic/search_controller.dart';
@@ -227,6 +229,38 @@ class _SearchPageState extends ConsumerState<SearchPage> {
                     errorMessage: state.errorMessage,
                     loadMoreErrorMessage: state.loadMoreErrorMessage,
                     onRetryLoadMore: controller.loadNextPage,
+                    onPlayItem: (SearchResultItem item) async {
+                      await ref
+                          .read(playerControllerProvider.notifier)
+                          .setQueue(<PlayableItem>[
+                            item.toPlayableItem(),
+                          ], sourceLabel: '搜索结果');
+                      if (context.mounted) {
+                        context.push('/player');
+                      }
+                    },
+                    onPlayNext: (SearchResultItem item) async {
+                      final PlayableItem resolvedItem = await ref
+                          .read(biliPlayerRepositoryProvider)
+                          .resolvePreferredPart(
+                            item.toPlayableItem(),
+                            preferredPage: 1,
+                          );
+                      await ref
+                          .read(playerControllerProvider.notifier)
+                          .playNext(resolvedItem);
+                    },
+                    onEnqueue: (SearchResultItem item) async {
+                      final PlayableItem resolvedItem = await ref
+                          .read(biliPlayerRepositoryProvider)
+                          .resolvePreferredPart(
+                            item.toPlayableItem(),
+                            preferredPage: 1,
+                          );
+                      await ref.read(playerControllerProvider.notifier).enqueue(
+                        <PlayableItem>[resolvedItem],
+                      );
+                    },
                   ),
                 ],
               ),
@@ -248,6 +282,9 @@ class _SearchResultSection extends StatelessWidget {
     required this.errorMessage,
     required this.loadMoreErrorMessage,
     required this.onRetryLoadMore,
+    required this.onPlayItem,
+    required this.onPlayNext,
+    required this.onEnqueue,
   });
 
   final String? submittedQuery;
@@ -258,6 +295,9 @@ class _SearchResultSection extends StatelessWidget {
   final String? errorMessage;
   final String? loadMoreErrorMessage;
   final VoidCallback onRetryLoadMore;
+  final Future<void> Function(SearchResultItem item) onPlayItem;
+  final Future<void> Function(SearchResultItem item) onPlayNext;
+  final Future<void> Function(SearchResultItem item) onEnqueue;
 
   @override
   Widget build(BuildContext context) {
@@ -412,7 +452,7 @@ class _SearchResultSection extends StatelessWidget {
                 color: Colors.transparent,
                 child: InkWell(
                   borderRadius: BorderRadius.circular(22),
-                  onTap: () => context.push('/player', extra: playableItem),
+                  onTap: () => onPlayItem(item),
                   child: Container(
                     margin: const EdgeInsets.only(bottom: 12),
                     padding: const EdgeInsets.all(14),
@@ -577,16 +617,78 @@ class _SearchResultSection extends StatelessWidget {
                               ),
                             ),
                             const SizedBox(height: 8),
-                            Container(
-                              width: 34,
-                              height: 34,
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFEFF6FF),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: const Icon(
-                                Icons.play_arrow_rounded,
-                                color: Color(0xFF2563EB),
+                            PopupMenuButton<_SearchQueueAction>(
+                              tooltip: '队列操作',
+                              onSelected: (_SearchQueueAction action) async {
+                                final ScaffoldMessengerState messenger =
+                                    ScaffoldMessenger.of(context);
+                                try {
+                                  switch (action) {
+                                    case _SearchQueueAction.playNext:
+                                      await onPlayNext(item);
+                                      if (context.mounted) {
+                                        messenger
+                                          ..hideCurrentSnackBar()
+                                          ..showSnackBar(
+                                            const SnackBar(
+                                              content: Text('已加入下一首'),
+                                            ),
+                                          );
+                                      }
+                                    case _SearchQueueAction.enqueue:
+                                      await onEnqueue(item);
+                                      if (context.mounted) {
+                                        messenger
+                                          ..hideCurrentSnackBar()
+                                          ..showSnackBar(
+                                            const SnackBar(
+                                              content: Text('已加入播放队列'),
+                                            ),
+                                          );
+                                      }
+                                  }
+                                } on Object catch (error) {
+                                  if (context.mounted) {
+                                    messenger
+                                      ..hideCurrentSnackBar()
+                                      ..showSnackBar(
+                                        SnackBar(content: Text('操作失败: $error')),
+                                      );
+                                  }
+                                }
+                              },
+                              itemBuilder: (BuildContext context) =>
+                                  const <PopupMenuEntry<_SearchQueueAction>>[
+                                    PopupMenuItem<_SearchQueueAction>(
+                                      value: _SearchQueueAction.playNext,
+                                      child: ListTile(
+                                        leading: Icon(Icons.skip_next_rounded),
+                                        title: Text('下一首播放'),
+                                        contentPadding: EdgeInsets.zero,
+                                      ),
+                                    ),
+                                    PopupMenuItem<_SearchQueueAction>(
+                                      value: _SearchQueueAction.enqueue,
+                                      child: ListTile(
+                                        leading: Icon(
+                                          Icons.queue_music_rounded,
+                                        ),
+                                        title: Text('加入队列'),
+                                        contentPadding: EdgeInsets.zero,
+                                      ),
+                                    ),
+                                  ],
+                              child: Container(
+                                width: 34,
+                                height: 34,
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFEFF6FF),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: const Icon(
+                                  Icons.more_horiz_rounded,
+                                  color: Color(0xFF2563EB),
+                                ),
                               ),
                             ),
                           ],
@@ -609,6 +711,8 @@ class _SearchResultSection extends StatelessWidget {
     );
   }
 }
+
+enum _SearchQueueAction { playNext, enqueue }
 
 class _SearchResultFooter extends StatelessWidget {
   const _SearchResultFooter({
