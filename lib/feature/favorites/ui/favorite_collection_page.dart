@@ -134,9 +134,7 @@ class FavoriteCollectionPage extends ConsumerWidget {
                     ),
                   ),
                   subtitle: Text(
-                    item.durationText == null || item.durationText!.isEmpty
-                        ? item.author
-                        : '${item.author} · ${item.durationText}',
+                    _buildSubtitle(item),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -151,5 +149,23 @@ class FavoriteCollectionPage extends ConsumerWidget {
               itemCount: items.length,
             ),
     );
+  }
+
+  String _buildSubtitle(FavoriteEntry item) {
+    final List<String> segments = <String>[item.author];
+    final int? page = item.page;
+    final String pageTitle = item.pageTitle?.trim() ?? '';
+
+    if (page != null && page > 0) {
+      segments.add('P$page');
+    }
+    if (pageTitle.isNotEmpty) {
+      segments.add(pageTitle);
+    }
+    if (item.durationText != null && item.durationText!.isNotEmpty) {
+      segments.add(item.durationText!);
+    }
+
+    return segments.join(' · ');
   }
 }

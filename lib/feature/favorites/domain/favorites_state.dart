@@ -37,6 +37,33 @@ abstract class FavoritesState with _$FavoritesState {
     return likedItemIds.contains(item.stableId);
   }
 
+  bool isLikedVideoPage({
+    required int aid,
+    required String bvid,
+    required int page,
+  }) {
+    if (aid <= 0 && bvid.isEmpty) {
+      return false;
+    }
+
+    final Set<String> likedIds = likedItemIds;
+    for (final FavoriteEntry entry in entries) {
+      if (!likedIds.contains(entry.itemId)) {
+        continue;
+      }
+      final bool sameVideo = bvid.isNotEmpty
+          ? entry.bvid == bvid
+          : entry.aid == aid;
+      if (!sameVideo) {
+        continue;
+      }
+      if (entry.page == page) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   bool hasCollection(String collectionId) {
     return collections.any(
       (FavoriteCollection collection) => collection.id == collectionId,

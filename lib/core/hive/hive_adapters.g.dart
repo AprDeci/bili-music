@@ -103,6 +103,9 @@ class FavoriteEntryAdapter extends TypeAdapter<FavoriteEntry> {
       title: fields[3] as String,
       author: fields[4] as String,
       coverUrl: fields[5] as String,
+      cid: (fields[9] as num?)?.toInt(),
+      page: (fields[10] as num?)?.toInt(),
+      pageTitle: fields[11] as String?,
       durationText: fields[6] as String?,
       createdAt: fields[7] as DateTime,
       updatedAt: fields[8] as DateTime,
@@ -112,7 +115,7 @@ class FavoriteEntryAdapter extends TypeAdapter<FavoriteEntry> {
   @override
   void write(BinaryWriter writer, FavoriteEntry obj) {
     writer
-      ..writeByte(9)
+      ..writeByte(12)
       ..writeByte(0)
       ..write(obj.itemId)
       ..writeByte(1)
@@ -130,7 +133,13 @@ class FavoriteEntryAdapter extends TypeAdapter<FavoriteEntry> {
       ..writeByte(7)
       ..write(obj.createdAt)
       ..writeByte(8)
-      ..write(obj.updatedAt);
+      ..write(obj.updatedAt)
+      ..writeByte(9)
+      ..write(obj.cid)
+      ..writeByte(10)
+      ..write(obj.page)
+      ..writeByte(11)
+      ..write(obj.pageTitle);
   }
 
   @override

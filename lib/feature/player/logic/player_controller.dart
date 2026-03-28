@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:bilimusic/core/bili/net/bili_api_client.dart';
 import 'package:bilimusic/core/bili/session/bili_session.dart';
 import 'package:bilimusic/core/bili/session/bili_session_controller.dart';
 import 'package:bilimusic/feature/player/data/bili_player_repository.dart';
@@ -9,11 +8,6 @@ import 'package:bilimusic/feature/player/domain/player_state.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:just_audio/just_audio.dart' as audio;
-
-final Provider<BiliPlayerRepository> biliPlayerRepositoryProvider =
-    Provider<BiliPlayerRepository>((Ref ref) {
-      return BiliPlayerRepository(ref.read(biliApiClientProvider));
-    });
 
 final NotifierProvider<PlayerController, PlayerState> playerControllerProvider =
     NotifierProvider<PlayerController, PlayerState>(PlayerController.new);

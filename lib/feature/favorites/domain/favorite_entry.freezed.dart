@@ -14,7 +14,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$FavoriteEntry {
 
- String get itemId; int get aid; String get bvid; String get title; String get author; String get coverUrl; String? get durationText; DateTime get createdAt; DateTime get updatedAt;
+ String get itemId; int get aid; String get bvid; String get title; String get author; String get coverUrl; int? get cid; int? get page; String? get pageTitle; String? get durationText; DateTime get createdAt; DateTime get updatedAt;
 /// Create a copy of FavoriteEntry
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -25,16 +25,16 @@ $FavoriteEntryCopyWith<FavoriteEntry> get copyWith => _$FavoriteEntryCopyWithImp
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is FavoriteEntry&&(identical(other.itemId, itemId) || other.itemId == itemId)&&(identical(other.aid, aid) || other.aid == aid)&&(identical(other.bvid, bvid) || other.bvid == bvid)&&(identical(other.title, title) || other.title == title)&&(identical(other.author, author) || other.author == author)&&(identical(other.coverUrl, coverUrl) || other.coverUrl == coverUrl)&&(identical(other.durationText, durationText) || other.durationText == durationText)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is FavoriteEntry&&(identical(other.itemId, itemId) || other.itemId == itemId)&&(identical(other.aid, aid) || other.aid == aid)&&(identical(other.bvid, bvid) || other.bvid == bvid)&&(identical(other.title, title) || other.title == title)&&(identical(other.author, author) || other.author == author)&&(identical(other.coverUrl, coverUrl) || other.coverUrl == coverUrl)&&(identical(other.cid, cid) || other.cid == cid)&&(identical(other.page, page) || other.page == page)&&(identical(other.pageTitle, pageTitle) || other.pageTitle == pageTitle)&&(identical(other.durationText, durationText) || other.durationText == durationText)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,itemId,aid,bvid,title,author,coverUrl,durationText,createdAt,updatedAt);
+int get hashCode => Object.hash(runtimeType,itemId,aid,bvid,title,author,coverUrl,cid,page,pageTitle,durationText,createdAt,updatedAt);
 
 @override
 String toString() {
-  return 'FavoriteEntry(itemId: $itemId, aid: $aid, bvid: $bvid, title: $title, author: $author, coverUrl: $coverUrl, durationText: $durationText, createdAt: $createdAt, updatedAt: $updatedAt)';
+  return 'FavoriteEntry(itemId: $itemId, aid: $aid, bvid: $bvid, title: $title, author: $author, coverUrl: $coverUrl, cid: $cid, page: $page, pageTitle: $pageTitle, durationText: $durationText, createdAt: $createdAt, updatedAt: $updatedAt)';
 }
 
 
@@ -45,7 +45,7 @@ abstract mixin class $FavoriteEntryCopyWith<$Res>  {
   factory $FavoriteEntryCopyWith(FavoriteEntry value, $Res Function(FavoriteEntry) _then) = _$FavoriteEntryCopyWithImpl;
 @useResult
 $Res call({
- String itemId, int aid, String bvid, String title, String author, String coverUrl, String? durationText, DateTime createdAt, DateTime updatedAt
+ String itemId, int aid, String bvid, String title, String author, String coverUrl, int? cid, int? page, String? pageTitle, String? durationText, DateTime createdAt, DateTime updatedAt
 });
 
 
@@ -62,7 +62,7 @@ class _$FavoriteEntryCopyWithImpl<$Res>
 
 /// Create a copy of FavoriteEntry
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? itemId = null,Object? aid = null,Object? bvid = null,Object? title = null,Object? author = null,Object? coverUrl = null,Object? durationText = freezed,Object? createdAt = null,Object? updatedAt = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? itemId = null,Object? aid = null,Object? bvid = null,Object? title = null,Object? author = null,Object? coverUrl = null,Object? cid = freezed,Object? page = freezed,Object? pageTitle = freezed,Object? durationText = freezed,Object? createdAt = null,Object? updatedAt = null,}) {
   return _then(_self.copyWith(
 itemId: null == itemId ? _self.itemId : itemId // ignore: cast_nullable_to_non_nullable
 as String,aid: null == aid ? _self.aid : aid // ignore: cast_nullable_to_non_nullable
@@ -70,7 +70,10 @@ as int,bvid: null == bvid ? _self.bvid : bvid // ignore: cast_nullable_to_non_nu
 as String,title: null == title ? _self.title : title // ignore: cast_nullable_to_non_nullable
 as String,author: null == author ? _self.author : author // ignore: cast_nullable_to_non_nullable
 as String,coverUrl: null == coverUrl ? _self.coverUrl : coverUrl // ignore: cast_nullable_to_non_nullable
-as String,durationText: freezed == durationText ? _self.durationText : durationText // ignore: cast_nullable_to_non_nullable
+as String,cid: freezed == cid ? _self.cid : cid // ignore: cast_nullable_to_non_nullable
+as int?,page: freezed == page ? _self.page : page // ignore: cast_nullable_to_non_nullable
+as int?,pageTitle: freezed == pageTitle ? _self.pageTitle : pageTitle // ignore: cast_nullable_to_non_nullable
+as String?,durationText: freezed == durationText ? _self.durationText : durationText // ignore: cast_nullable_to_non_nullable
 as String?,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
 as DateTime,updatedAt: null == updatedAt ? _self.updatedAt : updatedAt // ignore: cast_nullable_to_non_nullable
 as DateTime,
@@ -158,10 +161,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String itemId,  int aid,  String bvid,  String title,  String author,  String coverUrl,  String? durationText,  DateTime createdAt,  DateTime updatedAt)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String itemId,  int aid,  String bvid,  String title,  String author,  String coverUrl,  int? cid,  int? page,  String? pageTitle,  String? durationText,  DateTime createdAt,  DateTime updatedAt)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _FavoriteEntry() when $default != null:
-return $default(_that.itemId,_that.aid,_that.bvid,_that.title,_that.author,_that.coverUrl,_that.durationText,_that.createdAt,_that.updatedAt);case _:
+return $default(_that.itemId,_that.aid,_that.bvid,_that.title,_that.author,_that.coverUrl,_that.cid,_that.page,_that.pageTitle,_that.durationText,_that.createdAt,_that.updatedAt);case _:
   return orElse();
 
 }
@@ -179,10 +182,10 @@ return $default(_that.itemId,_that.aid,_that.bvid,_that.title,_that.author,_that
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String itemId,  int aid,  String bvid,  String title,  String author,  String coverUrl,  String? durationText,  DateTime createdAt,  DateTime updatedAt)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String itemId,  int aid,  String bvid,  String title,  String author,  String coverUrl,  int? cid,  int? page,  String? pageTitle,  String? durationText,  DateTime createdAt,  DateTime updatedAt)  $default,) {final _that = this;
 switch (_that) {
 case _FavoriteEntry():
-return $default(_that.itemId,_that.aid,_that.bvid,_that.title,_that.author,_that.coverUrl,_that.durationText,_that.createdAt,_that.updatedAt);case _:
+return $default(_that.itemId,_that.aid,_that.bvid,_that.title,_that.author,_that.coverUrl,_that.cid,_that.page,_that.pageTitle,_that.durationText,_that.createdAt,_that.updatedAt);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -199,10 +202,10 @@ return $default(_that.itemId,_that.aid,_that.bvid,_that.title,_that.author,_that
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String itemId,  int aid,  String bvid,  String title,  String author,  String coverUrl,  String? durationText,  DateTime createdAt,  DateTime updatedAt)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String itemId,  int aid,  String bvid,  String title,  String author,  String coverUrl,  int? cid,  int? page,  String? pageTitle,  String? durationText,  DateTime createdAt,  DateTime updatedAt)?  $default,) {final _that = this;
 switch (_that) {
 case _FavoriteEntry() when $default != null:
-return $default(_that.itemId,_that.aid,_that.bvid,_that.title,_that.author,_that.coverUrl,_that.durationText,_that.createdAt,_that.updatedAt);case _:
+return $default(_that.itemId,_that.aid,_that.bvid,_that.title,_that.author,_that.coverUrl,_that.cid,_that.page,_that.pageTitle,_that.durationText,_that.createdAt,_that.updatedAt);case _:
   return null;
 
 }
@@ -214,7 +217,7 @@ return $default(_that.itemId,_that.aid,_that.bvid,_that.title,_that.author,_that
 
 
 class _FavoriteEntry extends FavoriteEntry {
-  const _FavoriteEntry({required this.itemId, required this.aid, required this.bvid, required this.title, required this.author, required this.coverUrl, this.durationText, required this.createdAt, required this.updatedAt}): super._();
+  const _FavoriteEntry({required this.itemId, required this.aid, required this.bvid, required this.title, required this.author, required this.coverUrl, this.cid, this.page, this.pageTitle, this.durationText, required this.createdAt, required this.updatedAt}): super._();
   
 
 @override final  String itemId;
@@ -223,6 +226,9 @@ class _FavoriteEntry extends FavoriteEntry {
 @override final  String title;
 @override final  String author;
 @override final  String coverUrl;
+@override final  int? cid;
+@override final  int? page;
+@override final  String? pageTitle;
 @override final  String? durationText;
 @override final  DateTime createdAt;
 @override final  DateTime updatedAt;
@@ -237,16 +243,16 @@ _$FavoriteEntryCopyWith<_FavoriteEntry> get copyWith => __$FavoriteEntryCopyWith
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _FavoriteEntry&&(identical(other.itemId, itemId) || other.itemId == itemId)&&(identical(other.aid, aid) || other.aid == aid)&&(identical(other.bvid, bvid) || other.bvid == bvid)&&(identical(other.title, title) || other.title == title)&&(identical(other.author, author) || other.author == author)&&(identical(other.coverUrl, coverUrl) || other.coverUrl == coverUrl)&&(identical(other.durationText, durationText) || other.durationText == durationText)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _FavoriteEntry&&(identical(other.itemId, itemId) || other.itemId == itemId)&&(identical(other.aid, aid) || other.aid == aid)&&(identical(other.bvid, bvid) || other.bvid == bvid)&&(identical(other.title, title) || other.title == title)&&(identical(other.author, author) || other.author == author)&&(identical(other.coverUrl, coverUrl) || other.coverUrl == coverUrl)&&(identical(other.cid, cid) || other.cid == cid)&&(identical(other.page, page) || other.page == page)&&(identical(other.pageTitle, pageTitle) || other.pageTitle == pageTitle)&&(identical(other.durationText, durationText) || other.durationText == durationText)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,itemId,aid,bvid,title,author,coverUrl,durationText,createdAt,updatedAt);
+int get hashCode => Object.hash(runtimeType,itemId,aid,bvid,title,author,coverUrl,cid,page,pageTitle,durationText,createdAt,updatedAt);
 
 @override
 String toString() {
-  return 'FavoriteEntry(itemId: $itemId, aid: $aid, bvid: $bvid, title: $title, author: $author, coverUrl: $coverUrl, durationText: $durationText, createdAt: $createdAt, updatedAt: $updatedAt)';
+  return 'FavoriteEntry(itemId: $itemId, aid: $aid, bvid: $bvid, title: $title, author: $author, coverUrl: $coverUrl, cid: $cid, page: $page, pageTitle: $pageTitle, durationText: $durationText, createdAt: $createdAt, updatedAt: $updatedAt)';
 }
 
 
@@ -257,7 +263,7 @@ abstract mixin class _$FavoriteEntryCopyWith<$Res> implements $FavoriteEntryCopy
   factory _$FavoriteEntryCopyWith(_FavoriteEntry value, $Res Function(_FavoriteEntry) _then) = __$FavoriteEntryCopyWithImpl;
 @override @useResult
 $Res call({
- String itemId, int aid, String bvid, String title, String author, String coverUrl, String? durationText, DateTime createdAt, DateTime updatedAt
+ String itemId, int aid, String bvid, String title, String author, String coverUrl, int? cid, int? page, String? pageTitle, String? durationText, DateTime createdAt, DateTime updatedAt
 });
 
 
@@ -274,7 +280,7 @@ class __$FavoriteEntryCopyWithImpl<$Res>
 
 /// Create a copy of FavoriteEntry
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? itemId = null,Object? aid = null,Object? bvid = null,Object? title = null,Object? author = null,Object? coverUrl = null,Object? durationText = freezed,Object? createdAt = null,Object? updatedAt = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? itemId = null,Object? aid = null,Object? bvid = null,Object? title = null,Object? author = null,Object? coverUrl = null,Object? cid = freezed,Object? page = freezed,Object? pageTitle = freezed,Object? durationText = freezed,Object? createdAt = null,Object? updatedAt = null,}) {
   return _then(_FavoriteEntry(
 itemId: null == itemId ? _self.itemId : itemId // ignore: cast_nullable_to_non_nullable
 as String,aid: null == aid ? _self.aid : aid // ignore: cast_nullable_to_non_nullable
@@ -282,7 +288,10 @@ as int,bvid: null == bvid ? _self.bvid : bvid // ignore: cast_nullable_to_non_nu
 as String,title: null == title ? _self.title : title // ignore: cast_nullable_to_non_nullable
 as String,author: null == author ? _self.author : author // ignore: cast_nullable_to_non_nullable
 as String,coverUrl: null == coverUrl ? _self.coverUrl : coverUrl // ignore: cast_nullable_to_non_nullable
-as String,durationText: freezed == durationText ? _self.durationText : durationText // ignore: cast_nullable_to_non_nullable
+as String,cid: freezed == cid ? _self.cid : cid // ignore: cast_nullable_to_non_nullable
+as int?,page: freezed == page ? _self.page : page // ignore: cast_nullable_to_non_nullable
+as int?,pageTitle: freezed == pageTitle ? _self.pageTitle : pageTitle // ignore: cast_nullable_to_non_nullable
+as String?,durationText: freezed == durationText ? _self.durationText : durationText // ignore: cast_nullable_to_non_nullable
 as String?,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
 as DateTime,updatedAt: null == updatedAt ? _self.updatedAt : updatedAt // ignore: cast_nullable_to_non_nullable
 as DateTime,

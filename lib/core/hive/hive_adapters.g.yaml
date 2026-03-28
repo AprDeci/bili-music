@@ -25,7 +25,7 @@ types:
         index: 4
   FavoriteEntry:
     typeId: 2
-    nextIndex: 9
+    nextIndex: 12
     fields:
       itemId:
         index: 0
@@ -45,6 +45,12 @@ types:
         index: 7
       updatedAt:
         index: 8
+      cid:
+        index: 9
+      page:
+        index: 10
+      pageTitle:
+        index: 11
   FavoriteMembership:
     typeId: 3
     nextIndex: 4

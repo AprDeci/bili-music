@@ -59,6 +59,9 @@ class FavoritesController extends _$FavoritesController {
             title: item.title,
             author: item.author,
             coverUrl: item.coverUrl,
+            cid: item.cid,
+            page: item.page,
+            pageTitle: item.pageTitle,
             durationText: item.durationText,
             updatedAt: now,
           ) ??
@@ -149,6 +152,14 @@ class FavoritesController extends _$FavoritesController {
     return state.isLiked(item);
   }
 
+  bool isLikedVideoPage({
+    required int aid,
+    required String bvid,
+    required int page,
+  }) {
+    return state.isLikedVideoPage(aid: aid, bvid: bvid, page: page);
+  }
+
   bool isInCollection({
     required String collectionId,
     required PlayableItem item,
@@ -224,6 +235,9 @@ class FavoritesController extends _$FavoritesController {
             title: item.title,
             author: item.author,
             coverUrl: item.coverUrl,
+            cid: item.cid,
+            page: item.page,
+            pageTitle: item.pageTitle,
             durationText: item.durationText,
             updatedAt: now,
           ) ??

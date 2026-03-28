@@ -3,11 +3,31 @@ import 'package:bilimusic/core/bili/session/bili_session.dart';
 import 'package:bilimusic/core/net/net_config.dart';
 import 'package:bilimusic/feature/player/domain/audio_stream_info.dart';
 import 'package:bilimusic/feature/player/domain/playable_item.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+final Provider<BiliPlayerRepository> biliPlayerRepositoryProvider =
+    Provider<BiliPlayerRepository>((Ref ref) {
+      return BiliPlayerRepository(ref.read(biliApiClientProvider));
+    });
 
 class BiliPlayerRepository {
   const BiliPlayerRepository(this._apiClient);
 
   final BiliApiClient _apiClient;
+
+  Future<PlayableItem> resolvePreferredPart(
+    PlayableItem item, {
+    int preferredPage = 1,
+  }) async {
+    if (!item.hasIdentity) {
+      throw const BiliPlayerException('Missing video identity for playback.');
+    }
+
+    final _VideoViewInfo viewInfo = await _fetchVideoView(item);
+    final PlayableItem preferredItem = item.copyWith(page: preferredPage);
+    final _VideoPageInfo pageInfo = viewInfo.resolvePage(preferredItem);
+    return viewInfo.enrich(item, pageInfo);
+  }
 
   Future<PlayerLoadResult> resolveAudioStream(
     PlayableItem item, {

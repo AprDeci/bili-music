@@ -1,4 +1,5 @@
 import 'package:bilimusic/feature/favorites/logic/favorites_controller.dart';
+import 'package:bilimusic/feature/player/data/bili_player_repository.dart';
 import 'package:bilimusic/feature/search/domain/search_state.dart';
 import 'package:bilimusic/feature/search/domain/search_result_item.dart';
 import 'package:bilimusic/feature/search/logic/search_controller.dart';
@@ -401,7 +402,11 @@ class _SearchResultSection extends StatelessWidget {
           children: <Widget>[
             ...results.map((SearchResultItem item) {
               final playableItem = item.toPlayableItem();
-              final bool isFavorite = favoritesState.isLiked(playableItem);
+              final bool isFavorite = favoritesState.isLikedVideoPage(
+                aid: item.aid,
+                bvid: item.bvid,
+                page: 1,
+              );
 
               return Material(
                 color: Colors.transparent,
@@ -517,19 +522,39 @@ class _SearchResultSection extends StatelessWidget {
                           children: <Widget>[
                             InkResponse(
                               onTap: () async {
-                                final bool liked = await ref
-                                    .read(favoritesControllerProvider.notifier)
-                                    .toggleLiked(playableItem);
-                                if (context.mounted) {
-                                  ScaffoldMessenger.of(context)
-                                    ..hideCurrentSnackBar()
-                                    ..showSnackBar(
-                                      SnackBar(
-                                        content: Text(
-                                          liked ? '已加入“我喜欢”' : '已从“我喜欢”移除',
+                                final ScaffoldMessengerState messenger =
+                                    ScaffoldMessenger.of(context);
+                                try {
+                                  final resolvedItem = await ref
+                                      .read(biliPlayerRepositoryProvider)
+                                      .resolvePreferredPart(
+                                        playableItem,
+                                        preferredPage: 1,
+                                      );
+                                  final bool liked = await ref
+                                      .read(
+                                        favoritesControllerProvider.notifier,
+                                      )
+                                      .toggleLiked(resolvedItem);
+                                  if (context.mounted) {
+                                    messenger
+                                      ..hideCurrentSnackBar()
+                                      ..showSnackBar(
+                                        SnackBar(
+                                          content: Text(
+                                            liked ? '已收藏 P1' : '已从“我喜欢”移除',
+                                          ),
                                         ),
-                                      ),
-                                    );
+                                      );
+                                  }
+                                } on Object catch (error) {
+                                  if (context.mounted) {
+                                    messenger
+                                      ..hideCurrentSnackBar()
+                                      ..showSnackBar(
+                                        SnackBar(content: Text('收藏失败: $error')),
+                                      );
+                                  }
                                 }
                               },
                               radius: 18,
