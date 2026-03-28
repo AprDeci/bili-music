@@ -5,7 +5,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 class UserCard extends ConsumerWidget {
-  const UserCard({super.key});
+  const UserCard({super.key, this.onLogoutPressed});
+
+  final VoidCallback? onLogoutPressed;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -25,7 +27,6 @@ class UserCard extends ConsumerWidget {
     final String subtitle = isLoggedIn
         ? 'mid: ${mid ?? '-'}'
         : '扫码同步 B 站账号信息';
-
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -41,7 +42,7 @@ class UserCard extends ConsumerWidget {
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
+            children: <Widget>[
               CircleAvatar(
                 radius: 24,
                 backgroundColor: const Color(0xFFF2F6FA),
@@ -77,7 +78,24 @@ class UserCard extends ConsumerWidget {
                 ),
               ),
 
-              if (!isLoggedIn)
+              if (isLoggedIn)
+                TextButton(
+                  onPressed: onLogoutPressed,
+                  style: TextButton.styleFrom(
+                    padding: const EdgeInsets.all(8),
+                    minimumSize: const Size(36, 36),
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                  ),
+                  child: Icon(
+                    Icons.logout_rounded,
+                    size: 20,
+                    color: themeColor,
+                  ),
+                )
+              else
                 Icon(Icons.chevron_right_rounded, color: themeColor),
             ],
           ),

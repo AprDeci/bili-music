@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:bilimusic/core/bili/session/bili_cookie.dart';
 import 'package:bilimusic/core/bili/session/bili_session.dart';
@@ -65,6 +66,92 @@ class BiliAuthRepository {
     );
   }
 
+  Future<LogoutResult> logout(BiliSession session) async {
+    if (!session.isLoggedIn) {
+      return const LogoutResult(
+        remoteLoggedOut: false,
+        message: '当前没有可注销的登录态',
+      );
+    }
+
+    try {
+      final Response<dynamic> response = await _client.post<dynamic>(
+        '$_passportBaseUrl/login/exit/v2',
+        data:
+            'biliCSRF=${Uri.encodeQueryComponent(session.biliJct)}&gourl=${Uri.encodeQueryComponent('https://www.bilibili.com/')}',
+        options: Options(
+          contentType: Headers.formUrlEncodedContentType,
+          responseType: ResponseType.plain,
+          headers: <String, dynamic>{'Cookie': session.cookie},
+        ),
+      );
+      final Map<String, dynamic>? json = _tryAsMap(response.data);
+      if (json == null) {
+        return _resolveLogoutFromHeaders(response.headers);
+      }
+
+      final int code = (json['code'] as num? ?? -1).toInt();
+      final bool status = json['status'] as bool? ?? false;
+      if (code == 0 && status) {
+        return const LogoutResult(remoteLoggedOut: true);
+      }
+
+      return LogoutResult(
+        remoteLoggedOut: false,
+        message: json['message'] as String? ?? '退出登录失败',
+      );
+    } on Object catch (error) {
+      return LogoutResult(
+        remoteLoggedOut: false,
+        message: error.toString(),
+      );
+    }
+  }
+
+  LogoutResult _resolveLogoutFromHeaders(Headers headers) {
+    final List<String> setCookieHeaders = headers['set-cookie'] ??
+        headers.map['set-cookie'] ??
+        const <String>[];
+    final bool clearedAuthCookies = setCookieHeaders.any(
+          (String header) => header.contains('SESSDATA='),
+        ) &&
+        setCookieHeaders.any((String header) => header.contains('bili_jct=')) &&
+        setCookieHeaders.any((String header) => header.contains('DedeUserID='));
+
+    if (clearedAuthCookies) {
+      return const LogoutResult(remoteLoggedOut: true);
+    }
+
+    return const LogoutResult(
+      remoteLoggedOut: false,
+      message: '退出接口未返回可识别的成功结果',
+    );
+  }
+
+  Map<String, dynamic>? _tryAsMap(dynamic value) {
+    if (value == null) {
+      return null;
+    }
+    if (value is String) {
+      final String trimmed = value.trim();
+      if (trimmed.isEmpty) {
+        return null;
+      }
+      try {
+        final dynamic decoded = jsonDecode(trimmed);
+        return _asMap(decoded);
+      } on FormatException {
+        return null;
+      }
+    }
+
+    try {
+      return _asMap(value);
+    } on BiliAuthException {
+      return null;
+    }
+  }
+
   Map<String, dynamic> _asMap(dynamic value) {
     if (value is Map<String, dynamic>) {
       return value;
@@ -96,6 +183,13 @@ class PollQrCodeResult {
   final int code;
   final String message;
   final BiliSession? session;
+}
+
+class LogoutResult {
+  const LogoutResult({required this.remoteLoggedOut, this.message});
+
+  final bool remoteLoggedOut;
+  final String? message;
 }
 
 class BiliAuthException implements Exception {

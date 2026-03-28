@@ -1,5 +1,7 @@
 import 'package:bilimusic/common/components/searchBar.dart';
 import 'package:bilimusic/core/bili/session/bili_session_controller.dart';
+import 'package:bilimusic/feature/auth/data/bili_auth_repository.dart';
+import 'package:bilimusic/feature/auth/logic/bili_auth_controller.dart';
 import 'package:bilimusic/feature/favorites/domain/favorite_collection.dart';
 import 'package:bilimusic/feature/favorites/domain/favorite_entry.dart';
 import 'package:bilimusic/feature/favorites/domain/favorites_state.dart';
@@ -49,7 +51,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
       body: ListView(
         padding: const EdgeInsets.fromLTRB(12, 8, 12, 24),
         children: <Widget>[
-          const UserCard(),
+          UserCard(onLogoutPressed: _handleLogoutPressed),
           const SizedBox(height: 18),
           _ProfileQuickActions(
             likedCount: likedCount,
@@ -147,6 +149,48 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
     await ref
         .read(favoritesControllerProvider.notifier)
         .createCollection(result);
+  }
+
+  Future<void> _handleLogoutPressed() async {
+    final bool? confirmed = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('退出登录'),
+          content: const Text('确认退出当前 B 站账号吗？'),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('取消'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text('退出'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmed != true) {
+      return;
+    }
+
+    final LogoutResult result = await ref
+        .read(biliAuthControllerProvider.notifier)
+        .logout();
+    if (!mounted) {
+      return;
+    }
+
+    final String message = result.remoteLoggedOut
+        ? '已退出登录'
+        : (result.message?.isNotEmpty == true
+              ? '服务端退出失败，已清除本地登录状态'
+              : '已清除本地登录状态');
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(message)));
   }
 
   Future<void> _showDeleteCollectionDialog(

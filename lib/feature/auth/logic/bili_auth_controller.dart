@@ -68,10 +68,24 @@ class BiliAuthController extends _$BiliAuthController {
 
   Future<void> restartQrLogin() => startQrLogin();
 
-  Future<void> logout() async {
+  Future<LogoutResult> logout() async {
     _cancelPolling();
-    await ref.read(biliSessionControllerProvider.notifier).clearSession();
+    final BiliSession? currentSession = ref.read(biliSessionControllerProvider);
+    final BiliSessionController sessionController = ref.read(
+      biliSessionControllerProvider.notifier,
+    );
+    final LogoutResult result = currentSession == null
+        ? const LogoutResult(
+            remoteLoggedOut: false,
+            message: '当前没有已登录账号',
+          )
+        : await _repository.logout(currentSession);
+    await sessionController.clearSession();
+    if (!ref.mounted) {
+      return result;
+    }
     state = const BiliAuthState();
+    return result;
   }
 
   Future<void> _pollQrCode() async {
