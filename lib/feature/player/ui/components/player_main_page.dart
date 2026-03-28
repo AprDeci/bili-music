@@ -49,11 +49,9 @@ class PlayerMainPage extends StatelessWidget {
           isFavorite: isFavorite,
           onFavoriteToggle: onFavoriteToggle,
         ),
-        const SizedBox(height: 8),
-        SwipeHint(label: state.currentItem == null ? '左右滑动切换页面' : '右滑回到播放页'),
         const SizedBox(height: 18),
         PlayerProgressSection(state: state, onChanged: onSeek),
-        const SizedBox(height: 30),
+        const SizedBox(height: 18),
         PlayerTransportControls(
           state: state,
           onBackward: onBackward,
