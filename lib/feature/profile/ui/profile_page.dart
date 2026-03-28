@@ -45,7 +45,10 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
         toolbarHeight: 48,
         title: CommonSearchBar(onTap: () => context.push('/search')),
         actions: <Widget>[
-          IconButton(icon: const Icon(Icons.settings), onPressed: () {}),
+          IconButton(
+            icon: const Icon(Icons.settings),
+            onPressed: () => context.push('/settings'),
+          ),
         ],
       ),
       body: ListView(

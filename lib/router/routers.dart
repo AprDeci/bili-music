@@ -5,6 +5,7 @@ import 'package:bilimusic/feature/player/domain/playable_item.dart';
 import 'package:bilimusic/feature/player/ui/player_page.dart';
 import 'package:bilimusic/feature/profile/ui/profile_page.dart';
 import 'package:bilimusic/feature/search/ui/search_page.dart';
+import 'package:bilimusic/feature/setting/ui/setting_page.dart';
 import 'package:bilimusic/router/ScaffoldWithNavBar.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -60,6 +61,11 @@ GoRouter router(Ref ref) => GoRouter(
         final String collectionId = state.pathParameters['collectionId']!;
         return FavoriteCollectionPage(collectionId: collectionId);
       },
+    ),
+    GoRoute(
+      path: '/settings',
+      parentNavigatorKey: _rootNavigatorKey,
+      builder: (context, state) => const SettingPage(),
     ),
     StatefulShellRoute.indexedStack(
       parentNavigatorKey: _rootNavigatorKey,
