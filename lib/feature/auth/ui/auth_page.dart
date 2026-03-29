@@ -9,6 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:saver_gallery/saver_gallery.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class AuthPage extends ConsumerStatefulWidget {
   const AuthPage({super.key});
@@ -315,6 +316,25 @@ class _QrCard extends StatelessWidget {
     }
   }
 
+  // 其他App打开二维码
+  Future<void> _openQrUrl(BuildContext context) async {
+    final Uri uri = Uri.parse(
+      'bilibili://browser?url=${Uri.encodeComponent(qrUrl)}',
+    );
+    try {
+      if (!await launchUrl(
+        uri,
+        mode: LaunchMode.externalNonBrowserApplication,
+      )) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('打开二维码失败')));
+      }
+    } catch (_) {
+      // 处理异常
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -349,18 +369,42 @@ class _QrCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 16),
-          OutlinedButton.icon(
-            onPressed: () => _saveQrImage(context),
-            icon: const Icon(Icons.download_rounded),
-            label: const Text('保存图片'),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: const Color(0xFF163B5C),
-              side: const BorderSide(color: Color(0xFFD5E2EE)),
-              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(14),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              OutlinedButton.icon(
+                onPressed: () => _saveQrImage(context),
+                icon: const Icon(Icons.download_rounded),
+                label: const Text('保存'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: const Color(0xFF163B5C),
+                  side: const BorderSide(color: Color(0xFFD5E2EE)),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 18,
+                    vertical: 12,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                ),
               ),
-            ),
+              OutlinedButton.icon(
+                onPressed: () => _openQrUrl(context),
+                icon: const Icon(Icons.open_in_new),
+                label: const Text('其他App打开'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: const Color(0xFF163B5C),
+                  side: const BorderSide(color: Color(0xFFD5E2EE)),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 12,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       ),
