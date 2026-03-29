@@ -43,6 +43,16 @@ class _ScaffoldWithNavBarState extends ConsumerState<ScaffoldWithNavBar> {
     final PlayerState playerState = ref.watch(playerControllerProvider);
     final bool isFavoritesPage = _isFavoritesPage(widget.currentLocation);
 
+    final Widget content = _buildShellContent(
+      context,
+      playerState,
+      isFavoritesPage,
+    );
+
+    if (isFavoritesPage) {
+      return Scaffold(body: content);
+    }
+
     return Scaffold(
       body: BottomBar(
         fit: StackFit.expand,
@@ -129,38 +139,40 @@ class _ScaffoldWithNavBarState extends ConsumerState<ScaffoldWithNavBar> {
             ),
           ),
         ),
-        body: (BuildContext context, ScrollController scrollController) {
-          return Stack(
-            fit: StackFit.expand,
-            children: <Widget>[
-              widget.navigationShell,
-              if (playerState.hasItem)
-                Align(
-                  alignment: Alignment.bottomCenter,
-                  child: AnimatedSlide(
-                    duration: _animationDuration,
-                    curve: _animationCurve,
-                    offset: isFavoritesPage
-                        ? const Offset(0, 0.12)
-                        : Offset.zero,
-                    child: MiniPlayerBar(
-                      state: playerState,
-                      bottomPadding: isFavoritesPage
-                          ? _miniPlayerCollapsedBottomPadding
-                          : _miniPlayerVisibleBottomPadding,
-                      onTap: () => context.push('/player'),
-                      onTogglePlayback: () {
-                        ref
-                            .read(playerControllerProvider.notifier)
-                            .togglePlayback();
-                      },
-                    ),
-                  ),
-                ),
-            ],
-          );
-        },
+        body: (BuildContext context, ScrollController scrollController) => content,
       ),
+    );
+  }
+
+  Widget _buildShellContent(
+    BuildContext context,
+    PlayerState playerState,
+    bool isFavoritesPage,
+  ) {
+    return Stack(
+      fit: StackFit.expand,
+      children: <Widget>[
+        widget.navigationShell,
+        if (playerState.hasItem)
+          Align(
+            alignment: Alignment.bottomCenter,
+            child: AnimatedSlide(
+              duration: _animationDuration,
+              curve: _animationCurve,
+              offset: isFavoritesPage ? const Offset(0, 0.12) : Offset.zero,
+              child: MiniPlayerBar(
+                state: playerState,
+                bottomPadding: isFavoritesPage
+                    ? _miniPlayerCollapsedBottomPadding
+                    : _miniPlayerVisibleBottomPadding,
+                onTap: () => context.push('/player'),
+                onTogglePlayback: () {
+                  ref.read(playerControllerProvider.notifier).togglePlayback();
+                },
+              ),
+            ),
+          ),
+      ],
     );
   }
 
