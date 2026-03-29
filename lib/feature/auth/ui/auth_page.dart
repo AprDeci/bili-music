@@ -305,8 +305,7 @@ class _QrCard extends StatelessWidget {
     return Container(
       key: ValueKey<String>(qrUrl),
       padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-      ),
+      decoration: BoxDecoration(),
       child: Column(
         children: <Widget>[
           Container(
@@ -335,8 +334,6 @@ class _QrCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 16),
-          const Text('请打开 B 站 App 扫码，并在手机上确认登录', textAlign: TextAlign.center),
-          const SizedBox(height: 14),
           OutlinedButton.icon(
             onPressed: () => _saveQrImage(context),
             icon: const Icon(Icons.download_rounded),
