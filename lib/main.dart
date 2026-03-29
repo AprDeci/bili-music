@@ -1,5 +1,6 @@
 import 'package:bilimusic/core/bili/session/bili_session_controller.dart';
 import 'package:bilimusic/core/hive/hive.dart';
+import 'package:bilimusic/feature/favorites/logic/favorites_controller.dart';
 import 'package:bilimusic/feature/player/logic/player_controller.dart';
 import 'package:bilimusic/myApp.dart';
 import 'package:flutter/foundation.dart';
@@ -48,6 +49,7 @@ class _AppBootstrapState extends ConsumerState<_AppBootstrap> {
         return;
       }
       _didBootstrap = true;
+      await ref.read(favoritesControllerProvider.notifier).initialize();
       await ref.read(biliSessionControllerProvider.notifier).bootstrap();
       await ref
           .read(playerControllerProvider.notifier)

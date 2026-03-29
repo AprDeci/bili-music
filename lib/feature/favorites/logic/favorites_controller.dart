@@ -8,7 +8,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'favorites_controller.g.dart';
 
-@riverpod
+@Riverpod(keepAlive: true)
 class FavoritesController extends _$FavoritesController {
   late final FavoritesLocalRepository _repository = ref.read(
     favoritesLocalRepositoryProvider,
@@ -16,11 +16,10 @@ class FavoritesController extends _$FavoritesController {
 
   @override
   FavoritesState build() {
-    Future<void>.microtask(_bootstrap);
     return _repository.loadState();
   }
 
-  Future<void> _bootstrap() async {
+  Future<void> initialize() async {
     final FavoritesState nextState = await _repository.initialize();
     state = nextState;
   }

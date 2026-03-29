@@ -118,32 +118,13 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
   }
 
   Future<void> _showCreateCollectionDialog(BuildContext context) async {
-    final TextEditingController controller = TextEditingController();
     final String? result = await showDialog<String>(
       context: context,
+      useRootNavigator: false,
       builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('新建歌单'),
-          content: TextField(
-            controller: controller,
-            autofocus: true,
-            maxLength: 24,
-            decoration: const InputDecoration(hintText: '例如：深夜循环'),
-          ),
-          actions: <Widget>[
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('取消'),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.of(context).pop(controller.text),
-              child: const Text('创建'),
-            ),
-          ],
-        );
+        return const _CreateCollectionDialog();
       },
     );
-    controller.dispose();
 
     if (result == null || result.trim().isEmpty) {
       return;
@@ -235,7 +216,58 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
     }
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(content: Text(deleted ? '已删除歌单' : '删除失败')));
+      ..showSnackBar(
+        SnackBar(content: Text(deleted ? '已删除歌单' : '删除失败')),
+      );
+  }
+}
+
+class _CreateCollectionDialog extends StatefulWidget {
+  const _CreateCollectionDialog();
+
+  @override
+  State<_CreateCollectionDialog> createState() =>
+      _CreateCollectionDialogState();
+}
+
+class _CreateCollectionDialogState extends State<_CreateCollectionDialog> {
+  late final TextEditingController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('新建歌单'),
+      content: TextField(
+        controller: _controller,
+        maxLength: 24,
+        decoration: const InputDecoration(hintText: '例如：深夜循环'),
+        onSubmitted: (String value) {
+          Navigator.of(context).pop(value);
+        },
+      ),
+      actions: <Widget>[
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('取消'),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.of(context).pop(_controller.text),
+          child: const Text('创建'),
+        ),
+      ],
+    );
   }
 }
 
