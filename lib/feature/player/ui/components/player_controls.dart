@@ -97,10 +97,7 @@ class PlayerTransportControls extends StatelessWidget {
         (state.hasPrevious || state.position > const Duration(seconds: 3));
     final bool canGoNext =
         state.isReady &&
-        (state.queueMode == PlayerQueueMode.singleRepeat ||
-            state.hasNext ||
-            (state.queueMode == PlayerQueueMode.shuffle &&
-                state.queue.isNotEmpty));
+        (state.queueMode == PlayerQueueMode.singleRepeat || state.hasNext);
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,

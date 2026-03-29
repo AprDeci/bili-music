@@ -299,7 +299,7 @@ class _PlayerPageState extends ConsumerState<PlayerPage> {
               final ThemeData theme = Theme.of(context);
               final ColorScheme colorScheme = theme.colorScheme;
               final String modeLabel = switch (liveState.queueMode) {
-                PlayerQueueMode.sequence => '顺序播放',
+                PlayerQueueMode.sequence => '列表循环',
                 PlayerQueueMode.singleRepeat => '单曲循环',
                 PlayerQueueMode.shuffle => '随机播放',
               };

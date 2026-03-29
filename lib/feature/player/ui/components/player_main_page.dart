@@ -97,7 +97,7 @@ class _PlayerQueueSummary extends StatelessWidget {
     final ColorScheme colorScheme = theme.colorScheme;
     final int current = (state.currentQueueIndex ?? 0) + 1;
     final String modeLabel = switch (state.queueMode) {
-      PlayerQueueMode.sequence => '顺序播放',
+      PlayerQueueMode.sequence => '列表循环',
       PlayerQueueMode.singleRepeat => '单曲循环',
       PlayerQueueMode.shuffle => '随机播放',
     };
