@@ -88,7 +88,7 @@ class FavoriteCollectionPage extends ConsumerWidget {
               ),
             )
           : ListView(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
               children: <Widget>[
                 const SizedBox(height: 16),
                 ...List<Widget>.generate(items.length, (int index) {
@@ -190,4 +190,3 @@ class FavoriteCollectionPage extends ConsumerWidget {
     return segments.join(' · ');
   }
 }
-
