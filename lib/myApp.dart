@@ -19,7 +19,7 @@ class MyApp extends ConsumerWidget {
       themeMode: currentTheme.themeMode,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF133B5C),
+          seedColor: const Color(0xFF31c27c),
           brightness: Brightness.light,
         ),
         scaffoldBackgroundColor: const Color(0xFFF4F7FB),
