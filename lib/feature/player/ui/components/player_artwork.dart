@@ -18,7 +18,7 @@ class PlayerArtworkFrame extends StatelessWidget {
             BoxShadow(
               color: colorScheme.primary.withValues(alpha: 0.16),
               blurRadius: 32,
-              offset: const Offset(0, 20),
+              offset: const Offset(0, 12),
             ),
           ],
         ),
