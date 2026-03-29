@@ -41,6 +41,7 @@ class PlayerController extends Notifier<PlayerState> {
   bool _isSettingPlaylist = false;
   final Random _random;
   _SlidingQueueWindow? _activeWindow;
+  _PendingQueueRebuildRequest? _pendingRebuildRequest;
 
   static bool get _shouldDisableRequestHeadersProxy {
     if (kIsWeb) {
@@ -265,7 +266,9 @@ class PlayerController extends Notifier<PlayerState> {
     await _rebuildWindowAtQueueIndex(
       nextCurrentIndex,
       autoplay: state.isPlaying,
-      initialPosition: index == currentIndex ? Duration.zero : _audioPlayer.position,
+      initialPosition: index == currentIndex
+          ? Duration.zero
+          : _audioPlayer.position,
     );
   }
 
@@ -407,8 +410,10 @@ class PlayerController extends Notifier<PlayerState> {
 
     return switch (state.queueMode) {
       PlayerQueueMode.singleRepeat => state.currentQueueIndex,
-      PlayerQueueMode.sequence =>
-        _wrapQueueIndex(state.currentQueueIndex! + 1, state.queue.length),
+      PlayerQueueMode.sequence => _wrapQueueIndex(
+        state.currentQueueIndex! + 1,
+        state.queue.length,
+      ),
       PlayerQueueMode.shuffle => _pickRandomNextQueueIndex(),
     };
   }
@@ -458,7 +463,16 @@ class PlayerController extends Notifier<PlayerState> {
     required bool autoplay,
     required Duration initialPosition,
   }) async {
-    if (_isRebuildingWindow || queueIndex < 0 || queueIndex >= state.queue.length) {
+    if (queueIndex < 0 || queueIndex >= state.queue.length) {
+      return;
+    }
+
+    if (_isRebuildingWindow) {
+      _pendingRebuildRequest = _PendingQueueRebuildRequest(
+        queueIndex: queueIndex,
+        autoplay: autoplay,
+        initialPosition: initialPosition,
+      );
       return;
     }
 
@@ -567,7 +581,24 @@ class PlayerController extends Notifier<PlayerState> {
       }
     } finally {
       _isRebuildingWindow = false;
+      final _PendingQueueRebuildRequest? pendingRequest =
+          _takePendingRebuildRequest();
+      if (pendingRequest != null) {
+        unawaited(
+          _rebuildWindowAtQueueIndex(
+            pendingRequest.queueIndex,
+            autoplay: pendingRequest.autoplay,
+            initialPosition: pendingRequest.initialPosition,
+          ),
+        );
+      }
     }
+  }
+
+  _PendingQueueRebuildRequest? _takePendingRebuildRequest() {
+    final _PendingQueueRebuildRequest? pendingRequest = _pendingRebuildRequest;
+    _pendingRebuildRequest = null;
+    return pendingRequest;
   }
 
   _SlidingQueueWindow _buildSlidingWindow(int queueIndex) {
@@ -610,7 +641,9 @@ class PlayerController extends Notifier<PlayerState> {
     );
     final _ResolvedQueueEntry entry = _ResolvedQueueEntry(
       item: loadResult.item,
-      availableParts: List<PlayableItem>.unmodifiable(loadResult.availableParts),
+      availableParts: List<PlayableItem>.unmodifiable(
+        loadResult.availableParts,
+      ),
       audioStream: loadResult.audioStream,
     );
     _resolvedEntries[item.stableId] = entry;
@@ -697,7 +730,8 @@ class PlayerController extends Notifier<PlayerState> {
         if (_isSettingPlaylist || _isRebuildingWindow) {
           return;
         }
-        if (state.queue.length <= 2 || activeWindow.currentWindowIndex == index) {
+        if (state.queue.length <= 2 ||
+            activeWindow.currentWindowIndex == index) {
           return;
         }
 
@@ -883,4 +917,16 @@ class _SlidingQueueWindow {
 
   final List<int> queueIndexes;
   final int currentWindowIndex;
+}
+
+class _PendingQueueRebuildRequest {
+  const _PendingQueueRebuildRequest({
+    required this.queueIndex,
+    required this.autoplay,
+    required this.initialPosition,
+  });
+
+  final int queueIndex;
+  final bool autoplay;
+  final Duration initialPosition;
 }
