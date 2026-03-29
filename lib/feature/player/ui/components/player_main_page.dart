@@ -4,6 +4,7 @@ import 'package:bilimusic/feature/player/ui/components/player_artwork.dart';
 import 'package:bilimusic/feature/player/ui/components/player_controls.dart';
 import 'package:bilimusic/feature/player/ui/components/player_shared.dart';
 import 'package:bilimusic/feature/player/ui/components/player_ui_helpers.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 class PlayerMainPage extends StatelessWidget {
@@ -77,10 +78,10 @@ class PlayerMainPage extends StatelessWidget {
           onOpenQueue: onOpenQueue,
         ),
         const SizedBox(height: 30),
-        if (state.hasQueue) _PlayerQueueSummary(state: state),
+        if (state.hasQueue && kDebugMode) _PlayerQueueSummary(state: state),
         if (state.hasQueue) const SizedBox(height: 18),
-        PlayerPlaybackStatusChip(state: state),
-        const SizedBox(height: 18),
+        if (kDebugMode) PlayerPlaybackStatusChip(state: state),
+        SizedBox(height: 18),
       ],
     );
   }

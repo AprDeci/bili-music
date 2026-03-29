@@ -82,16 +82,7 @@ class _PlayerPageState extends ConsumerState<PlayerPage> {
     return Scaffold(
       backgroundColor: colorScheme.surface,
       body: DecoratedBox(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: <Color>[
-              colorScheme.surface,
-              colorScheme.primary.withValues(alpha: 0.08),
-            ],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-          ),
-        ),
+        decoration: BoxDecoration(),
         child: Stack(
           children: <Widget>[
             const Positioned(top: -120, left: -90, child: PlayerBackdropOrb()),
