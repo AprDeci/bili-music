@@ -1,3 +1,4 @@
+import 'package:bilimusic/common/logger.dart';
 import 'package:bilimusic/core/net/net_config.dart';
 import 'package:dio/dio.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -6,6 +7,8 @@ part 'bili_client.g.dart';
 
 @riverpod
 class BiliClient extends _$BiliClient {
+  final AppLogger _logger = AppLogger('BiliClient');
+
   @override
   Dio build() {
     _dio = Dio(
@@ -23,12 +26,14 @@ class BiliClient extends _$BiliClient {
       LogInterceptor(
         requestBody: true,
         responseBody: true,
+        logPrint: AppLogger.dioLogPrint,
       ),
     );
+    _logger.i('Dio client initialized');
     return _dio;
   }
-  late final Dio _dio;
 
+  late final Dio _dio;
 
   Dio get dio => _dio;
 

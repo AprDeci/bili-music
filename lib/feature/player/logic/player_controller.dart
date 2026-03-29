@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math';
 
+import 'package:bilimusic/common/logger.dart';
 import 'package:bilimusic/core/bili/session/bili_session.dart';
 import 'package:bilimusic/core/bili/session/bili_session_controller.dart';
 import 'package:bilimusic/feature/player/data/bili_player_repository.dart';
@@ -19,6 +20,8 @@ final NotifierProvider<PlayerController, PlayerState> playerControllerProvider =
 
 class PlayerController extends Notifier<PlayerState> {
   PlayerController() : _random = Random();
+
+  final AppLogger _logger = AppLogger('PlayerController');
 
   late final BiliPlayerRepository _repository = ref.read(
     biliPlayerRepositoryProvider,
@@ -987,7 +990,7 @@ class PlayerController extends Notifier<PlayerState> {
                     '${entry.key}=${entry.value}',
               )
               .join(', ');
-    debugPrint(
+    _logger.d(
       detailText.isEmpty
           ? '[PlayerDebug] $event'
           : '[PlayerDebug] $event | $detailText',

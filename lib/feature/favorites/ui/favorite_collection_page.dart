@@ -1,3 +1,4 @@
+import 'package:bilimusic/common/logger.dart';
 import 'package:bilimusic/feature/favorites/domain/favorite_collection.dart';
 import 'package:bilimusic/feature/favorites/domain/favorite_entry.dart';
 import 'package:bilimusic/feature/favorites/domain/favorites_state.dart';
@@ -10,6 +11,8 @@ import 'package:go_router/go_router.dart';
 
 class FavoriteCollectionPage extends ConsumerWidget {
   const FavoriteCollectionPage({super.key, required this.collectionId});
+
+  static final AppLogger _logger = AppLogger('FavoriteCollectionPage');
 
   final String collectionId;
 
@@ -153,7 +156,7 @@ class FavoriteCollectionPage extends ConsumerWidget {
                           ? Icon(Icons.favorite_rounded, color: primary)
                           : const Icon(Icons.play_arrow_rounded),
                       onTap: () async {
-                        debugPrint(
+                        _logger.d(
                           '[FavoriteDebug] tapPlay | collection=${resolvedCollection.name}, '
                           'index=$index, queueLength=${queueItems.length}, '
                           'itemStableId=${queueItems[index].stableId}, '
