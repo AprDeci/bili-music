@@ -55,14 +55,6 @@ GoRouter router(Ref ref) => GoRouter(
       },
     ),
     GoRoute(
-      path: '/favorites/:collectionId',
-      parentNavigatorKey: _rootNavigatorKey,
-      builder: (context, state) {
-        final String collectionId = state.pathParameters['collectionId']!;
-        return FavoriteCollectionPage(collectionId: collectionId);
-      },
-    ),
-    GoRoute(
       path: '/settings',
       parentNavigatorKey: _rootNavigatorKey,
       builder: (context, state) => const SettingPage(),
@@ -70,12 +62,21 @@ GoRouter router(Ref ref) => GoRouter(
     StatefulShellRoute.indexedStack(
       parentNavigatorKey: _rootNavigatorKey,
       builder: (context, state, navigationShell) {
-        return ScaffoldWithNavBar(navigationShell: navigationShell);
+        return ScaffoldWithNavBar(
+          navigationShell: navigationShell,
+          currentLocation: state.uri.path,
+        );
       },
       branches: [
         ...tabs.map(
           (tab) => StatefulShellBranch(
-            routes: [GoRoute(path: tab['path'], builder: tab['builder'])],
+            routes: [
+              GoRoute(
+                path: tab['path'] as String,
+                builder: tab['builder'] as GoRouterWidgetBuilder,
+                routes: tab['routes'] as List<RouteBase>? ?? const <RouteBase>[],
+              ),
+            ],
           ),
         ),
       ],
@@ -87,12 +88,22 @@ final List<Map<String, dynamic>> tabs = [
   {
     'path': '/home',
     'builder': (context, state) => const HomePage(),
+    'routes': const <RouteBase>[],
     'icon': Icons.home,
     'label': '首页',
   },
   {
     'path': '/profile',
     'builder': (context, state) => const ProfilePage(),
+    'routes': <RouteBase>[
+      GoRoute(
+        path: 'favorites/:collectionId',
+        builder: (context, state) {
+          final String collectionId = state.pathParameters['collectionId']!;
+          return FavoriteCollectionPage(collectionId: collectionId);
+        },
+      ),
+    ],
     'icon': Icons.person,
     'label': '我的',
   },

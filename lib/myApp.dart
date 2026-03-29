@@ -14,6 +14,7 @@ class MyApp extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final GoRouter router = ref.watch(routerProvider);
     final ThemeUiModel currentTheme = ref.watch(themeLogicProvider);
+
     return MaterialApp.router(
       routerConfig: router,
       themeMode: currentTheme.themeMode,

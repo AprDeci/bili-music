@@ -59,7 +59,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
           _ProfileQuickActions(
             likedCount: likedCount,
             onLikedTap: () => context.push(
-              '/favorites/${FavoriteCollection.likedCollectionId}',
+              '/profile/favorites/${FavoriteCollection.likedCollectionId}',
             ),
           ),
           const SizedBox(height: 16),
@@ -83,7 +83,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                 title: collection.name,
                 count: items.length,
                 coverUrl: latestItem?.coverUrl,
-                onTap: () => context.push('/favorites/${collection.id}'),
+                onTap: () => context.push('/profile/favorites/${collection.id}'),
                 onLongPress: () => _showDeleteCollectionDialog(collection),
               ),
             );
