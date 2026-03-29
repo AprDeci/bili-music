@@ -101,9 +101,7 @@ class _PlayerPageState extends ConsumerState<PlayerPage> {
                       PlayerTopBar(
                         currentPage: _currentPage,
                         onBack: () => Navigator.of(context).maybePop(),
-                        onMore: item == null
-                            ? null
-                            : () => playerController.loadFromItem(item),
+                        onMore: item == null ? null : null,
                       ),
                       const SizedBox(height: 18),
                       Expanded(
