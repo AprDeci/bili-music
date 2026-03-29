@@ -249,6 +249,14 @@ class _QrCard extends StatelessWidget {
         return;
       }
 
+      const double qrSize = 1200.0;
+
+      final ui.PictureRecorder recorder = ui.PictureRecorder();
+      final Canvas canvas = Canvas(recorder);
+
+      final Paint bgPaint = Paint()..color = Colors.white;
+      canvas.drawRect(Rect.fromLTWH(0, 0, qrSize, qrSize), bgPaint);
+
       final QrPainter painter = QrPainter(
         data: qrUrl,
         version: QrVersions.auto,
@@ -262,8 +270,15 @@ class _QrCard extends StatelessWidget {
           color: Color(0xFF111111),
         ),
       );
-      final ByteData? imageData = await painter.toImageData(
-        1200,
+
+      // 在中心绘制二维码
+      painter.paint(canvas, Size(qrSize, qrSize));
+
+      final ui.Image image = await recorder.endRecording().toImage(
+        qrSize.toInt(),
+        qrSize.toInt(),
+      );
+      final ByteData? imageData = await image.toByteData(
         format: ui.ImageByteFormat.png,
       );
       final Uint8List? bytes = imageData?.buffer.asUint8List();
