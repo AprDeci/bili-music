@@ -2,11 +2,22 @@ import 'package:bilimusic/core/bili/session/bili_session_controller.dart';
 import 'package:bilimusic/core/hive/hive.dart';
 import 'package:bilimusic/feature/player/logic/player_controller.dart';
 import 'package:bilimusic/myApp.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:just_audio_background/just_audio_background.dart';
 import 'package:just_audio_media_kit/just_audio_media_kit.dart';
 
 Future<void> bootstrap() async {
+  if (!kIsWeb &&
+      (defaultTargetPlatform == TargetPlatform.android ||
+          defaultTargetPlatform == TargetPlatform.iOS)) {
+    await JustAudioBackground.init(
+      androidNotificationChannelId: 'com.example.bilimusic.channel.audio',
+      androidNotificationChannelName: 'Bilimusic Playback',
+      androidNotificationOngoing: true,
+    );
+  }
   JustAudioMediaKit.ensureInitialized();
   await initHive();
 }

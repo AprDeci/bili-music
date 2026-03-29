@@ -8,6 +8,7 @@ import 'package:bilimusic/feature/player/data/player_queue_local_repository.dart
 import 'package:bilimusic/feature/player/domain/playable_item.dart';
 import 'package:bilimusic/feature/player/domain/persisted_playback_queue.dart';
 import 'package:bilimusic/feature/player/domain/player_state.dart';
+import 'package:bilimusic/feature/player/logic/player_media_item_mapper.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:just_audio/just_audio.dart' as audio;
@@ -140,6 +141,12 @@ class PlayerController extends Notifier<PlayerState> {
       final audio.AudioSource source = audio.AudioSource.uri(
         Uri.parse(audioStream.streamUrl),
         headers: headers,
+        tag: buildPlayerMediaItem(
+          resolvedItem,
+          audioStream: audioStream,
+          queueSourceLabel: state.queueSourceLabel,
+          duration: audioStream.duration,
+        ),
       );
 
       final Duration? duration = await _audioPlayer.setAudioSource(source);
