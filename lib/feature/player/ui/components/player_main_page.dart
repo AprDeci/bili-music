@@ -39,24 +39,35 @@ class PlayerMainPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListView(
-      physics: const BouncingScrollPhysics(),
+    final MediaQueryData mediaQuery = MediaQuery.of(context);
+    final Size screenSize = mediaQuery.size;
+    final bool hasPartSelector = availableParts.length > 1;
+    final bool showDebugQueue = kDebugMode && state.hasQueue;
+    final bool showDebugStatus = kDebugMode;
+    final double artworkSize = (screenSize.height * 0.31).clamp(190.0, 320.0);
+    final double topSpacing = hasPartSelector ? 4 : 12;
+    final double artworkBottomSpacing = hasPartSelector ? 20 : 28;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
-        const SizedBox(height: 4),
-        if (availableParts.length > 1) ...<Widget>[
+        SizedBox(height: topSpacing),
+        if (hasPartSelector) ...<Widget>[
           _PlayerPartSelector(
             item: item,
             availableParts: availableParts,
             onTap: onPartTap,
           ),
-          const SizedBox(height: 18),
+          const SizedBox(height: 16),
         ],
-        SizedBox(
-          width: 200,
-          height: 200,
-          child: PlayerArtworkFrame(coverUrl: item?.coverUrl ?? ''),
+        Center(
+          child: SizedBox(
+            width: artworkSize,
+            height: artworkSize,
+            child: PlayerArtworkFrame(coverUrl: item?.coverUrl ?? ''),
+          ),
         ),
-        const SizedBox(height: 28),
+        SizedBox(height: artworkBottomSpacing),
         PlayerTrackHeader(
           title: item?.title ?? '还没有选择播放内容',
           subtitle: item == null
@@ -66,22 +77,29 @@ class PlayerMainPage extends StatelessWidget {
           isFavorite: isFavorite,
           onFavoriteToggle: onFavoriteToggle,
         ),
-        const SizedBox(height: 18),
-        PlayerProgressSection(state: state, onChanged: onSeek),
-        const SizedBox(height: 18),
-        PlayerTransportControls(
-          state: state,
-          onToggleQueueMode: onToggleQueueMode,
-          onBackward: onBackward,
-          onTogglePlayback: onTogglePlayback,
-          onForward: onForward,
-          onOpenQueue: onOpenQueue,
+        const Spacer(),
+        Column(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            PlayerProgressSection(state: state, onChanged: onSeek),
+            const SizedBox(height: 18),
+            PlayerTransportControls(
+              state: state,
+              onToggleQueueMode: onToggleQueueMode,
+              onBackward: onBackward,
+              onTogglePlayback: onTogglePlayback,
+              onForward: onForward,
+              onOpenQueue: onOpenQueue,
+            ),
+          ],
         ),
-        const SizedBox(height: 30),
-        if (state.hasQueue && kDebugMode) _PlayerQueueSummary(state: state),
-        if (state.hasQueue) const SizedBox(height: 18),
-        if (kDebugMode) PlayerPlaybackStatusChip(state: state),
-        SizedBox(height: 18),
+        if (showDebugQueue || showDebugStatus) const SizedBox(height: 18),
+        if (showDebugQueue) ...<Widget>[
+          _PlayerQueueSummary(state: state),
+          if (showDebugStatus) const SizedBox(height: 12),
+        ],
+        if (showDebugStatus) PlayerPlaybackStatusChip(state: state),
+        SizedBox(height: mediaQuery.padding.bottom > 0 ? 8 : 18),
       ],
     );
   }
