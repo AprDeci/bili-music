@@ -153,6 +153,12 @@ class FavoriteCollectionPage extends ConsumerWidget {
                           ? Icon(Icons.favorite_rounded, color: primary)
                           : const Icon(Icons.play_arrow_rounded),
                       onTap: () async {
+                        debugPrint(
+                          '[FavoriteDebug] tapPlay | collection=${resolvedCollection.name}, '
+                          'index=$index, queueLength=${queueItems.length}, '
+                          'itemStableId=${queueItems[index].stableId}, '
+                          'itemTitle=${queueItems[index].title}',
+                        );
                         await ref
                             .read(playerControllerProvider.notifier)
                             .setQueue(

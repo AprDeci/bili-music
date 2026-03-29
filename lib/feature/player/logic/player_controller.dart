@@ -39,6 +39,8 @@ class PlayerController extends Notifier<PlayerState> {
   bool _isRestoringFromPersistence = false;
   bool _isRebuildingWindow = false;
   bool _isSettingPlaylist = false;
+  int _latestRequestedRebuildToken = 0;
+  int _activePlaylistToken = 0;
   final Random _random;
   _SlidingQueueWindow? _activeWindow;
   _PendingQueueRebuildRequest? _pendingRebuildRequest;
@@ -150,9 +152,23 @@ class PlayerController extends Notifier<PlayerState> {
 
     final int resolvedIndex = startIndex.clamp(0, items.length - 1);
     final List<PlayableItem> queue = List<PlayableItem>.unmodifiable(items);
+    _logPlayerEvent(
+      'setQueue',
+      details: <String, Object?>{
+        'queueLength': queue.length,
+        'startIndex': resolvedIndex,
+        'autoplay': autoplay,
+        'sourceLabel': sourceLabel,
+        'targetStableId': queue[resolvedIndex].stableId,
+        'targetTitle': queue[resolvedIndex].title,
+        'currentStableId': state.currentItem?.stableId,
+        'currentTitle': state.currentItem?.title,
+        'audioPlaying': _audioPlayer.playing,
+        'positionMs': _audioPlayer.position.inMilliseconds,
+      },
+    );
     state = state.copyWith(
       queue: queue,
-      currentQueueIndex: resolvedIndex,
       queueSourceLabel: sourceLabel,
       errorMessage: null,
     );
@@ -167,6 +183,15 @@ class PlayerController extends Notifier<PlayerState> {
     PlayableItem item, {
     bool autoplay = true,
   }) async {
+    _logPlayerEvent(
+      'replaceCurrentQueueItem',
+      details: <String, Object?>{
+        'itemStableId': item.stableId,
+        'itemTitle': item.title,
+        'autoplay': autoplay,
+        'currentQueueIndex': state.currentQueueIndex,
+      },
+    );
     if (!state.hasActiveQueueIndex) {
       await setQueue(
         <PlayableItem>[item],
@@ -305,6 +330,15 @@ class PlayerController extends Notifier<PlayerState> {
   }
 
   Future<void> skipToNext() async {
+    _logPlayerEvent(
+      'skipToNext:requested',
+      details: <String, Object?>{
+        'currentQueueIndex': state.currentQueueIndex,
+        'queueLength': state.queue.length,
+        'audioPlaying': _audioPlayer.playing,
+        'positionMs': _audioPlayer.position.inMilliseconds,
+      },
+    );
     if (_isAdvancingQueue) {
       return;
     }
@@ -326,6 +360,18 @@ class PlayerController extends Notifier<PlayerState> {
     if (index < 0 || index >= state.queue.length) {
       return;
     }
+    _logPlayerEvent(
+      'skipToQueueIndex',
+      details: <String, Object?>{
+        'targetIndex': index,
+        'autoplay': autoplay,
+        'targetStableId': state.queue[index].stableId,
+        'targetTitle': state.queue[index].title,
+        'currentQueueIndex': state.currentQueueIndex,
+        'currentStableId': state.currentItem?.stableId,
+        'audioPlaying': _audioPlayer.playing,
+      },
+    );
     await _rebuildWindowAtQueueIndex(
       index,
       autoplay: autoplay,
@@ -361,8 +407,6 @@ class PlayerController extends Notifier<PlayerState> {
     _isRestoringFromPersistence = true;
     state = state.copyWith(
       queue: List<PlayableItem>.unmodifiable(restoredQueue),
-      currentQueueIndex: restoredIndex,
-      currentItem: restoredQueue[restoredIndex],
       queueMode: snapshot.queueMode,
       queueSourceLabel: snapshot.queueSourceLabel,
       errorMessage: null,
@@ -463,24 +507,45 @@ class PlayerController extends Notifier<PlayerState> {
     required bool autoplay,
     required Duration initialPosition,
   }) async {
+    final _PendingQueueRebuildRequest request = _PendingQueueRebuildRequest(
+      queueIndex: queueIndex,
+      autoplay: autoplay,
+      initialPosition: initialPosition,
+      requestToken: ++_latestRequestedRebuildToken,
+    );
+    await _scheduleQueueRebuild(request);
+  }
+
+  Future<void> _scheduleQueueRebuild(
+    _PendingQueueRebuildRequest request,
+  ) async {
+    final int queueIndex = request.queueIndex;
     if (queueIndex < 0 || queueIndex >= state.queue.length) {
       return;
     }
 
     if (_isRebuildingWindow) {
-      _pendingRebuildRequest = _PendingQueueRebuildRequest(
-        queueIndex: queueIndex,
-        autoplay: autoplay,
-        initialPosition: initialPosition,
-      );
+      _pendingRebuildRequest = request;
       return;
     }
 
-    final List<PlayableItem> queue = state.queue;
-    final PlayableItem requestedItem = queue[queueIndex];
+    final int requestToken = request.requestToken;
+    _logPlayerEvent(
+      'rebuild:start',
+      details: <String, Object?>{
+        'token': requestToken,
+        'queueIndex': queueIndex,
+        'autoplay': request.autoplay,
+        'initialPositionMs': request.initialPosition.inMilliseconds,
+        'targetStableId': state.queue[queueIndex].stableId,
+        'targetTitle': state.queue[queueIndex].title,
+        'currentStableId': state.currentItem?.stableId,
+        'currentTitle': state.currentItem?.title,
+        'audioPlaying': _audioPlayer.playing,
+        'processingState': _audioPlayer.processingState.name,
+      },
+    );
     state = state.copyWith(
-      currentQueueIndex: queueIndex,
-      currentItem: requestedItem,
       isLoading: true,
       isReady: false,
       isPlaying: false,
@@ -499,6 +564,14 @@ class PlayerController extends Notifier<PlayerState> {
           <_ResolvedQueueSource>[];
 
       for (int i = 0; i < desiredWindow.queueIndexes.length; i++) {
+        if (!_isLatestRebuildRequest(requestToken)) {
+          _logPlayerEvent(
+            'rebuild:staleBeforeResolve',
+            details: <String, Object?>{'token': requestToken},
+          );
+          return;
+        }
+
         final int targetIndex = desiredWindow.queueIndexes[i];
         final bool isCurrent = targetIndex == queueIndex;
         try {
@@ -536,14 +609,35 @@ class PlayerController extends Notifier<PlayerState> {
 
       _isSettingPlaylist = true;
       try {
+        if (!_isLatestRebuildRequest(requestToken)) {
+          _logPlayerEvent(
+            'rebuild:staleBeforeSetSources',
+            details: <String, Object?>{'token': requestToken},
+          );
+          return;
+        }
+
         final Duration? loadedDuration = await _audioPlayer.setAudioSources(
           resolvedSources
               .map((_ResolvedQueueSource source) => source.source)
               .toList(growable: false),
           initialIndex: currentWindowIndex,
-          initialPosition: initialPosition,
+          initialPosition: request.initialPosition,
         );
+        if (!_isLatestRebuildRequest(requestToken)) {
+          _logPlayerEvent(
+            'rebuild:staleAfterSetSources',
+            details: <String, Object?>{
+              'token': requestToken,
+              'audioPlaying': _audioPlayer.playing,
+              'currentIndex': _audioPlayer.currentIndex,
+            },
+          );
+          return;
+        }
+
         _activeWindow = activeWindow;
+        _activePlaylistToken = requestToken;
 
         final _ResolvedQueueEntry currentEntry =
             resolvedSources[currentWindowIndex].entry;
@@ -552,20 +646,69 @@ class PlayerController extends Notifier<PlayerState> {
           entry: currentEntry,
           durationOverride: loadedDuration,
         );
+        _logPlayerEvent(
+          'rebuild:appliedEntry',
+          details: <String, Object?>{
+            'token': requestToken,
+            'queueIndex': queueIndex,
+            'stableId': currentEntry.item.stableId,
+            'title': currentEntry.item.title,
+            'durationMs': (loadedDuration ?? currentEntry.audioStream.duration)
+                ?.inMilliseconds,
+          },
+        );
 
-        if (autoplay) {
+        _isSettingPlaylist = false;
+        _finishRebuildCycle();
+
+        if (!_isLatestRebuildRequest(requestToken)) {
+          _logPlayerEvent(
+            'rebuild:skipPlaybackCommand',
+            details: <String, Object?>{
+              'token': requestToken,
+              'reason': 'stale_after_unlock',
+            },
+          );
+          return;
+        }
+
+        if (request.autoplay) {
           await _audioPlayer.play();
         } else {
           await _audioPlayer.pause();
         }
+        _logPlayerEvent(
+          'rebuild:playbackCommandDone',
+          details: <String, Object?>{
+            'token': requestToken,
+            'autoplay': request.autoplay,
+            'audioPlaying': _audioPlayer.playing,
+            'currentIndex': _audioPlayer.currentIndex,
+            'processingState': _audioPlayer.processingState.name,
+          },
+        );
       } finally {
         _isSettingPlaylist = false;
       }
 
-      if (!_isRestoringFromPersistence) {
+      if (_isLatestRebuildRequest(requestToken) &&
+          !_isRestoringFromPersistence) {
         await _persistQueueSnapshot();
       }
     } on Object catch (error) {
+      if (!_isLatestRebuildRequest(requestToken)) {
+        return;
+      }
+
+      _logPlayerEvent(
+        'rebuild:error',
+        details: <String, Object?>{
+          'token': requestToken,
+          'queueIndex': queueIndex,
+          'error': error.toString(),
+        },
+      );
+
       state = state.copyWith(
         isLoading: false,
         isReady: false,
@@ -580,25 +723,32 @@ class PlayerController extends Notifier<PlayerState> {
         await _persistQueueSnapshot();
       }
     } finally {
-      _isRebuildingWindow = false;
-      final _PendingQueueRebuildRequest? pendingRequest =
-          _takePendingRebuildRequest();
-      if (pendingRequest != null) {
-        unawaited(
-          _rebuildWindowAtQueueIndex(
-            pendingRequest.queueIndex,
-            autoplay: pendingRequest.autoplay,
-            initialPosition: pendingRequest.initialPosition,
-          ),
-        );
-      }
+      _isSettingPlaylist = false;
+      _finishRebuildCycle();
     }
+  }
+
+  bool _isLatestRebuildRequest(int requestToken) {
+    return requestToken == _latestRequestedRebuildToken;
   }
 
   _PendingQueueRebuildRequest? _takePendingRebuildRequest() {
     final _PendingQueueRebuildRequest? pendingRequest = _pendingRebuildRequest;
     _pendingRebuildRequest = null;
     return pendingRequest;
+  }
+
+  void _finishRebuildCycle() {
+    if (!_isRebuildingWindow) {
+      return;
+    }
+
+    _isRebuildingWindow = false;
+    final _PendingQueueRebuildRequest? pendingRequest =
+        _takePendingRebuildRequest();
+    if (pendingRequest != null) {
+      unawaited(_scheduleQueueRebuild(pendingRequest));
+    }
   }
 
   _SlidingQueueWindow _buildSlidingWindow(int queueIndex) {
@@ -706,7 +856,9 @@ class PlayerController extends Notifier<PlayerState> {
   void _bindPlayerStreams() {
     _subscriptions.add(
       _audioPlayer.currentIndexStream.listen((int? index) {
-        if (index == null || _activeWindow == null) {
+        if (index == null ||
+            _activeWindow == null ||
+            _latestRequestedRebuildToken != _activePlaylistToken) {
           return;
         }
         final _SlidingQueueWindow activeWindow = _activeWindow!;
@@ -715,6 +867,20 @@ class PlayerController extends Notifier<PlayerState> {
         }
 
         final int queueIndex = activeWindow.queueIndexes[index];
+        if (queueIndex < 0 || queueIndex >= state.queue.length) {
+          return;
+        }
+        _logPlayerEvent(
+          'stream:currentIndex',
+          details: <String, Object?>{
+            'playerIndex': index,
+            'queueIndex': queueIndex,
+            'activePlaylistToken': _activePlaylistToken,
+            'latestRequestedToken': _latestRequestedRebuildToken,
+            'audioPlaying': _audioPlayer.playing,
+            'processingState': _audioPlayer.processingState.name,
+          },
+        );
         final PlayableItem queueItem = state.queue[queueIndex];
         final _ResolvedQueueEntry? entry = _resolvedEntries[queueItem.stableId];
         if (entry != null) {
@@ -791,10 +957,40 @@ class PlayerController extends Notifier<PlayerState> {
               : state.position,
         );
 
-        if (completed) {
+        _logPlayerEvent(
+          'stream:playerState',
+          details: <String, Object?>{
+            'playing': playerState.playing,
+            'processingState': playerState.processingState.name,
+            'currentIndex': _audioPlayer.currentIndex,
+            'stateCurrentQueueIndex': state.currentQueueIndex,
+            'stateCurrentStableId': state.currentItem?.stableId,
+            'positionMs': state.position.inMilliseconds,
+            'isLoading': state.isLoading,
+            'isReady': state.isReady,
+          },
+        );
+
+        if (completed && _latestRequestedRebuildToken == _activePlaylistToken) {
           unawaited(_handlePlaybackCompleted());
         }
       }),
+    );
+  }
+
+  void _logPlayerEvent(String event, {Map<String, Object?>? details}) {
+    final String detailText = details == null || details.isEmpty
+        ? ''
+        : details.entries
+              .map(
+                (MapEntry<String, Object?> entry) =>
+                    '${entry.key}=${entry.value}',
+              )
+              .join(', ');
+    debugPrint(
+      detailText.isEmpty
+          ? '[PlayerDebug] $event'
+          : '[PlayerDebug] $event | $detailText',
     );
   }
 
@@ -924,9 +1120,11 @@ class _PendingQueueRebuildRequest {
     required this.queueIndex,
     required this.autoplay,
     required this.initialPosition,
+    required this.requestToken,
   });
 
   final int queueIndex;
   final bool autoplay;
   final Duration initialPosition;
+  final int requestToken;
 }
