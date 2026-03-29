@@ -7,11 +7,13 @@ class MiniPlayerBar extends StatelessWidget {
     required this.state,
     required this.onTap,
     required this.onTogglePlayback,
+    this.bottomPadding = 82,
   });
 
   final PlayerState state;
   final VoidCallback onTap;
   final VoidCallback onTogglePlayback;
+  final double bottomPadding;
 
   @override
   Widget build(BuildContext context) {
@@ -22,7 +24,7 @@ class MiniPlayerBar extends StatelessWidget {
         : state.audioStream?.qualityLabel ?? state.currentItem?.author ?? '';
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 0, 20, 82),
+      padding: EdgeInsets.fromLTRB(20, 0, 20, bottomPadding),
       child: Material(
         color: Colors.transparent,
         child: InkWell(

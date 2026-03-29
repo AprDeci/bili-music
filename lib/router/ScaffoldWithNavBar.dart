@@ -21,6 +21,12 @@ class ScaffoldWithNavBar extends ConsumerStatefulWidget {
 }
 
 class _ScaffoldWithNavBarState extends ConsumerState<ScaffoldWithNavBar> {
+  static const Duration _animationDuration = Duration(milliseconds: 200);
+  static const Curve _animationCurve = Curves.easeInOutCubic;
+  static const double _navHiddenSlideOffset = 1.2;
+  static const double _miniPlayerVisibleBottomPadding = 82;
+  static const double _miniPlayerCollapsedBottomPadding = 20;
+
   int _currentIndex = 0;
 
   @override
@@ -35,27 +41,28 @@ class _ScaffoldWithNavBarState extends ConsumerState<ScaffoldWithNavBar> {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
     final PlayerState playerState = ref.watch(playerControllerProvider);
-    final bool shouldHideBottomNav = _shouldHideBottomNav(
-      widget.currentLocation,
-    );
+    final bool isFavoritesPage = _isFavoritesPage(widget.currentLocation);
 
     return Scaffold(
-      body: shouldHideBottomNav
-          ? _ShellContent(
-              navigationShell: widget.navigationShell,
-              playerState: playerState,
-              onMiniPlayerTap: () => context.push('/player'),
-              onTogglePlayback: () {
-                ref.read(playerControllerProvider.notifier).togglePlayback();
-              },
-            )
-          : BottomBar(
-              fit: StackFit.expand,
-              borderRadius: BorderRadius.circular(40),
-              offset: 0,
-              barColor: Colors.transparent,
-              duration: const Duration(milliseconds: 300),
-              width: screenWidth * 0.92,
+      body: BottomBar(
+        fit: StackFit.expand,
+        borderRadius: BorderRadius.circular(40),
+        offset: 0,
+        barColor: Colors.transparent,
+        duration: _animationDuration,
+        width: screenWidth * 0.92,
+        child: IgnorePointer(
+          ignoring: isFavoritesPage,
+          child: AnimatedOpacity(
+            duration: _animationDuration,
+            curve: _animationCurve,
+            opacity: isFavoritesPage ? 0 : 1,
+            child: AnimatedSlide(
+              duration: _animationDuration,
+              curve: _animationCurve,
+              offset: isFavoritesPage
+                  ? const Offset(0, _navHiddenSlideOffset)
+                  : Offset.zero,
               child: DecoratedBox(
                 decoration: BoxDecoration(
                   color: Colors.white.withValues(alpha: 0.96),
@@ -119,57 +126,46 @@ class _ScaffoldWithNavBarState extends ConsumerState<ScaffoldWithNavBar> {
                   ),
                 ),
               ),
-              body: (BuildContext context, ScrollController scrollController) {
-                return _ShellContent(
-                  navigationShell: widget.navigationShell,
-                  playerState: playerState,
-                  onMiniPlayerTap: () => context.push('/player'),
-                  onTogglePlayback: () {
-                    ref
-                        .read(playerControllerProvider.notifier)
-                        .togglePlayback();
-                  },
-                );
-              },
-            ),
-    );
-  }
-
-  bool _shouldHideBottomNav(String location) {
-    return location == '/profile/favorites' ||
-        location.startsWith('/profile/favorites/');
-  }
-}
-
-class _ShellContent extends StatelessWidget {
-  const _ShellContent({
-    required this.navigationShell,
-    required this.playerState,
-    required this.onMiniPlayerTap,
-    required this.onTogglePlayback,
-  });
-
-  final StatefulNavigationShell navigationShell;
-  final PlayerState playerState;
-  final VoidCallback onMiniPlayerTap;
-  final VoidCallback onTogglePlayback;
-
-  @override
-  Widget build(BuildContext context) {
-    return Stack(
-      fit: StackFit.expand,
-      children: <Widget>[
-        navigationShell,
-        if (playerState.hasItem)
-          Align(
-            alignment: Alignment.bottomCenter,
-            child: MiniPlayerBar(
-              state: playerState,
-              onTap: onMiniPlayerTap,
-              onTogglePlayback: onTogglePlayback,
             ),
           ),
-      ],
+        ),
+        body: (BuildContext context, ScrollController scrollController) {
+          return Stack(
+            fit: StackFit.expand,
+            children: <Widget>[
+              widget.navigationShell,
+              if (playerState.hasItem)
+                Align(
+                  alignment: Alignment.bottomCenter,
+                  child: AnimatedSlide(
+                    duration: _animationDuration,
+                    curve: _animationCurve,
+                    offset: isFavoritesPage
+                        ? const Offset(0, 0.12)
+                        : Offset.zero,
+                    child: MiniPlayerBar(
+                      state: playerState,
+                      bottomPadding: isFavoritesPage
+                          ? _miniPlayerCollapsedBottomPadding
+                          : _miniPlayerVisibleBottomPadding,
+                      onTap: () => context.push('/player'),
+                      onTogglePlayback: () {
+                        ref
+                            .read(playerControllerProvider.notifier)
+                            .togglePlayback();
+                      },
+                    ),
+                  ),
+                ),
+            ],
+          );
+        },
+      ),
     );
+  }
+
+  bool _isFavoritesPage(String location) {
+    return location == '/profile/favorites' ||
+        location.startsWith('/profile/favorites/');
   }
 }
