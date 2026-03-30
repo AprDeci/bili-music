@@ -373,17 +373,19 @@ class _TagBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final Color primary = Theme.of(context).colorScheme.primary;
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        border: Border.all(color: const Color(0xFFF1B6B6)),
-        color: const Color(0xFFFFFCFC),
+        border: Border.all(color: primary.withValues(alpha: 0.35)),
+        color: primary.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(999),
       ),
       child: Text(
         label,
-        style: const TextStyle(
-          color: Color(0xFFE45757),
+        style: TextStyle(
+          color: primary,
           fontSize: 10,
           fontWeight: FontWeight.w800,
           height: 1,
