@@ -1,3 +1,4 @@
+import 'package:bilimusic/common/bottom_height_helper.dart';
 import 'package:bilimusic/common/components/cachedImage.dart';
 import 'package:bilimusic/feature/player/domain/player_state.dart';
 import 'package:flutter/material.dart';
@@ -8,7 +9,7 @@ class MiniPlayerBar extends StatelessWidget {
     required this.state,
     required this.onTap,
     required this.onTogglePlayback,
-    this.bottomPadding = 82,
+    this.bottomPadding = BottomHeightHelper.miniPlayerCollapsedBottomPadding,
   });
 
   final PlayerState state;

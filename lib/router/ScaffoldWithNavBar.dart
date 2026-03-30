@@ -1,3 +1,4 @@
+import 'package:bilimusic/common/bottom_height_helper.dart';
 import 'package:bilimusic/feature/player/domain/player_state.dart';
 import 'package:bilimusic/feature/player/logic/player_controller.dart';
 import 'package:bilimusic/feature/player/ui/components/mini_player_bar.dart';
@@ -25,9 +26,6 @@ class _ScaffoldWithNavBarState extends ConsumerState<ScaffoldWithNavBar> {
   static const Duration _animationDuration = Duration(milliseconds: 200);
   static const Curve _animationCurve = Curves.easeInOutCubic;
   static const double _navHiddenSlideOffset = 1.2;
-  static const double _navigationBarHeight = 60;
-  static const double _miniPlayerBottomGap = 10;
-  static const double _miniPlayerCollapsedBottomGap = 20;
 
   int _currentIndex = 0;
 
@@ -46,9 +44,13 @@ class _ScaffoldWithNavBarState extends ConsumerState<ScaffoldWithNavBar> {
     final PlayerState playerState = ref.watch(playerControllerProvider);
     final bool isFavoritesPage = _isFavoritesPage(widget.currentLocation);
     final double miniPlayerVisibleBottomPadding =
-        bottomInset + _navigationBarHeight + _miniPlayerBottomGap;
+        BottomHeightHelper.miniPlayerBottomPaddingWithBottomBar(
+          bottomInset: bottomInset,
+        );
     final double miniPlayerCollapsedBottomPadding =
-        bottomInset + _miniPlayerCollapsedBottomGap;
+        BottomHeightHelper.miniPlayerBottomPaddingWithoutBottomBar(
+          bottomInset: bottomInset,
+        );
 
     final Widget content = _buildShellContent(
       context,
@@ -103,7 +105,7 @@ class _ScaffoldWithNavBarState extends ConsumerState<ScaffoldWithNavBar> {
                     data: NavigationBarThemeData(
                       backgroundColor: Colors.transparent,
                       elevation: 0,
-                      height: _navigationBarHeight,
+                      height: BottomHeightHelper.bottomBarHeight,
                       indicatorColor: colorScheme.primary.withValues(
                         alpha: 0.12,
                       ),
