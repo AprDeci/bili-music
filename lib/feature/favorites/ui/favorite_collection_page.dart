@@ -91,28 +91,25 @@ class FavoriteCollectionPage extends ConsumerWidget {
               ),
             )
           : ListView(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+              padding: const EdgeInsets.fromLTRB(0, 0, 0, 24),
               children: <Widget>[
-                const SizedBox(height: 16),
+                const SizedBox(height: 2),
                 ...List<Widget>.generate(items.length, (int index) {
                   final FavoriteEntry item = items[index];
                   return Padding(
                     padding: EdgeInsets.only(
-                      bottom: index == items.length - 1 ? 0 : 10,
+                      bottom: index == items.length - 1 ? 0 : 0,
                     ),
                     child: ListTile(
                       contentPadding: const EdgeInsets.symmetric(
                         horizontal: 14,
-                        vertical: 6,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(20),
+                        vertical: 0,
                       ),
                       tileColor: Colors.white,
                       leading: CommonCachedImage(
                         imageUrl: item.coverUrl,
-                        width: 56,
-                        height: 56,
+                        width: 44,
+                        height: 44,
                         fit: BoxFit.cover,
                         borderRadius: BorderRadius.circular(14),
                         fallbackIcon: Icons.music_note_rounded,
