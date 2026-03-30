@@ -53,7 +53,6 @@ class MusicRankingSection extends ConsumerWidget {
               error: (Object error, StackTrace stackTrace) {
                 return _MusicRankingError(
                   message: error.toString(),
-                  onRetry: () => ref.invalidate(musicRankingProvider),
                 );
               },
             ),
@@ -151,34 +150,35 @@ class _MusicRankingLoading extends StatelessWidget {
     return Column(
       children: List<Widget>.generate(3, (int index) {
         return Padding(
-          padding: EdgeInsets.only(bottom: index == 2 ? 0 : 16),
+          padding: EdgeInsets.only(bottom: index == 2 ? 0 : 14),
           child: Row(
             children: <Widget>[
               Container(
-                width: 88,
-                height: 88,
+                width: 50,
+                height: 50,
                 decoration: BoxDecoration(
                   color: const Color(0xFFDDE6F2),
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: BorderRadius.circular(8),
                 ),
               ),
-              const SizedBox(width: 18),
+              const SizedBox(width: 8),
               Expanded(
                 child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
                     Container(
-                      height: 18,
+                      height: 14,
                       width: double.infinity,
                       decoration: BoxDecoration(
                         color: const Color(0xFFDDE6F2),
                         borderRadius: BorderRadius.circular(999),
                       ),
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 10),
                     Container(
-                      height: 13,
-                      width: 160,
+                      height: 18,
+                      width: 188,
                       decoration: BoxDecoration(
                         color: const Color(0xFFDDE6F2),
                         borderRadius: BorderRadius.circular(999),
@@ -187,7 +187,7 @@ class _MusicRankingLoading extends StatelessWidget {
                   ],
                 ),
               ),
-              const SizedBox(width: 18),
+              const SizedBox(width: 4),
               Container(
                 width: 38,
                 height: 38,
@@ -205,10 +205,9 @@ class _MusicRankingLoading extends StatelessWidget {
 }
 
 class _MusicRankingError extends StatelessWidget {
-  const _MusicRankingError({required this.message, required this.onRetry});
+  const _MusicRankingError({required this.message});
 
   final String message;
-  final VoidCallback onRetry;
 
   @override
   Widget build(BuildContext context) {
@@ -218,7 +217,6 @@ class _MusicRankingError extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
             const Icon(
               Icons.signal_wifi_statusbar_connected_no_internet_4_rounded,
@@ -235,18 +233,12 @@ class _MusicRankingError extends StatelessWidget {
             const SizedBox(height: 8),
             Text(
               message,
-              maxLines: 2,
+              maxLines: 3,
               overflow: TextOverflow.ellipsis,
               textAlign: TextAlign.center,
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: const Color(0xFF64748B),
               ),
-            ),
-            const SizedBox(height: 14),
-            FilledButton.icon(
-              onPressed: onRetry,
-              icon: const Icon(Icons.refresh_rounded),
-              label: const Text('重新加载'),
             ),
           ],
         ),
