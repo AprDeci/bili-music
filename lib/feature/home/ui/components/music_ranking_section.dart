@@ -272,10 +272,10 @@ class _MusicRankingTile extends StatelessWidget {
     final ThemeData theme = Theme.of(context);
 
     return SizedBox(
-      height: 44,
+      height: 54,
       child: Row(
         children: <Widget>[
-          _RankingCover(item: item, rank: rank),
+          _RankingCover(item: item, rank: rank, size: 50),
           const SizedBox(width: 8),
           Expanded(
             child: Column(
@@ -326,10 +326,11 @@ class _MusicRankingTile extends StatelessWidget {
 }
 
 class _RankingCover extends StatelessWidget {
-  const _RankingCover({required this.item, required this.rank});
+  const _RankingCover({required this.item, required this.rank, this.size = 44});
 
   final MusicRankingItem item;
   final int rank;
+  final double size;
 
   @override
   Widget build(BuildContext context) {
@@ -337,8 +338,8 @@ class _RankingCover extends StatelessWidget {
       borderRadius: BorderRadius.circular(8),
       child: item.coverUrl.isEmpty
           ? Container(
-              width: 44,
-              height: 44,
+              width: size,
+              height: size,
               color: const Color(0xFFDDE6F2),
               child: const Icon(
                 Icons.music_note_rounded,
@@ -347,13 +348,13 @@ class _RankingCover extends StatelessWidget {
             )
           : Image.network(
               item.coverUrl,
-              width: 44,
-              height: 44,
+              width: size,
+              height: size,
               fit: BoxFit.cover,
               errorBuilder: (_, _, _) {
                 return Container(
-                  width: 88,
-                  height: 88,
+                  width: size,
+                  height: size,
                   color: const Color(0xFFDDE6F2),
                   child: const Icon(
                     Icons.music_note_rounded,
