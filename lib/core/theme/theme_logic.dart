@@ -55,8 +55,9 @@ class ThemeLogic extends _$ThemeLogic {
         return ThemeMode.light;
       case 'system':
       case 'ThemeMode.system':
-      case null:
         return ThemeMode.system;
+      case null:
+        return ThemeMode.light;
     }
 
     return ThemeMode.system;
