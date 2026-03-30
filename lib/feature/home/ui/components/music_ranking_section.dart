@@ -2,8 +2,11 @@ import 'dart:math' as math;
 
 import 'package:bilimusic/feature/home/domain/music_ranking_item.dart';
 import 'package:bilimusic/feature/home/logic/music_ranking_controller.dart';
+import 'package:bilimusic/feature/player/domain/playable_item.dart';
+import 'package:bilimusic/feature/player/logic/player_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 class MusicRankingSection extends ConsumerWidget {
   const MusicRankingSection({super.key});
@@ -40,7 +43,12 @@ class MusicRankingSection extends ConsumerWidget {
                 if (items.isEmpty) {
                   return const _MusicRankingEmpty();
                 }
-                return _MusicRankingPager(items: items);
+                return _MusicRankingPager(
+                  items: items,
+                  onItemTap: (int index) {
+                    _handleItemTap(context, ref, items, index);
+                  },
+                );
               },
               loading: () => const _MusicRankingLoading(),
               error: (Object error, StackTrace stackTrace) {
@@ -55,12 +63,32 @@ class MusicRankingSection extends ConsumerWidget {
       ),
     );
   }
+
+  Future<void> _handleItemTap(
+    BuildContext context,
+    WidgetRef ref,
+    List<MusicRankingItem> items,
+    int index,
+  ) async {
+    final List<PlayableItem> queue = items
+        .map((MusicRankingItem item) => item.toPlayableItem())
+        .toList(growable: false);
+
+    await ref
+        .read(playerControllerProvider.notifier)
+        .setQueue(queue, startIndex: index, sourceLabel: '近期音乐榜');
+
+    if (context.mounted) {
+      context.push('/player');
+    }
+  }
 }
 
 class _MusicRankingPager extends StatelessWidget {
-  const _MusicRankingPager({required this.items});
+  const _MusicRankingPager({required this.items, required this.onItemTap});
 
   final List<MusicRankingItem> items;
+  final ValueChanged<int> onItemTap;
 
   @override
   Widget build(BuildContext context) {
@@ -100,6 +128,11 @@ class _MusicRankingPager extends StatelessWidget {
                   child: _MusicRankingColumn(
                     items: columns[index],
                     startRank: index * MusicRankingSection._columnSize + 1,
+                    onItemTap: (int localIndex) {
+                      onItemTap(
+                        index * MusicRankingSection._columnSize + localIndex,
+                      );
+                    },
                   ),
                 ),
               ),
@@ -243,10 +276,15 @@ class _MusicRankingEmpty extends StatelessWidget {
 }
 
 class _MusicRankingColumn extends StatelessWidget {
-  const _MusicRankingColumn({required this.items, required this.startRank});
+  const _MusicRankingColumn({
+    required this.items,
+    required this.startRank,
+    required this.onItemTap,
+  });
 
   final List<MusicRankingItem> items;
   final int startRank;
+  final ValueChanged<int> onItemTap;
 
   @override
   Widget build(BuildContext context) {
@@ -254,7 +292,11 @@ class _MusicRankingColumn extends StatelessWidget {
       children: List<Widget>.generate(items.length, (int index) {
         return Padding(
           padding: EdgeInsets.only(bottom: index == items.length - 1 ? 0 : 14),
-          child: _MusicRankingTile(item: items[index], rank: startRank + index),
+          child: _MusicRankingTile(
+            item: items[index],
+            rank: startRank + index,
+            onTap: () => onItemTap(index),
+          ),
         );
       }),
     );
@@ -262,10 +304,15 @@ class _MusicRankingColumn extends StatelessWidget {
 }
 
 class _MusicRankingTile extends StatelessWidget {
-  const _MusicRankingTile({required this.item, required this.rank});
+  const _MusicRankingTile({
+    required this.item,
+    required this.rank,
+    required this.onTap,
+  });
 
   final MusicRankingItem item;
   final int rank;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -273,53 +320,60 @@ class _MusicRankingTile extends StatelessWidget {
 
     return SizedBox(
       height: 54,
-      child: Row(
-        children: <Widget>[
-          _RankingCover(item: item, rank: rank, size: 50),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Text(
-                  item.title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.w900,
-                    fontSize: 14,
-                    height: 1,
-                    letterSpacing: -1.4,
-                    color: const Color(0xFF0D1329),
-                  ),
-                ),
-                const SizedBox(height: 10),
-                Row(
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(12),
+          child: Row(
+            children: <Widget>[
+              _RankingCover(item: item, rank: rank, size: 50),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
-                    _TagBadge(label: item.tagText),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        item.author,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: theme.textTheme.titleLarge?.copyWith(
-                          color: const Color(0xFF8A94A6),
-                          fontWeight: FontWeight.w500,
-                          fontSize: 10,
-                          letterSpacing: -0.8,
-                        ),
+                    Text(
+                      item.title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.headlineSmall?.copyWith(
+                        fontWeight: FontWeight.w900,
+                        fontSize: 14,
+                        height: 1,
+                        letterSpacing: -1.4,
+                        color: const Color(0xFF0D1329),
                       ),
+                    ),
+                    const SizedBox(height: 10),
+                    Row(
+                      children: <Widget>[
+                        _TagBadge(label: item.tagText),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            item.author,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: theme.textTheme.titleLarge?.copyWith(
+                              color: const Color(0xFF8A94A6),
+                              fontWeight: FontWeight.w500,
+                              fontSize: 10,
+                              letterSpacing: -0.8,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
-              ],
-            ),
+              ),
+              const SizedBox(width: 4),
+              const _PlayGlyph(),
+            ],
           ),
-          const SizedBox(width: 4),
-          const _PlayGlyph(),
-        ],
+        ),
       ),
     );
   }

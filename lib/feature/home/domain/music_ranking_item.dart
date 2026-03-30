@@ -1,4 +1,10 @@
-class MusicRankingItem {
+import 'package:bilimusic/feature/player/domain/playable_item.dart';
+import 'package:freezed_annotation/freezed_annotation.dart';
+
+part 'music_ranking_item.freezed.dart';
+
+@freezed
+class MusicRankingItem with _$MusicRankingItem {
   const MusicRankingItem({
     required this.aid,
     required this.bvid,
@@ -18,4 +24,17 @@ class MusicRankingItem {
   final String tagText;
   final String playCountText;
   final String durationText;
+
+  PlayableItem toPlayableItem() {
+    return PlayableItem(
+      aid: aid,
+      bvid: bvid,
+      title: title,
+      author: author,
+      coverUrl: coverUrl,
+      page: 1,
+      durationText: durationText,
+      playCountText: playCountText,
+    );
+  }
 }
