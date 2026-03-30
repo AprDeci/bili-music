@@ -340,11 +340,6 @@ class _SearchResultSection extends StatelessWidget {
     if (isLoading) {
       return Container(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 28),
-        decoration: BoxDecoration(
-          color: colorScheme.surfaceContainerLowest,
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: colorScheme.outlineVariant),
-        ),
         child: Column(
           children: <Widget>[
             const SizedBox(
