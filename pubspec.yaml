@@ -53,6 +53,7 @@ dependencies:
   url_launcher: ^6.3.2
   logger: ^2.7.0
   audio_service: ^0.18.18
+  cached_network_image: ^3.4.1
 
 dev_dependencies:
   flutter_test:
