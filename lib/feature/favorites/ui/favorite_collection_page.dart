@@ -233,12 +233,12 @@ class FavoriteCollectionPage extends ConsumerWidget {
       builder: (BuildContext sheetContext) {
         return SafeArea(
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 70),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: <Widget>[
                 ListTile(
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 8),
+                  contentPadding: const EdgeInsets.fromLTRB(14, 0, 14, 20),
                   leading: CommonCachedImage(
                     imageUrl: item.coverUrl,
                     width: 44,
