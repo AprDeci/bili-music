@@ -11,6 +11,16 @@ BiliMusicRankingRepository biliMusicRankingRepository(Ref ref) {
 }
 
 @riverpod
-Future<List<MusicRankingItem>> musicRanking(Ref ref) {
-  return ref.read(biliMusicRankingRepositoryProvider).fetchMusicRanking();
+Future<List<MusicRankingItem>> musicRanking(Ref ref) async {
+  const blackTagList = ['杂谈', '乐评', '仿妆', '教学', '明星', '时尚潮流'];
+  final List<MusicRankingItem> items = await ref
+      .read(biliMusicRankingRepositoryProvider)
+      .fetchMusicRanking();
+  return items
+      .where((item) {
+        final tag = item.tagText;
+        // 检查标签文本是否包含黑名单中的任意一个字符串
+        return !blackTagList.any((blackTag) => tag.contains(blackTag));
+      })
+      .toList(growable: false);
 }

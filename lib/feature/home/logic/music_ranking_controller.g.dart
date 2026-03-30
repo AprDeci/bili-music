@@ -97,4 +97,4 @@ final class MusicRankingProvider
   }
 }
 
-String _$musicRankingHash() => r'135abe0bd82e76570555348cd93e8164145f62ab';
+String _$musicRankingHash() => r'93337ec5c5b395ae82f5cf8d58dac7b180c8dcff';
