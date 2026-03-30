@@ -3,6 +3,7 @@ import 'package:bilimusic/feature/player/domain/playable_item.dart';
 import 'package:bilimusic/feature/player/domain/player_state.dart';
 import 'package:bilimusic/feature/player/logic/player_controller.dart';
 import 'package:bilimusic/feature/player/ui/components/player_main_page.dart';
+import 'package:bilimusic/feature/player/ui/components/player_collection_sheet.dart';
 import 'package:bilimusic/feature/player/ui/components/player_meta_page.dart';
 import 'package:bilimusic/feature/player/ui/components/player_part_selector.dart';
 import 'package:bilimusic/feature/player/ui/components/player_queue_sheet.dart';
@@ -135,13 +136,19 @@ class _PlayerPageState extends ConsumerState<PlayerPage> {
                                 onPartTap:
                                      item == null || availableParts.length < 2
                                  ? null
-                                     : () => showPlayerPartSelector(
-                                         context: context,
-                                          parts: availableParts,
-                                          currentItem: item,
-                                          state: state,
-                                          controller: playerController,
-                                       ),
+                                      : () => showPlayerPartSelector(
+                                          context: context,
+                                           parts: availableParts,
+                                           currentItem: item,
+                                           state: state,
+                                           controller: playerController,
+                                        ),
+                                onOpenCollectionSheet: item == null
+                                    ? null
+                                    : () => showPlayerCollectionSheet(
+                                        context: context,
+                                        item: item,
+                                      ),
                                 isFavorite: isFavorite,
                                 onFavoriteToggle: item == null
                                     ? null

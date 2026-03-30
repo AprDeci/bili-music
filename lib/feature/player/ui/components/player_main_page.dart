@@ -14,6 +14,7 @@ class PlayerMainPage extends StatelessWidget {
     required this.item,
     required this.availableParts,
     required this.onPartTap,
+    required this.onOpenCollectionSheet,
     required this.isFavorite,
     required this.onFavoriteToggle,
     required this.onSeek,
@@ -28,6 +29,7 @@ class PlayerMainPage extends StatelessWidget {
   final PlayableItem? item;
   final List<PlayableItem> availableParts;
   final VoidCallback? onPartTap;
+  final VoidCallback? onOpenCollectionSheet;
   final bool isFavorite;
   final VoidCallback? onFavoriteToggle;
   final ValueChanged<double> onSeek;
@@ -76,6 +78,7 @@ class PlayerMainPage extends StatelessWidget {
               item: item,
               canOpenPartSelector: canOpenPartSelector,
               onPartTap: onPartTap,
+              onOpenCollectionSheet: onOpenCollectionSheet,
             ),
             const SizedBox(height: 10),
             PlayerProgressSection(state: state, onChanged: onSeek),
@@ -153,12 +156,14 @@ class _PlayerToolBar extends StatelessWidget {
     required this.item,
     required this.canOpenPartSelector,
     required this.onPartTap,
+    required this.onOpenCollectionSheet,
   });
 
   final bool hasItem;
   final PlayableItem? item;
   final bool canOpenPartSelector;
   final VoidCallback? onPartTap;
+  final VoidCallback? onOpenCollectionSheet;
 
   @override
   Widget build(BuildContext context) {
@@ -170,7 +175,11 @@ class _PlayerToolBar extends StatelessWidget {
           isEnabled: canOpenPartSelector,
           onTap: onPartTap,
         ),
-        _PlayerToolButton(icon: Icons.folder_open_outlined, isEnabled: hasItem),
+        _PlayerToolButton(
+          icon: Icons.folder_open_outlined,
+          isEnabled: hasItem,
+          onTap: onOpenCollectionSheet,
+        ),
         _PlayerToolButton(icon: Icons.comment_outlined, isEnabled: false),
       ],
     );
