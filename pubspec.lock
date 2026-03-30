@@ -504,14 +504,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.10.5"
-  just_audio_background:
-    dependency: "direct main"
-    description:
-      name: just_audio_background
-      sha256: "3900825701164577db65337792bc122b66f9eb1245ee47e7ae8244ae5ceb8030"
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.0.1-beta.17"
   just_audio_media_kit:
     dependency: "direct main"
     description:

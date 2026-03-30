@@ -1,6 +1,6 @@
 import 'package:bilimusic/feature/player/domain/audio_stream_info.dart';
 import 'package:bilimusic/feature/player/domain/playable_item.dart';
-import 'package:just_audio_background/just_audio_background.dart';
+import 'package:audio_service/audio_service.dart';
 
 MediaItem buildPlayerMediaItem(
   PlayableItem item, {
@@ -27,6 +27,28 @@ MediaItem buildPlayerMediaItem(
     displayTitle: item.title,
     displaySubtitle: item.author,
     displayDescription: descriptionParts.join(' · '),
+  );
+}
+
+MediaItem buildPlayerQueueMediaItem(
+  PlayableItem item, {
+  required String? queueSourceLabel,
+  Duration? duration,
+}) {
+  final String album = _resolveAlbumLabel(queueSourceLabel);
+  final String pageTitle = item.pageTitle?.trim() ?? '';
+  final Uri? artUri = _tryParseUri(item.coverUrl);
+
+  return MediaItem(
+    id: item.stableId,
+    album: album,
+    title: item.title,
+    artist: item.author,
+    artUri: artUri,
+    duration: duration,
+    displayTitle: item.title,
+    displaySubtitle: item.author,
+    displayDescription: pageTitle,
   );
 }
 

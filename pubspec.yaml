@@ -47,7 +47,6 @@ dependencies:
   saver_gallery: ^4.1.0
   flutter_floating_bottom_bar: ^1.4.0
   just_audio: ^0.10.5
-  just_audio_background: ^0.0.1-beta.17
   just_audio_media_kit: ^2.1.0
   media_kit_libs_windows_audio: ^1.0.9
   package_info_plus: ^8.3.1
