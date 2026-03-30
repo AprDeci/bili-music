@@ -13,19 +13,35 @@ BiliMusicRankingRepository biliMusicRankingRepository(Ref ref) {
 }
 
 @riverpod
-Future<List<MusicRankingItem>> musicRanking(Ref ref) async {
-  final BiliSession? session = ref.read(biliSessionControllerProvider);
-  final bool shouldUseWbi =
-      session != null && session.isLoggedIn && session.hasWbiKeys;
-  const blackTagList = ['杂谈', '乐评', '仿妆', '教学', '明星', '时尚潮流'];
-  final List<MusicRankingItem> items = await ref
-      .read(biliMusicRankingRepositoryProvider)
-      .fetchMusicRanking(requiresWbi: shouldUseWbi);
-  return items
-      .where((item) {
-        final tag = item.tagText;
-        // 检查标签文本是否包含黑名单中的任意一个字符串
-        return !blackTagList.any((blackTag) => tag.contains(blackTag));
-      })
-      .toList(growable: false);
+class MusicRankingController extends _$MusicRankingController {
+  @override
+  FutureOr<List<MusicRankingItem>> build() async {
+    return _fetchData();
+  }
+
+  // 提取获取数据的逻辑，方便刷新时复用
+  Future<List<MusicRankingItem>> _fetchData() async {
+    final BiliSession? session = ref.read(biliSessionControllerProvider);
+    final bool shouldUseWbi =
+        session != null && session.isLoggedIn && session.hasWbiKeys;
+
+    const blackTagList = ['杂谈', '乐评', '仿妆', '教学', '明星', '时尚潮流'];
+
+    final List<MusicRankingItem> items = await ref
+        .read(biliMusicRankingRepositoryProvider)
+        .fetchMusicRanking(requiresWbi: shouldUseWbi);
+
+    return items
+        .where((item) {
+          final tag = item.tagText;
+          return !blackTagList.any((blackTag) => tag.contains(blackTag));
+        })
+        .toList(growable: false);
+  }
+
+  
+  Future<void> refresh() async {
+    state = const AsyncLoading(); 
+    state = await AsyncValue.guard(_fetchData);
+  }
 }

@@ -16,7 +16,7 @@ class MusicRankingSection extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final ThemeData theme = Theme.of(context);
     final AsyncValue<List<MusicRankingItem>> ranking = ref.watch(
-      musicRankingProvider,
+      musicRankingControllerProvider,
     );
 
     return Padding(

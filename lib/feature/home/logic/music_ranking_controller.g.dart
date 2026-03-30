@@ -58,43 +58,54 @@ final class BiliMusicRankingRepositoryProvider
 String _$biliMusicRankingRepositoryHash() =>
     r'7c094e50ff20b66211300c6deee25f8df39a946c';
 
-@ProviderFor(musicRanking)
-final musicRankingProvider = MusicRankingProvider._();
+@ProviderFor(MusicRankingController)
+final musicRankingControllerProvider = MusicRankingControllerProvider._();
 
-final class MusicRankingProvider
+final class MusicRankingControllerProvider
     extends
-        $FunctionalProvider<
-          AsyncValue<List<MusicRankingItem>>,
-          List<MusicRankingItem>,
-          FutureOr<List<MusicRankingItem>>
-        >
-    with
-        $FutureModifier<List<MusicRankingItem>>,
-        $FutureProvider<List<MusicRankingItem>> {
-  MusicRankingProvider._()
+        $AsyncNotifierProvider<MusicRankingController, List<MusicRankingItem>> {
+  MusicRankingControllerProvider._()
     : super(
         from: null,
         argument: null,
         retry: null,
-        name: r'musicRankingProvider',
+        name: r'musicRankingControllerProvider',
         isAutoDispose: true,
         dependencies: null,
         $allTransitiveDependencies: null,
       );
 
   @override
-  String debugGetCreateSourceHash() => _$musicRankingHash();
+  String debugGetCreateSourceHash() => _$musicRankingControllerHash();
 
   @$internal
   @override
-  $FutureProviderElement<List<MusicRankingItem>> $createElement(
-    $ProviderPointer pointer,
-  ) => $FutureProviderElement(pointer);
-
-  @override
-  FutureOr<List<MusicRankingItem>> create(Ref ref) {
-    return musicRanking(ref);
-  }
+  MusicRankingController create() => MusicRankingController();
 }
 
-String _$musicRankingHash() => r'aa8fb4a52c005bc656ae01f762f7b4fbc8c0b73e';
+String _$musicRankingControllerHash() =>
+    r'7c6e8c7f50a5fd5b718d58a2de2e7be87948c361';
+
+abstract class _$MusicRankingController
+    extends $AsyncNotifier<List<MusicRankingItem>> {
+  FutureOr<List<MusicRankingItem>> build();
+  @$mustCallSuper
+  @override
+  void runBuild() {
+    final ref =
+        this.ref
+            as $Ref<AsyncValue<List<MusicRankingItem>>, List<MusicRankingItem>>;
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<
+                AsyncValue<List<MusicRankingItem>>,
+                List<MusicRankingItem>
+              >,
+              AsyncValue<List<MusicRankingItem>>,
+              Object?,
+              Object?
+            >;
+    element.handleCreate(ref, build);
+  }
+}
