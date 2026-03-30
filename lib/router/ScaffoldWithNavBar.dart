@@ -1,6 +1,7 @@
 import 'package:bilimusic/feature/player/domain/player_state.dart';
 import 'package:bilimusic/feature/player/logic/player_controller.dart';
 import 'package:bilimusic/feature/player/ui/components/mini_player_bar.dart';
+import 'package:bilimusic/router/player_navigation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_floating_bottom_bar/flutter_floating_bottom_bar.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -153,7 +154,7 @@ class _ScaffoldWithNavBarState extends ConsumerState<ScaffoldWithNavBar> {
       fit: StackFit.expand,
       children: <Widget>[
         widget.navigationShell,
-        if (playerState.hasItem)
+        if (playerState.hasItem && !isPlayerPageVisible)
           Align(
             alignment: Alignment.bottomCenter,
             child: AnimatedSlide(
@@ -165,7 +166,7 @@ class _ScaffoldWithNavBarState extends ConsumerState<ScaffoldWithNavBar> {
                 bottomPadding: isFavoritesPage
                     ? _miniPlayerCollapsedBottomPadding
                     : _miniPlayerVisibleBottomPadding,
-                onTap: () => context.push('/player'),
+                onTap: () => openPlayerPage(context),
                 onTogglePlayback: () {
                   ref.read(playerControllerProvider.notifier).togglePlayback();
                 },
