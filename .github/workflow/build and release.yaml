@@ -1,0 +1,73 @@
+name: Flutter Release (Android Signed + iOS Unsigned)
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build Release
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'beta'
+          flutter-version: '3.12.0-113.2.beta'
+          cache: true
+
+      - name: Flutter Pub Get
+        run: flutter pub get
+
+      # ==================== Android 签名配置 ====================
+      - name: Setup keystore
+        run: |
+          echo '${{ secrets.KEYSTORE }}' | base64 --decode > android/apr-release-key.jks
+          echo '${{ secrets.KEY_PROPERTIES }}' > android/key.properties
+
+      - name: Build Android Split APKs (Signed)
+        run: flutter build apk --release --split-per-abi
+
+      - name: Rename Android APKs
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/}
+          mkdir -p build/artifacts
+          cp build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk "build/artifacts/bili-music-${VERSION}-armeabi-v7a.apk"
+          cp build/app/outputs/flutter-apk/app-arm64-v8a-release.apk   "build/artifacts/bili-music-${VERSION}-arm64-v8a.apk"
+          cp build/app/outputs/flutter-apk/app-x86_64-release.apk     "build/artifacts/bili-music-${VERSION}-x86_64.apk"
+
+      # ==================== iOS 不签名构建 ====================
+      - name: Build iOS IPA (Unsigned)
+        run: flutter build ipa --release --no-codesign
+
+      - name: Rename iOS IPA
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/}
+          mkdir -p build/artifacts
+          cp build/ios/ipa/*.ipa "build/artifacts/bili-music-${VERSION}.ipa" || echo "⚠️ IPA 文件未找到，请检查"
+
+      # ==================== 发布到 GitHub Release ====================
+      - name: Upload Release Assets
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: bili-music ${{ github.ref_name }}
+          body: |
+            **bili-music ${{ github.ref_name }}**
+          files: |
+            build/artifacts/bili-music-*.apk
+            build/artifacts/bili-music-*.ipa
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
