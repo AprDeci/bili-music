@@ -300,6 +300,7 @@ class _SearchResultSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
+    final primaryColor = theme.primaryColor;
     final bool hasQuery = submittedQuery != null && submittedQuery!.isNotEmpty;
 
     if (!hasQuery) {
@@ -311,9 +312,9 @@ class _SearchResultSection extends StatelessWidget {
             Container(
               width: 56,
               height: 56,
-              child: const Icon(
+              child: Icon(
                 Icons.search_rounded,
-                color: Color(0xFF2563EB),
+                color: primaryColor,
                 size: 28,
               ),
             ),
