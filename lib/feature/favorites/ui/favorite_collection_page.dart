@@ -1,3 +1,4 @@
+import 'package:bilimusic/common/components/cachedImage.dart';
 import 'package:bilimusic/common/logger.dart';
 import 'package:bilimusic/common/util/player_util.dart';
 import 'package:bilimusic/feature/favorites/domain/favorite_collection.dart';
@@ -108,35 +109,15 @@ class FavoriteCollectionPage extends ConsumerWidget {
                         borderRadius: BorderRadius.circular(20),
                       ),
                       tileColor: Colors.white,
-                      leading: ClipRRect(
+                      leading: CommonCachedImage(
+                        imageUrl: item.coverUrl,
+                        width: 56,
+                        height: 56,
+                        fit: BoxFit.cover,
                         borderRadius: BorderRadius.circular(14),
-                        child: item.coverUrl.isEmpty
-                            ? Container(
-                                width: 56,
-                                height: 56,
-                                color: primary.withValues(alpha: 0.14),
-                                child: Icon(
-                                  Icons.music_note_rounded,
-                                  color: primary,
-                                ),
-                              )
-                            : Image.network(
-                                item.coverUrl,
-                                width: 56,
-                                height: 56,
-                                fit: BoxFit.cover,
-                                errorBuilder: (context, error, stackTrace) {
-                                  return Container(
-                                    width: 56,
-                                    height: 56,
-                                    color: primary.withValues(alpha: 0.14),
-                                    child: Icon(
-                                      Icons.music_note_rounded,
-                                      color: primary,
-                                    ),
-                                  );
-                                },
-                              ),
+                        fallbackIcon: Icons.music_note_rounded,
+                        iconColor: primary,
+                        backgroundColor: primary.withValues(alpha: 0.14),
                       ),
                       title: Text(
                         item.title,

@@ -1,3 +1,4 @@
+import 'package:bilimusic/common/components/cachedImage.dart';
 import 'package:bilimusic/feature/player/domain/player_state.dart';
 import 'package:flutter/material.dart';
 
@@ -112,18 +113,13 @@ class _Artwork extends StatelessWidget {
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(16),
-        child: coverUrl.isEmpty
-            ? const Icon(Icons.music_note_rounded, color: Color(0xFF7A8CA5))
-            : Image.network(
-                coverUrl,
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) {
-                  return const Icon(
-                    Icons.music_note_rounded,
-                    color: Color(0xFF7A8CA5),
-                  );
-                },
-              ),
+        child: CommonCachedImage(
+          imageUrl: coverUrl,
+          fit: BoxFit.cover,
+          fallbackIcon: Icons.music_note_rounded,
+          iconColor: const Color(0xFF7A8CA5),
+          backgroundColor: const Color(0xFFF3F6FB),
+        ),
       ),
     );
   }

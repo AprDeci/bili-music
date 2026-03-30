@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 
+import 'package:bilimusic/common/components/cachedImage.dart';
 import 'package:bilimusic/common/util/player_util.dart';
 import 'package:bilimusic/feature/home/domain/music_ranking_item.dart';
 import 'package:bilimusic/feature/home/logic/music_ranking_controller.dart';
@@ -501,33 +502,15 @@ class _RankingCover extends StatelessWidget {
   Widget build(BuildContext context) {
     return ClipRRect(
       borderRadius: BorderRadius.circular(8),
-      child: item.coverUrl.isEmpty
-          ? Container(
-              width: size,
-              height: size,
-              color: const Color(0xFFDDE6F2),
-              child: const Icon(
-                Icons.music_note_rounded,
-                color: Color(0xFF64748B),
-              ),
-            )
-          : Image.network(
-              item.coverUrl,
-              width: size,
-              height: size,
-              fit: BoxFit.cover,
-              errorBuilder: (_, _, _) {
-                return Container(
-                  width: size,
-                  height: size,
-                  color: const Color(0xFFDDE6F2),
-                  child: const Icon(
-                    Icons.music_note_rounded,
-                    color: Color(0xFF64748B),
-                  ),
-                );
-              },
-            ),
+      child: CommonCachedImage(
+        imageUrl: item.coverUrl,
+        width: size,
+        height: size,
+        fit: BoxFit.cover,
+        fallbackIcon: Icons.music_note_rounded,
+        iconColor: const Color(0xFF64748B),
+        backgroundColor: const Color(0xFFDDE6F2),
+      ),
     );
   }
 }

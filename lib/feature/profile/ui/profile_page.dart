@@ -1,3 +1,4 @@
+import 'package:bilimusic/common/components/cachedImage.dart';
 import 'package:bilimusic/common/components/searchBar.dart';
 import 'package:bilimusic/core/bili/session/bili_session_controller.dart';
 import 'package:bilimusic/feature/auth/data/bili_auth_repository.dart';
@@ -83,7 +84,8 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                 title: collection.name,
                 count: items.length,
                 coverUrl: latestItem?.coverUrl,
-                onTap: () => context.push('/profile/favorites/${collection.id}'),
+                onTap: () =>
+                    context.push('/profile/favorites/${collection.id}'),
                 onLongPress: () => _showDeleteCollectionDialog(collection),
               ),
             );
@@ -216,9 +218,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
     }
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
-      ..showSnackBar(
-        SnackBar(content: Text(deleted ? '已删除歌单' : '删除失败')),
-      );
+      ..showSnackBar(SnackBar(content: Text(deleted ? '已删除歌单' : '删除失败')));
   }
 }
 
@@ -495,22 +495,15 @@ class _PlaylistCover extends StatelessWidget {
   Widget build(BuildContext context) {
     final Color primary = Theme.of(context).colorScheme.primary;
 
-    if (coverUrl != null && coverUrl!.isNotEmpty) {
-      return ClipRRect(
-        borderRadius: BorderRadius.circular(18),
-        child: Image.network(
-          coverUrl!,
-          width: 64,
-          height: 64,
-          fit: BoxFit.cover,
-          errorBuilder: (context, error, stackTrace) {
-            return _PlaylistPlaceholder(primary: primary);
-          },
-        ),
-      );
-    }
-
-    return _PlaylistPlaceholder(primary: primary);
+    return CommonCachedImage(
+      imageUrl: coverUrl,
+      width: 64,
+      height: 64,
+      fit: BoxFit.cover,
+      borderRadius: BorderRadius.circular(18),
+      placeholder: _PlaylistPlaceholder(primary: primary),
+      errorWidget: _PlaylistPlaceholder(primary: primary),
+    );
   }
 }
 

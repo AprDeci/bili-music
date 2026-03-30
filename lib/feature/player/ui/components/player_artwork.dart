@@ -1,3 +1,4 @@
+import 'package:bilimusic/common/components/cachedImage.dart';
 import 'package:flutter/material.dart';
 
 class PlayerArtworkFrame extends StatelessWidget {
@@ -27,16 +28,12 @@ class PlayerArtworkFrame extends StatelessWidget {
           child: Stack(
             fit: StackFit.expand,
             children: <Widget>[
-              if (coverUrl.isNotEmpty)
-                Image.network(
-                  coverUrl,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) {
-                    return const PlayerArtworkFallback();
-                  },
-                )
-              else
-                const PlayerArtworkFallback(),
+              CommonCachedImage(
+                imageUrl: coverUrl,
+                fit: BoxFit.cover,
+                placeholder: const PlayerArtworkFallback(),
+                errorWidget: const PlayerArtworkFallback(),
+              ),
               Container(
                 decoration: BoxDecoration(
                   gradient: LinearGradient(

@@ -1,3 +1,4 @@
+import 'package:bilimusic/common/components/cachedImage.dart';
 import 'package:bilimusic/common/util/player_util.dart';
 import 'package:bilimusic/feature/favorites/logic/favorites_controller.dart';
 import 'package:bilimusic/feature/player/data/bili_player_repository.dart';
@@ -211,15 +212,15 @@ class _SearchPageState extends ConsumerState<SearchPage> {
                           ),
                         ),
                         const Spacer(),
-                          Text(
-                            '${state.results.length} 条',
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: const Color(0xFF64748B),
-                              fontWeight: FontWeight.w600,
-                            ),
+                        Text(
+                          '${state.results.length} 条',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: const Color(0xFF64748B),
+                            fontWeight: FontWeight.w600,
                           ),
+                        ),
                       ],
-                  ),
+                    ),
                   const SizedBox(height: 12),
                   _SearchResultSection(
                     submittedQuery: state.submittedQuery,
@@ -465,27 +466,15 @@ class _SearchResultSection extends StatelessWidget {
                               decoration: BoxDecoration(
                                 borderRadius: BorderRadius.circular(20),
                               ),
-                              child: item.coverUrl.isEmpty
-                                  ? Icon(
-                                      Icons.play_circle_outline_rounded,
-                                      color: colorScheme.primary,
-                                      size: 30,
-                                    )
-                                  : ClipRRect(
-                                      borderRadius: BorderRadius.circular(8),
-                                      child: Image.network(
-                                        item.coverUrl,
-                                        fit: BoxFit.cover,
-                                        errorBuilder:
-                                            (context, error, stackTrace) {
-                                              return Icon(
-                                                Icons.music_video_rounded,
-                                                color: colorScheme.primary,
-                                                size: 30,
-                                              );
-                                            },
-                                      ),
-                                    ),
+                              child: CommonCachedImage(
+                                imageUrl: item.coverUrl,
+                                fit: BoxFit.cover,
+                                borderRadius: BorderRadius.circular(8),
+                                fallbackIcon: Icons.music_video_rounded,
+                                iconColor: colorScheme.primary,
+                                backgroundColor: Colors.transparent,
+                                iconSize: 30,
+                              ),
                             ),
                             Positioned(
                               left: 8,
