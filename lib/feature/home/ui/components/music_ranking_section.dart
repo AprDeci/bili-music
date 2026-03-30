@@ -11,6 +11,7 @@ class MusicRankingSection extends ConsumerWidget {
   const MusicRankingSection({super.key});
 
   static const int _columnSize = 3;
+  static const int _sectionCount = 2;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -25,7 +26,7 @@ class MusicRankingSection extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
           Text(
-            '近期音乐热榜',
+            '近期音乐区热榜',
             style: theme.textTheme.displaySmall?.copyWith(
               fontWeight: FontWeight.w900,
               color: const Color(0xFF0D1329),
@@ -35,27 +36,23 @@ class MusicRankingSection extends ConsumerWidget {
             ),
           ),
           const SizedBox(height: 20),
-          SizedBox(
-            height: 340,
-            child: ranking.when(
-              data: (List<MusicRankingItem> items) {
-                if (items.isEmpty) {
-                  return const _MusicRankingEmpty();
-                }
-                return _MusicRankingPager(
-                  items: items,
-                  onItemTap: (int index) {
-                    _handleItemTap(context, ref, items, index);
-                  },
-                );
-              },
-              loading: () => const _MusicRankingLoading(),
-              error: (Object error, StackTrace stackTrace) {
-                return _MusicRankingError(
-                  message: error.toString(),
-                );
-              },
-            ),
+          ranking.when(
+            data: (List<MusicRankingItem> items) {
+              if (items.isEmpty) {
+                return const _MusicRankingEmpty();
+              }
+
+              return _MusicRankingSplitView(
+                items: items,
+                onItemTap: (int index) {
+                  _handleItemTap(context, ref, items, index);
+                },
+              );
+            },
+            loading: () => const _MusicRankingLoading(),
+            error: (Object error, StackTrace stackTrace) {
+              return _MusicRankingError(message: error.toString());
+            },
           ),
         ],
       ),
@@ -82,10 +79,132 @@ class MusicRankingSection extends ConsumerWidget {
   }
 }
 
-class _MusicRankingPager extends StatelessWidget {
-  const _MusicRankingPager({required this.items, required this.onItemTap});
+class _MusicRankingSplitView extends StatelessWidget {
+  const _MusicRankingSplitView({required this.items, required this.onItemTap});
 
   final List<MusicRankingItem> items;
+  final ValueChanged<int> onItemTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final List<_RankingSectionData> sections = _splitIntoSections(items);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: List<Widget>.generate(sections.length, (int index) {
+        final _RankingSectionData section = sections[index];
+
+        return Padding(
+          padding: EdgeInsets.only(
+            bottom: index == sections.length - 1 ? 0 : 18,
+          ),
+          child: _MusicRankingGroup(
+            title: section.title,
+            items: section.items,
+            startRank: section.startRank,
+            onItemTap: (int localIndex) {
+              onItemTap(section.startIndex + localIndex);
+            },
+          ),
+        );
+      }),
+    );
+  }
+
+  List<_RankingSectionData> _splitIntoSections(List<MusicRankingItem> items) {
+    final List<_RankingSectionData> sections = <_RankingSectionData>[];
+    final int baseSize = items.length ~/ MusicRankingSection._sectionCount;
+    final int remainder = items.length % MusicRankingSection._sectionCount;
+
+    int start = 0;
+    for (int index = 0; index < MusicRankingSection._sectionCount; index++) {
+      final int extra = index < remainder ? 1 : 0;
+      final int end = start + baseSize + extra;
+
+      if (start >= items.length) {
+        break;
+      }
+
+      sections.add(
+        _RankingSectionData(
+          title: index == 0 ? '热榜上半区' : '热榜下半区',
+          items: items.sublist(start, end),
+          startIndex: start,
+          startRank: start + 1,
+        ),
+      );
+
+      start = end;
+    }
+
+    return sections;
+  }
+}
+
+class _RankingSectionData {
+  const _RankingSectionData({
+    required this.title,
+    required this.items,
+    required this.startIndex,
+    required this.startRank,
+  });
+
+  final String title;
+  final List<MusicRankingItem> items;
+  final int startIndex;
+  final int startRank;
+}
+
+class _MusicRankingGroup extends StatelessWidget {
+  const _MusicRankingGroup({
+    required this.title,
+    required this.items,
+    required this.startRank,
+    required this.onItemTap,
+  });
+
+  final String title;
+  final List<MusicRankingItem> items;
+  final int startRank;
+  final ValueChanged<int> onItemTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Text(
+          title,
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w800,
+            color: const Color(0xFF334155),
+          ),
+        ),
+        const SizedBox(height: 12),
+        SizedBox(
+          height: 202,
+          child: _MusicRankingPager(
+            items: items,
+            startRank: startRank,
+            onItemTap: onItemTap,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _MusicRankingPager extends StatelessWidget {
+  const _MusicRankingPager({
+    required this.items,
+    required this.startRank,
+    required this.onItemTap,
+  });
+
+  final List<MusicRankingItem> items;
+  final int startRank;
   final ValueChanged<int> onItemTap;
 
   @override
@@ -125,7 +244,8 @@ class _MusicRankingPager extends StatelessWidget {
                   width: pageWidth,
                   child: _MusicRankingColumn(
                     items: columns[index],
-                    startRank: index * MusicRankingSection._columnSize + 1,
+                    startRank:
+                        startRank + index * MusicRankingSection._columnSize,
                     onItemTap: (int localIndex) {
                       onItemTap(
                         index * MusicRankingSection._columnSize + localIndex,
