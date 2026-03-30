@@ -40,7 +40,7 @@ final class BiliClientProvider extends $NotifierProvider<BiliClient, Dio> {
   }
 }
 
-String _$biliClientHash() => r'469fb724ee6809c53942ce93718a7afae4fd81e1';
+String _$biliClientHash() => r'd1b90e61fcfc18349f184339c7deb74ac43b76ce';
 
 abstract class _$BiliClient extends $Notifier<Dio> {
   Dio build();
