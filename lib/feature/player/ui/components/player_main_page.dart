@@ -41,25 +41,15 @@ class PlayerMainPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final MediaQueryData mediaQuery = MediaQuery.of(context);
     final Size screenSize = mediaQuery.size;
-    final bool hasPartSelector = availableParts.length > 1;
+    final bool canOpenPartSelector = item != null && availableParts.length > 1;
     final bool showDebugQueue = kDebugMode && state.hasQueue;
     final bool showDebugStatus = kDebugMode;
     final double artworkSize = (screenSize.height * 0.31).clamp(190.0, 320.0);
-    final double topSpacing = hasPartSelector ? 4 : 12;
-    final double artworkBottomSpacing = hasPartSelector ? 20 : 28;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
-        SizedBox(height: topSpacing),
-        if (hasPartSelector) ...<Widget>[
-          _PlayerPartSelector(
-            item: item,
-            availableParts: availableParts,
-            onTap: onPartTap,
-          ),
-          const SizedBox(height: 16),
-        ],
+        const SizedBox(height: 12),
         Center(
           child: SizedBox(
             width: artworkSize,
@@ -67,7 +57,7 @@ class PlayerMainPage extends StatelessWidget {
             child: PlayerArtworkFrame(coverUrl: item?.coverUrl ?? ''),
           ),
         ),
-        SizedBox(height: artworkBottomSpacing),
+        const SizedBox(height: 28),
         PlayerTrackHeader(
           title: item?.title ?? '还没有选择播放内容',
           subtitle: item == null
@@ -81,8 +71,15 @@ class PlayerMainPage extends StatelessWidget {
         Column(
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
+            _PlayerToolBar(
+              hasItem: item != null,
+              item: item,
+              canOpenPartSelector: canOpenPartSelector,
+              onPartTap: onPartTap,
+            ),
+            const SizedBox(height: 10),
             PlayerProgressSection(state: state, onChanged: onSeek),
-            const SizedBox(height: 18),
+            const SizedBox(height: 10),
             PlayerTransportControls(
               state: state,
               onToggleQueueMode: onToggleQueueMode,
@@ -150,94 +147,120 @@ class _PlayerQueueSummary extends StatelessWidget {
   }
 }
 
-class _PlayerPartSelector extends StatelessWidget {
-  const _PlayerPartSelector({
+class _PlayerToolBar extends StatelessWidget {
+  const _PlayerToolBar({
+    required this.hasItem,
     required this.item,
-    required this.availableParts,
-    required this.onTap,
+    required this.canOpenPartSelector,
+    required this.onPartTap,
+  });
+
+  final bool hasItem;
+  final PlayableItem? item;
+  final bool canOpenPartSelector;
+  final VoidCallback? onPartTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceAround,
+      children: <Widget>[
+        _PlayerPartToolButton(
+          item: item,
+          isEnabled: canOpenPartSelector,
+          onTap: onPartTap,
+        ),
+        _PlayerToolButton(icon: Icons.folder_open_outlined, isEnabled: hasItem),
+        _PlayerToolButton(icon: Icons.comment_outlined, isEnabled: false),
+      ],
+    );
+  }
+}
+
+class _PlayerPartToolButton extends StatelessWidget {
+  const _PlayerPartToolButton({
+    required this.item,
+    required this.isEnabled,
+    this.onTap,
   });
 
   final PlayableItem? item;
-  final List<PlayableItem> availableParts;
+  final bool isEnabled;
   final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
-    final PlayableItem? currentItem = item;
-    final int currentPage = currentItem?.page ?? 1;
-    final String title = currentItem?.pageTitle?.trim() ?? '';
-    final String label = title.isEmpty
-        ? 'P$currentPage'
-        : 'P$currentPage · $title';
+    final int currentPage = item?.page ?? 1;
 
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(20),
-        child: Ink(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-          decoration: BoxDecoration(
-            color: colorScheme.surface.withValues(alpha: 0.82),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: colorScheme.primary.withValues(alpha: 0.14),
+    return Stack(
+      clipBehavior: Clip.none,
+      children: <Widget>[
+        _PlayerToolButton(
+          icon: Icons.playlist_play_rounded,
+          isEnabled: isEnabled,
+          onTap: onTap,
+        ),
+        if (isEnabled)
+          Positioned(
+            top: -2,
+            right: -8,
+            child: IgnorePointer(
+              child: Container(
+                constraints: const BoxConstraints(minWidth: 18, minHeight: 18),
+                padding: const EdgeInsets.symmetric(horizontal: 5),
+                decoration: BoxDecoration(
+                  color: colorScheme.primary,
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                alignment: Alignment.center,
+                child: Text(
+                  'P$currentPage',
+                  textAlign: TextAlign.center,
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: colorScheme.onPrimary,
+                    fontWeight: FontWeight.w800,
+                    height: 1,
+                  ),
+                ),
+              ),
             ),
           ),
-          child: Row(
-            children: <Widget>[
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: colorScheme.primary.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: Icon(
-                  Icons.playlist_play_rounded,
-                  color: colorScheme.primary,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    Text(
-                      '分P选择',
-                      style: theme.textTheme.labelMedium?.copyWith(
-                        color: colorScheme.onSurface.withValues(alpha: 0.6),
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      label,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 12),
-              Text(
-                '${availableParts.length}P',
-                style: theme.textTheme.labelLarge?.copyWith(
-                  color: colorScheme.primary,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-              const SizedBox(width: 4),
-              Icon(
-                Icons.keyboard_arrow_down_rounded,
-                color: colorScheme.onSurface.withValues(alpha: 0.6),
-              ),
-            ],
+      ],
+    );
+  }
+}
+
+class _PlayerToolButton extends StatelessWidget {
+  const _PlayerToolButton({
+    required this.icon,
+    required this.isEnabled,
+    this.onTap,
+  });
+
+  final IconData icon;
+  final bool isEnabled;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+    final Color foregroundColor = isEnabled
+        ? colorScheme.onSurface
+        : colorScheme.onSurface.withValues(alpha: 0.38);
+    return SizedBox(
+      width: 40,
+      height: 40,
+      child: InkResponse(
+        onTap: isEnabled ? onTap : null,
+        radius: 24,
+        child: Center(
+          child: SizedBox(
+            width: 24,
+            height: 24,
+            child: Icon(icon, size: 24, color: foregroundColor),
           ),
         ),
       ),
