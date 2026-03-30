@@ -1,3 +1,4 @@
+import 'package:bilimusic/common/bottom_height_helper.dart';
 import 'package:bilimusic/common/components/cachedImage.dart';
 import 'package:bilimusic/common/logger.dart';
 import 'package:bilimusic/common/util/player_util.dart';
@@ -336,7 +337,9 @@ class FavoriteCollectionPage extends ConsumerWidget {
                         );
                     },
                   ),
-                  const SizedBox(height: 70),
+                  const SizedBox(
+                    height: BottomHeightHelper.miniPlayerBarHeight,
+                  ),
                 ],
               ),
             ),
