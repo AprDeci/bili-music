@@ -160,7 +160,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
             Expanded(
               child: ListView(
                 controller: _scrollController,
-                padding: const EdgeInsets.fromLTRB(1, 0, 1, 24),
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
                 children: <Widget>[
                   if (state.recentKeywords.isNotEmpty &&
                       state.submittedQuery == null) ...<Widget>[
@@ -200,9 +200,9 @@ class _SearchPageState extends ConsumerState<SearchPage> {
                     ),
                     const SizedBox(height: 24),
                   ],
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: Row(
+                  if (state.submittedQuery != null &&
+                      state.submittedQuery!.isNotEmpty)
+                    Row(
                       children: <Widget>[
                         Text(
                           '搜索结果',
@@ -211,8 +211,6 @@ class _SearchPageState extends ConsumerState<SearchPage> {
                           ),
                         ),
                         const Spacer(),
-                        if (state.submittedQuery != null &&
-                            state.submittedQuery!.isNotEmpty)
                           Text(
                             '${state.results.length} 条',
                             style: theme.textTheme.bodySmall?.copyWith(
@@ -221,7 +219,6 @@ class _SearchPageState extends ConsumerState<SearchPage> {
                             ),
                           ),
                       ],
-                    ),
                   ),
                   const SizedBox(height: 12),
                   _SearchResultSection(
