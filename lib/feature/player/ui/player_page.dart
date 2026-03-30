@@ -132,13 +132,14 @@ class _PlayerPageState extends ConsumerState<PlayerPage> {
                                 availableParts: availableParts,
                                 onPartTap:
                                     item == null || availableParts.length < 2
-                                    ? null
-                                    : () => _showPartSelector(
-                                        context: context,
-                                        parts: availableParts,
-                                        currentItem: item,
-                                        controller: playerController,
-                                      ),
+                                 ? null
+                                     : () => _showPartSelector(
+                                         context: context,
+                                         parts: availableParts,
+                                         currentItem: item,
+                                         state: state,
+                                         controller: playerController,
+                                       ),
                                 isFavorite: isFavorite,
                                 onFavoriteToggle: item == null
                                     ? null
@@ -197,6 +198,7 @@ class _PlayerPageState extends ConsumerState<PlayerPage> {
     required BuildContext context,
     required List<PlayableItem> parts,
     required PlayableItem currentItem,
+    required PlayerState state,
     required PlayerController controller,
   }) async {
     await showModalBottomSheet<void>(
@@ -206,15 +208,74 @@ class _PlayerPageState extends ConsumerState<PlayerPage> {
       builder: (BuildContext context) {
         final ThemeData theme = Theme.of(context);
         final ColorScheme colorScheme = theme.colorScheme;
+        final Set<String> queuedIds = state.queue
+            .map((PlayableItem item) => item.stableId)
+            .toSet();
+        final List<PlayableItem> partsToEnqueue = parts
+            .where((PlayableItem part) => part != currentItem)
+            .where((PlayableItem part) => !queuedIds.contains(part.stableId))
+            .toList();
 
         return SafeArea(
           child: ListView.separated(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+            itemCount: parts.length + 1,
             itemBuilder: (BuildContext context, int index) {
-              final PlayableItem part = parts[index];
+              if (index == 0) {
+                return ListTile(
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 4,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(18),
+                  ),
+                  tileColor: colorScheme.primary.withValues(alpha: 0.08),
+                  leading: CircleAvatar(
+                    backgroundColor: colorScheme.primary,
+                    foregroundColor: colorScheme.onPrimary,
+                    child: const Icon(Icons.queue_music_rounded),
+                  ),
+                  title: Text(
+                    '全部加入队列',
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  subtitle: Text(
+                    partsToEnqueue.isEmpty
+                        ? '其余分P已全部在队列中'
+                        : '将 ${partsToEnqueue.length} 个其余分P追加到当前队列',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: colorScheme.onSurface.withValues(alpha: 0.68),
+                    ),
+                  ),
+                  trailing: const Icon(Icons.add_rounded),
+                  onTap: partsToEnqueue.isEmpty
+                      ? null
+                      : () async {
+                          Navigator.of(context).pop();
+                          await controller.enqueue(partsToEnqueue);
+                          if (!this.context.mounted) {
+                            return;
+                          }
+                          ScaffoldMessenger.of(this.context)
+                            ..hideCurrentSnackBar()
+                            ..showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  '已将 ${partsToEnqueue.length} 个分P加入队列',
+                                ),
+                              ),
+                            );
+                        },
+                );
+              }
+
+              final PlayableItem part = parts[index - 1];
               final bool isSelected = part == currentItem;
               final String title = part.pageTitle?.trim() ?? '';
-              final int page = part.page ?? (index + 1);
+              final int page = part.page ?? index;
               final String label = title.isEmpty ? 'P$page' : 'P$page · $title';
 
               return ListTile(
@@ -259,7 +320,6 @@ class _PlayerPageState extends ConsumerState<PlayerPage> {
               );
             },
             separatorBuilder: (_, _) => const SizedBox(height: 10),
-            itemCount: parts.length,
           ),
         );
       },
