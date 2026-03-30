@@ -269,58 +269,155 @@ class _MusicRankingLoading extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Column(
-      children: List<Widget>.generate(3, (int index) {
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: List<Widget>.generate(2, (int index) {
         return Padding(
-          padding: EdgeInsets.only(bottom: index == 2 ? 0 : 14),
-          child: Row(
-            children: <Widget>[
-              Container(
-                width: 50,
-                height: 50,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFDDE6F2),
-                  borderRadius: BorderRadius.circular(8),
+          padding: EdgeInsets.only(bottom: index == 1 ? 0 : 18),
+          child: const _MusicRankingLoadingGroup(),
+        );
+      }),
+    );
+  }
+}
+
+class _MusicRankingLoadingGroup extends StatelessWidget {
+  const _MusicRankingLoadingGroup();
+
+  static const Color _placeholderColor = Color(0xFFDDE6F2);
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Container(
+          width: 92,
+          height: 16,
+          decoration: BoxDecoration(
+            color: _placeholderColor,
+            borderRadius: BorderRadius.circular(999),
+          ),
+        ),
+        const SizedBox(height: 12),
+        SizedBox(
+          height: 202,
+          child: LayoutBuilder(
+            builder: (BuildContext context, BoxConstraints constraints) {
+              final double pageWidth = math.min(constraints.maxWidth * 0.9, 620);
+
+              return SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                physics: const NeverScrollableScrollPhysics(),
+                child: Row(
+                  children: <Widget>[
+                    SizedBox(
+                      width: pageWidth,
+                      child: const _MusicRankingLoadingColumn(),
+                    ),
+                    const SizedBox(width: 20),
+                    SizedBox(
+                      width: pageWidth,
+                      child: const _MusicRankingLoadingColumn(itemCount: 2),
+                    ),
+                  ],
                 ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.start,
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _MusicRankingLoadingColumn extends StatelessWidget {
+  const _MusicRankingLoadingColumn({this.itemCount = 3});
+
+  final int itemCount;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: List<Widget>.generate(itemCount, (int index) {
+        return Padding(
+          padding: EdgeInsets.only(bottom: index == itemCount - 1 ? 0 : 14),
+          child: const _MusicRankingLoadingTile(),
+        );
+      }),
+    );
+  }
+}
+
+class _MusicRankingLoadingTile extends StatelessWidget {
+  const _MusicRankingLoadingTile();
+
+  static const Color _placeholderColor = Color(0xFFDDE6F2);
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 54,
+      child: Row(
+        children: <Widget>[
+          Container(
+            width: 50,
+            height: 50,
+            decoration: BoxDecoration(
+              color: _placeholderColor,
+              borderRadius: BorderRadius.circular(8),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Container(
+                  height: 14,
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    color: _placeholderColor,
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Row(
                   children: <Widget>[
                     Container(
-                      height: 14,
-                      width: double.infinity,
+                      width: 52,
+                      height: 18,
                       decoration: BoxDecoration(
-                        color: const Color(0xFFDDE6F2),
+                        color: _placeholderColor,
                         borderRadius: BorderRadius.circular(999),
                       ),
                     ),
-                    const SizedBox(height: 10),
-                    Container(
-                      height: 18,
-                      width: 188,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFDDE6F2),
-                        borderRadius: BorderRadius.circular(999),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Container(
+                        height: 10,
+                        decoration: BoxDecoration(
+                          color: _placeholderColor,
+                          borderRadius: BorderRadius.circular(999),
+                        ),
                       ),
                     ),
                   ],
                 ),
-              ),
-              const SizedBox(width: 4),
-              Container(
-                width: 38,
-                height: 38,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFDDE6F2),
-                  borderRadius: BorderRadius.circular(999),
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
-        );
-      }),
+          const SizedBox(width: 4),
+          Container(
+            width: 38,
+            height: 38,
+            decoration: BoxDecoration(
+              color: _placeholderColor,
+              borderRadius: BorderRadius.circular(999),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
