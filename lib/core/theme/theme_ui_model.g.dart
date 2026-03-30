@@ -34,4 +34,8 @@ const _$ThemeModeEnumMap = {
 
 const _$LightThemeVariantEnumMap = {
   LightThemeVariant.classicGreen: 'classicGreen',
+  LightThemeVariant.skyBlue: 'skyBlue',
+  LightThemeVariant.irisPurple: 'irisPurple',
+  LightThemeVariant.blossomPink: 'blossomPink',
+  LightThemeVariant.sunsetOrange: 'sunsetOrange',
 };

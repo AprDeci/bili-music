@@ -5,10 +5,12 @@ nextTypeId: 7
 types:
   ThemeUiModel:
     typeId: 0
-    nextIndex: 1
+    nextIndex: 2
     fields:
       themeMode:
         index: 0
+      lightThemeVariant:
+        index: 1
   FavoriteCollection:
     typeId: 1
     nextIndex: 5

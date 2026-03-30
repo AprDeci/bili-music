@@ -18,15 +18,20 @@ class ThemeUiModelAdapter extends TypeAdapter<ThemeUiModel> {
     };
     return ThemeUiModel(
       themeMode: fields[0] == null ? ThemeMode.system : fields[0] as ThemeMode,
+      lightThemeVariant: fields[1] == null
+          ? LightThemeVariant.classicGreen
+          : fields[1] as LightThemeVariant,
     );
   }
 
   @override
   void write(BinaryWriter writer, ThemeUiModel obj) {
     writer
-      ..writeByte(1)
+      ..writeByte(2)
       ..writeByte(0)
-      ..write(obj.themeMode);
+      ..write(obj.themeMode)
+      ..writeByte(1)
+      ..write(obj.lightThemeVariant);
   }
 
   @override
