@@ -461,9 +461,7 @@ class _SearchResultSection extends StatelessWidget {
                       horizontal: 16,
                       vertical: 8,
                     ),
-                    decoration: BoxDecoration(
-                      color: colorScheme.surfaceContainerLowest,
-                    ),
+
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: <Widget>[
