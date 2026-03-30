@@ -27,13 +27,14 @@ class MusicRankingSection extends ConsumerWidget {
             style: theme.textTheme.displaySmall?.copyWith(
               fontWeight: FontWeight.w900,
               color: const Color(0xFF0D1329),
-              letterSpacing: -1.1,
+              fontSize: 18,
+              letterSpacing: -1.3,
               height: 1,
             ),
           ),
-          const SizedBox(height: 22),
+          const SizedBox(height: 20),
           SizedBox(
-            height: 356,
+            height: 340,
             child: ranking.when(
               data: (List<MusicRankingItem> items) {
                 if (items.isEmpty) {
@@ -78,7 +79,7 @@ class _MusicRankingPager extends StatelessWidget {
 
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
-        final double pageWidth = math.min(constraints.maxWidth * 0.92, 620);
+        final double pageWidth = math.min(constraints.maxWidth * 0.9, 620);
         final double viewportFraction = constraints.maxWidth <= 0
             ? 1
             : pageWidth / constraints.maxWidth;
@@ -93,7 +94,7 @@ class _MusicRankingPager extends StatelessWidget {
             return Align(
               alignment: Alignment.centerLeft,
               child: Padding(
-                padding: EdgeInsets.only(right: isLastPage ? 0 : 14),
+                padding: EdgeInsets.only(right: isLastPage ? 0 : 20),
                 child: SizedBox(
                   width: pageWidth,
                   child: _MusicRankingColumn(
@@ -118,15 +119,15 @@ class _MusicRankingLoading extends StatelessWidget {
     return Column(
       children: List<Widget>.generate(3, (int index) {
         return Padding(
-          padding: EdgeInsets.only(bottom: index == 2 ? 0 : 18),
+          padding: EdgeInsets.only(bottom: index == 2 ? 0 : 16),
           child: Row(
             children: <Widget>[
               Container(
-                width: 94,
-                height: 94,
+                width: 88,
+                height: 88,
                 decoration: BoxDecoration(
                   color: const Color(0xFFDDE6F2),
-                  borderRadius: BorderRadius.circular(24),
+                  borderRadius: BorderRadius.circular(20),
                 ),
               ),
               const SizedBox(width: 18),
@@ -135,7 +136,7 @@ class _MusicRankingLoading extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
                     Container(
-                      height: 20,
+                      height: 18,
                       width: double.infinity,
                       decoration: BoxDecoration(
                         color: const Color(0xFFDDE6F2),
@@ -144,8 +145,8 @@ class _MusicRankingLoading extends StatelessWidget {
                     ),
                     const SizedBox(height: 12),
                     Container(
-                      height: 14,
-                      width: 180,
+                      height: 13,
+                      width: 160,
                       decoration: BoxDecoration(
                         color: const Color(0xFFDDE6F2),
                         borderRadius: BorderRadius.circular(999),
@@ -156,8 +157,8 @@ class _MusicRankingLoading extends StatelessWidget {
               ),
               const SizedBox(width: 18),
               Container(
-                width: 44,
-                height: 44,
+                width: 38,
+                height: 38,
                 decoration: BoxDecoration(
                   color: const Color(0xFFDDE6F2),
                   borderRadius: BorderRadius.circular(999),
@@ -252,7 +253,7 @@ class _MusicRankingColumn extends StatelessWidget {
     return Column(
       children: List<Widget>.generate(items.length, (int index) {
         return Padding(
-          padding: EdgeInsets.only(bottom: index == items.length - 1 ? 0 : 12),
+          padding: EdgeInsets.only(bottom: index == items.length - 1 ? 0 : 14),
           child: _MusicRankingTile(item: items[index], rank: startRank + index),
         );
       }),
@@ -271,11 +272,11 @@ class _MusicRankingTile extends StatelessWidget {
     final ThemeData theme = Theme.of(context);
 
     return SizedBox(
-      height: 106,
+      height: 44,
       child: Row(
         children: <Widget>[
           _RankingCover(item: item, rank: rank),
-          const SizedBox(width: 18),
+          const SizedBox(width: 8),
           Expanded(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -283,29 +284,31 @@ class _MusicRankingTile extends StatelessWidget {
               children: <Widget>[
                 Text(
                   item.title,
-                  maxLines: 2,
+                  maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.headlineMedium?.copyWith(
+                  style: theme.textTheme.headlineSmall?.copyWith(
                     fontWeight: FontWeight.w900,
-                    height: 1.02,
-                    letterSpacing: -0.9,
+                    fontSize: 14,
+                    height: 1,
+                    letterSpacing: -1.4,
                     color: const Color(0xFF0D1329),
                   ),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 10),
                 Row(
                   children: <Widget>[
                     _TagBadge(label: item.tagText),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        '${item.author} / ${item.playCountText}',
+                        item.author,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: theme.textTheme.headlineSmall?.copyWith(
+                        style: theme.textTheme.titleLarge?.copyWith(
                           color: const Color(0xFF8A94A6),
                           fontWeight: FontWeight.w500,
-                          letterSpacing: -0.3,
+                          fontSize: 10,
+                          letterSpacing: -0.8,
                         ),
                       ),
                     ),
@@ -314,7 +317,7 @@ class _MusicRankingTile extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(width: 16),
+          const SizedBox(width: 4),
           const _PlayGlyph(),
         ],
       ),
@@ -330,68 +333,35 @@ class _RankingCover extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final Color accentColor = switch (rank) {
-      1 => const Color(0xFFFF7A59),
-      2 => const Color(0xFFFF9B73),
-      3 => const Color(0xFFFFC278),
-      _ => const Color(0xFF94A3B8),
-    };
-
-    return Stack(
-      clipBehavior: Clip.none,
-      children: <Widget>[
-        ClipRRect(
-          borderRadius: BorderRadius.circular(22),
-          child: item.coverUrl.isEmpty
-              ? Container(
-                  width: 94,
-                  height: 94,
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(8),
+      child: item.coverUrl.isEmpty
+          ? Container(
+              width: 44,
+              height: 44,
+              color: const Color(0xFFDDE6F2),
+              child: const Icon(
+                Icons.music_note_rounded,
+                color: Color(0xFF64748B),
+              ),
+            )
+          : Image.network(
+              item.coverUrl,
+              width: 44,
+              height: 44,
+              fit: BoxFit.cover,
+              errorBuilder: (_, _, _) {
+                return Container(
+                  width: 88,
+                  height: 88,
                   color: const Color(0xFFDDE6F2),
                   child: const Icon(
                     Icons.music_note_rounded,
                     color: Color(0xFF64748B),
                   ),
-                )
-              : Image.network(
-                  item.coverUrl,
-                  width: 94,
-                  height: 94,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) {
-                    return Container(
-                      width: 94,
-                      height: 94,
-                      color: const Color(0xFFDDE6F2),
-                      child: const Icon(
-                        Icons.music_note_rounded,
-                        color: Color(0xFF64748B),
-                      ),
-                    );
-                  },
-                ),
-        ),
-        Positioned(
-          left: -4,
-          top: -6,
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              color: accentColor,
-              borderRadius: BorderRadius.circular(999),
+                );
+              },
             ),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-              child: Text(
-                '$rank',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-            ),
-          ),
-        ),
-      ],
     );
   }
 }
@@ -406,15 +376,15 @@ class _TagBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        border: Border.all(color: const Color(0xFFF0A3A3)),
-        color: const Color(0xFFFFFBFB),
+        border: Border.all(color: const Color(0xFFF1B6B6)),
+        color: const Color(0xFFFFFCFC),
         borderRadius: BorderRadius.circular(999),
       ),
       child: Text(
         label,
         style: const TextStyle(
           color: Color(0xFFE45757),
-          fontSize: 11,
+          fontSize: 10,
           fontWeight: FontWeight.w800,
           height: 1,
         ),
@@ -429,13 +399,13 @@ class _PlayGlyph extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 44,
-      height: 44,
+      width: 38,
+      height: 38,
       alignment: Alignment.center,
       child: const Icon(
         Icons.play_arrow_rounded,
         color: Color(0xFF53586C),
-        size: 34,
+        size: 32,
       ),
     );
   }
