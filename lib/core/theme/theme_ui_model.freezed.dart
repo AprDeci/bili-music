@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$ThemeUiModel {
 
- ThemeMode get themeMode;
+ ThemeMode get themeMode; LightThemeVariant get lightThemeVariant;
 /// Create a copy of ThemeUiModel
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -28,16 +28,16 @@ $ThemeUiModelCopyWith<ThemeUiModel> get copyWith => _$ThemeUiModelCopyWithImpl<T
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ThemeUiModel&&(identical(other.themeMode, themeMode) || other.themeMode == themeMode));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ThemeUiModel&&(identical(other.themeMode, themeMode) || other.themeMode == themeMode)&&(identical(other.lightThemeVariant, lightThemeVariant) || other.lightThemeVariant == lightThemeVariant));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,themeMode);
+int get hashCode => Object.hash(runtimeType,themeMode,lightThemeVariant);
 
 @override
 String toString() {
-  return 'ThemeUiModel(themeMode: $themeMode)';
+  return 'ThemeUiModel(themeMode: $themeMode, lightThemeVariant: $lightThemeVariant)';
 }
 
 
@@ -48,7 +48,7 @@ abstract mixin class $ThemeUiModelCopyWith<$Res>  {
   factory $ThemeUiModelCopyWith(ThemeUiModel value, $Res Function(ThemeUiModel) _then) = _$ThemeUiModelCopyWithImpl;
 @useResult
 $Res call({
- ThemeMode themeMode
+ ThemeMode themeMode, LightThemeVariant lightThemeVariant
 });
 
 
@@ -65,10 +65,11 @@ class _$ThemeUiModelCopyWithImpl<$Res>
 
 /// Create a copy of ThemeUiModel
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? themeMode = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? themeMode = null,Object? lightThemeVariant = null,}) {
   return _then(_self.copyWith(
 themeMode: null == themeMode ? _self.themeMode : themeMode // ignore: cast_nullable_to_non_nullable
-as ThemeMode,
+as ThemeMode,lightThemeVariant: null == lightThemeVariant ? _self.lightThemeVariant : lightThemeVariant // ignore: cast_nullable_to_non_nullable
+as LightThemeVariant,
   ));
 }
 
@@ -153,10 +154,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( ThemeMode themeMode)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( ThemeMode themeMode,  LightThemeVariant lightThemeVariant)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _ThemeUiModel() when $default != null:
-return $default(_that.themeMode);case _:
+return $default(_that.themeMode,_that.lightThemeVariant);case _:
   return orElse();
 
 }
@@ -174,10 +175,10 @@ return $default(_that.themeMode);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( ThemeMode themeMode)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( ThemeMode themeMode,  LightThemeVariant lightThemeVariant)  $default,) {final _that = this;
 switch (_that) {
 case _ThemeUiModel():
-return $default(_that.themeMode);case _:
+return $default(_that.themeMode,_that.lightThemeVariant);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -194,10 +195,10 @@ return $default(_that.themeMode);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( ThemeMode themeMode)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( ThemeMode themeMode,  LightThemeVariant lightThemeVariant)?  $default,) {final _that = this;
 switch (_that) {
 case _ThemeUiModel() when $default != null:
-return $default(_that.themeMode);case _:
+return $default(_that.themeMode,_that.lightThemeVariant);case _:
   return null;
 
 }
@@ -209,10 +210,11 @@ return $default(_that.themeMode);case _:
 @JsonSerializable()
 
 class _ThemeUiModel implements ThemeUiModel {
-  const _ThemeUiModel({this.themeMode = ThemeMode.system});
+  const _ThemeUiModel({this.themeMode = ThemeMode.system, this.lightThemeVariant = LightThemeVariant.classicGreen});
   factory _ThemeUiModel.fromJson(Map<String, dynamic> json) => _$ThemeUiModelFromJson(json);
 
 @override@JsonKey() final  ThemeMode themeMode;
+@override@JsonKey() final  LightThemeVariant lightThemeVariant;
 
 /// Create a copy of ThemeUiModel
 /// with the given fields replaced by the non-null parameter values.
@@ -227,16 +229,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ThemeUiModel&&(identical(other.themeMode, themeMode) || other.themeMode == themeMode));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ThemeUiModel&&(identical(other.themeMode, themeMode) || other.themeMode == themeMode)&&(identical(other.lightThemeVariant, lightThemeVariant) || other.lightThemeVariant == lightThemeVariant));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,themeMode);
+int get hashCode => Object.hash(runtimeType,themeMode,lightThemeVariant);
 
 @override
 String toString() {
-  return 'ThemeUiModel(themeMode: $themeMode)';
+  return 'ThemeUiModel(themeMode: $themeMode, lightThemeVariant: $lightThemeVariant)';
 }
 
 
@@ -247,7 +249,7 @@ abstract mixin class _$ThemeUiModelCopyWith<$Res> implements $ThemeUiModelCopyWi
   factory _$ThemeUiModelCopyWith(_ThemeUiModel value, $Res Function(_ThemeUiModel) _then) = __$ThemeUiModelCopyWithImpl;
 @override @useResult
 $Res call({
- ThemeMode themeMode
+ ThemeMode themeMode, LightThemeVariant lightThemeVariant
 });
 
 
@@ -264,10 +266,11 @@ class __$ThemeUiModelCopyWithImpl<$Res>
 
 /// Create a copy of ThemeUiModel
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? themeMode = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? themeMode = null,Object? lightThemeVariant = null,}) {
   return _then(_ThemeUiModel(
 themeMode: null == themeMode ? _self.themeMode : themeMode // ignore: cast_nullable_to_non_nullable
-as ThemeMode,
+as ThemeMode,lightThemeVariant: null == lightThemeVariant ? _self.lightThemeVariant : lightThemeVariant // ignore: cast_nullable_to_non_nullable
+as LightThemeVariant,
   ));
 }
 

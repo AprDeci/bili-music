@@ -11,13 +11,27 @@ _ThemeUiModel _$ThemeUiModelFromJson(Map<String, dynamic> json) =>
       themeMode:
           $enumDecodeNullable(_$ThemeModeEnumMap, json['themeMode']) ??
           ThemeMode.system,
+      lightThemeVariant:
+          $enumDecodeNullable(
+            _$LightThemeVariantEnumMap,
+            json['lightThemeVariant'],
+          ) ??
+          LightThemeVariant.classicGreen,
     );
 
-Map<String, dynamic> _$ThemeUiModelToJson(_ThemeUiModel instance) =>
-    <String, dynamic>{'themeMode': _$ThemeModeEnumMap[instance.themeMode]!};
+Map<String, dynamic> _$ThemeUiModelToJson(
+  _ThemeUiModel instance,
+) => <String, dynamic>{
+  'themeMode': _$ThemeModeEnumMap[instance.themeMode]!,
+  'lightThemeVariant': _$LightThemeVariantEnumMap[instance.lightThemeVariant]!,
+};
 
 const _$ThemeModeEnumMap = {
   ThemeMode.system: 'system',
   ThemeMode.light: 'light',
   ThemeMode.dark: 'dark',
+};
+
+const _$LightThemeVariantEnumMap = {
+  LightThemeVariant.classicGreen: 'classicGreen',
 };

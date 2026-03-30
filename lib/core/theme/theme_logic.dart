@@ -10,28 +10,31 @@ part 'theme_logic.g.dart';
 
 @riverpod
 class ThemeLogic extends _$ThemeLogic {
+  static const String _themeModeKey = 'themeMode';
+  static const String _lightThemeVariantKey = 'lightThemeVariant';
+
   @override
   ThemeUiModel build() {
-    ThemeMode themeMode = ThemeMode.system;
     final Box<String> prefsBox = Hive.box<String>('prefs');
-    final String mode =
-        prefsBox.get('themeMode', defaultValue: ThemeMode.system.toString())
-            as String;
 
-    switch (mode) {
-      case 'ThemeMode.dark':
-        themeMode = ThemeMode.dark;
-      case 'ThemeMode.light':
-        themeMode = ThemeMode.light;
-      case 'ThemeMode.system':
-        themeMode = ThemeMode.system;
-    }
-    return ThemeUiModel(themeMode: themeMode);
+    return ThemeUiModel(
+      themeMode: _readThemeMode(prefsBox.get(_themeModeKey)),
+      lightThemeVariant: _readLightThemeVariant(
+        prefsBox.get(_lightThemeVariantKey),
+      ),
+    );
   }
 
   void setThemeMode(ThemeMode mode) {
-    Hive.box<String>('prefs').put('themeMode', mode.toString());
+    Hive.box<String>('prefs').put(_themeModeKey, _themeModeValue(mode));
     state = state.copyWith(themeMode: mode);
+  }
+
+  void setLightThemeVariant(LightThemeVariant variant) {
+    Hive.box<String>(
+      'prefs',
+    ).put(_lightThemeVariantKey, _lightThemeVariantValue(variant));
+    state = state.copyWith(lightThemeVariant: variant);
   }
 
   void toggleTheme() {
@@ -39,6 +42,53 @@ class ThemeLogic extends _$ThemeLogic {
       setThemeMode(ThemeMode.light);
     } else {
       setThemeMode(ThemeMode.dark);
+    }
+  }
+
+  ThemeMode _readThemeMode(String? rawValue) {
+    switch (rawValue) {
+      case 'dark':
+      case 'ThemeMode.dark':
+        return ThemeMode.dark;
+      case 'light':
+      case 'ThemeMode.light':
+        return ThemeMode.light;
+      case 'system':
+      case 'ThemeMode.system':
+      case null:
+        return ThemeMode.system;
+    }
+
+    return ThemeMode.system;
+  }
+
+  LightThemeVariant _readLightThemeVariant(String? rawValue) {
+    switch (rawValue) {
+      case 'classicGreen':
+      case null:
+        return LightThemeVariant.classicGreen;
+    }
+
+    return LightThemeVariant.classicGreen;
+  }
+
+  String _themeModeValue(ThemeMode mode) {
+    switch (mode) {
+      case ThemeMode.system:
+        return 'system';
+      case ThemeMode.light:
+        return 'light';
+      case ThemeMode.dark:
+        return 'dark';
+    }
+  }
+
+  String _lightThemeVariantValue(LightThemeVariant variant) {
+    switch (variant) {
+      case LightThemeVariant.classicGreen:
+        return 'classicGreen';
+      case LightThemeVariant.classicRed:
+        return 'classicRed';
     }
   }
 }
