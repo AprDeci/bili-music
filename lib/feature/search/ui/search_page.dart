@@ -160,9 +160,10 @@ class _SearchPageState extends ConsumerState<SearchPage> {
             Expanded(
               child: ListView(
                 controller: _scrollController,
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+                padding: const EdgeInsets.fromLTRB(1, 0, 1, 24),
                 children: <Widget>[
-                  if (state.recentKeywords.isNotEmpty) ...<Widget>[
+                  if (state.recentKeywords.isNotEmpty &&
+                      state.submittedQuery == null) ...<Widget>[
                     Row(
                       children: <Widget>[
                         Text(
@@ -199,25 +200,28 @@ class _SearchPageState extends ConsumerState<SearchPage> {
                     ),
                     const SizedBox(height: 24),
                   ],
-                  Row(
-                    children: <Widget>[
-                      Text(
-                        '搜索结果',
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      const Spacer(),
-                      if (state.submittedQuery != null &&
-                          state.submittedQuery!.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Row(
+                      children: <Widget>[
                         Text(
-                          '${state.results.length} 条',
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: const Color(0xFF64748B),
-                            fontWeight: FontWeight.w600,
+                          '搜索结果',
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w700,
                           ),
                         ),
-                    ],
+                        const Spacer(),
+                        if (state.submittedQuery != null &&
+                            state.submittedQuery!.isNotEmpty)
+                          Text(
+                            '${state.results.length} 条',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: const Color(0xFF64748B),
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                      ],
+                    ),
                   ),
                   const SizedBox(height: 12),
                   _SearchResultSection(
@@ -300,7 +304,7 @@ class _SearchResultSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
-    final primaryColor = theme.primaryColor;
+    final ColorScheme colorScheme = theme.colorScheme;
     final bool hasQuery = submittedQuery != null && submittedQuery!.isNotEmpty;
 
     if (!hasQuery) {
@@ -314,7 +318,7 @@ class _SearchResultSection extends StatelessWidget {
               height: 56,
               child: Icon(
                 Icons.search_rounded,
-                color: primaryColor,
+                color: colorScheme.primary,
                 size: 28,
               ),
             ),
@@ -323,7 +327,7 @@ class _SearchResultSection extends StatelessWidget {
               '输入关键词开始搜索',
               textAlign: TextAlign.center,
               style: theme.textTheme.titleSmall?.copyWith(
-                color: const Color(0xFF0F172A),
+                color: colorScheme.onSurface,
                 fontWeight: FontWeight.w700,
               ),
             ),
@@ -337,9 +341,9 @@ class _SearchResultSection extends StatelessWidget {
       return Container(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 28),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: colorScheme.surfaceContainerLowest,
           borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: const Color(0xFFE2E8F0)),
+          border: Border.all(color: colorScheme.outlineVariant),
         ),
         child: Column(
           children: <Widget>[
@@ -364,23 +368,23 @@ class _SearchResultSection extends StatelessWidget {
       return Container(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 28),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: colorScheme.surfaceContainerLowest,
           borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: const Color(0xFFE2E8F0)),
+          border: Border.all(color: colorScheme.outlineVariant),
         ),
         child: Column(
           children: <Widget>[
-            const Icon(
+            Icon(
               Icons.error_outline_rounded,
               size: 30,
-              color: Color(0xFFDC2626),
+              color: colorScheme.error,
             ),
             const SizedBox(height: 12),
             Text(
               '搜索失败',
               style: theme.textTheme.titleSmall?.copyWith(
                 fontWeight: FontWeight.w700,
-                color: const Color(0xFF0F172A),
+                color: colorScheme.onSurface,
               ),
             ),
             const SizedBox(height: 8),
@@ -388,7 +392,7 @@ class _SearchResultSection extends StatelessWidget {
               errorMessage!,
               textAlign: TextAlign.center,
               style: theme.textTheme.bodyMedium?.copyWith(
-                color: const Color(0xFF64748B),
+                color: colorScheme.onSurfaceVariant,
                 height: 1.5,
               ),
             ),
@@ -401,16 +405,16 @@ class _SearchResultSection extends StatelessWidget {
       return Container(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 28),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: colorScheme.surfaceContainerLowest,
           borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: const Color(0xFFE2E8F0)),
+          border: Border.all(color: colorScheme.outlineVariant),
         ),
         child: Column(
           children: <Widget>[
-            const Icon(
+            Icon(
               Icons.search_off_rounded,
               size: 30,
-              color: Color(0xFF94A3B8),
+              color: colorScheme.onSurfaceVariant,
             ),
             const SizedBox(height: 12),
             Text(
@@ -424,7 +428,7 @@ class _SearchResultSection extends StatelessWidget {
               '试试更换关键词，或者确认当前登录态和 Cookie 是否可用。',
               textAlign: TextAlign.center,
               style: theme.textTheme.bodyMedium?.copyWith(
-                color: const Color(0xFF64748B),
+                color: colorScheme.onSurfaceVariant,
                 height: 1.5,
               ),
             ),
@@ -450,63 +454,89 @@ class _SearchResultSection extends StatelessWidget {
               return Material(
                 color: Colors.transparent,
                 child: InkWell(
-                  borderRadius: BorderRadius.circular(22),
                   onTap: () => onPlayItem(item),
                   child: Container(
-                    margin: const EdgeInsets.only(bottom: 12),
-                    padding: const EdgeInsets.all(14),
+                    margin: const EdgeInsets.only(bottom: 1),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
                     decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(22),
-                      border: Border.all(color: const Color(0xFFE2E8F0)),
+                      color: colorScheme.surfaceContainerLowest,
                     ),
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: <Widget>[
-                        Container(
-                          width: 48,
-                          height: 48,
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFEFF6FF),
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          child: item.coverUrl.isEmpty
-                              ? const Icon(
-                                  Icons.play_circle_outline_rounded,
-                                  color: Color(0xFF2563EB),
-                                  size: 24,
-                                )
-                              : ClipRRect(
-                                  borderRadius: BorderRadius.circular(16),
-                                  child: Image.network(
-                                    item.coverUrl,
-                                    fit: BoxFit.cover,
-                                    errorBuilder: (context, error, stackTrace) {
-                                      return const Icon(
-                                        Icons.music_video_rounded,
-                                        color: Color(0xFF2563EB),
-                                      );
-                                    },
+                        Stack(
+                          children: <Widget>[
+                            Container(
+                              width: 82,
+                              height: 82,
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: item.coverUrl.isEmpty
+                                  ? Icon(
+                                      Icons.play_circle_outline_rounded,
+                                      color: colorScheme.primary,
+                                      size: 30,
+                                    )
+                                  : ClipRRect(
+                                      borderRadius: BorderRadius.circular(8),
+                                      child: Image.network(
+                                        item.coverUrl,
+                                        fit: BoxFit.cover,
+                                        errorBuilder:
+                                            (context, error, stackTrace) {
+                                              return Icon(
+                                                Icons.music_video_rounded,
+                                                color: colorScheme.primary,
+                                                size: 30,
+                                              );
+                                            },
+                                      ),
+                                    ),
+                            ),
+                            Positioned(
+                              left: 8,
+                              bottom: 8,
+                              child: Container(
+                                width: 26,
+                                height: 26,
+                                decoration: BoxDecoration(
+                                  color: colorScheme.surface.withValues(
+                                    alpha: 0.92,
                                   ),
+                                  borderRadius: BorderRadius.circular(999),
                                 ),
+                                child: Icon(
+                                  Icons.play_arrow_rounded,
+                                  size: 18,
+                                  color: colorScheme.primary,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
-                        const SizedBox(width: 14),
+                        const SizedBox(width: 16),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: <Widget>[
                               Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: <Widget>[
                                   Expanded(
                                     child: Text(
                                       item.title,
                                       maxLines: 2,
                                       overflow: TextOverflow.ellipsis,
-                                      style: theme.textTheme.titleSmall
+                                      style: theme.textTheme.titleMedium
                                           ?.copyWith(
-                                            fontWeight: FontWeight.w700,
-                                            color: const Color(0xFF0F172A),
-                                            height: 1.35,
+                                            fontWeight: FontWeight.w600,
+                                            color: colorScheme.onSurface,
+                                            height: 1.3,
+                                            fontSize: 14,
                                           ),
                                     ),
                                   ),
@@ -514,50 +544,32 @@ class _SearchResultSection extends StatelessWidget {
                                   _ResultTag(label: item.tagText),
                                 ],
                               ),
-                              const SizedBox(height: 6),
+                              const SizedBox(height: 8),
                               Text(
                                 '${item.author} · ${item.publishTimeText}',
                                 style: theme.textTheme.bodyMedium?.copyWith(
-                                  color: const Color(0xFF475569),
+                                  fontSize: 8,
+                                  color: colorScheme.onSurfaceVariant,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                '播放 ${item.playCountText}  ·  弹幕 ${item.danmakuCountText}  ·  ${item.duration}',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  fontSize: 8,
+                                  color: colorScheme.onSurfaceVariant,
                                   fontWeight: FontWeight.w600,
                                 ),
                               ),
-                              const SizedBox(height: 6),
-                              Wrap(
-                                spacing: 8,
-                                runSpacing: 8,
-                                children: <Widget>[
-                                  _MetaChip(
-                                    icon: Icons.play_arrow_rounded,
-                                    text: item.playCountText,
-                                  ),
-                                  _MetaChip(
-                                    icon: Icons.subtitles_rounded,
-                                    text: item.danmakuCountText,
-                                  ),
-                                  _MetaChip(
-                                    icon: Icons.schedule_rounded,
-                                    text: item.duration,
-                                  ),
-                                ],
-                              ),
-                              if (item.description != null) ...<Widget>[
-                                const SizedBox(height: 8),
-                                Text(
-                                  item.description!,
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: theme.textTheme.bodySmall?.copyWith(
-                                    color: const Color(0xFF64748B),
-                                    height: 1.45,
-                                  ),
-                                ),
-                              ],
                             ],
                           ),
                         ),
-                        const SizedBox(width: 10),
+                        const SizedBox(width: 12),
                         Column(
+                          mainAxisSize: MainAxisSize.min,
                           children: <Widget>[
                             InkResponse(
                               onTap: () async {
@@ -598,19 +610,19 @@ class _SearchResultSection extends StatelessWidget {
                               },
                               radius: 18,
                               child: Container(
-                                width: 34,
-                                height: 34,
+                                width: 38,
+                                height: 38,
                                 decoration: BoxDecoration(
                                   color: isFavorite
-                                      ? const Color(0xFFFFF1E8)
-                                      : const Color(0xFFFFF7ED),
-                                  borderRadius: BorderRadius.circular(12),
+                                      ? colorScheme.secondaryContainer
+                                      : colorScheme.surfaceContainerHigh,
+                                  borderRadius: BorderRadius.circular(14),
                                 ),
                                 child: Icon(
                                   isFavorite
                                       ? Icons.favorite_rounded
                                       : Icons.favorite_border_rounded,
-                                  color: const Color(0xFFF97316),
+                                  color: colorScheme.secondary,
                                   size: 18,
                                 ),
                               ),
@@ -618,6 +630,7 @@ class _SearchResultSection extends StatelessWidget {
                             const SizedBox(height: 8),
                             PopupMenuButton<_SearchQueueAction>(
                               tooltip: '队列操作',
+                              padding: EdgeInsets.zero,
                               onSelected: (_SearchQueueAction action) async {
                                 final ScaffoldMessengerState messenger =
                                     ScaffoldMessenger.of(context);
@@ -678,15 +691,15 @@ class _SearchResultSection extends StatelessWidget {
                                     ),
                                   ],
                               child: Container(
-                                width: 34,
-                                height: 34,
+                                width: 38,
+                                height: 38,
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFFEFF6FF),
-                                  borderRadius: BorderRadius.circular(12),
+                                  color: colorScheme.surfaceContainerHigh,
+                                  borderRadius: BorderRadius.circular(14),
                                 ),
-                                child: const Icon(
+                                child: Icon(
                                   Icons.more_horiz_rounded,
-                                  color: Color(0xFF2563EB),
+                                  color: colorScheme.onSurfaceVariant,
                                 ),
                               ),
                             ),
@@ -729,6 +742,7 @@ class _SearchResultFooter extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
 
     if (isLoadingMore) {
       return Padding(
@@ -745,7 +759,7 @@ class _SearchResultFooter extends StatelessWidget {
             Text(
               '正在加载更多结果',
               style: theme.textTheme.bodyMedium?.copyWith(
-                color: const Color(0xFF64748B),
+                color: colorScheme.onSurfaceVariant,
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -779,7 +793,7 @@ class _SearchResultFooter extends StatelessWidget {
           child: Text(
             '已经到底了',
             style: theme.textTheme.bodySmall?.copyWith(
-              color: const Color(0xFF94A3B8),
+              color: colorScheme.onSurfaceVariant,
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -798,53 +812,22 @@ class _ResultTag extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: const Color(0xFFEFF6FF),
+        color: colorScheme.primary.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(999),
       ),
       child: Text(
         label,
-        style: Theme.of(context).textTheme.labelMedium?.copyWith(
-          color: const Color(0xFF2563EB),
+        style: theme.textTheme.labelSmall?.copyWith(
+          fontSize: 8,
+          color: colorScheme.primary,
           fontWeight: FontWeight.w700,
         ),
-      ),
-    );
-  }
-}
-
-class _MetaChip extends StatelessWidget {
-  const _MetaChip({required this.icon, required this.text});
-
-  final IconData icon;
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF8FAFC),
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: <Widget>[
-          Icon(icon, size: 14, color: const Color(0xFF64748B)),
-          const SizedBox(width: 4),
-          Text(
-            text,
-            style: theme.textTheme.labelMedium?.copyWith(
-              color: const Color(0xFF475569),
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
       ),
     );
   }
