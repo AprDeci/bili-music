@@ -6,6 +6,7 @@ import 'package:bilimusic/feature/player/ui/player_page.dart';
 import 'package:bilimusic/feature/profile/ui/profile_page.dart';
 import 'package:bilimusic/feature/search/ui/search_page.dart';
 import 'package:bilimusic/feature/setting/ui/setting_page.dart';
+import 'package:bilimusic/feature/setting/ui/theme_settings_page.dart';
 import 'package:bilimusic/router/ScaffoldWithNavBar.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -59,6 +60,11 @@ GoRouter router(Ref ref) => GoRouter(
       parentNavigatorKey: _rootNavigatorKey,
       builder: (context, state) => const SettingPage(),
     ),
+    GoRoute(
+      path: '/settings/theme',
+      parentNavigatorKey: _rootNavigatorKey,
+      builder: (context, state) => const ThemeSettingsPage(),
+    ),
     StatefulShellRoute.indexedStack(
       parentNavigatorKey: _rootNavigatorKey,
       builder: (context, state, navigationShell) {
@@ -74,7 +80,8 @@ GoRouter router(Ref ref) => GoRouter(
               GoRoute(
                 path: tab['path'] as String,
                 builder: tab['builder'] as GoRouterWidgetBuilder,
-                routes: tab['routes'] as List<RouteBase>? ?? const <RouteBase>[],
+                routes:
+                    tab['routes'] as List<RouteBase>? ?? const <RouteBase>[],
               ),
             ],
           ),
