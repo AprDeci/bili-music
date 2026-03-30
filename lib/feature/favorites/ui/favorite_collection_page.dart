@@ -32,8 +32,8 @@ class FavoriteCollectionPage extends ConsumerWidget {
 
     if (collection == null) {
       return Scaffold(
-        appBar: AppBar(title: const Text('收藏夹')),
-        body: const Center(child: Text('收藏夹不存在')),
+        appBar: AppBar(title: const Text('歌单')),
+        body: const Center(child: Text('歌单不存在')),
       );
     }
 
@@ -60,10 +60,6 @@ class FavoriteCollectionPage extends ConsumerWidget {
                     Container(
                       width: 72,
                       height: 72,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFEAF0FF),
-                        borderRadius: BorderRadius.circular(24),
-                      ),
                       child: Icon(
                         resolvedCollection.isLikedCollection
                             ? Icons.favorite_border_rounded
@@ -74,7 +70,7 @@ class FavoriteCollectionPage extends ConsumerWidget {
                     ),
                     const SizedBox(height: 18),
                     Text(
-                      '这个收藏夹还是空的',
+                      '这个歌单还是空的',
                       style: theme.textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.w800,
                       ),
