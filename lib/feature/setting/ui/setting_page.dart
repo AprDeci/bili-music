@@ -29,22 +29,13 @@ class SettingPage extends StatelessWidget {
             ),
 
           const Divider(height: 24),
-          FutureBuilder<PackageInfo>(
-            future: PackageInfo.fromPlatform(),
-            builder:
-                (BuildContext context, AsyncSnapshot<PackageInfo> snapshot) {
-                  final String versionLabel = snapshot.hasData
-                      ? '${snapshot.data!.version}+${snapshot.data!.buildNumber}'
-                      : '读取中';
-
-                  return ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    leading: const Icon(Icons.info_outline_rounded),
-                    title: const Text('版本信息'),
-                    subtitle: Text('当前应用版本', style: theme.textTheme.bodySmall),
-                    trailing: Text(versionLabel),
-                  );
-                },
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: const Icon(Icons.info_outline_rounded),
+            title: const Text('关于'),
+            subtitle: Text('关于应用', style: theme.textTheme.bodySmall),
+            trailing: const Icon(Icons.chevron_right_rounded),
+            onTap: () => context.push('/settings/about'),
           ),
         ],
       ),

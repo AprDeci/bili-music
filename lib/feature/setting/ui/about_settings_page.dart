@@ -1,0 +1,66 @@
+import 'package:flutter/material.dart';
+import 'package:package_info_plus/package_info_plus.dart';
+import 'package:url_launcher/url_launcher.dart';
+
+class AboutSettingsPage extends StatelessWidget {
+  const AboutSettingsPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final String issueUrl = 'https://github.com/AprDeci/bili-music/issues/new';
+    final String sourceCodeUrl = 'https://github.com/AprDeci/bili-music';
+
+    return Scaffold(
+      appBar: AppBar(title: const Text('关于')),
+      body: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            FutureBuilder<PackageInfo>(
+              future: PackageInfo.fromPlatform(),
+              builder:
+                  (BuildContext context, AsyncSnapshot<PackageInfo> snapshot) {
+                    final String versionLabel = snapshot.hasData
+                        ? '${snapshot.data!.version}+${snapshot.data!.buildNumber}'
+                        : '读取中';
+
+                    return ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: const Icon(Icons.commit_outlined),
+                      title: const Text('版本信息'),
+                      subtitle: Text(
+                        '当前应用版本',
+                        style: theme.textTheme.bodySmall,
+                      ),
+                      trailing: Text(versionLabel),
+                    );
+                  },
+            ),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.feedback_outlined),
+              title: const Text('问题反馈'),
+              subtitle: Text('联系或提交问题反馈', style: theme.textTheme.bodySmall),
+              trailing: const Icon(Icons.arrow_forward_outlined),
+              onTap: () {
+                launchUrl(Uri.parse(issueUrl));
+              },
+            ),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.code_outlined),
+              title: const Text('Source Code'),
+              subtitle: Text('查看源代码仓库', style: theme.textTheme.bodySmall),
+              trailing: const Icon(Icons.arrow_forward_outlined),
+              onTap: () {
+                launchUrl(Uri.parse(sourceCodeUrl));
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
