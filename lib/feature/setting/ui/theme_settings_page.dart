@@ -70,9 +70,7 @@ class ThemeSettingsPage extends ConsumerWidget {
                       groupValue: themeState.lightThemeVariant,
                       title: Text(definition.label),
                       subtitle: Text(definition.description),
-                      secondary: _ThemePreviewDot(
-                        color: definition.seedColor,
-                      ),
+                      secondary: _ThemePreviewDot(color: definition.seedColor),
                       onChanged: (LightThemeVariant? value) {
                         if (value == null) {
                           return;
@@ -86,10 +84,6 @@ class ThemeSettingsPage extends ConsumerWidget {
                   .toList(growable: false),
             ),
           ),
-          if (lightThemes.length == 1) ...<Widget>[
-            const SizedBox(height: 10),
-            Text('后续新增配色时，只需要扩展主题定义即可。', style: theme.textTheme.bodySmall),
-          ],
         ],
       ),
     );

@@ -65,6 +65,15 @@ class ThemeLogic extends _$ThemeLogic {
   LightThemeVariant _readLightThemeVariant(String? rawValue) {
     switch (rawValue) {
       case 'classicGreen':
+        return LightThemeVariant.classicGreen;
+      case 'skyBlue':
+        return LightThemeVariant.skyBlue;
+      case 'irisPurple':
+        return LightThemeVariant.irisPurple;
+      case 'blossomPink':
+        return LightThemeVariant.blossomPink;
+      case 'sunsetOrange':
+        return LightThemeVariant.sunsetOrange;
       case null:
         return LightThemeVariant.classicGreen;
     }
@@ -81,14 +90,24 @@ class ThemeLogic extends _$ThemeLogic {
       case ThemeMode.dark:
         return 'dark';
     }
+
+    return 'system';
   }
 
   String _lightThemeVariantValue(LightThemeVariant variant) {
     switch (variant) {
       case LightThemeVariant.classicGreen:
         return 'classicGreen';
-      case LightThemeVariant.classicRed:
-        return 'classicRed';
+      case LightThemeVariant.skyBlue:
+        return 'skyBlue';
+      case LightThemeVariant.irisPurple:
+        return 'irisPurple';
+      case LightThemeVariant.blossomPink:
+        return 'blossomPink';
+      case LightThemeVariant.sunsetOrange:
+        return 'sunsetOrange';
     }
+
+    return 'classicGreen';
   }
 }
