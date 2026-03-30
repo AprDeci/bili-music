@@ -39,8 +39,8 @@ class _PlayerCollectionSheet extends ConsumerWidget {
             )
             .toList(growable: false)
           ..sort(
-           (FavoriteCollection a, FavoriteCollection b) =>
-               b.updatedAt.compareTo(a.updatedAt),
+            (FavoriteCollection a, FavoriteCollection b) =>
+                b.updatedAt.compareTo(a.updatedAt),
           );
 
     return DraggableScrollableSheet(
@@ -57,7 +57,7 @@ class _PlayerCollectionSheet extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
                   Text(
-                    '添加到收藏夹',
+                    '加到歌单',
                     style: theme.textTheme.titleLarge?.copyWith(
                       fontWeight: FontWeight.w800,
                     ),
@@ -96,7 +96,7 @@ class _PlayerCollectionSheet extends ConsumerWidget {
 
                         final String message;
                         if (alreadyAdded) {
-                          message = '已在“${collection.name}”中';
+                          message = '已在“${collection.name}”歌单中';
                         } else {
                           final bool added = await ref
                               .read(favoritesControllerProvider.notifier)
@@ -104,7 +104,9 @@ class _PlayerCollectionSheet extends ConsumerWidget {
                                 collectionId: collection.id,
                                 item: item,
                               );
-                          message = added ? '已添加到“${collection.name}”' : '添加失败';
+                          message = added
+                              ? '已添加到“${collection.name}”歌单'
+                              : '添加失败';
                         }
 
                         if (!context.mounted) {
