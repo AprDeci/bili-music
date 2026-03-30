@@ -107,7 +107,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
                   ),
                   Expanded(
                     child: Container(
-                      height: 44,
+                      height: 40,
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(999),
@@ -148,7 +148,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
                           border: InputBorder.none,
                           contentPadding: const EdgeInsets.symmetric(
                             horizontal: 4,
-                            vertical: 11,
+                            vertical: 2,
                           ),
                         ),
                       ),
@@ -160,7 +160,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
             Expanded(
               child: ListView(
                 controller: _scrollController,
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
                 children: <Widget>[
                   if (state.recentKeywords.isNotEmpty) ...<Widget>[
                     Row(
