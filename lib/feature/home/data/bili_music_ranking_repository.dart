@@ -6,10 +6,13 @@ class BiliMusicRankingRepository {
 
   final BiliApiClient _apiClient;
 
-  Future<List<MusicRankingItem>> fetchMusicRanking() async {
+  Future<List<MusicRankingItem>> fetchMusicRanking({
+    bool requiresWbi = false,
+  }) async {
     final Map<String, dynamic> json = await _apiClient.getJson(
       '/x/web-interface/ranking/v2',
       queryParameters: <String, dynamic>{'rid': 1003, 'type': 'all'},
+      requiresWbi: requiresWbi,
     );
 
     final Map<String, dynamic> data = _asMap(json['data']);
