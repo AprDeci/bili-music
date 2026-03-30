@@ -6,6 +6,7 @@ import 'package:bilimusic/feature/player/ui/components/player_main_page.dart';
 import 'package:bilimusic/feature/player/ui/components/player_meta_page.dart';
 import 'package:bilimusic/feature/player/ui/components/player_shared.dart';
 import 'package:bilimusic/feature/player/ui/components/player_top_bar.dart';
+import 'package:bilimusic/router/player_navigation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -25,6 +26,7 @@ class _PlayerPageState extends ConsumerState<PlayerPage> {
   @override
   void initState() {
     super.initState();
+    markPlayerPageVisible();
     _pageController = PageController(initialPage: 1);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadInitialItem();
@@ -33,6 +35,7 @@ class _PlayerPageState extends ConsumerState<PlayerPage> {
 
   @override
   void dispose() {
+    markPlayerPageHidden();
     _pageController.dispose();
     super.dispose();
   }

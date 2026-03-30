@@ -1,3 +1,4 @@
+import 'package:bilimusic/common/util/player_util.dart';
 import 'package:bilimusic/feature/favorites/logic/favorites_controller.dart';
 import 'package:bilimusic/feature/player/data/bili_player_repository.dart';
 import 'package:bilimusic/feature/player/domain/playable_item.dart';
@@ -7,7 +8,6 @@ import 'package:bilimusic/feature/search/domain/search_result_item.dart';
 import 'package:bilimusic/feature/search/logic/search_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
 class SearchPage extends ConsumerStatefulWidget {
   const SearchPage({super.key});
@@ -230,14 +230,12 @@ class _SearchPageState extends ConsumerState<SearchPage> {
                     loadMoreErrorMessage: state.loadMoreErrorMessage,
                     onRetryLoadMore: controller.loadNextPage,
                     onPlayItem: (SearchResultItem item) async {
-                      await ref
-                          .read(playerControllerProvider.notifier)
-                          .setQueue(<PlayableItem>[
-                            item.toPlayableItem(),
-                          ], sourceLabel: '搜索结果');
-                      if (context.mounted) {
-                        context.push('/player');
-                      }
+                      await PlayerUtil.playItemAndOpenPlayer(
+                        context,
+                        ref,
+                        item: item.toPlayableItem(),
+                        sourceLabel: '搜索结果',
+                      );
                     },
                     onPlayNext: (SearchResultItem item) async {
                       final PlayableItem resolvedItem = await ref

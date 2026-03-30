@@ -1,12 +1,11 @@
 import 'dart:math' as math;
 
+import 'package:bilimusic/common/util/player_util.dart';
 import 'package:bilimusic/feature/home/domain/music_ranking_item.dart';
 import 'package:bilimusic/feature/home/logic/music_ranking_controller.dart';
 import 'package:bilimusic/feature/player/domain/playable_item.dart';
-import 'package:bilimusic/feature/player/logic/player_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
 class MusicRankingSection extends ConsumerWidget {
   const MusicRankingSection({super.key});
@@ -74,13 +73,13 @@ class MusicRankingSection extends ConsumerWidget {
         .map((MusicRankingItem item) => item.toPlayableItem())
         .toList(growable: false);
 
-    await ref
-        .read(playerControllerProvider.notifier)
-        .setQueue(queue, startIndex: index, sourceLabel: '近期音乐榜');
-
-    if (context.mounted) {
-      context.push('/player');
-    }
+    await PlayerUtil.playQueueAndOpenPlayer(
+      context,
+      ref,
+      items: queue,
+      startIndex: index,
+      sourceLabel: '近期音乐榜',
+    );
   }
 }
 

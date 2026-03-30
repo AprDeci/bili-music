@@ -1,13 +1,12 @@
 import 'package:bilimusic/common/logger.dart';
+import 'package:bilimusic/common/util/player_util.dart';
 import 'package:bilimusic/feature/favorites/domain/favorite_collection.dart';
 import 'package:bilimusic/feature/favorites/domain/favorite_entry.dart';
 import 'package:bilimusic/feature/favorites/domain/favorites_state.dart';
 import 'package:bilimusic/feature/favorites/logic/favorites_controller.dart';
 import 'package:bilimusic/feature/player/domain/playable_item.dart';
-import 'package:bilimusic/feature/player/logic/player_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
 class FavoriteCollectionPage extends ConsumerWidget {
   const FavoriteCollectionPage({super.key, required this.collectionId});
@@ -162,16 +161,13 @@ class FavoriteCollectionPage extends ConsumerWidget {
                           'itemStableId=${queueItems[index].stableId}, '
                           'itemTitle=${queueItems[index].title}',
                         );
-                        await ref
-                            .read(playerControllerProvider.notifier)
-                            .setQueue(
-                              queueItems,
-                              startIndex: index,
-                              sourceLabel: resolvedCollection.name,
-                            );
-                        if (context.mounted) {
-                          context.push('/player');
-                        }
+                        await PlayerUtil.playQueueAndOpenPlayer(
+                          context,
+                          ref,
+                          items: queueItems,
+                          startIndex: index,
+                          sourceLabel: resolvedCollection.name,
+                        );
                       },
                     ),
                   );
