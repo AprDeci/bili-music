@@ -32,6 +32,11 @@ jobs:
           echo '${{ secrets.KEYSTORE }}' | base64 --decode > android/app/apr-release-key.jks
           echo '${{ secrets.KEY_PROPERTIES }}' > android/key.properties
 
+          echo "=== key.properties content ==="
+          cat android/key.properties
+          echo "=== keystore file exists? ==="
+          ls -l android/app/apr-release-key.jks
+
       - name: Build Android Split APKs
         run: flutter build apk --release --split-per-abi
 
