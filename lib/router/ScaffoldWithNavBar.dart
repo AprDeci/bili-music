@@ -25,8 +25,9 @@ class _ScaffoldWithNavBarState extends ConsumerState<ScaffoldWithNavBar> {
   static const Duration _animationDuration = Duration(milliseconds: 200);
   static const Curve _animationCurve = Curves.easeInOutCubic;
   static const double _navHiddenSlideOffset = 1.2;
-  static const double _miniPlayerVisibleBottomPadding = 82;
-  static const double _miniPlayerCollapsedBottomPadding = 20;
+  static const double _navigationBarHeight = 60;
+  static const double _miniPlayerBottomGap = 10;
+  static const double _miniPlayerCollapsedBottomGap = 20;
 
   int _currentIndex = 0;
 
@@ -39,15 +40,22 @@ class _ScaffoldWithNavBarState extends ConsumerState<ScaffoldWithNavBar> {
   @override
   Widget build(BuildContext context) {
     final double screenWidth = MediaQuery.of(context).size.width;
+    final double bottomInset = MediaQuery.viewPaddingOf(context).bottom;
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
     final PlayerState playerState = ref.watch(playerControllerProvider);
     final bool isFavoritesPage = _isFavoritesPage(widget.currentLocation);
+    final double miniPlayerVisibleBottomPadding =
+        bottomInset + _navigationBarHeight + _miniPlayerBottomGap;
+    final double miniPlayerCollapsedBottomPadding =
+        bottomInset + _miniPlayerCollapsedBottomGap;
 
     final Widget content = _buildShellContent(
       context,
       playerState,
       isFavoritesPage,
+      miniPlayerVisibleBottomPadding,
+      miniPlayerCollapsedBottomPadding,
     );
 
     if (isFavoritesPage) {
@@ -95,7 +103,7 @@ class _ScaffoldWithNavBarState extends ConsumerState<ScaffoldWithNavBar> {
                     data: NavigationBarThemeData(
                       backgroundColor: Colors.transparent,
                       elevation: 0,
-                      height: 60,
+                      height: _navigationBarHeight,
                       indicatorColor: colorScheme.primary.withValues(
                         alpha: 0.12,
                       ),
@@ -140,7 +148,8 @@ class _ScaffoldWithNavBarState extends ConsumerState<ScaffoldWithNavBar> {
             ),
           ),
         ),
-        body: (BuildContext context, ScrollController scrollController) => content,
+        body: (BuildContext context, ScrollController scrollController) =>
+            content,
       ),
     );
   }
@@ -149,6 +158,8 @@ class _ScaffoldWithNavBarState extends ConsumerState<ScaffoldWithNavBar> {
     BuildContext context,
     PlayerState playerState,
     bool isFavoritesPage,
+    double miniPlayerVisibleBottomPadding,
+    double miniPlayerCollapsedBottomPadding,
   ) {
     return Stack(
       fit: StackFit.expand,
@@ -164,8 +175,8 @@ class _ScaffoldWithNavBarState extends ConsumerState<ScaffoldWithNavBar> {
               child: MiniPlayerBar(
                 state: playerState,
                 bottomPadding: isFavoritesPage
-                    ? _miniPlayerCollapsedBottomPadding
-                    : _miniPlayerVisibleBottomPadding,
+                    ? miniPlayerCollapsedBottomPadding
+                    : miniPlayerVisibleBottomPadding,
                 onTap: () => openPlayerPage(context),
                 onTogglePlayback: () {
                   ref.read(playerControllerProvider.notifier).togglePlayback();
