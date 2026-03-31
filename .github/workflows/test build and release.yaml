@@ -31,9 +31,9 @@ jobs:
       - name: Setup Flutter (Beta x64)
         uses: subosito/flutter-action@v2
         with:
-          channel: 'beta'
-          flutter-version: '3.43.0-0.2.pre'
-          architecture: 'x64'
+          channel: "beta"
+          flutter-version: "3.43.0-0.2.pre"
+          architecture: "x64"
           cache: true
 
       - name: Flutter Pub Get
@@ -75,21 +75,19 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          channel: 'beta'
-          flutter-version: '3.43.0-0.2.pre'
+          channel: "beta"
+          flutter-version: "3.43.0-0.2.pre"
           cache: true
 
       - name: Flutter Pub Get
         run: flutter pub get
 
-      - name: Build iOS  
-        run: |  
+      - name: Build iOS
+        run: |
           flutter build ios --release --no-codesign
           ln -sf ./build/ios/iphoneos Payload  
           find Payload/Runner.app/Frameworks -type d -name "*.framework" -exec codesign --force --sign - --preserve-metadata=identifier,entitlements {} \;  
           zip -r9 bili-music.ipa Payload/runner.app
-
-
 
       - name: Upload iOS Artifacts
         uses: actions/upload-artifact@v4
