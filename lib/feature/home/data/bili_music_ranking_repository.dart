@@ -1,5 +1,6 @@
 import 'package:bilimusic/core/bili/net/bili_api_client.dart';
 import 'package:bilimusic/feature/home/domain/music_ranking_item.dart';
+import 'package:dio/dio.dart';
 
 class BiliMusicRankingRepository {
   const BiliMusicRankingRepository(this._apiClient);
@@ -13,6 +14,12 @@ class BiliMusicRankingRepository {
       '/x/web-interface/ranking/v2',
       queryParameters: <String, dynamic>{'rid': 1003, 'type': 'all'},
       requiresWbi: requiresWbi,
+      options: Options(
+        headers: {
+          'user-agent':
+              'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36 Edg/146.0.0.0',
+        },
+      ),
     );
 
     final Map<String, dynamic> data = _asMap(json['data']);
