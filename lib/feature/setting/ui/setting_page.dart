@@ -1,10 +1,47 @@
+import 'package:bilimusic/core/cache/cache_util.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:package_info_plus/package_info_plus.dart';
 
-class SettingPage extends StatelessWidget {
+class SettingPage extends StatefulWidget {
   const SettingPage({super.key});
+
+  @override
+  State<SettingPage> createState() => _SettingPageState();
+}
+
+class _SettingPageState extends State<SettingPage> {
+  late Future<String> _cacheSizeFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _cacheSizeFuture = CacheUtil.getImageCacheSize();
+  }
+
+  Future<void> _reloadCacheSize() async {
+    setState(() {
+      _cacheSizeFuture = CacheUtil.getImageCacheSize();
+    });
+  }
+
+  Future<void> _handleClearCache() async {
+    final bool shouldClear = await _showClearCacheDialog(context) ?? false;
+    if (!shouldClear) {
+      return;
+    }
+
+    await CacheUtil.clearImageCache();
+    await _reloadCacheSize();
+
+    if (!mounted) {
+      return;
+    }
+
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('缓存已清理')));
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -27,6 +64,21 @@ class SettingPage extends StatelessWidget {
               trailing: const Icon(Icons.chevron_right_rounded),
               onTap: () => context.push('/settings/theme'),
             ),
+          FutureBuilder<String>(
+            future: _cacheSizeFuture,
+            builder: (context, snapshot) {
+              return ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: const Icon(Icons.delete_outlined),
+                title: const Text('清理缓存'),
+                subtitle: Text(
+                  '${snapshot.data ?? '0'} MB',
+                  style: theme.textTheme.bodySmall,
+                ),
+                onTap: _handleClearCache,
+              );
+            },
+          ),
 
           const Divider(height: 24),
           ListTile(
@@ -41,4 +93,26 @@ class SettingPage extends StatelessWidget {
       ),
     );
   }
+}
+
+Future<bool?> _showClearCacheDialog(BuildContext context) async {
+  return await showDialog<bool>(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: const Text('确认清理缓存吗？'),
+      content: const Text('缓存内容为图片'),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context, false),
+          child: const Text('取消'),
+        ),
+        TextButton(
+          onPressed: () {
+            Navigator.pop(context, true);
+          },
+          child: const Text('确认'),
+        ),
+      ],
+    ),
+  );
 }

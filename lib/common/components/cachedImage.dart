@@ -1,4 +1,5 @@
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:bilimusic/core/cache/cache_util.dart';
 import 'package:flutter/material.dart';
 
 class CommonCachedImage extends StatelessWidget {
@@ -43,6 +44,7 @@ class CommonCachedImage extends StatelessWidget {
       child = failureState;
     } else {
       child = CachedNetworkImage(
+        cacheManager: CacheUtil.imageCacheManager,
         imageUrl: resolvedUrl,
         width: width,
         height: height,
