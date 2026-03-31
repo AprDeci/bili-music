@@ -11,7 +11,7 @@ class BiliMusicRankingRepository {
     bool requiresWbi = false,
   }) async {
     final Map<String, dynamic> json = await _apiClient.getJson(
-      '/x/web-interface/ranking/v2',
+      '/x/web-interface/ranking/v2?dm_img_list=[{"x":748,"y":-1686,"z":0,"timestamp":716,"k":123,"type":0}]&dm_img_str=V2ViR0wgMS&dm_cover_img_str=QU5HTEUgKE5WSURJQSwgTlZJRElBIEdlRm9yY2UgR1RYIDk4MCBEaXJlY3QzRDExIHZzXzVfMCBwc181XzApLCBvciBzaW1pbGFyR29vZ2xlIEluYy4gKE5WSURJQS&dm_img_inter={"ds":[{"t":0,"c":"","p":[9,3,3],"s":[80,6232,2116]}],"wh":[4904,4883,48],"of":[212,424,212]}',
       queryParameters: <String, dynamic>{'rid': 1003, 'type': 'all'},
       requiresWbi: requiresWbi,
       options: Options(
