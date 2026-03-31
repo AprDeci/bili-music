@@ -32,11 +32,6 @@ jobs:
           echo '${{ secrets.KEYSTORE }}' | base64 --decode > android/app/apr-release-key.jks
           echo '${{ secrets.KEY_PROPERTIES }}' > android/key.properties
 
-          echo "=== key.properties content ==="
-          cat android/key.properties
-          echo "=== keystore file exists? ==="
-          ls -l android/app/apr-release-key.jks
-
       - name: Build Android Split APKs
         run: flutter build apk --release --split-per-abi
 
@@ -52,7 +47,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: bili-music-android
-          path: build/artifacts/bili-music-*-*.apk
+          path: build/artifacts/*.apk
           retention-days: 30
 
   # ==================== iOS Job (macOS) ====================
@@ -81,11 +76,11 @@ jobs:
         run: |
           VERSION=${GITHUB_REF_NAME:-Test-Build}
           mkdir -p build/artifacts
-          cp build/ios/ipa/*.ipa "build/artifacts/bili-music-${VERSION}.ipa" || echo "⚠️ IPA 文件未找到"
+          cp build/ios/ipa/*.ipa "build/artifacts/bili-music.ipa" || echo "⚠️ IPA 文件未找到"
 
       - name: Upload iOS Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: bili-music-ios
-          path: build/artifacts/bili-music-*.ipa
+          path: build/artifacts/*.ipa
           retention-days: 30
