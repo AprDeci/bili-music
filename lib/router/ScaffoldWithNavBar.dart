@@ -167,25 +167,35 @@ class _ScaffoldWithNavBarState extends ConsumerState<ScaffoldWithNavBar> {
       fit: StackFit.expand,
       children: <Widget>[
         widget.navigationShell,
-        if (playerState.hasItem && !isPlayerPageVisible)
-          Align(
-            alignment: Alignment.bottomCenter,
-            child: AnimatedSlide(
-              duration: _animationDuration,
-              curve: _animationCurve,
-              offset: isFavoritesPage ? const Offset(0, 0.12) : Offset.zero,
-              child: MiniPlayerBar(
-                state: playerState,
-                bottomPadding: isFavoritesPage
-                    ? miniPlayerCollapsedBottomPadding
-                    : miniPlayerVisibleBottomPadding,
-                onTap: () => openPlayerPage(context),
-                onTogglePlayback: () {
-                  ref.read(playerControllerProvider.notifier).togglePlayback();
-                },
+        ValueListenableBuilder<bool>(
+          valueListenable: playerPageVisibilityListenable,
+          builder: (BuildContext context, bool isPlayerPageVisible, _) {
+            if (!playerState.hasItem || isPlayerPageVisible) {
+              return const SizedBox.shrink();
+            }
+
+            return Align(
+              alignment: Alignment.bottomCenter,
+              child: AnimatedSlide(
+                duration: _animationDuration,
+                curve: _animationCurve,
+                offset: isFavoritesPage ? const Offset(0, 0.12) : Offset.zero,
+                child: MiniPlayerBar(
+                  state: playerState,
+                  bottomPadding: isFavoritesPage
+                      ? miniPlayerCollapsedBottomPadding
+                      : miniPlayerVisibleBottomPadding,
+                  onTap: () => openPlayerPage(context),
+                  onTogglePlayback: () {
+                    ref
+                        .read(playerControllerProvider.notifier)
+                        .togglePlayback();
+                  },
+                ),
               ),
-            ),
-          ),
+            );
+          },
+        ),
       ],
     );
   }
