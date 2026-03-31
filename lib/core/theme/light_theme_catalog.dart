@@ -24,7 +24,7 @@ const Map<LightThemeVariant, LightThemeDefinition> lightThemeCatalog =
       LightThemeVariant.classicGreen: LightThemeDefinition(
         variant: LightThemeVariant.classicGreen,
         label: '经典绿',
-        description: '沿用当前应用的默认浅色主题',
+        description: '默认',
         seedColor: Color(0xFF31C27C),
         scaffoldBackgroundColor: Color(0xFFF4F7FB),
         surfaceColor: Colors.white,

@@ -52,7 +52,6 @@ class _SettingPageState extends State<SettingPage> {
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
         children: <Widget>[
-          if (kDebugMode)
             ListTile(
               contentPadding: EdgeInsets.zero,
               leading: const Icon(Icons.palette_outlined),
