@@ -49,7 +49,7 @@ const Map<LightThemeVariant, LightThemeDefinition> lightThemeCatalog =
         variant: LightThemeVariant.blossomPink,
         label: '花雾粉',
         description: '轻盈明快的浅色粉调',
-        seedColor: Color(0xFFE96AA8),
+        seedColor: Color(0xFFF1CADC),
         scaffoldBackgroundColor: Color(0xFFFFF5F9),
         surfaceColor: Color(0xFFFFFCFD),
       ),
