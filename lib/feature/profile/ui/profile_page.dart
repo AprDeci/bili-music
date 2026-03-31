@@ -122,7 +122,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
   Future<void> _showCreateCollectionDialog(BuildContext context) async {
     final String? result = await showDialog<String>(
       context: context,
-      useRootNavigator: false,
+      useRootNavigator: true,
       builder: (BuildContext context) {
         return const _CreateCollectionDialog();
       },

@@ -227,6 +227,7 @@ class FavoriteCollectionPage extends ConsumerWidget {
     final PlayableItem playableItem = item.toPlayableItem();
 
     await showModalBottomSheet<void>(
+      useRootNavigator: true,
       context: context,
       showDragHandle: true,
       isScrollControlled: true,
@@ -335,9 +336,6 @@ class FavoriteCollectionPage extends ConsumerWidget {
                           const SnackBar(content: Text('分享功能暂未开放')),
                         );
                     },
-                  ),
-                  const SizedBox(
-                    height: BottomHeightHelper.miniPlayerBarHeight,
                   ),
                 ],
               ),
