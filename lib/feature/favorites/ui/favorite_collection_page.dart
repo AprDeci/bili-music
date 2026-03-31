@@ -49,6 +49,7 @@ class FavoriteCollectionPage extends ConsumerWidget {
         .map((FavoriteEntry item) => item.toPlayableItem())
         .toList(growable: false);
     return Scaffold(
+      backgroundColor: colorScheme.surface.withValues(alpha: 0.4),
       appBar: AppBar(title: Text(resolvedCollection.name)),
       body: items.isEmpty
           ? Center(

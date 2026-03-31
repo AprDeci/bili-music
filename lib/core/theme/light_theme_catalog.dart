@@ -51,7 +51,7 @@ const Map<LightThemeVariant, LightThemeDefinition> lightThemeCatalog =
         description: '轻盈明快的浅色粉调',
         seedColor: Color(0xFFF1CADC),
         scaffoldBackgroundColor: Color(0xFFFFF5F9),
-        surfaceColor: Color(0xFFFFFCFD),
+        surfaceColor: Colors.white,
       ),
       LightThemeVariant.sunsetOrange: LightThemeDefinition(
         variant: LightThemeVariant.sunsetOrange,
@@ -59,7 +59,7 @@ const Map<LightThemeVariant, LightThemeDefinition> lightThemeCatalog =
         description: '更有活力的暖色浅色主题',
         seedColor: Color(0xFFFF8A3D),
         scaffoldBackgroundColor: Color(0xFFFFF6F0),
-        surfaceColor: Color(0xFFFFFCFA),
+        surfaceColor: Colors.white,
       ),
     };
 
