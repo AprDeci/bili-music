@@ -68,7 +68,6 @@ class _AuthPageState extends ConsumerState<AuthPage> {
     }
 
     return Scaffold(
-      backgroundColor: colorScheme.surface,
       appBar: AppBar(
         title: const Text('扫码登录'),
         elevation: 0,

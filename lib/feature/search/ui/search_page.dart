@@ -95,7 +95,6 @@ class _SearchPageState extends ConsumerState<SearchPage> {
     }
 
     return Scaffold(
-      backgroundColor: colorScheme.surface,
       body: SafeArea(
         child: Column(
           children: <Widget>[

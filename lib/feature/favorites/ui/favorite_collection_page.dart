@@ -49,7 +49,6 @@ class FavoriteCollectionPage extends ConsumerWidget {
         .map((FavoriteEntry item) => item.toPlayableItem())
         .toList(growable: false);
     return Scaffold(
-      backgroundColor: colorScheme.surface,
       appBar: AppBar(title: Text(resolvedCollection.name)),
       body: items.isEmpty
           ? Center(
@@ -100,7 +99,6 @@ class FavoriteCollectionPage extends ConsumerWidget {
                       bottom: index == items.length - 1 ? 0 : 0,
                     ),
                     child: Material(
-                      color: colorScheme.surface,
                       child: ListTile(
                         contentPadding: const EdgeInsets.symmetric(
                           horizontal: 14,
