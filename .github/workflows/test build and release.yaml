@@ -2,6 +2,17 @@ name: Flutter Test Build
 
 on:
   workflow_dispatch:
+    inputs:
+      build_ios:
+        description: Build unsigned iOS IPA
+        required: true
+        type: boolean
+        default: false
+      build_android:
+        description: Build apk
+        required: true
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -11,6 +22,7 @@ jobs:
   build-android:
     name: Build Android (Split APK)
     runs-on: ubuntu-latest
+    if: ${{ inputs.build_android }}
 
     steps:
       - name: Checkout code
@@ -54,12 +66,13 @@ jobs:
   build-ios:
     name: Build iOS (Unsigned IPA)
     runs-on: macos-latest
+    if: ${{ inputs.build_ios }}
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Flutter (Beta x64)
+      - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
           channel: 'beta'
@@ -69,18 +82,21 @@ jobs:
       - name: Flutter Pub Get
         run: flutter pub get
 
-      - name: Build iOS IPA (Unsigned)
-        run: flutter build ios --release --no-codesign
+      - name: Build iOS  
+        run: |  
+          flutter build ios --release --no-codesign
+          ln -sf ./build/ios/iphoneos Payload  
+          find Payload/Runner.app/Frameworks -type d -name "*.framework" -exec codesign --force --sign - --preserve-metadata=identifier,entitlements {} \;  
+          zip -r9 bili-music.ipa Payload/runner.app
 
-      - name: Rename iOS IPA
-        run: |
-          VERSION=${GITHUB_REF_NAME:-Test-Build}
-          mkdir -p build/artifacts
-          cp build/ios/ipa/*.ipa "build/artifacts/bili-music.ipa" || echo "⚠️ IPA 文件未找到"
+
 
       - name: Upload iOS Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: bili-music-ios
-          path: build/artifacts/*.ipa
+          path: bili-music.ipa
           retention-days: 30
+
+      - name: Show IPA Info
+        run: ls -lh bili-music.ipa
