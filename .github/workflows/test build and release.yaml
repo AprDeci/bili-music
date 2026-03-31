@@ -70,7 +70,7 @@ jobs:
         run: flutter pub get
 
       - name: Build iOS IPA (Unsigned)
-        run: flutter build ipa --release --no-codesign
+        run: flutter build ios --release --no-codesign
 
       - name: Rename iOS IPA
         run: |
