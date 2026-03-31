@@ -202,6 +202,7 @@ class _ScaffoldWithNavBarState extends ConsumerState<ScaffoldWithNavBar> {
 
   bool _isFavoritesPage(String location) {
     return location == '/profile/favorites' ||
-        location.startsWith('/profile/favorites/');
+        location.startsWith('/profile/favorites/') ||
+        location == '/search';
   }
 }

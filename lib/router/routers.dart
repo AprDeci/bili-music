@@ -23,11 +23,11 @@ GoRouter router(Ref ref) => GoRouter(
   initialLocation: '/home',
   routes: [
     GoRoute(path: '/auth', builder: (context, state) => const AuthPage()),
-    GoRoute(
-      path: '/search',
-      parentNavigatorKey: _rootNavigatorKey,
-      builder: (context, state) => const SearchPage(),
-    ),
+    // GoRoute(
+    //   path: '/search',
+    //   parentNavigatorKey: _rootNavigatorKey,
+    //   builder: (context, state) => const SearchPage(),
+    // ),
     GoRoute(
       path: '/player',
       parentNavigatorKey: _rootNavigatorKey,
@@ -119,5 +119,12 @@ final List<Map<String, dynamic>> tabs = [
     ],
     'icon': Icons.person,
     'label': '我的',
+  },
+  {
+    'path': '/search',
+    'builder': (context, state) => const SearchPage(),
+    'routes': const <RouteBase>[],
+    'icon': Icons.search,
+    'label': '搜索',
   },
 ];

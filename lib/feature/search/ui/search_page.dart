@@ -9,6 +9,7 @@ import 'package:bilimusic/feature/search/domain/search_result_item.dart';
 import 'package:bilimusic/feature/search/logic/search_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 class SearchPage extends ConsumerStatefulWidget {
   const SearchPage({super.key});
@@ -80,6 +81,8 @@ class _SearchPageState extends ConsumerState<SearchPage> {
 
   @override
   Widget build(BuildContext context) {
+    final GoRouterState routerState = GoRouterState.of(context);
+    final String from = routerState.uri.queryParameters['from'] ?? '/home';
     final SearchState state = ref.watch(searchPageControllerProvider);
     final SearchPageController controller = ref.read(
       searchPageControllerProvider.notifier,
@@ -103,7 +106,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
               child: Row(
                 children: <Widget>[
                   IconButton(
-                    onPressed: () => Navigator.of(context).maybePop(),
+                    onPressed: () => context.go(from),
                     icon: const Icon(Icons.arrow_back_rounded),
                   ),
                   Expanded(

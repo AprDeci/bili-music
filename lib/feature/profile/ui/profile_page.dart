@@ -44,7 +44,9 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
     return Scaffold(
       appBar: AppBar(
         toolbarHeight: 48,
-        title: CommonSearchBar(onTap: () => context.push('/search')),
+        title: CommonSearchBar(
+          onTap: () => context.push('/search?from=/profile'),
+        ),
         actions: <Widget>[
           IconButton(
             icon: const Icon(Icons.settings),
@@ -340,25 +342,23 @@ class _ProfileQuickActionCard extends StatelessWidget {
           children: <Widget>[
             Icon(icon, color: accentColor, size: 24),
             const SizedBox(height: 4),
-              Text(
-                title,
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w700,
-                  color: enabled
-                      ? colorScheme.onSurface
-                      : colorScheme.outline,
-                ),
+            Text(
+              title,
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w700,
+                color: enabled ? colorScheme.onSurface : colorScheme.outline,
               ),
+            ),
             const SizedBox(height: 2),
-              Text(
-                '$count',
-                style: theme.textTheme.bodyLarge?.copyWith(
-                  color: enabled
-                      ? colorScheme.onSurfaceVariant
-                      : colorScheme.outline,
-                  fontWeight: FontWeight.w500,
-                ),
+            Text(
+              '$count',
+              style: theme.textTheme.bodyLarge?.copyWith(
+                color: enabled
+                    ? colorScheme.onSurfaceVariant
+                    : colorScheme.outline,
+                fontWeight: FontWeight.w500,
               ),
+            ),
           ],
         ),
       ),

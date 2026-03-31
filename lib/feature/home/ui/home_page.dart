@@ -13,10 +13,11 @@ class HomePage extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         toolbarHeight: 48,
-        title: CommonSearchBar(onTap: () => context.push('/search')),
+        title: CommonSearchBar(onTap: () => context.push('/search?from=/home')),
       ),
       body: RefreshIndicator(
-        onRefresh: () => ref.read(musicRankingControllerProvider.notifier).refresh(),
+        onRefresh: () =>
+            ref.read(musicRankingControllerProvider.notifier).refresh(),
         child: ListView(
           physics: const AlwaysScrollableScrollPhysics(),
           padding: const EdgeInsets.fromLTRB(16, 20, 16, 120),
