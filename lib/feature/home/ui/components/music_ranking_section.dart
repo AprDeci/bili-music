@@ -17,6 +17,7 @@ class MusicRankingSection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
     final AsyncValue<List<MusicRankingItem>> ranking = ref.watch(
       musicRankingControllerProvider,
     );
@@ -30,7 +31,7 @@ class MusicRankingSection extends ConsumerWidget {
             '近期音乐区热榜',
             style: theme.textTheme.displaySmall?.copyWith(
               fontWeight: FontWeight.w900,
-              color: const Color(0xFF0D1329),
+              color: colorScheme.onSurface,
               fontSize: 18,
               letterSpacing: -1.3,
               height: 1,
@@ -172,6 +173,7 @@ class _MusicRankingGroup extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -180,7 +182,7 @@ class _MusicRankingGroup extends StatelessWidget {
           title,
           style: theme.textTheme.titleMedium?.copyWith(
             fontWeight: FontWeight.w800,
-            color: const Color(0xFF334155),
+            color: colorScheme.onSurfaceVariant,
           ),
         ),
         const SizedBox(height: 12),
@@ -430,16 +432,17 @@ class _MusicRankingError extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
 
     return Center(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16),
         child: Column(
           children: <Widget>[
-            const Icon(
+            Icon(
               Icons.signal_wifi_statusbar_connected_no_internet_4_rounded,
               size: 34,
-              color: Color(0xFF64748B),
+              color: colorScheme.onSurfaceVariant,
             ),
             const SizedBox(height: 12),
             Text(
@@ -455,7 +458,7 @@ class _MusicRankingError extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
               textAlign: TextAlign.center,
               style: theme.textTheme.bodyMedium?.copyWith(
-                color: const Color(0xFF64748B),
+                color: colorScheme.onSurfaceVariant,
               ),
             ),
           ],
@@ -471,12 +474,13 @@ class _MusicRankingEmpty extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
 
     return Center(
       child: Text(
         '暂无热榜内容',
         style: theme.textTheme.titleMedium?.copyWith(
-          color: const Color(0xFF64748B),
+          color: colorScheme.onSurfaceVariant,
           fontWeight: FontWeight.w600,
         ),
       ),
@@ -526,6 +530,7 @@ class _MusicRankingTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
 
     return SizedBox(
       height: 54,
@@ -552,7 +557,7 @@ class _MusicRankingTile extends StatelessWidget {
                         fontSize: 14,
                         height: 1,
                         letterSpacing: -1.4,
-                        color: const Color(0xFF0D1329),
+                        color: colorScheme.onSurface,
                       ),
                     ),
                     const SizedBox(height: 10),
@@ -566,7 +571,7 @@ class _MusicRankingTile extends StatelessWidget {
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: theme.textTheme.titleLarge?.copyWith(
-                              color: const Color(0xFF8A94A6),
+                              color: colorScheme.onSurfaceVariant,
                               fontWeight: FontWeight.w500,
                               fontSize: 10,
                               letterSpacing: -0.8,
@@ -597,6 +602,8 @@ class _RankingCover extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ColorScheme colorScheme = Theme.of(context).colorScheme;
+
     return ClipRRect(
       borderRadius: BorderRadius.circular(8),
       child: CommonCachedImage(
@@ -605,8 +612,8 @@ class _RankingCover extends StatelessWidget {
         height: size,
         fit: BoxFit.cover,
         fallbackIcon: Icons.music_note_rounded,
-        iconColor: const Color(0xFF64748B),
-        backgroundColor: const Color(0xFFDDE6F2),
+        iconColor: colorScheme.onSurfaceVariant,
+        backgroundColor: colorScheme.surfaceContainerHighest,
       ),
     );
   }
@@ -646,13 +653,15 @@ class _PlayGlyph extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ColorScheme colorScheme = Theme.of(context).colorScheme;
+
     return Container(
       width: 38,
       height: 38,
       alignment: Alignment.center,
-      child: const Icon(
+      child: Icon(
         Icons.play_arrow_rounded,
-        color: Color(0xFF53586C),
+        color: colorScheme.onSurfaceVariant,
         size: 32,
       ),
     );

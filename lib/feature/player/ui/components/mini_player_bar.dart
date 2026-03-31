@@ -34,7 +34,7 @@ class MiniPlayerBar extends StatelessWidget {
           onTap: onTap,
           child: Ink(
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: colorScheme.surface.withValues(alpha: 0.6),
               borderRadius: BorderRadius.circular(26),
               border: Border.all(
                 color: colorScheme.primary.withValues(alpha: 0.10),
@@ -56,7 +56,7 @@ class MiniPlayerBar extends StatelessWidget {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: theme.textTheme.titleSmall?.copyWith(
-                            color: const Color(0xFF1F2937),
+                            color: colorScheme.onSurface,
                             fontWeight: FontWeight.w700,
                           ),
                         ),
@@ -66,7 +66,7 @@ class MiniPlayerBar extends StatelessWidget {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: theme.textTheme.bodySmall?.copyWith(
-                            color: const Color(0xFF6B7280),
+                            color: colorScheme.onSurfaceVariant,
                           ),
                         ),
                       ],
@@ -104,13 +104,15 @@ class _Artwork extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ColorScheme colorScheme = Theme.of(context).colorScheme;
+
     return Container(
       width: 48,
       height: 48,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
-        color: const Color(0xFFF3F6FB),
-        border: Border.all(color: const Color(0xFFE7EEF8)),
+        color: colorScheme.surfaceContainerHigh,
+        border: Border.all(color: colorScheme.outlineVariant),
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(16),
@@ -118,8 +120,8 @@ class _Artwork extends StatelessWidget {
           imageUrl: coverUrl,
           fit: BoxFit.cover,
           fallbackIcon: Icons.music_note_rounded,
-          iconColor: const Color(0xFF7A8CA5),
-          backgroundColor: const Color(0xFFF3F6FB),
+          iconColor: colorScheme.onSurfaceVariant,
+          backgroundColor: colorScheme.surfaceContainerHigh,
         ),
       ),
     );

@@ -22,7 +22,9 @@ class FavoriteCollectionPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final FavoritesState state = ref.watch(favoritesControllerProvider);
-    final Color primary = Theme.of(context).colorScheme.primary;
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+    final Color primary = colorScheme.primary;
     FavoriteCollection? collection;
     for (final FavoriteCollection item in state.collections) {
       if (item.id == collectionId) {
@@ -46,10 +48,8 @@ class FavoriteCollectionPage extends ConsumerWidget {
     final List<PlayableItem> queueItems = items
         .map((FavoriteEntry item) => item.toPlayableItem())
         .toList(growable: false);
-    final ThemeData theme = Theme.of(context);
-
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F8FC),
+      backgroundColor: colorScheme.surface,
       appBar: AppBar(title: Text(resolvedCollection.name)),
       body: items.isEmpty
           ? Center(
@@ -81,7 +81,7 @@ class FavoriteCollectionPage extends ConsumerWidget {
                       '先去搜索页或者播放器点亮爱心，喜欢的内容会出现在这里。',
                       textAlign: TextAlign.center,
                       style: theme.textTheme.bodyMedium?.copyWith(
-                        color: const Color(0xFF667085),
+                        color: colorScheme.onSurfaceVariant,
                         height: 1.5,
                       ),
                     ),
@@ -100,7 +100,7 @@ class FavoriteCollectionPage extends ConsumerWidget {
                       bottom: index == items.length - 1 ? 0 : 0,
                     ),
                     child: Material(
-                      color: Colors.white,
+                      color: colorScheme.surface,
                       child: ListTile(
                         contentPadding: const EdgeInsets.symmetric(
                           horizontal: 14,

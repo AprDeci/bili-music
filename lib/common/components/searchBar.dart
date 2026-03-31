@@ -17,6 +17,7 @@ class CommonSearchBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
 
     return Padding(
       padding: margin ?? EdgeInsets.zero,
@@ -28,16 +29,16 @@ class CommonSearchBar extends StatelessWidget {
           child: Ink(
             padding: padding,
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: colorScheme.surfaceContainerLowest,
               borderRadius: BorderRadius.circular(999),
-              border: Border.all(color: const Color(0xFFD8E2EC)),
+              border: Border.all(color: colorScheme.outlineVariant),
             ),
             child: Row(
               children: <Widget>[
-                const Icon(
+                Icon(
                   Icons.search_rounded,
                   size: 16,
-                  color: Color(0xFF5B6F82),
+                  color: colorScheme.onSurfaceVariant,
                 ),
                 const SizedBox(width: 10),
                 Expanded(
@@ -46,7 +47,7 @@ class CommonSearchBar extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: theme.textTheme.bodyMedium?.copyWith(
-                      color: const Color(0xFF7D8C9B),
+                      color: colorScheme.onSurfaceVariant,
                       fontWeight: FontWeight.w500,
                     ),
                   ),

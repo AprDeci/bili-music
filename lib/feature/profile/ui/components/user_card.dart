@@ -11,9 +11,11 @@ class UserCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final ThemeData theme = Theme.of(context);
     final BiliSession? session = ref.watch(biliSessionControllerProvider);
     final bool isLoggedIn = session?.isLoggedIn ?? false;
-    final Color themeColor = Theme.of(context).colorScheme.primary;
+    final ColorScheme colorScheme = theme.colorScheme;
+    final Color themeColor = colorScheme.primary;
     final String? face = session?.face;
     final String? uname = session?.uname;
     final int? mid = session?.mid;
@@ -37,7 +39,7 @@ class UserCard extends ConsumerWidget {
           padding: const EdgeInsets.all(16),
           margin: const EdgeInsets.symmetric(horizontal: 16),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: colorScheme.surface.withValues(alpha: 0.4),
             borderRadius: BorderRadius.circular(12),
           ),
           child: Row(
@@ -60,9 +62,9 @@ class UserCard extends ConsumerWidget {
                       title,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      style: theme.textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.w700,
-                        color: Colors.black87,
+                        color: colorScheme.onSurface,
                       ),
                     ),
                     const SizedBox(height: 4),
@@ -70,9 +72,9 @@ class UserCard extends ConsumerWidget {
                       subtitle,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: Theme.of(
-                        context,
-                      ).textTheme.bodyMedium?.copyWith(color: Colors.black54),
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                      ),
                     ),
                   ],
                 ),

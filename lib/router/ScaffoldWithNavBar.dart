@@ -86,7 +86,7 @@ class _ScaffoldWithNavBarState extends ConsumerState<ScaffoldWithNavBar> {
                   : Offset.zero,
               child: DecoratedBox(
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.96),
+                  color: colorScheme.surface.withValues(alpha: 0.4),
                   borderRadius: BorderRadius.circular(40),
                   border: Border.all(
                     color: colorScheme.primary.withValues(alpha: 0.08),

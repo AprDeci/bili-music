@@ -85,6 +85,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
       searchPageControllerProvider.notifier,
     );
     final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
 
     if (_controller.text != state.query) {
       _controller.value = TextEditingValue(
@@ -94,7 +95,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
     }
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F9FC),
+      backgroundColor: colorScheme.surface,
       body: SafeArea(
         child: Column(
           children: <Widget>[
@@ -110,12 +111,12 @@ class _SearchPageState extends ConsumerState<SearchPage> {
                     child: Container(
                       height: 40,
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: colorScheme.surfaceContainerLowest,
                         borderRadius: BorderRadius.circular(999),
-                        border: Border.all(color: const Color(0xFFD8E2EC)),
-                        boxShadow: const <BoxShadow>[
+                        border: Border.all(color: colorScheme.outlineVariant),
+                        boxShadow: <BoxShadow>[
                           BoxShadow(
-                            color: Color(0x120F172A),
+                            color: colorScheme.shadow.withValues(alpha: 0.08),
                             blurRadius: 20,
                             offset: Offset(0, 8),
                           ),
@@ -130,11 +131,11 @@ class _SearchPageState extends ConsumerState<SearchPage> {
                         decoration: InputDecoration(
                           hintText: '搜索歌曲、歌手或视频',
                           hintStyle: theme.textTheme.bodyMedium?.copyWith(
-                            color: const Color(0xFF7D8C9B),
+                            color: colorScheme.onSurfaceVariant,
                           ),
-                          prefixIcon: const Icon(
+                          prefixIcon: Icon(
                             Icons.search_rounded,
-                            color: Color(0xFF5B6F82),
+                            color: colorScheme.onSurfaceVariant,
                             size: 20,
                           ),
                           suffixIcon: state.query.isEmpty
@@ -187,10 +188,10 @@ class _SearchPageState extends ConsumerState<SearchPage> {
                       children: state.recentKeywords.map((String item) {
                         return ActionChip(
                           label: Text(item),
-                          backgroundColor: Colors.white,
-                          side: const BorderSide(color: Color(0xFFD8E2EC)),
+                          backgroundColor: colorScheme.surfaceContainerLowest,
+                          side: BorderSide(color: colorScheme.outlineVariant),
                           labelStyle: theme.textTheme.bodyMedium?.copyWith(
-                            color: const Color(0xFF334155),
+                            color: colorScheme.onSurface,
                             fontWeight: FontWeight.w600,
                           ),
                           onPressed: () {
@@ -215,7 +216,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
                         Text(
                           '${state.results.length} 条',
                           style: theme.textTheme.bodySmall?.copyWith(
-                            color: const Color(0xFF64748B),
+                            color: colorScheme.onSurfaceVariant,
                             fontWeight: FontWeight.w600,
                           ),
                         ),

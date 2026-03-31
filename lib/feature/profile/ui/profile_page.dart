@@ -340,25 +340,25 @@ class _ProfileQuickActionCard extends StatelessWidget {
           children: <Widget>[
             Icon(icon, color: accentColor, size: 24),
             const SizedBox(height: 4),
-            Text(
-              title,
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w700,
-                color: enabled
-                    ? const Color(0xFF172033)
-                    : const Color(0xFF8B95A7),
+              Text(
+                title,
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: enabled
+                      ? colorScheme.onSurface
+                      : colorScheme.outline,
+                ),
               ),
-            ),
             const SizedBox(height: 2),
-            Text(
-              '$count',
-              style: theme.textTheme.bodyLarge?.copyWith(
-                color: enabled
-                    ? const Color(0xFF737B8C)
-                    : const Color(0xFFB3BAC6),
-                fontWeight: FontWeight.w500,
+              Text(
+                '$count',
+                style: theme.textTheme.bodyLarge?.copyWith(
+                  color: enabled
+                      ? colorScheme.onSurfaceVariant
+                      : colorScheme.outline,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
-            ),
           ],
         ),
       ),
@@ -380,6 +380,7 @@ class _ProfileSectionHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
     final Color primary = theme.colorScheme.primary;
 
     return Row(
@@ -389,7 +390,7 @@ class _ProfileSectionHeader extends StatelessWidget {
             text: TextSpan(
               style: theme.textTheme.titleLarge?.copyWith(
                 fontWeight: FontWeight.w900,
-                color: const Color(0xFF111A2D),
+                color: colorScheme.onSurface,
               ),
               children: <InlineSpan>[
                 TextSpan(text: title),
@@ -397,7 +398,7 @@ class _ProfileSectionHeader extends StatelessWidget {
                   text: count == 0 ? '' : ' $count',
                   style: theme.textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.w700,
-                    color: const Color(0xFF8A93A3),
+                    color: colorScheme.onSurfaceVariant,
                   ),
                 ),
               ],
@@ -439,6 +440,7 @@ class _PlaylistTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
 
     return Material(
       color: Colors.transparent,
@@ -461,7 +463,7 @@ class _PlaylistTile extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: theme.textTheme.titleMedium?.copyWith(
-                        color: const Color(0xFF152033),
+                        color: colorScheme.onSurface,
                         fontWeight: FontWeight.w800,
                       ),
                     ),
@@ -469,7 +471,7 @@ class _PlaylistTile extends StatelessWidget {
                     Text(
                       '$count 首',
                       style: theme.textTheme.bodyMedium?.copyWith(
-                        color: const Color(0xFF6E7787),
+                        color: colorScheme.onSurfaceVariant,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -477,7 +479,10 @@ class _PlaylistTile extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 8),
-              const Icon(Icons.chevron_right_rounded, color: Color(0xFF98A2B3)),
+              Icon(
+                Icons.chevron_right_rounded,
+                color: colorScheme.onSurfaceVariant,
+              ),
             ],
           ),
         ),

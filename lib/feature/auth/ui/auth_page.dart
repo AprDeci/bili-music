@@ -24,6 +24,9 @@ class _AuthPageState extends ConsumerState<AuthPage> {
 
   @override
   Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+
     ref.listen<BiliAuthState>(biliAuthControllerProvider, (previous, next) {
       final bool becameSuccessful =
           previous?.status != BiliQrLoginStatus.success &&
@@ -65,12 +68,12 @@ class _AuthPageState extends ConsumerState<AuthPage> {
     }
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF3F7FB),
+      backgroundColor: colorScheme.surface,
       appBar: AppBar(
         title: const Text('扫码登录'),
         elevation: 0,
         backgroundColor: Colors.transparent,
-        foregroundColor: const Color(0xFF17324D),
+        foregroundColor: colorScheme.onSurface,
       ),
       body: SafeArea(
         child: Center(
@@ -81,15 +84,18 @@ class _AuthPageState extends ConsumerState<AuthPage> {
               child: Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  gradient: const LinearGradient(
+                  gradient: LinearGradient(
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
-                    colors: <Color>[Color(0xFFFFFFFF), Color(0xFFF8FBFE)],
+                    colors: <Color>[
+                      colorScheme.surfaceContainerLowest,
+                      colorScheme.surfaceContainerLow,
+                    ],
                   ),
                   borderRadius: BorderRadius.circular(28),
-                  boxShadow: const <BoxShadow>[
+                  boxShadow: <BoxShadow>[
                     BoxShadow(
-                      color: Color(0x120A2239),
+                      color: colorScheme.shadow.withValues(alpha: 0.08),
                       blurRadius: 30,
                       offset: Offset(0, 16),
                     ),
@@ -123,6 +129,7 @@ class _AuthContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
     final String? qrUrl = state.qrSession?.url;
     final bool hasQr = qrUrl != null && qrUrl.isNotEmpty;
     final bool canRetry =
@@ -153,7 +160,7 @@ class _AuthContent extends StatelessWidget {
                   }
                 },
           style: FilledButton.styleFrom(
-            backgroundColor: const Color(0xFF163B5C),
+            backgroundColor: colorScheme.primary,
             foregroundColor: Colors.white,
             padding: const EdgeInsets.symmetric(vertical: 18),
             shape: RoundedRectangleBorder(
@@ -197,13 +204,15 @@ class _QrLoadingCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ColorScheme colorScheme = Theme.of(context).colorScheme;
+
     return Container(
       key: const ValueKey<String>('loading'),
       height: 320,
       decoration: BoxDecoration(
-        color: const Color(0xFFF7FAFD),
+        color: colorScheme.surfaceContainerLowest,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: const Color(0xFFD5E2EE)),
+        border: Border.all(color: colorScheme.outlineVariant),
       ),
       child: const Center(child: CircularProgressIndicator()),
     );
@@ -215,20 +224,32 @@ class _QrPlaceholder extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+
     return Container(
       key: const ValueKey<String>('placeholder'),
       height: 320,
       decoration: BoxDecoration(
-        color: const Color(0xFFF7FAFD),
+        color: colorScheme.surfaceContainerLowest,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: const Color(0xFFD5E2EE)),
+        border: Border.all(color: colorScheme.outlineVariant),
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
-        children: const <Widget>[
-          Icon(Icons.qr_code_2_rounded, size: 72, color: Color(0xFF4A6075)),
-          SizedBox(height: 14),
-          Text('正在准备登录二维码'),
+        children: <Widget>[
+          Icon(
+            Icons.qr_code_2_rounded,
+            size: 72,
+            color: colorScheme.onSurfaceVariant,
+          ),
+          const SizedBox(height: 14),
+          Text(
+            '正在准备登录二维码',
+            style: theme.textTheme.bodyLarge?.copyWith(
+              color: colorScheme.onSurfaceVariant,
+            ),
+          ),
         ],
       ),
     );
@@ -337,6 +358,8 @@ class _QrCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ColorScheme colorScheme = Theme.of(context).colorScheme;
+
     return Container(
       key: ValueKey<String>(qrUrl),
       padding: const EdgeInsets.all(20),
@@ -377,8 +400,8 @@ class _QrCard extends StatelessWidget {
                 icon: const Icon(Icons.download_rounded),
                 label: const Text('保存'),
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: const Color(0xFF163B5C),
-                  side: const BorderSide(color: Color(0xFFD5E2EE)),
+                  foregroundColor: colorScheme.primary,
+                  side: BorderSide(color: colorScheme.outlineVariant),
                   padding: const EdgeInsets.symmetric(
                     horizontal: 18,
                     vertical: 12,
@@ -393,8 +416,8 @@ class _QrCard extends StatelessWidget {
                 icon: const Icon(Icons.open_in_new),
                 label: const Text('其他App打开'),
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: const Color(0xFF163B5C),
-                  side: const BorderSide(color: Color(0xFFD5E2EE)),
+                  foregroundColor: colorScheme.primary,
+                  side: BorderSide(color: colorScheme.outlineVariant),
                   padding: const EdgeInsets.symmetric(
                     horizontal: 10,
                     vertical: 12,
@@ -419,14 +442,20 @@ class _StatusBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
     final ({Color background, Color foreground, String text}) appearance =
-        _resolveAppearance();
+        _resolveAppearance(context);
 
     return Container(
+      margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      decoration: BoxDecoration(
+        color: appearance.background,
+        borderRadius: BorderRadius.circular(16),
+      ),
       child: Text(
         appearance.text,
-        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+        style: theme.textTheme.bodyMedium?.copyWith(
           color: appearance.foreground,
           fontWeight: FontWeight.w600,
         ),
@@ -434,48 +463,52 @@ class _StatusBanner extends StatelessWidget {
     );
   }
 
-  ({Color background, Color foreground, String text}) _resolveAppearance() {
+  ({Color background, Color foreground, String text}) _resolveAppearance(
+    BuildContext context,
+  ) {
+    final ColorScheme colorScheme = Theme.of(context).colorScheme;
+
     switch (state.status) {
       case BiliQrLoginStatus.loading:
         return (
-          background: const Color(0xFFE8F2FB),
-          foreground: const Color(0xFF184C79),
+          background: colorScheme.primaryContainer,
+          foreground: colorScheme.onPrimaryContainer,
           text: '正在向 B 站申请二维码...',
         );
       case BiliQrLoginStatus.waitingForScan:
         return (
-          background: const Color(0xFFEAF8EF),
-          foreground: const Color(0xFF276749),
+          background: colorScheme.secondaryContainer,
+          foreground: colorScheme.onSecondaryContainer,
           text: state.message ?? '二维码已就绪，请扫码',
         );
       case BiliQrLoginStatus.waitingForConfirm:
         return (
-          background: const Color(0xFFFFF5E8),
-          foreground: const Color(0xFFA35B00),
+          background: colorScheme.tertiaryContainer,
+          foreground: colorScheme.onTertiaryContainer,
           text: state.message ?? '已扫码，等待手机确认',
         );
       case BiliQrLoginStatus.expired:
         return (
-          background: const Color(0xFFFFEFEF),
-          foreground: const Color(0xFFB42318),
+          background: colorScheme.errorContainer,
+          foreground: colorScheme.onErrorContainer,
           text: state.message ?? '二维码已失效，请重新获取',
         );
       case BiliQrLoginStatus.failure:
         return (
-          background: const Color(0xFFFFEFEF),
-          foreground: const Color(0xFFB42318),
+          background: colorScheme.errorContainer,
+          foreground: colorScheme.onErrorContainer,
           text: state.message ?? '登录失败，请稍后重试',
         );
       case BiliQrLoginStatus.success:
         return (
-          background: const Color(0xFFEAF8EF),
-          foreground: const Color(0xFF276749),
+          background: colorScheme.secondaryContainer,
+          foreground: colorScheme.onSecondaryContainer,
           text: '登录成功，正在返回个人页...',
         );
       default:
         return (
-          background: const Color(0xFFF5F7FA),
-          foreground: const Color(0xFF4B5D70),
+          background: colorScheme.surfaceContainerLow,
+          foreground: colorScheme.onSurfaceVariant,
           text: '二维码生成后即可扫码登录',
         );
     }
