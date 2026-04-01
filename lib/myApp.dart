@@ -1,10 +1,11 @@
 import 'dart:ui';
 
-import 'package:bilimusic/common/util/update_util.dart';
+import 'package:bilimusic/core/devtools/dev_overlay.dart';
 import 'package:bilimusic/core/theme/app_theme.dart';
 import 'package:bilimusic/core/theme/theme_logic.dart';
 import 'package:bilimusic/core/theme/theme_ui_model.dart';
 import 'package:bilimusic/router/routers.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -43,6 +44,14 @@ class _MyAppState extends ConsumerState<MyApp> {
       theme: AppTheme.lightTheme(currentTheme.lightThemeVariant),
       darkTheme: AppTheme.darkTheme(),
       scrollBehavior: MyBehavior(),
+      builder: (BuildContext context, Widget? child) {
+        return Stack(
+          children: <Widget>[
+            child ?? const SizedBox.shrink(),
+            if (kDebugMode) const DevOverlay(),
+          ],
+        );
+      },
     );
   }
 }

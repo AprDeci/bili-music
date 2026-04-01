@@ -17,6 +17,8 @@ part 'routers.g.dart';
 
 final GlobalKey<NavigatorState> _rootNavigatorKey = GlobalKey<NavigatorState>();
 
+GlobalKey<NavigatorState> get rootNavigatorKey => _rootNavigatorKey;
+
 @riverpod
 GoRouter router(Ref ref) => GoRouter(
   navigatorKey: _rootNavigatorKey,
