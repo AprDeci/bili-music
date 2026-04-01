@@ -6,6 +6,14 @@ part 'player_state.freezed.dart';
 
 enum PlayerQueueMode { sequence, singleRepeat, shuffle }
 
+enum PlayerStatusHint {
+  resolvingAudio,
+  connectingStream,
+  loadingCache,
+  buffering,
+  error,
+}
+
 @freezed
 abstract class PlayerState with _$PlayerState {
   const factory PlayerState({
@@ -23,6 +31,7 @@ abstract class PlayerState with _$PlayerState {
     @Default(Duration.zero) Duration position,
     @Default(Duration.zero) Duration bufferedPosition,
     Duration? duration,
+    PlayerStatusHint? statusHint,
     String? errorMessage,
   }) = _PlayerState;
 
