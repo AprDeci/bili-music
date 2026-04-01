@@ -102,11 +102,7 @@ class PlayerController extends Notifier<PlayerState>
 
     final int? queueIndex = state.currentQueueIndex;
     if (queueIndex == null) {
-      await _loadQueueIndex(
-        0,
-        autoplay: true,
-        initialPosition: state.position,
-      );
+      await _loadQueueIndex(0, autoplay: true, initialPosition: state.position);
       return;
     }
 
@@ -200,6 +196,7 @@ class PlayerController extends Notifier<PlayerState>
       isReady: false,
       isPlaying: false,
       isBuffering: false,
+      statusHint: null,
       errorMessage: null,
     );
     _publishMediaSession();
@@ -243,6 +240,7 @@ class PlayerController extends Notifier<PlayerState>
       isReady: false,
       isPlaying: false,
       isBuffering: false,
+      statusHint: null,
       errorMessage: null,
     );
     _publishMediaSession();
@@ -323,22 +321,22 @@ class PlayerController extends Notifier<PlayerState>
     state = state.copyWith(
       queue: List<PlayableItem>.unmodifiable(nextQueue),
       currentQueueIndex: nextCurrentIndex,
-      currentItem: nextCurrentIndex == null ? null : nextQueue[nextCurrentIndex],
-      availableParts:
-          index == previousCurrentIndex
+      currentItem: nextCurrentIndex == null
+          ? null
+          : nextQueue[nextCurrentIndex],
+      availableParts: index == previousCurrentIndex
           ? const <PlayableItem>[]
           : state.availableParts,
       audioStream: index == previousCurrentIndex ? null : state.audioStream,
       duration: index == previousCurrentIndex ? null : state.duration,
-      position: index == previousCurrentIndex
-          ? Duration.zero
-          : state.position,
+      position: index == previousCurrentIndex ? Duration.zero : state.position,
       bufferedPosition: index == previousCurrentIndex
           ? Duration.zero
           : state.bufferedPosition,
       isReady: index == previousCurrentIndex ? false : state.isReady,
       isPlaying: index == previousCurrentIndex ? false : state.isPlaying,
       isBuffering: false,
+      statusHint: index == previousCurrentIndex ? null : state.statusHint,
       errorMessage: null,
     );
     _publishMediaSession();
@@ -379,6 +377,7 @@ class PlayerController extends Notifier<PlayerState>
       position: Duration.zero,
       bufferedPosition: Duration.zero,
       duration: null,
+      statusHint: null,
       errorMessage: null,
     );
     _audioHandler.clearSession();
@@ -438,6 +437,7 @@ class PlayerController extends Notifier<PlayerState>
       isReady: false,
       isPlaying: false,
       isBuffering: false,
+      statusHint: null,
       errorMessage: null,
     );
     _publishMediaSession();
@@ -458,9 +458,11 @@ class PlayerController extends Notifier<PlayerState>
     if (nextMode != PlayerQueueMode.shuffle) {
       _shuffleHistory
         ..clear()
-        ..addAll(state.hasActiveQueueIndex
-            ? <int>[state.currentQueueIndex!]
-            : const <int>[]);
+        ..addAll(
+          state.hasActiveQueueIndex
+              ? <int>[state.currentQueueIndex!]
+              : const <int>[],
+        );
     }
     state = state.copyWith(queueMode: nextMode);
     _publishMediaSession();
@@ -485,9 +487,11 @@ class PlayerController extends Notifier<PlayerState>
     final int generation = _nextGeneration();
     _shuffleHistory
       ..clear()
-      ..addAll(snapshot.queueMode == PlayerQueueMode.shuffle
-          ? <int>[restoredIndex]
-          : const <int>[]);
+      ..addAll(
+        snapshot.queueMode == PlayerQueueMode.shuffle
+            ? <int>[restoredIndex]
+            : const <int>[],
+      );
     state = state.copyWith(
       queue: List<PlayableItem>.unmodifiable(restoredQueue),
       currentQueueIndex: restoredIndex,
@@ -503,6 +507,7 @@ class PlayerController extends Notifier<PlayerState>
       isReady: false,
       isPlaying: false,
       isBuffering: false,
+      statusHint: null,
       errorMessage: null,
     );
     _publishMediaSession();
@@ -615,6 +620,7 @@ class PlayerController extends Notifier<PlayerState>
       isReady: false,
       isPlaying: false,
       isBuffering: false,
+      statusHint: PlayerStatusHint.resolvingAudio,
       availableParts: const <PlayableItem>[],
       audioStream: null,
       duration: null,
@@ -672,6 +678,7 @@ class PlayerController extends Notifier<PlayerState>
         isReady: false,
         isPlaying: false,
         isBuffering: false,
+        statusHint: PlayerStatusHint.error,
         availableParts: const <PlayableItem>[],
         audioStream: null,
         duration: null,
@@ -702,7 +709,9 @@ class PlayerController extends Notifier<PlayerState>
     );
     final _ResolvedQueueEntry entry = _ResolvedQueueEntry(
       item: loadResult.item,
-      availableParts: List<PlayableItem>.unmodifiable(loadResult.availableParts),
+      availableParts: List<PlayableItem>.unmodifiable(
+        loadResult.availableParts,
+      ),
       audioStream: loadResult.audioStream,
     );
     _resolvedEntries[item.stableId] = entry;
@@ -720,6 +729,7 @@ class PlayerController extends Notifier<PlayerState>
       queueSourceLabel: state.queueSourceLabel,
       duration: entry.audioStream.duration,
     );
+    state = state.copyWith(statusHint: PlayerStatusHint.connectingStream);
     final Duration? effectiveInitialPosition = initialPosition > Duration.zero
         ? initialPosition
         : null;
@@ -730,6 +740,7 @@ class PlayerController extends Notifier<PlayerState>
 
     if (cachedFile != null) {
       try {
+        state = state.copyWith(statusHint: PlayerStatusHint.loadingCache);
         _logPlayerEvent(
           'loadQueueIndex:cache-hit',
           details: <String, Object?>{
@@ -807,6 +818,7 @@ class PlayerController extends Notifier<PlayerState>
       isLoading: false,
       isReady: true,
       duration: durationOverride ?? entry.audioStream.duration,
+      statusHint: null,
       errorMessage: null,
     );
   }
@@ -857,6 +869,7 @@ class PlayerController extends Notifier<PlayerState>
           isLoading: false,
           isPlaying: false,
           isBuffering: false,
+          statusHint: PlayerStatusHint.error,
           errorMessage: '播放器错误: ${error.message}',
         );
         _publishMediaSession();
@@ -877,6 +890,13 @@ class PlayerController extends Notifier<PlayerState>
           isPlaying: playerState.playing,
           isBuffering: isBuffering,
           isReady: state.isLoading ? state.isReady : isReady,
+          statusHint: state.hasError
+              ? PlayerStatusHint.error
+              : state.isLoading
+              ? state.statusHint
+              : isBuffering
+              ? PlayerStatusHint.buffering
+              : null,
           position: completed
               ? (state.duration ?? state.position)
               : state.position,
@@ -1014,7 +1034,8 @@ class PlayerController extends Notifier<PlayerState>
     _audioHandler.updatePlaybackSnapshot(
       isPlaying: state.isPlaying,
       isBuffering: state.isBuffering,
-      hasPrevious: state.hasPrevious || state.position > const Duration(seconds: 3),
+      hasPrevious:
+          state.hasPrevious || state.position > const Duration(seconds: 3),
       hasNext: state.queueMode == PlayerQueueMode.singleRepeat || state.hasNext,
       position: state.position,
       bufferedPosition: state.bufferedPosition,
