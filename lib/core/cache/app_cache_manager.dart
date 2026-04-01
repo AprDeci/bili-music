@@ -14,3 +14,18 @@ class AppImageCacheManager extends CacheManager {
 
   static final AppImageCacheManager instance = AppImageCacheManager._();
 }
+
+class AppAudioCacheManager extends CacheManager {
+  AppAudioCacheManager._()
+    : super(
+        Config(
+          _cacheKey,
+          stalePeriod: const Duration(days: 21),
+          maxNrOfCacheObjects: 120,
+        ),
+      );
+
+  static const String _cacheKey = 'bilimusic_audio_cache';
+
+  static final AppAudioCacheManager instance = AppAudioCacheManager._();
+}
