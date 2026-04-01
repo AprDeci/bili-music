@@ -21,9 +21,7 @@ class MiniPlayerBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
-    final String subtitle = state.isLoading
-        ? '正在解析音频流...'
-        : state.audioStream?.qualityLabel ?? state.currentItem?.author ?? '';
+    final String subtitle = _buildSubtitle(state);
 
     return Padding(
       padding: EdgeInsets.fromLTRB(20, 0, 20, bottomPadding),
@@ -94,6 +92,18 @@ class MiniPlayerBar extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  String _buildSubtitle(PlayerState state) {
+    return switch (state.statusHint) {
+      PlayerStatusHint.resolvingAudio => '正在解析音频...',
+      PlayerStatusHint.connectingStream => '正在连接播放流...',
+      PlayerStatusHint.loadingCache => '正在加载缓存音频...',
+      PlayerStatusHint.buffering => '缓冲中...',
+      PlayerStatusHint.error => state.errorMessage ?? '播放失败，请稍后重试',
+      null =>
+        state.audioStream?.qualityLabel ?? state.currentItem?.author ?? '',
+    };
   }
 }
 

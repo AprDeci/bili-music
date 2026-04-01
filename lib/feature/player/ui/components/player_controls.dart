@@ -199,64 +199,38 @@ class PlayerPlaybackStatusChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
-
-    String label = '等待选择内容';
-    Color background = colorScheme.surfaceContainerHighest.withValues(
-      alpha: 0.75,
-    );
-    Color foreground = colorScheme.onSurface.withValues(alpha: 0.7);
-    IconData icon = Icons.music_note_rounded;
-
-    if (state.isLoading) {
-      label = '正在解析音频流';
-      background = colorScheme.primaryContainer.withValues(alpha: 0.72);
-      foreground = colorScheme.primary;
-      icon = Icons.radio_button_checked_rounded;
-    } else if (state.hasError) {
-      label = state.errorMessage ?? '播放失败';
-      background = colorScheme.errorContainer.withValues(alpha: 0.8);
-      foreground = colorScheme.error;
-      icon = Icons.error_outline_rounded;
-    } else if (state.isBuffering) {
-      label = '缓冲中';
-      background = colorScheme.secondaryContainer.withValues(alpha: 0.75);
-      foreground = colorScheme.secondary;
-      icon = Icons.hourglass_top_rounded;
-    } else if (state.isPlaying) {
-      label = '正在播放';
-      background = colorScheme.primaryContainer.withValues(alpha: 0.72);
-      foreground = colorScheme.primary;
-      icon = Icons.graphic_eq_rounded;
-    } else if (state.isReady) {
-      label = '已暂停，可继续播放';
-      background = colorScheme.surfaceContainerHighest.withValues(alpha: 0.8);
-      foreground = colorScheme.onSurface.withValues(alpha: 0.72);
-      icon = Icons.pause_circle_outline_rounded;
+    final String? label = _buildStatusLabel(state);
+    if (label == null) {
+      return const SizedBox.shrink();
     }
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        color: background,
-        borderRadius: BorderRadius.circular(18),
-      ),
-      child: Row(
-        children: <Widget>[
-          Icon(icon, color: foreground, size: 20),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              label,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: foreground,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ),
-        ],
+    final Color foreground = state.hasError
+        ? colorScheme.error
+        : colorScheme.primary.withValues(alpha: 0.88);
+
+    return Align(
+      alignment: Alignment.center,
+      child: Text(
+        label,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: theme.textTheme.bodySmall?.copyWith(
+          color: foreground,
+          fontWeight: FontWeight.w700,
+          height: 1.3,
+        ),
       ),
     );
+  }
+
+  String? _buildStatusLabel(PlayerState state) {
+    return switch (state.statusHint) {
+      PlayerStatusHint.resolvingAudio => '正在解析音频...',
+      PlayerStatusHint.connectingStream => '正在连接播放流...',
+      PlayerStatusHint.loadingCache => '正在加载缓存音频...',
+      PlayerStatusHint.buffering => '缓冲中...',
+      PlayerStatusHint.error => state.errorMessage ?? '播放失败，请稍后重试',
+      null => null,
+    };
   }
 }

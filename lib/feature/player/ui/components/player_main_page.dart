@@ -45,7 +45,7 @@ class PlayerMainPage extends StatelessWidget {
     final Size screenSize = mediaQuery.size;
     final bool canOpenPartSelector = item != null && availableParts.length > 1;
     final bool showDebugQueue = kDebugMode && state.hasQueue;
-    final bool showDebugStatus = kDebugMode;
+    final bool showStatusHint = state.statusHint != null;
     final double artworkSize = (screenSize.height * 0.31).clamp(190.0, 320.0);
 
     return Column(
@@ -73,6 +73,8 @@ class PlayerMainPage extends StatelessWidget {
         Column(
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
+            if (showStatusHint || true) PlayerPlaybackStatusChip(state: state),
+            if (showStatusHint) const SizedBox(height: 12),
             _PlayerToolBar(
               hasItem: item != null,
               item: item,
@@ -93,59 +95,8 @@ class PlayerMainPage extends StatelessWidget {
             ),
           ],
         ),
-        if (showDebugQueue || showDebugStatus) const SizedBox(height: 18),
-        if (showDebugQueue) ...<Widget>[
-          _PlayerQueueSummary(state: state),
-          if (showDebugStatus) const SizedBox(height: 12),
-        ],
-        if (showDebugStatus) PlayerPlaybackStatusChip(state: state),
         SizedBox(height: mediaQuery.padding.bottom > 0 ? 8 : 18),
       ],
-    );
-  }
-}
-
-class _PlayerQueueSummary extends StatelessWidget {
-  const _PlayerQueueSummary({required this.state});
-
-  final PlayerState state;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
-    final int current = (state.currentQueueIndex ?? 0) + 1;
-    final String modeLabel = switch (state.queueMode) {
-      PlayerQueueMode.sequence => '列表循环',
-      PlayerQueueMode.singleRepeat => '单曲循环',
-      PlayerQueueMode.shuffle => '随机播放',
-    };
-    final String source = state.queueSourceLabel?.trim() ?? '';
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
-        borderRadius: BorderRadius.circular(18),
-      ),
-      child: Row(
-        children: <Widget>[
-          Icon(Icons.queue_music_rounded, color: colorScheme.primary),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              source.isEmpty
-                  ? '队列 $current/${state.queue.length} · $modeLabel'
-                  : '$source · $current/${state.queue.length} · $modeLabel',
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ),
-        ],
-      ),
     );
   }
 }
