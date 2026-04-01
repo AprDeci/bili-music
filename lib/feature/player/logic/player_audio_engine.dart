@@ -32,7 +32,7 @@ class PlayerAudioEngine {
   Stream<audio.PlayerState> get playerStateStream =>
       _audioPlayer.playerStateStream;
 
-  Future<Duration?> setSource({
+  Future<Duration?> setRemoteSource({
     required Uri uri,
     Map<String, String>? headers,
     dynamic tag,
@@ -40,6 +40,17 @@ class PlayerAudioEngine {
   }) {
     return _audioPlayer.setAudioSource(
       audio.AudioSource.uri(uri, headers: headers, tag: tag),
+      initialPosition: initialPosition,
+    );
+  }
+
+  Future<Duration?> setFileSource({
+    required String filePath,
+    dynamic tag,
+    Duration? initialPosition,
+  }) {
+    return _audioPlayer.setAudioSource(
+      audio.AudioSource.file(filePath, tag: tag),
       initialPosition: initialPosition,
     );
   }

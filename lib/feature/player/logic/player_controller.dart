@@ -1,10 +1,12 @@
 import 'dart:async';
+import 'dart:io';
 import 'dart:math';
 
 import 'package:audio_service/audio_service.dart' hide PlayerState;
 import 'package:bilimusic/common/logger.dart';
 import 'package:bilimusic/core/bili/session/bili_session.dart';
 import 'package:bilimusic/core/bili/session/bili_session_controller.dart';
+import 'package:bilimusic/feature/player/data/audio_cache_repository.dart';
 import 'package:bilimusic/feature/player/data/bili_player_repository.dart';
 import 'package:bilimusic/feature/player/data/player_queue_local_repository.dart';
 import 'package:bilimusic/feature/player/domain/audio_stream_info.dart';
@@ -29,6 +31,9 @@ class PlayerController extends Notifier<PlayerState>
 
   late final BiliPlayerRepository _repository = ref.read(
     biliPlayerRepositoryProvider,
+  );
+  late final PlayerAudioCacheRepository _audioCacheRepository = ref.read(
+    playerAudioCacheRepositoryProvider,
   );
   late final PlayerQueueLocalRepository _queueRepository = ref.read(
     playerQueueLocalRepositoryProvider,
@@ -625,16 +630,9 @@ class PlayerController extends Notifier<PlayerState>
         return false;
       }
 
-      final Duration? loadedDuration = await _audioEngine.setSource(
-        uri: Uri.parse(entry.audioStream.streamUrl),
-        headers: entry.audioStream.headers.isEmpty ? null : entry.audioStream.headers,
-        tag: buildPlayerMediaItem(
-          entry.item,
-          audioStream: entry.audioStream,
-          queueSourceLabel: state.queueSourceLabel,
-          duration: entry.audioStream.duration,
-        ),
-        initialPosition: initialPosition > Duration.zero ? initialPosition : null,
+      final Duration? loadedDuration = await _setSourceForEntry(
+        entry: entry,
+        initialPosition: initialPosition,
       );
       if (!_isCurrentGeneration(effectiveGeneration)) {
         return false;
@@ -656,6 +654,8 @@ class PlayerController extends Notifier<PlayerState>
       if (!_isCurrentGeneration(effectiveGeneration)) {
         return false;
       }
+
+      unawaited(_cacheEntryInBackground(entry));
 
       if (persistAfterLoad) {
         await _persistQueueSnapshot();
@@ -708,6 +708,88 @@ class PlayerController extends Notifier<PlayerState>
     _resolvedEntries[item.stableId] = entry;
     _resolvedEntries[loadResult.item.stableId] = entry;
     return entry;
+  }
+
+  Future<Duration?> _setSourceForEntry({
+    required _ResolvedQueueEntry entry,
+    required Duration initialPosition,
+  }) async {
+    final MediaItem mediaItem = buildPlayerMediaItem(
+      entry.item,
+      audioStream: entry.audioStream,
+      queueSourceLabel: state.queueSourceLabel,
+      duration: entry.audioStream.duration,
+    );
+    final Duration? effectiveInitialPosition = initialPosition > Duration.zero
+        ? initialPosition
+        : null;
+    final File? cachedFile = await _audioCacheRepository.getCachedFile(
+      item: entry.item,
+      audioStream: entry.audioStream,
+    );
+
+    if (cachedFile != null) {
+      try {
+        _logPlayerEvent(
+          'loadQueueIndex:cache-hit',
+          details: <String, Object?>{
+            'stableId': entry.item.stableId,
+            'path': cachedFile.path,
+          },
+        );
+        return await _audioEngine.setFileSource(
+          filePath: cachedFile.path,
+          tag: mediaItem,
+          initialPosition: effectiveInitialPosition,
+        );
+      } on Object catch (error) {
+        _logPlayerEvent(
+          'loadQueueIndex:cache-fallback',
+          details: <String, Object?>{
+            'stableId': entry.item.stableId,
+            'error': error,
+          },
+        );
+        await _audioCacheRepository.removeCachedFile(
+          item: entry.item,
+          audioStream: entry.audioStream,
+        );
+      }
+    }
+
+    _logPlayerEvent(
+      'loadQueueIndex:remote-source',
+      details: <String, Object?>{'stableId': entry.item.stableId},
+    );
+    return _audioEngine.setRemoteSource(
+      uri: Uri.parse(entry.audioStream.streamUrl),
+      headers: entry.audioStream.headers.isEmpty
+          ? null
+          : entry.audioStream.headers,
+      tag: mediaItem,
+      initialPosition: effectiveInitialPosition,
+    );
+  }
+
+  Future<void> _cacheEntryInBackground(_ResolvedQueueEntry entry) async {
+    try {
+      await _audioCacheRepository.cacheAudio(
+        item: entry.item,
+        audioStream: entry.audioStream,
+      );
+      _logPlayerEvent(
+        'audio-cache:completed',
+        details: <String, Object?>{'stableId': entry.item.stableId},
+      );
+    } on Object catch (error) {
+      _logPlayerEvent(
+        'audio-cache:failed',
+        details: <String, Object?>{
+          'stableId': entry.item.stableId,
+          'error': error,
+        },
+      );
+    }
   }
 
   void _applyResolvedCurrentEntry({
