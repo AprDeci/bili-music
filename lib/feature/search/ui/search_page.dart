@@ -363,11 +363,6 @@ class _SearchResultSection extends StatelessWidget {
     if (errorMessage != null && errorMessage!.isNotEmpty) {
       return Container(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 28),
-        decoration: BoxDecoration(
-          color: colorScheme.surfaceContainerLowest,
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: colorScheme.outlineVariant),
-        ),
         child: Column(
           children: <Widget>[
             Icon(
@@ -400,11 +395,6 @@ class _SearchResultSection extends StatelessWidget {
     if (results.isEmpty) {
       return Container(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 28),
-        decoration: BoxDecoration(
-          color: colorScheme.surfaceContainerLowest,
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: colorScheme.outlineVariant),
-        ),
         child: Column(
           children: <Widget>[
             Icon(
@@ -453,10 +443,7 @@ class _SearchResultSection extends StatelessWidget {
                   onTap: () => onPlayItem(item),
                   child: Container(
                     margin: const EdgeInsets.only(bottom: 1),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 8,
-                    ),
+                    padding: const EdgeInsets.symmetric(vertical: 8),
 
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
