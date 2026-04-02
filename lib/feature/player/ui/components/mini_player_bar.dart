@@ -129,7 +129,7 @@ class MiniPlayerBar extends StatelessWidget {
 class _Artwork extends StatelessWidget {
   const _Artwork({required this.coverUrl, required this.progress});
 
-  static const double _outerSize = 52;
+  static const double _outerSize = 53;
   static const double _imageSize = 48;
 
   final String coverUrl;
@@ -190,7 +190,7 @@ class _ArtworkProgressPainter extends CustomPainter {
   final Color progressColor;
 
   static const double _strokeWidth = 3.0;
-  static const double _radius = 17;
+  static const double _radius = 14;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -200,37 +200,57 @@ class _ArtworkProgressPainter extends CustomPainter {
       const Radius.circular(_radius),
     );
 
+    // 背景
     canvas.drawRRect(
       rrect,
       Paint()
         ..color = trackColor
         ..style = PaintingStyle.stroke
-        ..strokeWidth = _strokeWidth,
+        ..strokeWidth = _strokeWidth - 1,
     );
 
-    // final Path borderPath = Path()..addRRect(rrect);
-    // final PathMetrics metrics = borderPath.computeMetrics();
-    // if (metrics.isEmpty) {
-    //   return;
-    // }
+    PathMetric? metric = _getFirstPathMetric(rrect);
+    if (metric == null) {
+      return;
+    }
 
-    // final PathMetric metric = metrics.first;
-    // final double progressLength = metric.length * progress.clamp(0.0, 1.0);
+    final double totalLength = metric.length;
+    final double clampedProgress = progress.clamp(0.0, 1.0);
+    final double progressLength = totalLength * clampedProgress;
 
-    // if (progressLength <= 0) {
-    //   return;
-    // }
+    if (progressLength <= 0 || progressLength > totalLength) {
+      return;
+    }
 
-    // final Path progressPath = metric.extractPath(0, progressLength);
+    try {
+      final Path progressPath = metric.extractPath(0, progressLength);
+      canvas.drawPath(
+        progressPath,
+        Paint()
+          ..color = progressColor
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = _strokeWidth
+          ..strokeCap = StrokeCap.round,
+      );
+    } catch (e) {
+      // 忽略提取路径错误
+    }
+  }
 
-    // canvas.drawPath(
-    //   progressPath,
-    //   Paint()
-    //     ..color = progressColor
-    //     ..style = PaintingStyle.stroke
-    //     ..strokeWidth = _strokeWidth
-    //     ..strokeCap = StrokeCap.round,
-    // );
+  PathMetric? _getFirstPathMetric(RRect rrect) {
+    try {
+      final Path borderPath = Path()..addRRect(rrect);
+      final PathMetrics metrics = borderPath.computeMetrics();
+
+      // 使用 iterator 获取第一个元素
+      final iterator = metrics.iterator;
+      if (iterator.moveNext()) {
+        return iterator.current;
+      }
+      return null;
+    } catch (e) {
+      return null;
+    }
   }
 
   @override
