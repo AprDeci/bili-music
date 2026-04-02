@@ -1,8 +1,8 @@
-import 'package:bilimusic/common/components/cachedImage.dart';
 import 'package:bilimusic/feature/comment/domain/comment_item.dart';
 import 'package:bilimusic/feature/comment/domain/comment_reply_state.dart';
 import 'package:bilimusic/feature/comment/domain/comment_target.dart';
 import 'package:bilimusic/feature/comment/logic/comment_reply_controller.dart';
+import 'package:bilimusic/feature/comment/ui/components/comment_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -116,7 +116,12 @@ class _CommentReplySheetState extends ConsumerState<_CommentReplySheet> {
                 controller: _scrollController,
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
                 children: <Widget>[
-                  _ReplyCommentCard(item: state.rootItem),
+                  CommentCard(
+                    item: state.rootItem,
+                    showReplyPreview: false,
+                    showReplyEntry: false,
+                    showTopBadge: false,
+                  ),
                   const SizedBox(height: 20),
                   Divider(
                     height: 1,
@@ -140,7 +145,13 @@ class _CommentReplySheetState extends ConsumerState<_CommentReplySheet> {
                     ...state.items.map(
                       (CommentItem item) => Padding(
                         padding: const EdgeInsets.only(bottom: 12),
-                        child: _ReplyCommentCard(item: item),
+                        child: CommentCard(
+                          item: item,
+                          showReplyPreview: false,
+                          showReplyEntry: false,
+                          showTopBadge: false,
+                          showHiddenBadge: false,
+                        ),
                       ),
                     ),
                     if (state.loadMoreErrorMessage != null)
@@ -178,110 +189,6 @@ class _CommentReplySheetState extends ConsumerState<_CommentReplySheet> {
           ],
         );
       },
-    );
-  }
-}
-
-class _ReplyCommentCard extends StatelessWidget {
-  const _ReplyCommentCard({required this.item});
-
-  final CommentItem item;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            ClipOval(
-              child: CommonCachedImage(
-                imageUrl: item.memberAvatarUrl,
-                width: 36,
-                height: 36,
-                fit: BoxFit.cover,
-                fallbackIcon: Icons.person_outline_rounded,
-                iconColor: colorScheme.onSurfaceVariant,
-                iconSize: 18,
-                backgroundColor: colorScheme.surfaceContainerHigh,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Row(
-                    children: <Widget>[
-                      Expanded(
-                        child: Text(
-                          item.memberName,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: theme.textTheme.titleSmall?.copyWith(
-                            color: colorScheme.onSurface,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 10),
-                  Text(
-                    item.message.isEmpty ? '该评论没有文本内容' : item.message,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: colorScheme.onSurface,
-                      height: 1.55,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Wrap(
-                    spacing: 12,
-                    runSpacing: 8,
-                    children: <Widget>[
-                      _ReplyMetaText(text: _formatDateTime(item.publishedAt)),
-                      _ReplyMetaText(text: '点赞 ${item.likeCount}'),
-                      _ReplyMetaText(text: '回复 ${item.replyCount}'),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  String _formatDateTime(DateTime value) {
-    final String year = value.year.toString().padLeft(4, '0');
-    final String month = value.month.toString().padLeft(2, '0');
-    final String day = value.day.toString().padLeft(2, '0');
-    final String hour = value.hour.toString().padLeft(2, '0');
-    final String minute = value.minute.toString().padLeft(2, '0');
-    return '$year-$month-$day $hour:$minute';
-  }
-}
-
-class _ReplyMetaText extends StatelessWidget {
-  const _ReplyMetaText({required this.text});
-
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
-
-    return Text(
-      text,
-      style: theme.textTheme.bodySmall?.copyWith(
-        color: colorScheme.onSurfaceVariant,
-        fontWeight: FontWeight.w600,
-      ),
     );
   }
 }
