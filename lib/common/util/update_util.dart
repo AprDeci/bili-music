@@ -1,4 +1,5 @@
 import 'package:bilimusic/common/logger.dart';
+import 'package:bilimusic/common/util/json_util.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:hive_ce/hive.dart';
@@ -121,15 +122,7 @@ class UpdateUtil {
   }
 
   static Map<String, dynamic> _asMap(dynamic value) {
-    if (value is Map<String, dynamic>) {
-      return value;
-    }
-    if (value is Map) {
-      return value.map(
-        (dynamic key, dynamic mapValue) => MapEntry(key.toString(), mapValue),
-      );
-    }
-    throw const FormatException('Unexpected release response format.');
+    return asStringKeyedMap(value);
   }
 
   static String? _loadDismissedTag() {
