@@ -1,8 +1,10 @@
+import 'package:bilimusic/common/components/cachedImage.dart';
 import 'package:bilimusic/feature/comment/domain/comment_item.dart';
 import 'package:bilimusic/feature/comment/domain/comment_sort.dart';
 import 'package:bilimusic/feature/comment/domain/comment_state.dart';
 import 'package:bilimusic/feature/comment/domain/comment_target.dart';
 import 'package:bilimusic/feature/comment/logic/comment_controller.dart';
+import 'package:bilimusic/feature/comment/ui/comment_reply_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -144,7 +146,16 @@ class _CommentPageState extends ConsumerState<CommentPage> {
           (CommentItem item) => Container(
             margin: const EdgeInsets.only(bottom: 12),
             padding: const EdgeInsets.only(bottom: 12),
-            child: _CommentCard(item: item),
+            child: _CommentCard(
+              item: item,
+              onOpenReplies: item.replyCount > 0
+                  ? () => showCommentReplySheet(
+                      context: context,
+                      target: widget.target,
+                      rootItem: item,
+                    )
+                  : null,
+            ),
           ),
         )
         .toList();
@@ -173,13 +184,14 @@ class _CommentHeader extends StatelessWidget {
             width: 72,
             height: 72,
             color: colorScheme.surfaceContainerHigh,
-            child: target.coverUrl?.isNotEmpty == true
-                ? Image.network(target.coverUrl!, fit: BoxFit.cover)
-                : Icon(
-                    Icons.music_video_outlined,
-                    color: colorScheme.onSurfaceVariant,
-                    size: 28,
-                  ),
+            child: CommonCachedImage(
+              imageUrl: target.coverUrl,
+              fit: BoxFit.cover,
+              fallbackIcon: Icons.music_video_outlined,
+              iconColor: colorScheme.onSurfaceVariant,
+              iconSize: 28,
+              backgroundColor: colorScheme.surfaceContainerHigh,
+            ),
           ),
         ),
         const SizedBox(width: 14),
@@ -292,9 +304,10 @@ class _CommentSectionTitle extends StatelessWidget {
 }
 
 class _CommentCard extends StatelessWidget {
-  const _CommentCard({required this.item});
+  const _CommentCard({required this.item, this.onOpenReplies});
 
   final CommentItem item;
+  final VoidCallback? onOpenReplies;
 
   @override
   Widget build(BuildContext context) {
@@ -307,19 +320,17 @@ class _CommentCard extends StatelessWidget {
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
-            CircleAvatar(
-              radius: 18,
-              backgroundColor: colorScheme.surfaceContainerHigh,
-              backgroundImage: item.memberAvatarUrl.isEmpty
-                  ? null
-                  : NetworkImage(item.memberAvatarUrl),
-              child: item.memberAvatarUrl.isEmpty
-                  ? Icon(
-                      Icons.person_outline_rounded,
-                      color: colorScheme.onSurfaceVariant,
-                      size: 18,
-                    )
-                  : null,
+            ClipOval(
+              child: CommonCachedImage(
+                imageUrl: item.memberAvatarUrl,
+                width: 36,
+                height: 36,
+                fit: BoxFit.cover,
+                fallbackIcon: Icons.person_outline_rounded,
+                iconColor: colorScheme.onSurfaceVariant,
+                iconSize: 18,
+                backgroundColor: colorScheme.surfaceContainerHigh,
+              ),
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -375,40 +386,20 @@ class _CommentCard extends StatelessWidget {
             ),
           ],
         ),
-        if (item.replies.isNotEmpty) ...<Widget>[
-          const SizedBox(height: 14),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            decoration: BoxDecoration(
-              color: colorScheme.surfaceContainerLow,
-              // borderRadius: BorderRadius.circular(16),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: item.replies.take(2).map((CommentItem reply) {
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
-                  child: RichText(
-                    text: TextSpan(
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: colorScheme.onSurfaceVariant,
-                        height: 1.5,
-                      ),
-                      children: <InlineSpan>[
-                        TextSpan(
-                          text: '${reply.memberName}: ',
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: colorScheme.onSurface,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                        TextSpan(text: reply.message),
-                      ],
-                    ),
-                  ),
-                );
-              }).toList(),
+        if (item.replyCount > 0) ...<Widget>[
+          const SizedBox(height: 10),
+          Padding(
+            padding: const EdgeInsets.only(left: 46),
+            child: GestureDetector(
+              onTap: onOpenReplies,
+              behavior: HitTestBehavior.opaque,
+              child: Text(
+                '查看全部 ${item.replyCount} 条回复',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: colorScheme.primary,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
             ),
           ),
         ],
