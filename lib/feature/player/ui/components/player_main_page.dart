@@ -11,6 +11,7 @@ class PlayerMainPage extends StatelessWidget {
     super.key,
     required this.state,
     required this.item,
+    required this.commentCount,
     required this.availableParts,
     required this.onPartTap,
     required this.onOpenCollectionSheet,
@@ -27,6 +28,7 @@ class PlayerMainPage extends StatelessWidget {
 
   final PlayerState state;
   final PlayableItem? item;
+  final int? commentCount;
   final List<PlayableItem> availableParts;
   final VoidCallback? onPartTap;
   final VoidCallback? onOpenCollectionSheet;
@@ -78,6 +80,7 @@ class PlayerMainPage extends StatelessWidget {
             _PlayerToolBar(
               hasItem: item != null,
               item: item,
+              commentCount: commentCount,
               canOpenPartSelector: canOpenPartSelector,
               onPartTap: onPartTap,
               onOpenCollectionSheet: onOpenCollectionSheet,
@@ -106,6 +109,7 @@ class _PlayerToolBar extends StatelessWidget {
   const _PlayerToolBar({
     required this.hasItem,
     required this.item,
+    required this.commentCount,
     required this.canOpenPartSelector,
     required this.onPartTap,
     required this.onOpenCollectionSheet,
@@ -114,6 +118,7 @@ class _PlayerToolBar extends StatelessWidget {
 
   final bool hasItem;
   final PlayableItem? item;
+  final int? commentCount;
   final bool canOpenPartSelector;
   final VoidCallback? onPartTap;
   final VoidCallback? onOpenCollectionSheet;
@@ -134,14 +139,82 @@ class _PlayerToolBar extends StatelessWidget {
           isEnabled: hasItem,
           onTap: onOpenCollectionSheet,
         ),
-        _PlayerToolButton(
-          icon: Icons.comment_outlined,
+        _PlayerCommentToolButton(
+          commentCount: commentCount,
           isEnabled: hasItem,
           onTap: onOpenComments,
         ),
       ],
     );
   }
+}
+
+class _PlayerCommentToolButton extends StatelessWidget {
+  const _PlayerCommentToolButton({
+    required this.commentCount,
+    required this.isEnabled,
+    this.onTap,
+  });
+
+  final int? commentCount;
+  final bool isEnabled;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+    final String? badgeLabel = _formatCommentBadgeCount(commentCount);
+
+    return Stack(
+      clipBehavior: Clip.none,
+      children: <Widget>[
+        _PlayerToolButton(
+          icon: Icons.comment_outlined,
+          isEnabled: isEnabled,
+          onTap: onTap,
+        ),
+        if (isEnabled && badgeLabel != null)
+          Positioned(
+            top: -2,
+            right: -8,
+            child: IgnorePointer(
+              child: Container(
+                constraints: const BoxConstraints(minWidth: 18, minHeight: 18),
+                padding: const EdgeInsets.symmetric(horizontal: 5),
+                decoration: BoxDecoration(
+                  color: colorScheme.primary,
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                alignment: Alignment.center,
+                child: Text(
+                  badgeLabel,
+                  textAlign: TextAlign.center,
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: colorScheme.onPrimary,
+                    fontWeight: FontWeight.w800,
+                    height: 1,
+                  ),
+                ),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+String? _formatCommentBadgeCount(int? count) {
+  if (count == null || count <= 0) {
+    return null;
+  }
+  if (count <= 99) {
+    return count.toString();
+  }
+  if (count <= 999) {
+    return '99+';
+  }
+  return '999+';
 }
 
 class _PlayerPartToolButton extends StatelessWidget {

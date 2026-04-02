@@ -134,17 +134,18 @@ class _PlayerPageState extends ConsumerState<PlayerPage> {
                               child: PlayerMainPage(
                                 state: state,
                                 item: item,
+                                commentCount: item?.replyCount,
                                 availableParts: availableParts,
                                 onPartTap:
-                                     item == null || availableParts.length < 2
-                                 ? null
-                                      : () => showPlayerPartSelector(
-                                          context: context,
-                                           parts: availableParts,
-                                           currentItem: item,
-                                           state: state,
-                                           controller: playerController,
-                                        ),
+                                    item == null || availableParts.length < 2
+                                    ? null
+                                    : () => showPlayerPartSelector(
+                                        context: context,
+                                        parts: availableParts,
+                                        currentItem: item,
+                                        state: state,
+                                        controller: playerController,
+                                      ),
                                 onOpenCollectionSheet: item == null
                                     ? null
                                     : () => showPlayerCollectionSheet(
