@@ -1,24 +1,24 @@
-enum CommentSortType { time, like, reply }
+enum CommentSort { time, like, reply }
 
-extension CommentSortTypeExtension on CommentSortType {
+extension CommentSortExtension on CommentSort {
   int get apiValue {
     switch (this) {
-      case CommentSortType.time:
+      case CommentSort.time:
         return 0;
-      case CommentSortType.like:
+      case CommentSort.like:
         return 1;
-      case CommentSortType.reply:
+      case CommentSort.reply:
         return 2;
     }
   }
 
   String get label {
     switch (this) {
-      case CommentSortType.time:
+      case CommentSort.time:
         return '按时间排序';
-      case CommentSortType.like:
+      case CommentSort.like:
         return '按点赞数排序';
-      case CommentSortType.reply:
+      case CommentSort.reply:
         return '按回复数排序';
     }
   }
