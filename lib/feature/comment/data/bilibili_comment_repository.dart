@@ -4,6 +4,7 @@ import 'package:bilimusic/core/bili/session/bili_session_controller.dart';
 import 'package:bilimusic/core/bili/net/bili_api_client.dart';
 import 'package:bilimusic/feature/comment/domain/comment_item.dart';
 import 'package:bilimusic/feature/comment/domain/comment_page_result.dart';
+import 'package:bilimusic/feature/comment/domain/comment_reply_page_result.dart';
 import 'package:bilimusic/feature/comment/domain/comment_sort.dart';
 import 'package:bilimusic/feature/comment/domain/comment_target.dart';
 
@@ -20,6 +21,7 @@ class BiliCommentRepository {
   const BiliCommentRepository(this._apiClient);
 
   static const String _mainPath = '/x/v2/reply/wbi/main';
+  static const String _replyPath = '/x/v2/reply/reply';
   static final AppLogger _logger = AppLogger('BiliCommentRepository');
 
   final BiliApiClient _apiClient;
@@ -53,6 +55,68 @@ class BiliCommentRepository {
       nextOffset: nextOffset,
       includeHot: includeHot,
       shouldSignWithWbi: shouldSignWithWbi,
+    );
+  }
+
+  Future<CommentReplyPageResult> fetchChildComments(
+    CommentTarget target, {
+    required int rootRpid,
+    int page = 1,
+    int pageSize = 20,
+  }) async {
+    _logger.d(
+      'fetchChildComments start '
+      'oid=${target.oid} '
+      'type=${target.type} '
+      'rootRpid=$rootRpid '
+      'page=$page '
+      'pageSize=$pageSize',
+    );
+
+    final Map<String, dynamic> json = await _apiClient.getJson(
+      _replyPath,
+      queryParameters: <String, dynamic>{
+        'type': target.type,
+        'oid': target.oid,
+        'root': rootRpid,
+        'pn': page,
+        'ps': pageSize,
+      },
+      requiresAuth: false,
+    );
+
+    final Map<String, dynamic> data = _asMap(json['data']);
+    final Map<String, dynamic> pageInfo = _asMapOrEmpty(data['page']);
+    final Map<String, dynamic> config = _asMapOrEmpty(data['config']);
+    final Map<String, dynamic> root = _asMap(data['root']);
+    final List<Map<String, dynamic>> rawReplyMaps = _asListOfMaps(data['replies']);
+
+    final CommentItem rootItem = _mapCommentItem(root, isTop: true);
+    final List<CommentItem> items = _mapCommentList(
+      rawReplyMaps,
+      sourceLabel: 'child.replies',
+    );
+    final int resolvedPage = _readPositiveInt(pageInfo['num']) ?? page;
+    final int resolvedPageSize = _readPositiveInt(pageInfo['size']) ?? pageSize;
+    final int totalCount = _readNonNegativeInt(pageInfo['count']) ?? items.length;
+    final bool hasMore = resolvedPage * resolvedPageSize < totalCount;
+
+    _logger.d(
+      'fetchChildComments mapped '
+      'items=${items.length} '
+      'page=$resolvedPage '
+      'totalCount=$totalCount '
+      'hasMore=$hasMore',
+    );
+
+    return CommentReplyPageResult(
+      rootItem: rootItem,
+      items: items,
+      page: resolvedPage,
+      pageSize: resolvedPageSize,
+      totalCount: totalCount,
+      hasMore: hasMore,
+      isReadOnly: _readBoolLike(config['read_only']) ?? false,
     );
   }
 
