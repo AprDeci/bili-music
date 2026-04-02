@@ -1,3 +1,4 @@
+import 'package:bilimusic/feature/comment/domain/comment_target.dart';
 import 'package:bilimusic/feature/favorites/logic/favorites_controller.dart';
 import 'package:bilimusic/feature/player/domain/playable_item.dart';
 import 'package:bilimusic/feature/player/domain/player_state.dart';
@@ -12,6 +13,7 @@ import 'package:bilimusic/feature/player/ui/components/player_top_bar.dart';
 import 'package:bilimusic/router/player_navigation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 class PlayerPage extends ConsumerStatefulWidget {
   const PlayerPage({super.key, this.initialItem});
@@ -172,6 +174,9 @@ class _PlayerPageState extends ConsumerState<PlayerPage> {
                                   context: context,
                                   state: state,
                                 ),
+                                onOpenComments: item == null
+                                    ? null
+                                    : () => _openComments(item),
                               ),
                             ),
                           ],
@@ -200,5 +205,19 @@ class _PlayerPageState extends ConsumerState<PlayerPage> {
       ..showSnackBar(
         SnackBar(content: Text(isLiked ? '已加入“我喜欢”' : '已从“我喜欢”移除')),
       );
+  }
+
+  Future<void> _openComments(PlayableItem item) async {
+    if (item.aid <= 0) {
+      return;
+    }
+
+    final CommentTarget target = CommentTarget.video(
+      aid: item.aid,
+      bvid: item.bvid,
+      title: item.title,
+      coverUrl: item.coverUrl,
+    );
+    await context.push('/comments', extra: target);
   }
 }

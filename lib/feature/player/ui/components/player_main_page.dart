@@ -4,7 +4,6 @@ import 'package:bilimusic/feature/player/ui/components/player_artwork.dart';
 import 'package:bilimusic/feature/player/ui/components/player_controls.dart';
 import 'package:bilimusic/feature/player/ui/components/player_shared.dart';
 import 'package:bilimusic/feature/player/ui/components/player_ui_helpers.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 class PlayerMainPage extends StatelessWidget {
@@ -23,6 +22,7 @@ class PlayerMainPage extends StatelessWidget {
     required this.onTogglePlayback,
     required this.onForward,
     required this.onOpenQueue,
+    required this.onOpenComments,
   });
 
   final PlayerState state;
@@ -38,13 +38,13 @@ class PlayerMainPage extends StatelessWidget {
   final VoidCallback onTogglePlayback;
   final VoidCallback onForward;
   final VoidCallback onOpenQueue;
+  final VoidCallback? onOpenComments;
 
   @override
   Widget build(BuildContext context) {
     final MediaQueryData mediaQuery = MediaQuery.of(context);
     final Size screenSize = mediaQuery.size;
     final bool canOpenPartSelector = item != null && availableParts.length > 1;
-    final bool showDebugQueue = kDebugMode && state.hasQueue;
     final bool showStatusHint = state.statusHint != null;
     final double artworkSize = (screenSize.height * 0.31).clamp(190.0, 320.0);
 
@@ -81,6 +81,7 @@ class PlayerMainPage extends StatelessWidget {
               canOpenPartSelector: canOpenPartSelector,
               onPartTap: onPartTap,
               onOpenCollectionSheet: onOpenCollectionSheet,
+              onOpenComments: onOpenComments,
             ),
             const SizedBox(height: 10),
             PlayerProgressSection(state: state, onChanged: onSeek),
@@ -108,6 +109,7 @@ class _PlayerToolBar extends StatelessWidget {
     required this.canOpenPartSelector,
     required this.onPartTap,
     required this.onOpenCollectionSheet,
+    required this.onOpenComments,
   });
 
   final bool hasItem;
@@ -115,6 +117,7 @@ class _PlayerToolBar extends StatelessWidget {
   final bool canOpenPartSelector;
   final VoidCallback? onPartTap;
   final VoidCallback? onOpenCollectionSheet;
+  final VoidCallback? onOpenComments;
 
   @override
   Widget build(BuildContext context) {
@@ -131,7 +134,11 @@ class _PlayerToolBar extends StatelessWidget {
           isEnabled: hasItem,
           onTap: onOpenCollectionSheet,
         ),
-        _PlayerToolButton(icon: Icons.comment_outlined, isEnabled: false),
+        _PlayerToolButton(
+          icon: Icons.comment_outlined,
+          isEnabled: hasItem,
+          onTap: onOpenComments,
+        ),
       ],
     );
   }

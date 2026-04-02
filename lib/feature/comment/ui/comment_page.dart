@@ -1,0 +1,541 @@
+import 'package:bilimusic/feature/comment/domain/comment_item.dart';
+import 'package:bilimusic/feature/comment/domain/comment_sort.dart';
+import 'package:bilimusic/feature/comment/domain/comment_state.dart';
+import 'package:bilimusic/feature/comment/domain/comment_target.dart';
+import 'package:bilimusic/feature/comment/logic/comment_controller.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+class CommentPage extends ConsumerStatefulWidget {
+  const CommentPage({super.key, required this.target});
+
+  final CommentTarget target;
+
+  @override
+  ConsumerState<CommentPage> createState() => _CommentPageState();
+}
+
+class _CommentPageState extends ConsumerState<CommentPage> {
+  late final ScrollController _scrollController;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController = ScrollController()..addListener(_handleScroll);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(commentControllerProvider(widget.target).notifier).loadInitial();
+    });
+  }
+
+  @override
+  void dispose() {
+    _scrollController
+      ..removeListener(_handleScroll)
+      ..dispose();
+    super.dispose();
+  }
+
+  void _handleScroll() {
+    if (!_scrollController.hasClients) {
+      return;
+    }
+    if (_scrollController.position.extentAfter <= 240) {
+      ref
+          .read(commentControllerProvider(widget.target).notifier)
+          .loadNextPage();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final CommentState state = ref.watch(
+      commentControllerProvider(widget.target),
+    );
+    final CommentController controller = ref.read(
+      commentControllerProvider(widget.target).notifier,
+    );
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+
+    return Scaffold(
+      appBar: AppBar(title: Text('评论')),
+      body: SafeArea(
+        child: RefreshIndicator(
+          onRefresh: controller.refresh,
+          child: ListView(
+            controller: _scrollController,
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+            children: <Widget>[
+              _CommentHeader(target: widget.target),
+              const SizedBox(height: 12),
+              if (state.isLoading &&
+                  state.items.isEmpty &&
+                  state.hotItems.isEmpty &&
+                  state.topItem == null)
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 48),
+                  child: Center(child: CircularProgressIndicator()),
+                )
+              else if (state.errorMessage != null &&
+                  state.items.isEmpty &&
+                  state.hotItems.isEmpty &&
+                  state.topItem == null)
+                _CommentErrorCard(
+                  message: state.errorMessage!,
+                  onRetry: controller.loadInitial,
+                )
+              else ...<Widget>[
+                if (state.topItem != null) ...<Widget>[
+                  _CommentSectionTitle(title: '置顶评论'),
+                  const SizedBox(height: 8),
+                  _CommentCard(item: state.topItem!),
+                  const SizedBox(height: 16),
+                ],
+                if (state.hotItems.isNotEmpty) ...<Widget>[
+                  _CommentSectionTitle(title: '热评'),
+                  const SizedBox(height: 8),
+                  ..._buildCommentCards(state.hotItems),
+                  const SizedBox(height: 16),
+                ],
+                _CommentSectionHeader(
+                  title: '全部评论',
+                  state: state,
+                  controller: controller,
+                ),
+                const SizedBox(height: 8),
+                if (state.items.isEmpty)
+                  _CommentEmptyCard(isReadOnly: state.isReadOnly)
+                else
+                  ..._buildCommentCards(state.items),
+                if (state.loadMoreErrorMessage != null) ...<Widget>[
+                  const SizedBox(height: 12),
+                  _CommentLoadMoreError(
+                    message: state.loadMoreErrorMessage!,
+                    onRetry: controller.loadNextPage,
+                  ),
+                ],
+                if (state.isLoadingMore) ...<Widget>[
+                  const SizedBox(height: 16),
+                  const Center(child: CircularProgressIndicator()),
+                ],
+                if (!state.isLoadingMore && state.items.isNotEmpty) ...<Widget>[
+                  const SizedBox(height: 16),
+                  Center(
+                    child: Text(
+                      state.hasMore ? '继续上滑加载更多' : '没有更多评论了',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  List<Widget> _buildCommentCards(List<CommentItem> items) {
+    return items
+        .map(
+          (CommentItem item) => Container(
+            margin: const EdgeInsets.only(bottom: 12),
+            padding: const EdgeInsets.only(bottom: 12),
+            child: _CommentCard(item: item),
+          ),
+        )
+        .toList();
+  }
+}
+
+class _CommentHeader extends StatelessWidget {
+  const _CommentHeader({required this.target});
+
+  final CommentTarget target;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+    final String title = target.title?.trim().isNotEmpty == true
+        ? target.title!.trim()
+        : '评论';
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: <Widget>[
+        ClipRRect(
+          borderRadius: BorderRadius.circular(14),
+          child: Container(
+            width: 72,
+            height: 72,
+            color: colorScheme.surfaceContainerHigh,
+            child: target.coverUrl?.isNotEmpty == true
+                ? Image.network(target.coverUrl!, fit: BoxFit.cover)
+                : Icon(
+                    Icons.music_video_outlined,
+                    color: colorScheme.onSurfaceVariant,
+                    size: 28,
+                  ),
+          ),
+        ),
+        const SizedBox(width: 14),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: <Widget>[
+              Text(
+                title,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w800,
+                  height: 1.3,
+                ),
+              ),
+              if (target.bvid?.isNotEmpty == true) ...<Widget>[
+                const SizedBox(height: 6),
+                Text(
+                  target.bvid!,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _CommentSectionHeader extends StatelessWidget {
+  const _CommentSectionHeader({
+    required this.title,
+    required this.state,
+    required this.controller,
+  });
+
+  final String title;
+  final CommentState state;
+  final CommentController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+    final List<CommentSort> sorts = state.supportedSorts.isEmpty
+        ? const <CommentSort>[CommentSort.time, CommentSort.like]
+        : state.supportedSorts;
+
+    return Row(
+      children: <Widget>[
+        Expanded(
+          child: Text(
+            title,
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        ),
+        PopupMenuButton<CommentSort>(
+          tooltip: '切换排序',
+          onSelected: controller.changeSort,
+          itemBuilder: (BuildContext context) {
+            return sorts.map((CommentSort sort) {
+              return PopupMenuItem<CommentSort>(
+                value: sort,
+                child: Text(
+                  sort.label,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    fontWeight: state.sort == sort
+                        ? FontWeight.w700
+                        : FontWeight.w500,
+                  ),
+                ),
+              );
+            }).toList();
+          },
+          child: Text(
+            state.sort.label,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: colorScheme.primary,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _CommentSectionTitle extends StatelessWidget {
+  const _CommentSectionTitle({required this.title});
+
+  final String title;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      title,
+      style: Theme.of(
+        context,
+      ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
+    );
+  }
+}
+
+class _CommentCard extends StatelessWidget {
+  const _CommentCard({required this.item});
+
+  final CommentItem item;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            CircleAvatar(
+              radius: 18,
+              backgroundColor: colorScheme.surfaceContainerHigh,
+              backgroundImage: item.memberAvatarUrl.isEmpty
+                  ? null
+                  : NetworkImage(item.memberAvatarUrl),
+              child: item.memberAvatarUrl.isEmpty
+                  ? Icon(
+                      Icons.person_outline_rounded,
+                      color: colorScheme.onSurfaceVariant,
+                      size: 18,
+                    )
+                  : null,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Row(
+                    children: <Widget>[
+                      Expanded(
+                        child: Text(
+                          item.memberName,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: theme.textTheme.titleSmall?.copyWith(
+                            color: colorScheme.onSurface,
+                          ),
+                        ),
+                      ),
+                      if (item.isTop)
+                        _CommentBadge(label: '置顶', color: colorScheme.primary),
+                      if (item.isHidden)
+                        Padding(
+                          padding: const EdgeInsets.only(left: 6),
+                          child: _CommentBadge(
+                            label: '隐藏',
+                            color: colorScheme.error,
+                          ),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    item.message.isEmpty ? '该评论没有文本内容' : item.message,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: colorScheme.onSurface,
+                      height: 1.55,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Wrap(
+                    spacing: 12,
+                    runSpacing: 8,
+                    children: <Widget>[
+                      _CommentMetaText(text: _formatDateTime(item.publishedAt)),
+                      _CommentMetaText(text: '点赞 ${item.likeCount}'),
+                      _CommentMetaText(text: '回复 ${item.replyCount}'),
+                      if (item.isLiked)
+                        _CommentMetaText(text: '已点赞', highlight: true),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        if (item.replies.isNotEmpty) ...<Widget>[
+          const SizedBox(height: 14),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            decoration: BoxDecoration(
+              color: colorScheme.surfaceContainerLow,
+              // borderRadius: BorderRadius.circular(16),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: item.replies.take(2).map((CommentItem reply) {
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: RichText(
+                    text: TextSpan(
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                        height: 1.5,
+                      ),
+                      children: <InlineSpan>[
+                        TextSpan(
+                          text: '${reply.memberName}: ',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: colorScheme.onSurface,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        TextSpan(text: reply.message),
+                      ],
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  String _formatDateTime(DateTime value) {
+    final String year = value.year.toString().padLeft(4, '0');
+    final String month = value.month.toString().padLeft(2, '0');
+    final String day = value.day.toString().padLeft(2, '0');
+    final String hour = value.hour.toString().padLeft(2, '0');
+    final String minute = value.minute.toString().padLeft(2, '0');
+    return '$year-$month-$day $hour:$minute';
+  }
+}
+
+class _CommentBadge extends StatelessWidget {
+  const _CommentBadge({required this.label, required this.color});
+
+  final String label;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        label,
+        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+          color: color,
+          fontWeight: FontWeight.w800,
+        ),
+      ),
+    );
+  }
+}
+
+class _CommentMetaText extends StatelessWidget {
+  const _CommentMetaText({required this.text, this.highlight = false});
+
+  final String text;
+  final bool highlight;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+
+    return Text(
+      text,
+      style: theme.textTheme.bodySmall?.copyWith(
+        color: highlight ? colorScheme.primary : colorScheme.onSurfaceVariant,
+        fontWeight: highlight ? FontWeight.w700 : FontWeight.w600,
+      ),
+    );
+  }
+}
+
+class _CommentErrorCard extends StatelessWidget {
+  const _CommentErrorCard({required this.message, required this.onRetry});
+
+  final String message;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 48),
+        child: Column(
+          children: <Widget>[
+            Text(message, textAlign: TextAlign.center),
+            const SizedBox(height: 12),
+            FilledButton(onPressed: onRetry, child: const Text('重试')),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _CommentLoadMoreError extends StatelessWidget {
+  const _CommentLoadMoreError({required this.message, required this.onRetry});
+
+  final String message;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        color: Theme.of(context).colorScheme.errorContainer,
+      ),
+      child: Row(
+        children: <Widget>[
+          Expanded(child: Text(message)),
+          TextButton(onPressed: onRetry, child: const Text('重试')),
+        ],
+      ),
+    );
+  }
+}
+
+class _CommentEmptyCard extends StatelessWidget {
+  const _CommentEmptyCard({required this.isReadOnly});
+
+  final bool isReadOnly;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Text(
+        isReadOnly ? '当前评论区为只读状态' : '还没有评论',
+        textAlign: TextAlign.center,
+      ),
+    );
+  }
+}

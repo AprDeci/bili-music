@@ -1,3 +1,5 @@
+import 'package:bilimusic/feature/comment/domain/comment_target.dart';
+import 'package:bilimusic/feature/comment/ui/comment_page.dart';
 import 'package:bilimusic/feature/auth/ui/auth_page.dart';
 import 'package:bilimusic/feature/favorites/ui/favorite_collection_page.dart';
 import 'package:bilimusic/feature/home/ui/home_page.dart';
@@ -25,6 +27,14 @@ GoRouter router(Ref ref) => GoRouter(
   initialLocation: '/home',
   routes: [
     GoRoute(path: '/auth', builder: (context, state) => const AuthPage()),
+    GoRoute(
+      path: '/comments',
+      parentNavigatorKey: _rootNavigatorKey,
+      builder: (context, state) {
+        final CommentTarget target = state.extra! as CommentTarget;
+        return CommentPage(target: target);
+      },
+    ),
     // GoRoute(
     //   path: '/search',
     //   parentNavigatorKey: _rootNavigatorKey,
