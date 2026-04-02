@@ -67,7 +67,7 @@ class _CommentPageState extends ConsumerState<CommentPage> {
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
             children: <Widget>[
               _CommentHeader(target: widget.target),
-              const SizedBox(height: 12),
+              const SizedBox(height: 36),
               if (state.isLoading &&
                   state.items.isEmpty &&
                   state.hotItems.isEmpty &&
