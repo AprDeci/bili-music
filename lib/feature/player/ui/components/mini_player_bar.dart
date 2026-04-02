@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:bilimusic/common/bottom_height_helper.dart';
 import 'package:bilimusic/common/components/cachedImage.dart';
 import 'package:bilimusic/feature/player/domain/player_state.dart';
@@ -22,6 +24,7 @@ class MiniPlayerBar extends StatelessWidget {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
     final String subtitle = _buildSubtitle(state);
+    final double progress = _buildProgress(state);
 
     return Padding(
       padding: EdgeInsets.fromLTRB(20, 0, 20, bottomPadding),
@@ -42,7 +45,10 @@ class MiniPlayerBar extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               child: Row(
                 children: <Widget>[
-                  _Artwork(coverUrl: state.currentItem?.coverUrl ?? ''),
+                  _Artwork(
+                    coverUrl: state.currentItem?.coverUrl ?? '',
+                    progress: progress,
+                  ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Column(
@@ -105,35 +111,132 @@ class MiniPlayerBar extends StatelessWidget {
         state.audioStream?.qualityLabel ?? state.currentItem?.author ?? '',
     };
   }
+
+  double _buildProgress(PlayerState state) {
+    final Duration? duration = state.duration;
+
+    if (duration == null || duration <= Duration.zero) {
+      return 0;
+    }
+
+    return (state.position.inMilliseconds / duration.inMilliseconds).clamp(
+      0.0,
+      1.0,
+    );
+  }
 }
 
 class _Artwork extends StatelessWidget {
-  const _Artwork({required this.coverUrl});
+  const _Artwork({required this.coverUrl, required this.progress});
+
+  static const double _outerSize = 52;
+  static const double _imageSize = 48;
 
   final String coverUrl;
+  final double progress;
 
   @override
   Widget build(BuildContext context) {
     final ColorScheme colorScheme = Theme.of(context).colorScheme;
 
-    return Container(
-      width: 48,
-      height: 48,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
-        color: colorScheme.surfaceContainerHigh,
-        border: Border.all(color: colorScheme.outlineVariant),
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(16),
-        child: CommonCachedImage(
-          imageUrl: coverUrl,
-          fit: BoxFit.cover,
-          fallbackIcon: Icons.music_note_rounded,
-          iconColor: colorScheme.onSurfaceVariant,
-          backgroundColor: colorScheme.surfaceContainerHigh,
-        ),
+    return SizedBox(
+      width: _outerSize,
+      height: _outerSize,
+      child: Stack(
+        alignment: Alignment.center,
+        children: <Widget>[
+          CustomPaint(
+            size: const Size(_outerSize, _outerSize),
+            painter: _ArtworkProgressPainter(
+              progress: progress,
+              trackColor: colorScheme.primary.withValues(alpha: 0.14),
+              progressColor: colorScheme.primary,
+            ),
+          ),
+          Container(
+            width: _imageSize,
+            height: _imageSize,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(14),
+              color: colorScheme.surfaceContainerHigh,
+              border: Border.all(color: colorScheme.outlineVariant),
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(14),
+              child: CommonCachedImage(
+                imageUrl: coverUrl,
+                fit: BoxFit.cover,
+                fallbackIcon: Icons.music_note_rounded,
+                iconColor: colorScheme.onSurfaceVariant,
+                backgroundColor: colorScheme.surfaceContainerHigh,
+              ),
+            ),
+          ),
+        ],
       ),
     );
+  }
+}
+
+class _ArtworkProgressPainter extends CustomPainter {
+  const _ArtworkProgressPainter({
+    required this.progress,
+    required this.trackColor,
+    required this.progressColor,
+  });
+
+  final double progress;
+  final Color trackColor;
+  final Color progressColor;
+
+  static const double _strokeWidth = 3.0;
+  static const double _radius = 17;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final Rect rect = Offset.zero & size;
+    final RRect rrect = RRect.fromRectAndRadius(
+      rect.deflate(_strokeWidth / 2),
+      const Radius.circular(_radius),
+    );
+
+    canvas.drawRRect(
+      rrect,
+      Paint()
+        ..color = trackColor
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = _strokeWidth,
+    );
+
+    // final Path borderPath = Path()..addRRect(rrect);
+    // final PathMetrics metrics = borderPath.computeMetrics();
+    // if (metrics.isEmpty) {
+    //   return;
+    // }
+
+    // final PathMetric metric = metrics.first;
+    // final double progressLength = metric.length * progress.clamp(0.0, 1.0);
+
+    // if (progressLength <= 0) {
+    //   return;
+    // }
+
+    // final Path progressPath = metric.extractPath(0, progressLength);
+
+    // canvas.drawPath(
+    //   progressPath,
+    //   Paint()
+    //     ..color = progressColor
+    //     ..style = PaintingStyle.stroke
+    //     ..strokeWidth = _strokeWidth
+    //     ..strokeCap = StrokeCap.round,
+    // );
+  }
+
+  @override
+  bool shouldRepaint(covariant _ArtworkProgressPainter oldDelegate) {
+    return oldDelegate.progress != progress ||
+        oldDelegate.trackColor != trackColor ||
+        oldDelegate.progressColor != progressColor;
   }
 }
