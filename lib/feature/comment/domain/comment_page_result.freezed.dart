@@ -14,7 +14,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$CommentPageResult {
 
- List<CommentItem> get items; List<CommentItem> get hotItems; CommentItem? get topItem; int get page; int get pageSize; int get totalCount; bool get hasMore; bool get isReadOnly; String? get noticeText;
+ List<CommentItem> get items; List<CommentItem> get hotItems; CommentItem? get topItem; int get page; int get pageSize; int get totalCount; bool get hasMore; String? get nextOffset; List<CommentSort> get supportedSorts; String? get sortTitle; bool get isEnd; bool get hasFolded; bool get isFolded; bool get isReadOnly; String? get noticeText;
 /// Create a copy of CommentPageResult
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -25,16 +25,16 @@ $CommentPageResultCopyWith<CommentPageResult> get copyWith => _$CommentPageResul
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is CommentPageResult&&const DeepCollectionEquality().equals(other.items, items)&&const DeepCollectionEquality().equals(other.hotItems, hotItems)&&(identical(other.topItem, topItem) || other.topItem == topItem)&&(identical(other.page, page) || other.page == page)&&(identical(other.pageSize, pageSize) || other.pageSize == pageSize)&&(identical(other.totalCount, totalCount) || other.totalCount == totalCount)&&(identical(other.hasMore, hasMore) || other.hasMore == hasMore)&&(identical(other.isReadOnly, isReadOnly) || other.isReadOnly == isReadOnly)&&(identical(other.noticeText, noticeText) || other.noticeText == noticeText));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is CommentPageResult&&const DeepCollectionEquality().equals(other.items, items)&&const DeepCollectionEquality().equals(other.hotItems, hotItems)&&(identical(other.topItem, topItem) || other.topItem == topItem)&&(identical(other.page, page) || other.page == page)&&(identical(other.pageSize, pageSize) || other.pageSize == pageSize)&&(identical(other.totalCount, totalCount) || other.totalCount == totalCount)&&(identical(other.hasMore, hasMore) || other.hasMore == hasMore)&&(identical(other.nextOffset, nextOffset) || other.nextOffset == nextOffset)&&const DeepCollectionEquality().equals(other.supportedSorts, supportedSorts)&&(identical(other.sortTitle, sortTitle) || other.sortTitle == sortTitle)&&(identical(other.isEnd, isEnd) || other.isEnd == isEnd)&&(identical(other.hasFolded, hasFolded) || other.hasFolded == hasFolded)&&(identical(other.isFolded, isFolded) || other.isFolded == isFolded)&&(identical(other.isReadOnly, isReadOnly) || other.isReadOnly == isReadOnly)&&(identical(other.noticeText, noticeText) || other.noticeText == noticeText));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(items),const DeepCollectionEquality().hash(hotItems),topItem,page,pageSize,totalCount,hasMore,isReadOnly,noticeText);
+int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(items),const DeepCollectionEquality().hash(hotItems),topItem,page,pageSize,totalCount,hasMore,nextOffset,const DeepCollectionEquality().hash(supportedSorts),sortTitle,isEnd,hasFolded,isFolded,isReadOnly,noticeText);
 
 @override
 String toString() {
-  return 'CommentPageResult(items: $items, hotItems: $hotItems, topItem: $topItem, page: $page, pageSize: $pageSize, totalCount: $totalCount, hasMore: $hasMore, isReadOnly: $isReadOnly, noticeText: $noticeText)';
+  return 'CommentPageResult(items: $items, hotItems: $hotItems, topItem: $topItem, page: $page, pageSize: $pageSize, totalCount: $totalCount, hasMore: $hasMore, nextOffset: $nextOffset, supportedSorts: $supportedSorts, sortTitle: $sortTitle, isEnd: $isEnd, hasFolded: $hasFolded, isFolded: $isFolded, isReadOnly: $isReadOnly, noticeText: $noticeText)';
 }
 
 
@@ -45,7 +45,7 @@ abstract mixin class $CommentPageResultCopyWith<$Res>  {
   factory $CommentPageResultCopyWith(CommentPageResult value, $Res Function(CommentPageResult) _then) = _$CommentPageResultCopyWithImpl;
 @useResult
 $Res call({
- List<CommentItem> items, List<CommentItem> hotItems, CommentItem? topItem, int page, int pageSize, int totalCount, bool hasMore, bool isReadOnly, String? noticeText
+ List<CommentItem> items, List<CommentItem> hotItems, CommentItem? topItem, int page, int pageSize, int totalCount, bool hasMore, String? nextOffset, List<CommentSort> supportedSorts, String? sortTitle, bool isEnd, bool hasFolded, bool isFolded, bool isReadOnly, String? noticeText
 });
 
 
@@ -62,7 +62,7 @@ class _$CommentPageResultCopyWithImpl<$Res>
 
 /// Create a copy of CommentPageResult
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? items = null,Object? hotItems = null,Object? topItem = freezed,Object? page = null,Object? pageSize = null,Object? totalCount = null,Object? hasMore = null,Object? isReadOnly = null,Object? noticeText = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? items = null,Object? hotItems = null,Object? topItem = freezed,Object? page = null,Object? pageSize = null,Object? totalCount = null,Object? hasMore = null,Object? nextOffset = freezed,Object? supportedSorts = null,Object? sortTitle = freezed,Object? isEnd = null,Object? hasFolded = null,Object? isFolded = null,Object? isReadOnly = null,Object? noticeText = freezed,}) {
   return _then(_self.copyWith(
 items: null == items ? _self.items : items // ignore: cast_nullable_to_non_nullable
 as List<CommentItem>,hotItems: null == hotItems ? _self.hotItems : hotItems // ignore: cast_nullable_to_non_nullable
@@ -71,6 +71,12 @@ as CommentItem?,page: null == page ? _self.page : page // ignore: cast_nullable_
 as int,pageSize: null == pageSize ? _self.pageSize : pageSize // ignore: cast_nullable_to_non_nullable
 as int,totalCount: null == totalCount ? _self.totalCount : totalCount // ignore: cast_nullable_to_non_nullable
 as int,hasMore: null == hasMore ? _self.hasMore : hasMore // ignore: cast_nullable_to_non_nullable
+as bool,nextOffset: freezed == nextOffset ? _self.nextOffset : nextOffset // ignore: cast_nullable_to_non_nullable
+as String?,supportedSorts: null == supportedSorts ? _self.supportedSorts : supportedSorts // ignore: cast_nullable_to_non_nullable
+as List<CommentSort>,sortTitle: freezed == sortTitle ? _self.sortTitle : sortTitle // ignore: cast_nullable_to_non_nullable
+as String?,isEnd: null == isEnd ? _self.isEnd : isEnd // ignore: cast_nullable_to_non_nullable
+as bool,hasFolded: null == hasFolded ? _self.hasFolded : hasFolded // ignore: cast_nullable_to_non_nullable
+as bool,isFolded: null == isFolded ? _self.isFolded : isFolded // ignore: cast_nullable_to_non_nullable
 as bool,isReadOnly: null == isReadOnly ? _self.isReadOnly : isReadOnly // ignore: cast_nullable_to_non_nullable
 as bool,noticeText: freezed == noticeText ? _self.noticeText : noticeText // ignore: cast_nullable_to_non_nullable
 as String?,
@@ -170,10 +176,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( List<CommentItem> items,  List<CommentItem> hotItems,  CommentItem? topItem,  int page,  int pageSize,  int totalCount,  bool hasMore,  bool isReadOnly,  String? noticeText)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( List<CommentItem> items,  List<CommentItem> hotItems,  CommentItem? topItem,  int page,  int pageSize,  int totalCount,  bool hasMore,  String? nextOffset,  List<CommentSort> supportedSorts,  String? sortTitle,  bool isEnd,  bool hasFolded,  bool isFolded,  bool isReadOnly,  String? noticeText)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _CommentPageResult() when $default != null:
-return $default(_that.items,_that.hotItems,_that.topItem,_that.page,_that.pageSize,_that.totalCount,_that.hasMore,_that.isReadOnly,_that.noticeText);case _:
+return $default(_that.items,_that.hotItems,_that.topItem,_that.page,_that.pageSize,_that.totalCount,_that.hasMore,_that.nextOffset,_that.supportedSorts,_that.sortTitle,_that.isEnd,_that.hasFolded,_that.isFolded,_that.isReadOnly,_that.noticeText);case _:
   return orElse();
 
 }
@@ -191,10 +197,10 @@ return $default(_that.items,_that.hotItems,_that.topItem,_that.page,_that.pageSi
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( List<CommentItem> items,  List<CommentItem> hotItems,  CommentItem? topItem,  int page,  int pageSize,  int totalCount,  bool hasMore,  bool isReadOnly,  String? noticeText)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( List<CommentItem> items,  List<CommentItem> hotItems,  CommentItem? topItem,  int page,  int pageSize,  int totalCount,  bool hasMore,  String? nextOffset,  List<CommentSort> supportedSorts,  String? sortTitle,  bool isEnd,  bool hasFolded,  bool isFolded,  bool isReadOnly,  String? noticeText)  $default,) {final _that = this;
 switch (_that) {
 case _CommentPageResult():
-return $default(_that.items,_that.hotItems,_that.topItem,_that.page,_that.pageSize,_that.totalCount,_that.hasMore,_that.isReadOnly,_that.noticeText);case _:
+return $default(_that.items,_that.hotItems,_that.topItem,_that.page,_that.pageSize,_that.totalCount,_that.hasMore,_that.nextOffset,_that.supportedSorts,_that.sortTitle,_that.isEnd,_that.hasFolded,_that.isFolded,_that.isReadOnly,_that.noticeText);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -211,10 +217,10 @@ return $default(_that.items,_that.hotItems,_that.topItem,_that.page,_that.pageSi
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( List<CommentItem> items,  List<CommentItem> hotItems,  CommentItem? topItem,  int page,  int pageSize,  int totalCount,  bool hasMore,  bool isReadOnly,  String? noticeText)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( List<CommentItem> items,  List<CommentItem> hotItems,  CommentItem? topItem,  int page,  int pageSize,  int totalCount,  bool hasMore,  String? nextOffset,  List<CommentSort> supportedSorts,  String? sortTitle,  bool isEnd,  bool hasFolded,  bool isFolded,  bool isReadOnly,  String? noticeText)?  $default,) {final _that = this;
 switch (_that) {
 case _CommentPageResult() when $default != null:
-return $default(_that.items,_that.hotItems,_that.topItem,_that.page,_that.pageSize,_that.totalCount,_that.hasMore,_that.isReadOnly,_that.noticeText);case _:
+return $default(_that.items,_that.hotItems,_that.topItem,_that.page,_that.pageSize,_that.totalCount,_that.hasMore,_that.nextOffset,_that.supportedSorts,_that.sortTitle,_that.isEnd,_that.hasFolded,_that.isFolded,_that.isReadOnly,_that.noticeText);case _:
   return null;
 
 }
@@ -226,7 +232,7 @@ return $default(_that.items,_that.hotItems,_that.topItem,_that.page,_that.pageSi
 
 
 class _CommentPageResult implements CommentPageResult {
-  const _CommentPageResult({final  List<CommentItem> items = const <CommentItem>[], final  List<CommentItem> hotItems = const <CommentItem>[], this.topItem, required this.page, required this.pageSize, required this.totalCount, required this.hasMore, this.isReadOnly = false, this.noticeText}): _items = items,_hotItems = hotItems;
+  const _CommentPageResult({final  List<CommentItem> items = const <CommentItem>[], final  List<CommentItem> hotItems = const <CommentItem>[], this.topItem, required this.page, required this.pageSize, required this.totalCount, required this.hasMore, this.nextOffset, final  List<CommentSort> supportedSorts = const <CommentSort>[], this.sortTitle, this.isEnd = false, this.hasFolded = false, this.isFolded = false, this.isReadOnly = false, this.noticeText}): _items = items,_hotItems = hotItems,_supportedSorts = supportedSorts;
   
 
  final  List<CommentItem> _items;
@@ -248,6 +254,18 @@ class _CommentPageResult implements CommentPageResult {
 @override final  int pageSize;
 @override final  int totalCount;
 @override final  bool hasMore;
+@override final  String? nextOffset;
+ final  List<CommentSort> _supportedSorts;
+@override@JsonKey() List<CommentSort> get supportedSorts {
+  if (_supportedSorts is EqualUnmodifiableListView) return _supportedSorts;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_supportedSorts);
+}
+
+@override final  String? sortTitle;
+@override@JsonKey() final  bool isEnd;
+@override@JsonKey() final  bool hasFolded;
+@override@JsonKey() final  bool isFolded;
 @override@JsonKey() final  bool isReadOnly;
 @override final  String? noticeText;
 
@@ -261,16 +279,16 @@ _$CommentPageResultCopyWith<_CommentPageResult> get copyWith => __$CommentPageRe
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _CommentPageResult&&const DeepCollectionEquality().equals(other._items, _items)&&const DeepCollectionEquality().equals(other._hotItems, _hotItems)&&(identical(other.topItem, topItem) || other.topItem == topItem)&&(identical(other.page, page) || other.page == page)&&(identical(other.pageSize, pageSize) || other.pageSize == pageSize)&&(identical(other.totalCount, totalCount) || other.totalCount == totalCount)&&(identical(other.hasMore, hasMore) || other.hasMore == hasMore)&&(identical(other.isReadOnly, isReadOnly) || other.isReadOnly == isReadOnly)&&(identical(other.noticeText, noticeText) || other.noticeText == noticeText));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _CommentPageResult&&const DeepCollectionEquality().equals(other._items, _items)&&const DeepCollectionEquality().equals(other._hotItems, _hotItems)&&(identical(other.topItem, topItem) || other.topItem == topItem)&&(identical(other.page, page) || other.page == page)&&(identical(other.pageSize, pageSize) || other.pageSize == pageSize)&&(identical(other.totalCount, totalCount) || other.totalCount == totalCount)&&(identical(other.hasMore, hasMore) || other.hasMore == hasMore)&&(identical(other.nextOffset, nextOffset) || other.nextOffset == nextOffset)&&const DeepCollectionEquality().equals(other._supportedSorts, _supportedSorts)&&(identical(other.sortTitle, sortTitle) || other.sortTitle == sortTitle)&&(identical(other.isEnd, isEnd) || other.isEnd == isEnd)&&(identical(other.hasFolded, hasFolded) || other.hasFolded == hasFolded)&&(identical(other.isFolded, isFolded) || other.isFolded == isFolded)&&(identical(other.isReadOnly, isReadOnly) || other.isReadOnly == isReadOnly)&&(identical(other.noticeText, noticeText) || other.noticeText == noticeText));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(_items),const DeepCollectionEquality().hash(_hotItems),topItem,page,pageSize,totalCount,hasMore,isReadOnly,noticeText);
+int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(_items),const DeepCollectionEquality().hash(_hotItems),topItem,page,pageSize,totalCount,hasMore,nextOffset,const DeepCollectionEquality().hash(_supportedSorts),sortTitle,isEnd,hasFolded,isFolded,isReadOnly,noticeText);
 
 @override
 String toString() {
-  return 'CommentPageResult(items: $items, hotItems: $hotItems, topItem: $topItem, page: $page, pageSize: $pageSize, totalCount: $totalCount, hasMore: $hasMore, isReadOnly: $isReadOnly, noticeText: $noticeText)';
+  return 'CommentPageResult(items: $items, hotItems: $hotItems, topItem: $topItem, page: $page, pageSize: $pageSize, totalCount: $totalCount, hasMore: $hasMore, nextOffset: $nextOffset, supportedSorts: $supportedSorts, sortTitle: $sortTitle, isEnd: $isEnd, hasFolded: $hasFolded, isFolded: $isFolded, isReadOnly: $isReadOnly, noticeText: $noticeText)';
 }
 
 
@@ -281,7 +299,7 @@ abstract mixin class _$CommentPageResultCopyWith<$Res> implements $CommentPageRe
   factory _$CommentPageResultCopyWith(_CommentPageResult value, $Res Function(_CommentPageResult) _then) = __$CommentPageResultCopyWithImpl;
 @override @useResult
 $Res call({
- List<CommentItem> items, List<CommentItem> hotItems, CommentItem? topItem, int page, int pageSize, int totalCount, bool hasMore, bool isReadOnly, String? noticeText
+ List<CommentItem> items, List<CommentItem> hotItems, CommentItem? topItem, int page, int pageSize, int totalCount, bool hasMore, String? nextOffset, List<CommentSort> supportedSorts, String? sortTitle, bool isEnd, bool hasFolded, bool isFolded, bool isReadOnly, String? noticeText
 });
 
 
@@ -298,7 +316,7 @@ class __$CommentPageResultCopyWithImpl<$Res>
 
 /// Create a copy of CommentPageResult
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? items = null,Object? hotItems = null,Object? topItem = freezed,Object? page = null,Object? pageSize = null,Object? totalCount = null,Object? hasMore = null,Object? isReadOnly = null,Object? noticeText = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? items = null,Object? hotItems = null,Object? topItem = freezed,Object? page = null,Object? pageSize = null,Object? totalCount = null,Object? hasMore = null,Object? nextOffset = freezed,Object? supportedSorts = null,Object? sortTitle = freezed,Object? isEnd = null,Object? hasFolded = null,Object? isFolded = null,Object? isReadOnly = null,Object? noticeText = freezed,}) {
   return _then(_CommentPageResult(
 items: null == items ? _self._items : items // ignore: cast_nullable_to_non_nullable
 as List<CommentItem>,hotItems: null == hotItems ? _self._hotItems : hotItems // ignore: cast_nullable_to_non_nullable
@@ -307,6 +325,12 @@ as CommentItem?,page: null == page ? _self.page : page // ignore: cast_nullable_
 as int,pageSize: null == pageSize ? _self.pageSize : pageSize // ignore: cast_nullable_to_non_nullable
 as int,totalCount: null == totalCount ? _self.totalCount : totalCount // ignore: cast_nullable_to_non_nullable
 as int,hasMore: null == hasMore ? _self.hasMore : hasMore // ignore: cast_nullable_to_non_nullable
+as bool,nextOffset: freezed == nextOffset ? _self.nextOffset : nextOffset // ignore: cast_nullable_to_non_nullable
+as String?,supportedSorts: null == supportedSorts ? _self._supportedSorts : supportedSorts // ignore: cast_nullable_to_non_nullable
+as List<CommentSort>,sortTitle: freezed == sortTitle ? _self.sortTitle : sortTitle // ignore: cast_nullable_to_non_nullable
+as String?,isEnd: null == isEnd ? _self.isEnd : isEnd // ignore: cast_nullable_to_non_nullable
+as bool,hasFolded: null == hasFolded ? _self.hasFolded : hasFolded // ignore: cast_nullable_to_non_nullable
+as bool,isFolded: null == isFolded ? _self.isFolded : isFolded // ignore: cast_nullable_to_non_nullable
 as bool,isReadOnly: null == isReadOnly ? _self.isReadOnly : isReadOnly // ignore: cast_nullable_to_non_nullable
 as bool,noticeText: freezed == noticeText ? _self.noticeText : noticeText // ignore: cast_nullable_to_non_nullable
 as String?,
