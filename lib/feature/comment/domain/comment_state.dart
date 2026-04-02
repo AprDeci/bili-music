@@ -19,6 +19,7 @@ abstract class CommentState with _$CommentState {
     @Default(false) bool isLoadingMore,
     @Default(0) int currentPage,
     @Default(false) bool hasMore,
+    @Default(0) int total,
     String? nextOffset,
     String? sortTitle,
     @Default(false) bool isEnd,

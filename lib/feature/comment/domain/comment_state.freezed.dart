@@ -14,7 +14,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$CommentState {
 
- CommentTarget get target; CommentSort get sort; List<CommentItem> get items; List<CommentItem> get hotItems; List<CommentSort> get supportedSorts; CommentItem? get topItem; bool get isLoading; bool get isRefreshing; bool get isLoadingMore; int get currentPage; bool get hasMore; String? get nextOffset; String? get sortTitle; bool get isEnd; bool get hasFolded; bool get isFolded; bool get isReadOnly; String? get noticeText; String? get errorMessage; String? get loadMoreErrorMessage;
+ CommentTarget get target; CommentSort get sort; List<CommentItem> get items; List<CommentItem> get hotItems; List<CommentSort> get supportedSorts; CommentItem? get topItem; bool get isLoading; bool get isRefreshing; bool get isLoadingMore; int get currentPage; bool get hasMore; int get total; String? get nextOffset; String? get sortTitle; bool get isEnd; bool get hasFolded; bool get isFolded; bool get isReadOnly; String? get noticeText; String? get errorMessage; String? get loadMoreErrorMessage;
 /// Create a copy of CommentState
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -25,16 +25,16 @@ $CommentStateCopyWith<CommentState> get copyWith => _$CommentStateCopyWithImpl<C
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is CommentState&&(identical(other.target, target) || other.target == target)&&(identical(other.sort, sort) || other.sort == sort)&&const DeepCollectionEquality().equals(other.items, items)&&const DeepCollectionEquality().equals(other.hotItems, hotItems)&&const DeepCollectionEquality().equals(other.supportedSorts, supportedSorts)&&(identical(other.topItem, topItem) || other.topItem == topItem)&&(identical(other.isLoading, isLoading) || other.isLoading == isLoading)&&(identical(other.isRefreshing, isRefreshing) || other.isRefreshing == isRefreshing)&&(identical(other.isLoadingMore, isLoadingMore) || other.isLoadingMore == isLoadingMore)&&(identical(other.currentPage, currentPage) || other.currentPage == currentPage)&&(identical(other.hasMore, hasMore) || other.hasMore == hasMore)&&(identical(other.nextOffset, nextOffset) || other.nextOffset == nextOffset)&&(identical(other.sortTitle, sortTitle) || other.sortTitle == sortTitle)&&(identical(other.isEnd, isEnd) || other.isEnd == isEnd)&&(identical(other.hasFolded, hasFolded) || other.hasFolded == hasFolded)&&(identical(other.isFolded, isFolded) || other.isFolded == isFolded)&&(identical(other.isReadOnly, isReadOnly) || other.isReadOnly == isReadOnly)&&(identical(other.noticeText, noticeText) || other.noticeText == noticeText)&&(identical(other.errorMessage, errorMessage) || other.errorMessage == errorMessage)&&(identical(other.loadMoreErrorMessage, loadMoreErrorMessage) || other.loadMoreErrorMessage == loadMoreErrorMessage));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is CommentState&&(identical(other.target, target) || other.target == target)&&(identical(other.sort, sort) || other.sort == sort)&&const DeepCollectionEquality().equals(other.items, items)&&const DeepCollectionEquality().equals(other.hotItems, hotItems)&&const DeepCollectionEquality().equals(other.supportedSorts, supportedSorts)&&(identical(other.topItem, topItem) || other.topItem == topItem)&&(identical(other.isLoading, isLoading) || other.isLoading == isLoading)&&(identical(other.isRefreshing, isRefreshing) || other.isRefreshing == isRefreshing)&&(identical(other.isLoadingMore, isLoadingMore) || other.isLoadingMore == isLoadingMore)&&(identical(other.currentPage, currentPage) || other.currentPage == currentPage)&&(identical(other.hasMore, hasMore) || other.hasMore == hasMore)&&(identical(other.total, total) || other.total == total)&&(identical(other.nextOffset, nextOffset) || other.nextOffset == nextOffset)&&(identical(other.sortTitle, sortTitle) || other.sortTitle == sortTitle)&&(identical(other.isEnd, isEnd) || other.isEnd == isEnd)&&(identical(other.hasFolded, hasFolded) || other.hasFolded == hasFolded)&&(identical(other.isFolded, isFolded) || other.isFolded == isFolded)&&(identical(other.isReadOnly, isReadOnly) || other.isReadOnly == isReadOnly)&&(identical(other.noticeText, noticeText) || other.noticeText == noticeText)&&(identical(other.errorMessage, errorMessage) || other.errorMessage == errorMessage)&&(identical(other.loadMoreErrorMessage, loadMoreErrorMessage) || other.loadMoreErrorMessage == loadMoreErrorMessage));
 }
 
 
 @override
-int get hashCode => Object.hashAll([runtimeType,target,sort,const DeepCollectionEquality().hash(items),const DeepCollectionEquality().hash(hotItems),const DeepCollectionEquality().hash(supportedSorts),topItem,isLoading,isRefreshing,isLoadingMore,currentPage,hasMore,nextOffset,sortTitle,isEnd,hasFolded,isFolded,isReadOnly,noticeText,errorMessage,loadMoreErrorMessage]);
+int get hashCode => Object.hashAll([runtimeType,target,sort,const DeepCollectionEquality().hash(items),const DeepCollectionEquality().hash(hotItems),const DeepCollectionEquality().hash(supportedSorts),topItem,isLoading,isRefreshing,isLoadingMore,currentPage,hasMore,total,nextOffset,sortTitle,isEnd,hasFolded,isFolded,isReadOnly,noticeText,errorMessage,loadMoreErrorMessage]);
 
 @override
 String toString() {
-  return 'CommentState(target: $target, sort: $sort, items: $items, hotItems: $hotItems, supportedSorts: $supportedSorts, topItem: $topItem, isLoading: $isLoading, isRefreshing: $isRefreshing, isLoadingMore: $isLoadingMore, currentPage: $currentPage, hasMore: $hasMore, nextOffset: $nextOffset, sortTitle: $sortTitle, isEnd: $isEnd, hasFolded: $hasFolded, isFolded: $isFolded, isReadOnly: $isReadOnly, noticeText: $noticeText, errorMessage: $errorMessage, loadMoreErrorMessage: $loadMoreErrorMessage)';
+  return 'CommentState(target: $target, sort: $sort, items: $items, hotItems: $hotItems, supportedSorts: $supportedSorts, topItem: $topItem, isLoading: $isLoading, isRefreshing: $isRefreshing, isLoadingMore: $isLoadingMore, currentPage: $currentPage, hasMore: $hasMore, total: $total, nextOffset: $nextOffset, sortTitle: $sortTitle, isEnd: $isEnd, hasFolded: $hasFolded, isFolded: $isFolded, isReadOnly: $isReadOnly, noticeText: $noticeText, errorMessage: $errorMessage, loadMoreErrorMessage: $loadMoreErrorMessage)';
 }
 
 
@@ -45,7 +45,7 @@ abstract mixin class $CommentStateCopyWith<$Res>  {
   factory $CommentStateCopyWith(CommentState value, $Res Function(CommentState) _then) = _$CommentStateCopyWithImpl;
 @useResult
 $Res call({
- CommentTarget target, CommentSort sort, List<CommentItem> items, List<CommentItem> hotItems, List<CommentSort> supportedSorts, CommentItem? topItem, bool isLoading, bool isRefreshing, bool isLoadingMore, int currentPage, bool hasMore, String? nextOffset, String? sortTitle, bool isEnd, bool hasFolded, bool isFolded, bool isReadOnly, String? noticeText, String? errorMessage, String? loadMoreErrorMessage
+ CommentTarget target, CommentSort sort, List<CommentItem> items, List<CommentItem> hotItems, List<CommentSort> supportedSorts, CommentItem? topItem, bool isLoading, bool isRefreshing, bool isLoadingMore, int currentPage, bool hasMore, int total, String? nextOffset, String? sortTitle, bool isEnd, bool hasFolded, bool isFolded, bool isReadOnly, String? noticeText, String? errorMessage, String? loadMoreErrorMessage
 });
 
 
@@ -62,7 +62,7 @@ class _$CommentStateCopyWithImpl<$Res>
 
 /// Create a copy of CommentState
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? target = null,Object? sort = null,Object? items = null,Object? hotItems = null,Object? supportedSorts = null,Object? topItem = freezed,Object? isLoading = null,Object? isRefreshing = null,Object? isLoadingMore = null,Object? currentPage = null,Object? hasMore = null,Object? nextOffset = freezed,Object? sortTitle = freezed,Object? isEnd = null,Object? hasFolded = null,Object? isFolded = null,Object? isReadOnly = null,Object? noticeText = freezed,Object? errorMessage = freezed,Object? loadMoreErrorMessage = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? target = null,Object? sort = null,Object? items = null,Object? hotItems = null,Object? supportedSorts = null,Object? topItem = freezed,Object? isLoading = null,Object? isRefreshing = null,Object? isLoadingMore = null,Object? currentPage = null,Object? hasMore = null,Object? total = null,Object? nextOffset = freezed,Object? sortTitle = freezed,Object? isEnd = null,Object? hasFolded = null,Object? isFolded = null,Object? isReadOnly = null,Object? noticeText = freezed,Object? errorMessage = freezed,Object? loadMoreErrorMessage = freezed,}) {
   return _then(_self.copyWith(
 target: null == target ? _self.target : target // ignore: cast_nullable_to_non_nullable
 as CommentTarget,sort: null == sort ? _self.sort : sort // ignore: cast_nullable_to_non_nullable
@@ -75,7 +75,8 @@ as bool,isRefreshing: null == isRefreshing ? _self.isRefreshing : isRefreshing /
 as bool,isLoadingMore: null == isLoadingMore ? _self.isLoadingMore : isLoadingMore // ignore: cast_nullable_to_non_nullable
 as bool,currentPage: null == currentPage ? _self.currentPage : currentPage // ignore: cast_nullable_to_non_nullable
 as int,hasMore: null == hasMore ? _self.hasMore : hasMore // ignore: cast_nullable_to_non_nullable
-as bool,nextOffset: freezed == nextOffset ? _self.nextOffset : nextOffset // ignore: cast_nullable_to_non_nullable
+as bool,total: null == total ? _self.total : total // ignore: cast_nullable_to_non_nullable
+as int,nextOffset: freezed == nextOffset ? _self.nextOffset : nextOffset // ignore: cast_nullable_to_non_nullable
 as String?,sortTitle: freezed == sortTitle ? _self.sortTitle : sortTitle // ignore: cast_nullable_to_non_nullable
 as String?,isEnd: null == isEnd ? _self.isEnd : isEnd // ignore: cast_nullable_to_non_nullable
 as bool,hasFolded: null == hasFolded ? _self.hasFolded : hasFolded // ignore: cast_nullable_to_non_nullable
@@ -190,10 +191,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( CommentTarget target,  CommentSort sort,  List<CommentItem> items,  List<CommentItem> hotItems,  List<CommentSort> supportedSorts,  CommentItem? topItem,  bool isLoading,  bool isRefreshing,  bool isLoadingMore,  int currentPage,  bool hasMore,  String? nextOffset,  String? sortTitle,  bool isEnd,  bool hasFolded,  bool isFolded,  bool isReadOnly,  String? noticeText,  String? errorMessage,  String? loadMoreErrorMessage)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( CommentTarget target,  CommentSort sort,  List<CommentItem> items,  List<CommentItem> hotItems,  List<CommentSort> supportedSorts,  CommentItem? topItem,  bool isLoading,  bool isRefreshing,  bool isLoadingMore,  int currentPage,  bool hasMore,  int total,  String? nextOffset,  String? sortTitle,  bool isEnd,  bool hasFolded,  bool isFolded,  bool isReadOnly,  String? noticeText,  String? errorMessage,  String? loadMoreErrorMessage)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _CommentState() when $default != null:
-return $default(_that.target,_that.sort,_that.items,_that.hotItems,_that.supportedSorts,_that.topItem,_that.isLoading,_that.isRefreshing,_that.isLoadingMore,_that.currentPage,_that.hasMore,_that.nextOffset,_that.sortTitle,_that.isEnd,_that.hasFolded,_that.isFolded,_that.isReadOnly,_that.noticeText,_that.errorMessage,_that.loadMoreErrorMessage);case _:
+return $default(_that.target,_that.sort,_that.items,_that.hotItems,_that.supportedSorts,_that.topItem,_that.isLoading,_that.isRefreshing,_that.isLoadingMore,_that.currentPage,_that.hasMore,_that.total,_that.nextOffset,_that.sortTitle,_that.isEnd,_that.hasFolded,_that.isFolded,_that.isReadOnly,_that.noticeText,_that.errorMessage,_that.loadMoreErrorMessage);case _:
   return orElse();
 
 }
@@ -211,10 +212,10 @@ return $default(_that.target,_that.sort,_that.items,_that.hotItems,_that.support
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( CommentTarget target,  CommentSort sort,  List<CommentItem> items,  List<CommentItem> hotItems,  List<CommentSort> supportedSorts,  CommentItem? topItem,  bool isLoading,  bool isRefreshing,  bool isLoadingMore,  int currentPage,  bool hasMore,  String? nextOffset,  String? sortTitle,  bool isEnd,  bool hasFolded,  bool isFolded,  bool isReadOnly,  String? noticeText,  String? errorMessage,  String? loadMoreErrorMessage)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( CommentTarget target,  CommentSort sort,  List<CommentItem> items,  List<CommentItem> hotItems,  List<CommentSort> supportedSorts,  CommentItem? topItem,  bool isLoading,  bool isRefreshing,  bool isLoadingMore,  int currentPage,  bool hasMore,  int total,  String? nextOffset,  String? sortTitle,  bool isEnd,  bool hasFolded,  bool isFolded,  bool isReadOnly,  String? noticeText,  String? errorMessage,  String? loadMoreErrorMessage)  $default,) {final _that = this;
 switch (_that) {
 case _CommentState():
-return $default(_that.target,_that.sort,_that.items,_that.hotItems,_that.supportedSorts,_that.topItem,_that.isLoading,_that.isRefreshing,_that.isLoadingMore,_that.currentPage,_that.hasMore,_that.nextOffset,_that.sortTitle,_that.isEnd,_that.hasFolded,_that.isFolded,_that.isReadOnly,_that.noticeText,_that.errorMessage,_that.loadMoreErrorMessage);case _:
+return $default(_that.target,_that.sort,_that.items,_that.hotItems,_that.supportedSorts,_that.topItem,_that.isLoading,_that.isRefreshing,_that.isLoadingMore,_that.currentPage,_that.hasMore,_that.total,_that.nextOffset,_that.sortTitle,_that.isEnd,_that.hasFolded,_that.isFolded,_that.isReadOnly,_that.noticeText,_that.errorMessage,_that.loadMoreErrorMessage);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -231,10 +232,10 @@ return $default(_that.target,_that.sort,_that.items,_that.hotItems,_that.support
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( CommentTarget target,  CommentSort sort,  List<CommentItem> items,  List<CommentItem> hotItems,  List<CommentSort> supportedSorts,  CommentItem? topItem,  bool isLoading,  bool isRefreshing,  bool isLoadingMore,  int currentPage,  bool hasMore,  String? nextOffset,  String? sortTitle,  bool isEnd,  bool hasFolded,  bool isFolded,  bool isReadOnly,  String? noticeText,  String? errorMessage,  String? loadMoreErrorMessage)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( CommentTarget target,  CommentSort sort,  List<CommentItem> items,  List<CommentItem> hotItems,  List<CommentSort> supportedSorts,  CommentItem? topItem,  bool isLoading,  bool isRefreshing,  bool isLoadingMore,  int currentPage,  bool hasMore,  int total,  String? nextOffset,  String? sortTitle,  bool isEnd,  bool hasFolded,  bool isFolded,  bool isReadOnly,  String? noticeText,  String? errorMessage,  String? loadMoreErrorMessage)?  $default,) {final _that = this;
 switch (_that) {
 case _CommentState() when $default != null:
-return $default(_that.target,_that.sort,_that.items,_that.hotItems,_that.supportedSorts,_that.topItem,_that.isLoading,_that.isRefreshing,_that.isLoadingMore,_that.currentPage,_that.hasMore,_that.nextOffset,_that.sortTitle,_that.isEnd,_that.hasFolded,_that.isFolded,_that.isReadOnly,_that.noticeText,_that.errorMessage,_that.loadMoreErrorMessage);case _:
+return $default(_that.target,_that.sort,_that.items,_that.hotItems,_that.supportedSorts,_that.topItem,_that.isLoading,_that.isRefreshing,_that.isLoadingMore,_that.currentPage,_that.hasMore,_that.total,_that.nextOffset,_that.sortTitle,_that.isEnd,_that.hasFolded,_that.isFolded,_that.isReadOnly,_that.noticeText,_that.errorMessage,_that.loadMoreErrorMessage);case _:
   return null;
 
 }
@@ -246,7 +247,7 @@ return $default(_that.target,_that.sort,_that.items,_that.hotItems,_that.support
 
 
 class _CommentState implements CommentState {
-  const _CommentState({required this.target, this.sort = CommentSort.time, final  List<CommentItem> items = const <CommentItem>[], final  List<CommentItem> hotItems = const <CommentItem>[], final  List<CommentSort> supportedSorts = const <CommentSort>[], this.topItem, this.isLoading = false, this.isRefreshing = false, this.isLoadingMore = false, this.currentPage = 0, this.hasMore = false, this.nextOffset, this.sortTitle, this.isEnd = false, this.hasFolded = false, this.isFolded = false, this.isReadOnly = false, this.noticeText, this.errorMessage, this.loadMoreErrorMessage}): _items = items,_hotItems = hotItems,_supportedSorts = supportedSorts;
+  const _CommentState({required this.target, this.sort = CommentSort.time, final  List<CommentItem> items = const <CommentItem>[], final  List<CommentItem> hotItems = const <CommentItem>[], final  List<CommentSort> supportedSorts = const <CommentSort>[], this.topItem, this.isLoading = false, this.isRefreshing = false, this.isLoadingMore = false, this.currentPage = 0, this.hasMore = false, this.total = 0, this.nextOffset, this.sortTitle, this.isEnd = false, this.hasFolded = false, this.isFolded = false, this.isReadOnly = false, this.noticeText, this.errorMessage, this.loadMoreErrorMessage}): _items = items,_hotItems = hotItems,_supportedSorts = supportedSorts;
   
 
 @override final  CommentTarget target;
@@ -278,6 +279,7 @@ class _CommentState implements CommentState {
 @override@JsonKey() final  bool isLoadingMore;
 @override@JsonKey() final  int currentPage;
 @override@JsonKey() final  bool hasMore;
+@override@JsonKey() final  int total;
 @override final  String? nextOffset;
 @override final  String? sortTitle;
 @override@JsonKey() final  bool isEnd;
@@ -298,16 +300,16 @@ _$CommentStateCopyWith<_CommentState> get copyWith => __$CommentStateCopyWithImp
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _CommentState&&(identical(other.target, target) || other.target == target)&&(identical(other.sort, sort) || other.sort == sort)&&const DeepCollectionEquality().equals(other._items, _items)&&const DeepCollectionEquality().equals(other._hotItems, _hotItems)&&const DeepCollectionEquality().equals(other._supportedSorts, _supportedSorts)&&(identical(other.topItem, topItem) || other.topItem == topItem)&&(identical(other.isLoading, isLoading) || other.isLoading == isLoading)&&(identical(other.isRefreshing, isRefreshing) || other.isRefreshing == isRefreshing)&&(identical(other.isLoadingMore, isLoadingMore) || other.isLoadingMore == isLoadingMore)&&(identical(other.currentPage, currentPage) || other.currentPage == currentPage)&&(identical(other.hasMore, hasMore) || other.hasMore == hasMore)&&(identical(other.nextOffset, nextOffset) || other.nextOffset == nextOffset)&&(identical(other.sortTitle, sortTitle) || other.sortTitle == sortTitle)&&(identical(other.isEnd, isEnd) || other.isEnd == isEnd)&&(identical(other.hasFolded, hasFolded) || other.hasFolded == hasFolded)&&(identical(other.isFolded, isFolded) || other.isFolded == isFolded)&&(identical(other.isReadOnly, isReadOnly) || other.isReadOnly == isReadOnly)&&(identical(other.noticeText, noticeText) || other.noticeText == noticeText)&&(identical(other.errorMessage, errorMessage) || other.errorMessage == errorMessage)&&(identical(other.loadMoreErrorMessage, loadMoreErrorMessage) || other.loadMoreErrorMessage == loadMoreErrorMessage));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _CommentState&&(identical(other.target, target) || other.target == target)&&(identical(other.sort, sort) || other.sort == sort)&&const DeepCollectionEquality().equals(other._items, _items)&&const DeepCollectionEquality().equals(other._hotItems, _hotItems)&&const DeepCollectionEquality().equals(other._supportedSorts, _supportedSorts)&&(identical(other.topItem, topItem) || other.topItem == topItem)&&(identical(other.isLoading, isLoading) || other.isLoading == isLoading)&&(identical(other.isRefreshing, isRefreshing) || other.isRefreshing == isRefreshing)&&(identical(other.isLoadingMore, isLoadingMore) || other.isLoadingMore == isLoadingMore)&&(identical(other.currentPage, currentPage) || other.currentPage == currentPage)&&(identical(other.hasMore, hasMore) || other.hasMore == hasMore)&&(identical(other.total, total) || other.total == total)&&(identical(other.nextOffset, nextOffset) || other.nextOffset == nextOffset)&&(identical(other.sortTitle, sortTitle) || other.sortTitle == sortTitle)&&(identical(other.isEnd, isEnd) || other.isEnd == isEnd)&&(identical(other.hasFolded, hasFolded) || other.hasFolded == hasFolded)&&(identical(other.isFolded, isFolded) || other.isFolded == isFolded)&&(identical(other.isReadOnly, isReadOnly) || other.isReadOnly == isReadOnly)&&(identical(other.noticeText, noticeText) || other.noticeText == noticeText)&&(identical(other.errorMessage, errorMessage) || other.errorMessage == errorMessage)&&(identical(other.loadMoreErrorMessage, loadMoreErrorMessage) || other.loadMoreErrorMessage == loadMoreErrorMessage));
 }
 
 
 @override
-int get hashCode => Object.hashAll([runtimeType,target,sort,const DeepCollectionEquality().hash(_items),const DeepCollectionEquality().hash(_hotItems),const DeepCollectionEquality().hash(_supportedSorts),topItem,isLoading,isRefreshing,isLoadingMore,currentPage,hasMore,nextOffset,sortTitle,isEnd,hasFolded,isFolded,isReadOnly,noticeText,errorMessage,loadMoreErrorMessage]);
+int get hashCode => Object.hashAll([runtimeType,target,sort,const DeepCollectionEquality().hash(_items),const DeepCollectionEquality().hash(_hotItems),const DeepCollectionEquality().hash(_supportedSorts),topItem,isLoading,isRefreshing,isLoadingMore,currentPage,hasMore,total,nextOffset,sortTitle,isEnd,hasFolded,isFolded,isReadOnly,noticeText,errorMessage,loadMoreErrorMessage]);
 
 @override
 String toString() {
-  return 'CommentState(target: $target, sort: $sort, items: $items, hotItems: $hotItems, supportedSorts: $supportedSorts, topItem: $topItem, isLoading: $isLoading, isRefreshing: $isRefreshing, isLoadingMore: $isLoadingMore, currentPage: $currentPage, hasMore: $hasMore, nextOffset: $nextOffset, sortTitle: $sortTitle, isEnd: $isEnd, hasFolded: $hasFolded, isFolded: $isFolded, isReadOnly: $isReadOnly, noticeText: $noticeText, errorMessage: $errorMessage, loadMoreErrorMessage: $loadMoreErrorMessage)';
+  return 'CommentState(target: $target, sort: $sort, items: $items, hotItems: $hotItems, supportedSorts: $supportedSorts, topItem: $topItem, isLoading: $isLoading, isRefreshing: $isRefreshing, isLoadingMore: $isLoadingMore, currentPage: $currentPage, hasMore: $hasMore, total: $total, nextOffset: $nextOffset, sortTitle: $sortTitle, isEnd: $isEnd, hasFolded: $hasFolded, isFolded: $isFolded, isReadOnly: $isReadOnly, noticeText: $noticeText, errorMessage: $errorMessage, loadMoreErrorMessage: $loadMoreErrorMessage)';
 }
 
 
@@ -318,7 +320,7 @@ abstract mixin class _$CommentStateCopyWith<$Res> implements $CommentStateCopyWi
   factory _$CommentStateCopyWith(_CommentState value, $Res Function(_CommentState) _then) = __$CommentStateCopyWithImpl;
 @override @useResult
 $Res call({
- CommentTarget target, CommentSort sort, List<CommentItem> items, List<CommentItem> hotItems, List<CommentSort> supportedSorts, CommentItem? topItem, bool isLoading, bool isRefreshing, bool isLoadingMore, int currentPage, bool hasMore, String? nextOffset, String? sortTitle, bool isEnd, bool hasFolded, bool isFolded, bool isReadOnly, String? noticeText, String? errorMessage, String? loadMoreErrorMessage
+ CommentTarget target, CommentSort sort, List<CommentItem> items, List<CommentItem> hotItems, List<CommentSort> supportedSorts, CommentItem? topItem, bool isLoading, bool isRefreshing, bool isLoadingMore, int currentPage, bool hasMore, int total, String? nextOffset, String? sortTitle, bool isEnd, bool hasFolded, bool isFolded, bool isReadOnly, String? noticeText, String? errorMessage, String? loadMoreErrorMessage
 });
 
 
@@ -335,7 +337,7 @@ class __$CommentStateCopyWithImpl<$Res>
 
 /// Create a copy of CommentState
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? target = null,Object? sort = null,Object? items = null,Object? hotItems = null,Object? supportedSorts = null,Object? topItem = freezed,Object? isLoading = null,Object? isRefreshing = null,Object? isLoadingMore = null,Object? currentPage = null,Object? hasMore = null,Object? nextOffset = freezed,Object? sortTitle = freezed,Object? isEnd = null,Object? hasFolded = null,Object? isFolded = null,Object? isReadOnly = null,Object? noticeText = freezed,Object? errorMessage = freezed,Object? loadMoreErrorMessage = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? target = null,Object? sort = null,Object? items = null,Object? hotItems = null,Object? supportedSorts = null,Object? topItem = freezed,Object? isLoading = null,Object? isRefreshing = null,Object? isLoadingMore = null,Object? currentPage = null,Object? hasMore = null,Object? total = null,Object? nextOffset = freezed,Object? sortTitle = freezed,Object? isEnd = null,Object? hasFolded = null,Object? isFolded = null,Object? isReadOnly = null,Object? noticeText = freezed,Object? errorMessage = freezed,Object? loadMoreErrorMessage = freezed,}) {
   return _then(_CommentState(
 target: null == target ? _self.target : target // ignore: cast_nullable_to_non_nullable
 as CommentTarget,sort: null == sort ? _self.sort : sort // ignore: cast_nullable_to_non_nullable
@@ -348,7 +350,8 @@ as bool,isRefreshing: null == isRefreshing ? _self.isRefreshing : isRefreshing /
 as bool,isLoadingMore: null == isLoadingMore ? _self.isLoadingMore : isLoadingMore // ignore: cast_nullable_to_non_nullable
 as bool,currentPage: null == currentPage ? _self.currentPage : currentPage // ignore: cast_nullable_to_non_nullable
 as int,hasMore: null == hasMore ? _self.hasMore : hasMore // ignore: cast_nullable_to_non_nullable
-as bool,nextOffset: freezed == nextOffset ? _self.nextOffset : nextOffset // ignore: cast_nullable_to_non_nullable
+as bool,total: null == total ? _self.total : total // ignore: cast_nullable_to_non_nullable
+as int,nextOffset: freezed == nextOffset ? _self.nextOffset : nextOffset // ignore: cast_nullable_to_non_nullable
 as String?,sortTitle: freezed == sortTitle ? _self.sortTitle : sortTitle // ignore: cast_nullable_to_non_nullable
 as String?,isEnd: null == isEnd ? _self.isEnd : isEnd // ignore: cast_nullable_to_non_nullable
 as bool,hasFolded: null == hasFolded ? _self.hasFolded : hasFolded // ignore: cast_nullable_to_non_nullable

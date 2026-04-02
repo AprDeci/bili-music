@@ -12,10 +12,23 @@ abstract class CommentTarget with _$CommentTarget {
     int? aid,
     String? bvid,
     String? title,
+    String? coverUrl,
   }) = _CommentTarget;
 
-  factory CommentTarget.video({required int aid, String? bvid, String? title}) {
-    return CommentTarget(oid: aid, type: 1, aid: aid, bvid: bvid, title: title);
+  factory CommentTarget.video({
+    required int aid,
+    String? bvid,
+    String? title,
+    String? coverUrl,
+  }) {
+    return CommentTarget(
+      oid: aid,
+      type: 1,
+      aid: aid,
+      bvid: bvid,
+      title: title,
+      coverUrl: coverUrl,
+    );
   }
 
   bool get isVideo => type == 1;
