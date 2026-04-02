@@ -18,21 +18,6 @@ class MyApp extends ConsumerStatefulWidget {
 }
 
 class _MyAppState extends ConsumerState<MyApp> {
-  // bool _didScheduleUpdateCheck = false;
-
-  // @override
-  // void didChangeDependencies() {
-  //   super.didChangeDependencies();
-  //   UpdateUtil.logger.d('didChangeDependencies');
-  //   if (_didScheduleUpdateCheck) {
-  //     return;
-  //   }
-  //   _didScheduleUpdateCheck = true;
-  //   WidgetsBinding.instance.addPostFrameCallback((_) {
-  //     UpdateUtil.checkAndPromptForUpdate(context);
-  //   });
-  // }
-
   @override
   Widget build(BuildContext context) {
     final GoRouter router = ref.watch(routerProvider);

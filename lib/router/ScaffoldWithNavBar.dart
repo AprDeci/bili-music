@@ -1,4 +1,5 @@
 import 'package:bilimusic/common/bottom_height_helper.dart';
+import 'package:bilimusic/common/util/update_util.dart';
 import 'package:bilimusic/feature/player/domain/player_state.dart';
 import 'package:bilimusic/feature/player/logic/player_controller.dart';
 import 'package:bilimusic/feature/player/ui/components/mini_player_bar.dart';
@@ -26,8 +27,33 @@ class _ScaffoldWithNavBarState extends ConsumerState<ScaffoldWithNavBar> {
   static const Duration _animationDuration = Duration(milliseconds: 200);
   static const Curve _animationCurve = Curves.easeInOutCubic;
   static const double _navHiddenSlideOffset = 1.2;
+  static const Duration _autoUpdateCheckDelay = Duration(milliseconds: 600);
 
   int _currentIndex = 0;
+  bool _didScheduleUpdateCheck = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _currentIndex = widget.navigationShell.currentIndex;
+    _scheduleAutoUpdateCheck();
+  }
+
+  void _scheduleAutoUpdateCheck() {
+    if (_didScheduleUpdateCheck) {
+      return;
+    }
+
+    _didScheduleUpdateCheck = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await Future<void>.delayed(_autoUpdateCheckDelay);
+      if (!mounted) {
+        return;
+      }
+
+      await UpdateUtil.checkAndPromptForUpdate(context);
+    });
+  }
 
   @override
   void didUpdateWidget(covariant ScaffoldWithNavBar oldWidget) {
