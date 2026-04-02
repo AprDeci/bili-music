@@ -1,3 +1,4 @@
+import 'package:bilimusic/common/util/json_util.dart';
 import 'package:bilimusic/core/bili/session/bili_cookie.dart';
 import 'package:bilimusic/core/bili/session/bili_session.dart';
 import 'package:bilimusic/core/bili/session/bili_session_store.dart';
@@ -161,15 +162,11 @@ class BiliSessionController extends _$BiliSessionController {
   }
 
   Map<String, dynamic> _asMap(dynamic value) {
-    if (value is Map<String, dynamic>) {
-      return value;
+    try {
+      return asStringKeyedMap(value);
+    } on FormatException {
+      throw const BiliSessionException('Unexpected response format.');
     }
-    if (value is Map) {
-      return value.map(
-        (dynamic key, dynamic mapValue) => MapEntry(key.toString(), mapValue),
-      );
-    }
-    throw const BiliSessionException('Unexpected response format.');
   }
 
   void _ensureSuccess(Map<String, dynamic> json) {

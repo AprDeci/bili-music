@@ -1,3 +1,6 @@
+import 'package:bilimusic/common/util/format_util.dart';
+import 'package:bilimusic/common/util/json_util.dart';
+import 'package:bilimusic/common/util/url_util.dart';
 import 'package:bilimusic/core/bili/net/bili_api_client.dart';
 import 'package:bilimusic/feature/search/domain/search_page_result.dart';
 import 'package:bilimusic/feature/search/domain/search_result_item.dart';
@@ -20,7 +23,7 @@ class BiliSearchRepository {
       requiresWbi: true,
     );
 
-    final Map<String, dynamic> data = _asMap(json['data']);
+    final Map<String, dynamic> data = asStringKeyedMap(json['data']);
     final List<dynamic> rawResults =
         data['result'] as List<dynamic>? ?? <dynamic>[];
     final List<SearchResultItem> items = rawResults
@@ -61,42 +64,31 @@ class BiliSearchRepository {
       bvid: json['bvid'] as String? ?? '',
       title: _stripKeywordTag(json['title'] as String? ?? ''),
       author: json['author'] as String? ?? '未知UP主',
-      coverUrl: _normalizeCoverUrl(json['pic'] as String? ?? ''),
+      coverUrl: normalizeHttpUrl(json['pic'] as String? ?? ''),
       duration: json['duration'] as String? ?? '--:--',
-      playCountText: _formatCount(playCount),
-      danmakuCountText: _formatCount(danmakuCount),
-      publishTimeText: _formatPublishTime(publishTimestamp),
+      playCountText: formatCompactCount(playCount),
+      danmakuCountText: formatCompactCount(danmakuCount),
+      publishTimeText:
+          formatYyyyMmDdFromUnixSeconds(publishTimestamp) ?? '时间未知',
       tagText: json['typename'] as String? ?? '视频',
       description: _cleanDescription(json['description'] as String?),
     );
   }
 
   Map<String, dynamic> _asMap(dynamic value) {
-    if (value is Map<String, dynamic>) {
-      return value;
+    try {
+      return asStringKeyedMap(value);
+    } on FormatException {
+      throw const BiliSearchException('Unexpected search response format.');
     }
-    if (value is Map) {
-      return value.map(
-        (dynamic key, dynamic mapValue) => MapEntry(key.toString(), mapValue),
-      );
-    }
-    throw const BiliSearchException('Unexpected search response format.');
   }
 
   Map<String, dynamic>? _asNullableMap(dynamic value) {
-    if (value is Map<String, dynamic>) {
-      return value;
-    }
-    if (value is Map) {
-      return value.map(
-        (dynamic key, dynamic mapValue) => MapEntry(key.toString(), mapValue),
-      );
-    }
-    return null;
+    return asNullableStringKeyedMap(value);
   }
 
   int? _readTotalPages(Map<String, dynamic> data) {
-    final Map<String, dynamic>? pageInfo = _asNullableMap(data['pageinfo']);
+    final Map<String, dynamic>? pageInfo = asNullableStringKeyedMap(data['pageinfo']);
 
     return _readPositiveInt(data['numPages']) ??
         _readPositiveInt(data['num_pages']) ??
@@ -150,41 +142,6 @@ class BiliSearchRepository {
     return cleaned.isEmpty ? null : cleaned;
   }
 
-  String _normalizeCoverUrl(String value) {
-    if (value.isEmpty) {
-      return '';
-    }
-    if (value.startsWith('http://') || value.startsWith('https://')) {
-      return value;
-    }
-    if (value.startsWith('//')) {
-      return 'https:$value';
-    }
-    return 'https://$value';
-  }
-
-  String _formatCount(int value) {
-    if (value >= 100000000) {
-      return '${(value / 100000000).toStringAsFixed(1)}亿';
-    }
-    if (value >= 10000) {
-      return '${(value / 10000).toStringAsFixed(1)}万';
-    }
-    return value.toString();
-  }
-
-  String _formatPublishTime(int timestamp) {
-    if (timestamp <= 0) {
-      return '时间未知';
-    }
-    final DateTime dateTime = DateTime.fromMillisecondsSinceEpoch(
-      timestamp * 1000,
-    );
-    final String year = dateTime.year.toString().padLeft(4, '0');
-    final String month = dateTime.month.toString().padLeft(2, '0');
-    final String day = dateTime.day.toString().padLeft(2, '0');
-    return '$year-$month-$day';
-  }
 }
 
 class BiliSearchException implements Exception {

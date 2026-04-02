@@ -1,3 +1,4 @@
+import 'package:bilimusic/common/util/json_util.dart';
 import 'package:bilimusic/core/bili/session/bili_session.dart';
 import 'package:bilimusic/core/bili/session/bili_session_controller.dart';
 import 'package:bilimusic/core/bili/sign/bili_wbi_signer.dart';
@@ -74,16 +75,11 @@ class BiliApiClient {
   }
 
   Map<String, dynamic> _asMap(dynamic value) {
-    if (value is Map<String, dynamic>) {
-      return value;
+    try {
+      return asStringKeyedMap(value);
+    } on FormatException {
+      throw const BiliApiException('Unexpected response format.');
     }
-    if (value is Map) {
-      return value.map(
-        (dynamic key, dynamic mapValue) =>
-            MapEntry(key.toString(), mapValue),
-      );
-    }
-    throw const BiliApiException('Unexpected response format.');
   }
 
   void _ensureSuccess(Map<String, dynamic> json) {

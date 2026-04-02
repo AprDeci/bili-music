@@ -1,3 +1,5 @@
+import 'package:bilimusic/common/util/format_util.dart';
+import 'package:bilimusic/common/util/json_util.dart';
 import 'package:bilimusic/core/bili/net/bili_api_client.dart';
 import 'package:bilimusic/core/bili/session/bili_session.dart';
 import 'package:bilimusic/core/net/net_config.dart';
@@ -147,7 +149,7 @@ class BiliPlayerRepository {
           _formatCount((stat['reply'] as num? ?? 0).toInt()) ??
           item.replyCountText,
       publishTimeText:
-          _formatPublishTime(
+          formatYyyyMmDdFromUnixSeconds(
             (data['pubdate'] as num? ?? data['ctime'] as num? ?? 0).toInt(),
           ) ??
           item.publishTimeText,
@@ -186,31 +188,19 @@ class BiliPlayerRepository {
   }
 
   Map<String, dynamic> _asMap(dynamic value) {
-    if (value is Map<String, dynamic>) {
-      return value;
+    try {
+      return asStringKeyedMap(value);
+    } on FormatException {
+      throw const BiliPlayerException('Unexpected player response format.');
     }
-    if (value is Map) {
-      return value.map(
-        (dynamic key, dynamic mapValue) => MapEntry(key.toString(), mapValue),
-      );
-    }
-    throw const BiliPlayerException('Unexpected player response format.');
   }
 
   Map<String, dynamic> _asMapOrEmpty(dynamic value) {
-    if (value == null) {
-      return <String, dynamic>{};
-    }
-    return _asMap(value);
+    return asStringKeyedMapOrEmpty(value);
   }
 
   List<Map<String, dynamic>> _asListOfMaps(dynamic value) {
-    final List<dynamic> list = value as List<dynamic>? ?? <dynamic>[];
-    return list.whereType<Map>().map((Map item) {
-      return item.map(
-        (dynamic key, dynamic mapValue) => MapEntry(key.toString(), mapValue),
-      );
-    }).toList();
+    return asListOfMaps(value);
   }
 
   List<String> _asStringList(dynamic value) {
@@ -234,28 +224,11 @@ class BiliPlayerRepository {
     return trimmed.isEmpty ? null : trimmed;
   }
 
-  String? _formatPublishTime(int timestamp) {
-    if (timestamp <= 0) {
-      return null;
-    }
-
-    final DateTime dateTime = DateTime.fromMillisecondsSinceEpoch(
-      timestamp * 1000,
-    );
-    return '${dateTime.year}-${dateTime.month.toString().padLeft(2, '0')}-${dateTime.day.toString().padLeft(2, '0')}';
-  }
-
   String? _formatCount(int value) {
     if (value <= 0) {
       return null;
     }
-    if (value >= 100000000) {
-      return '${(value / 100000000).toStringAsFixed(1)}亿';
-    }
-    if (value >= 10000) {
-      return '${(value / 10000).toStringAsFixed(1)}万';
-    }
-    return value.toString();
+    return formatCompactCount(value);
   }
 }
 

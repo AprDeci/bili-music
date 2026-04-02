@@ -1,3 +1,5 @@
+import 'package:bilimusic/common/util/json_util.dart';
+import 'package:bilimusic/common/util/url_util.dart';
 import 'package:bilimusic/common/logger.dart';
 import 'package:bilimusic/core/bili/session/bili_session.dart';
 import 'package:bilimusic/core/bili/session/bili_session_controller.dart';
@@ -350,7 +352,7 @@ class BiliCommentRepository {
       publishedAt: DateTime.fromMillisecondsSinceEpoch(timestamp * 1000),
       message: content['message'] as String? ?? '',
       memberName: member['uname'] as String? ?? '未知用户',
-      memberAvatarUrl: _normalizeUrl(member['avatar'] as String? ?? ''),
+      memberAvatarUrl: normalizeHttpUrl(member['avatar'] as String? ?? ''),
       isTop: isTop,
       isHidden: _readBoolLike(json['invisible']) ?? false,
       replies: previewReplies,
@@ -384,57 +386,24 @@ class BiliCommentRepository {
     return null;
   }
 
-  String _normalizeUrl(String value) {
-    if (value.isEmpty) {
-      return '';
-    }
-    if (value.startsWith('http://') || value.startsWith('https://')) {
-      return value;
-    }
-    if (value.startsWith('//')) {
-      return 'https:$value';
-    }
-    return 'https://$value';
-  }
-
   Map<String, dynamic> _asMap(dynamic value) {
-    if (value is Map<String, dynamic>) {
-      return value;
+    try {
+      return asStringKeyedMap(value);
+    } on FormatException {
+      throw const BiliCommentException('Unexpected comment response format.');
     }
-    if (value is Map) {
-      return value.map(
-        (dynamic key, dynamic mapValue) => MapEntry(key.toString(), mapValue),
-      );
-    }
-    throw const BiliCommentException('Unexpected comment response format.');
   }
 
   Map<String, dynamic>? _asNullableMap(dynamic value) {
-    if (value == null) {
-      return null;
-    }
-    if (value is Map<String, dynamic>) {
-      return value;
-    }
-    if (value is Map) {
-      return value.map(
-        (dynamic key, dynamic mapValue) => MapEntry(key.toString(), mapValue),
-      );
-    }
-    return null;
+    return asNullableStringKeyedMap(value);
   }
 
   Map<String, dynamic> _asMapOrEmpty(dynamic value) {
-    return _asNullableMap(value) ?? <String, dynamic>{};
+    return asStringKeyedMapOrEmpty(value);
   }
 
   List<Map<String, dynamic>> _asListOfMaps(dynamic value) {
-    final List<dynamic> list = value as List<dynamic>? ?? <dynamic>[];
-    return list.whereType<Map>().map((Map item) {
-      return item.map(
-        (dynamic key, dynamic mapValue) => MapEntry(key.toString(), mapValue),
-      );
-    }).toList();
+    return asListOfMaps(value);
   }
 
   int? _readPositiveInt(dynamic value) {

@@ -1,3 +1,6 @@
+import 'package:bilimusic/common/util/format_util.dart';
+import 'package:bilimusic/common/util/json_util.dart';
+import 'package:bilimusic/common/util/url_util.dart';
 import 'package:bilimusic/core/bili/net/bili_api_client.dart';
 import 'package:bilimusic/feature/home/domain/music_ranking_item.dart';
 import 'package:dio/dio.dart';
@@ -46,63 +49,28 @@ class BiliMusicRankingRepository {
       aid: (json['aid'] as num? ?? 0).toInt(),
       bvid: json['bvid'] as String? ?? '',
       title: (json['title'] as String? ?? '').trim(),
-      coverUrl: _normalizeCoverUrl(json['pic'] as String? ?? ''),
+      coverUrl: normalizeHttpUrl(json['pic'] as String? ?? ''),
       author: (owner?['name'] as String? ?? '未知UP主').trim(),
       tagText: (json['tname'] as String? ?? '音乐').trim().isEmpty
           ? '音乐'
           : (json['tname'] as String? ?? '音乐').trim(),
-      playCountText: _formatCount(playCount),
+      playCountText: '${formatCompactCount(playCount)}播放',
       durationText: _formatDuration(durationSeconds),
     );
   }
 
   Map<String, dynamic> _asMap(dynamic value) {
-    if (value is Map<String, dynamic>) {
-      return value;
-    }
-    if (value is Map) {
-      return value.map(
-        (dynamic key, dynamic mapValue) => MapEntry(key.toString(), mapValue),
+    try {
+      return asStringKeyedMap(value);
+    } on FormatException {
+      throw const BiliMusicRankingException(
+        'Unexpected ranking response format.',
       );
     }
-    throw const BiliMusicRankingException(
-      'Unexpected ranking response format.',
-    );
   }
 
   Map<String, dynamic>? _asNullableMap(dynamic value) {
-    if (value is Map<String, dynamic>) {
-      return value;
-    }
-    if (value is Map) {
-      return value.map(
-        (dynamic key, dynamic mapValue) => MapEntry(key.toString(), mapValue),
-      );
-    }
-    return null;
-  }
-
-  String _normalizeCoverUrl(String value) {
-    if (value.isEmpty) {
-      return '';
-    }
-    if (value.startsWith('http://') || value.startsWith('https://')) {
-      return value;
-    }
-    if (value.startsWith('//')) {
-      return 'https:$value';
-    }
-    return 'https://$value';
-  }
-
-  String _formatCount(int value) {
-    if (value >= 100000000) {
-      return '${(value / 100000000).toStringAsFixed(1)}亿播放';
-    }
-    if (value >= 10000) {
-      return '${(value / 10000).toStringAsFixed(1)}万播放';
-    }
-    return '$value播放';
+    return asNullableStringKeyedMap(value);
   }
 
   String _formatDuration(int totalSeconds) {
