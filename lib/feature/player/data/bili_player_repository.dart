@@ -122,6 +122,8 @@ class BiliPlayerRepository {
 
     final Map<String, dynamic> stat = _asMapOrEmpty(data['stat']);
 
+    final int replyCount = (stat['reply'] as num? ?? 0).toInt();
+
     return _VideoViewInfo(
       pages: pages,
       title: data['title'] as String? ?? item.title,
@@ -145,9 +147,8 @@ class BiliPlayerRepository {
       shareCountText:
           _formatCount((stat['share'] as num? ?? 0).toInt()) ??
           item.shareCountText,
-      replyCountText:
-          _formatCount((stat['reply'] as num? ?? 0).toInt()) ??
-          item.replyCountText,
+      replyCount: replyCount > 0 ? replyCount : item.replyCount,
+      replyCountText: _formatCount(replyCount) ?? item.replyCountText,
       publishTimeText:
           formatYyyyMmDdFromUnixSeconds(
             (data['pubdate'] as num? ?? data['ctime'] as num? ?? 0).toInt(),
@@ -265,6 +266,7 @@ class _VideoViewInfo {
     this.coinCountText,
     this.favoriteCountText,
     this.shareCountText,
+    this.replyCount,
     this.replyCountText,
     this.publishTimeText,
   });
@@ -279,6 +281,7 @@ class _VideoViewInfo {
   final String? coinCountText;
   final String? favoriteCountText;
   final String? shareCountText;
+  final int? replyCount;
   final String? replyCountText;
   final String? publishTimeText;
 
@@ -322,6 +325,7 @@ class _VideoViewInfo {
       coinCountText: coinCountText,
       favoriteCountText: favoriteCountText,
       shareCountText: shareCountText,
+      replyCount: replyCount,
       replyCountText: replyCountText,
       publishTimeText: publishTimeText,
     );

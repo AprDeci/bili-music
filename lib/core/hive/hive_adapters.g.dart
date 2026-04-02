@@ -268,6 +268,7 @@ class PersistedPlayableItemAdapter extends TypeAdapter<PersistedPlayableItem> {
       coinCountText: fields[12] as String?,
       favoriteCountText: fields[13] as String?,
       shareCountText: fields[14] as String?,
+      replyCount: (fields[18] as num?)?.toInt(),
       replyCountText: fields[15] as String?,
       publishTimeText: fields[16] as String?,
       description: fields[17] as String?,
@@ -277,7 +278,7 @@ class PersistedPlayableItemAdapter extends TypeAdapter<PersistedPlayableItem> {
   @override
   void write(BinaryWriter writer, PersistedPlayableItem obj) {
     writer
-      ..writeByte(18)
+      ..writeByte(19)
       ..writeByte(0)
       ..write(obj.aid)
       ..writeByte(1)
@@ -313,7 +314,9 @@ class PersistedPlayableItemAdapter extends TypeAdapter<PersistedPlayableItem> {
       ..writeByte(16)
       ..write(obj.publishTimeText)
       ..writeByte(17)
-      ..write(obj.description);
+      ..write(obj.description)
+      ..writeByte(18)
+      ..write(obj.replyCount);
   }
 
   @override

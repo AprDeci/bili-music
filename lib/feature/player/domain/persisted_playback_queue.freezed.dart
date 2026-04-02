@@ -292,7 +292,7 @@ as int?,
 /// @nodoc
 mixin _$PersistedPlayableItem {
 
- int get aid; String get bvid; String get title; String get author; String get coverUrl; int? get cid; int? get page; String? get pageTitle; String? get durationText; String? get playCountText; String? get danmakuCountText; String? get likeCountText; String? get coinCountText; String? get favoriteCountText; String? get shareCountText; String? get replyCountText; String? get publishTimeText; String? get description;
+ int get aid; String get bvid; String get title; String get author; String get coverUrl; int? get cid; int? get page; String? get pageTitle; String? get durationText; String? get playCountText; String? get danmakuCountText; String? get likeCountText; String? get coinCountText; String? get favoriteCountText; String? get shareCountText; int? get replyCount; String? get replyCountText; String? get publishTimeText; String? get description;
 /// Create a copy of PersistedPlayableItem
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -303,16 +303,16 @@ $PersistedPlayableItemCopyWith<PersistedPlayableItem> get copyWith => _$Persiste
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is PersistedPlayableItem&&(identical(other.aid, aid) || other.aid == aid)&&(identical(other.bvid, bvid) || other.bvid == bvid)&&(identical(other.title, title) || other.title == title)&&(identical(other.author, author) || other.author == author)&&(identical(other.coverUrl, coverUrl) || other.coverUrl == coverUrl)&&(identical(other.cid, cid) || other.cid == cid)&&(identical(other.page, page) || other.page == page)&&(identical(other.pageTitle, pageTitle) || other.pageTitle == pageTitle)&&(identical(other.durationText, durationText) || other.durationText == durationText)&&(identical(other.playCountText, playCountText) || other.playCountText == playCountText)&&(identical(other.danmakuCountText, danmakuCountText) || other.danmakuCountText == danmakuCountText)&&(identical(other.likeCountText, likeCountText) || other.likeCountText == likeCountText)&&(identical(other.coinCountText, coinCountText) || other.coinCountText == coinCountText)&&(identical(other.favoriteCountText, favoriteCountText) || other.favoriteCountText == favoriteCountText)&&(identical(other.shareCountText, shareCountText) || other.shareCountText == shareCountText)&&(identical(other.replyCountText, replyCountText) || other.replyCountText == replyCountText)&&(identical(other.publishTimeText, publishTimeText) || other.publishTimeText == publishTimeText)&&(identical(other.description, description) || other.description == description));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is PersistedPlayableItem&&(identical(other.aid, aid) || other.aid == aid)&&(identical(other.bvid, bvid) || other.bvid == bvid)&&(identical(other.title, title) || other.title == title)&&(identical(other.author, author) || other.author == author)&&(identical(other.coverUrl, coverUrl) || other.coverUrl == coverUrl)&&(identical(other.cid, cid) || other.cid == cid)&&(identical(other.page, page) || other.page == page)&&(identical(other.pageTitle, pageTitle) || other.pageTitle == pageTitle)&&(identical(other.durationText, durationText) || other.durationText == durationText)&&(identical(other.playCountText, playCountText) || other.playCountText == playCountText)&&(identical(other.danmakuCountText, danmakuCountText) || other.danmakuCountText == danmakuCountText)&&(identical(other.likeCountText, likeCountText) || other.likeCountText == likeCountText)&&(identical(other.coinCountText, coinCountText) || other.coinCountText == coinCountText)&&(identical(other.favoriteCountText, favoriteCountText) || other.favoriteCountText == favoriteCountText)&&(identical(other.shareCountText, shareCountText) || other.shareCountText == shareCountText)&&(identical(other.replyCount, replyCount) || other.replyCount == replyCount)&&(identical(other.replyCountText, replyCountText) || other.replyCountText == replyCountText)&&(identical(other.publishTimeText, publishTimeText) || other.publishTimeText == publishTimeText)&&(identical(other.description, description) || other.description == description));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,aid,bvid,title,author,coverUrl,cid,page,pageTitle,durationText,playCountText,danmakuCountText,likeCountText,coinCountText,favoriteCountText,shareCountText,replyCountText,publishTimeText,description);
+int get hashCode => Object.hashAll([runtimeType,aid,bvid,title,author,coverUrl,cid,page,pageTitle,durationText,playCountText,danmakuCountText,likeCountText,coinCountText,favoriteCountText,shareCountText,replyCount,replyCountText,publishTimeText,description]);
 
 @override
 String toString() {
-  return 'PersistedPlayableItem(aid: $aid, bvid: $bvid, title: $title, author: $author, coverUrl: $coverUrl, cid: $cid, page: $page, pageTitle: $pageTitle, durationText: $durationText, playCountText: $playCountText, danmakuCountText: $danmakuCountText, likeCountText: $likeCountText, coinCountText: $coinCountText, favoriteCountText: $favoriteCountText, shareCountText: $shareCountText, replyCountText: $replyCountText, publishTimeText: $publishTimeText, description: $description)';
+  return 'PersistedPlayableItem(aid: $aid, bvid: $bvid, title: $title, author: $author, coverUrl: $coverUrl, cid: $cid, page: $page, pageTitle: $pageTitle, durationText: $durationText, playCountText: $playCountText, danmakuCountText: $danmakuCountText, likeCountText: $likeCountText, coinCountText: $coinCountText, favoriteCountText: $favoriteCountText, shareCountText: $shareCountText, replyCount: $replyCount, replyCountText: $replyCountText, publishTimeText: $publishTimeText, description: $description)';
 }
 
 
@@ -323,7 +323,7 @@ abstract mixin class $PersistedPlayableItemCopyWith<$Res>  {
   factory $PersistedPlayableItemCopyWith(PersistedPlayableItem value, $Res Function(PersistedPlayableItem) _then) = _$PersistedPlayableItemCopyWithImpl;
 @useResult
 $Res call({
- int aid, String bvid, String title, String author, String coverUrl, int? cid, int? page, String? pageTitle, String? durationText, String? playCountText, String? danmakuCountText, String? likeCountText, String? coinCountText, String? favoriteCountText, String? shareCountText, String? replyCountText, String? publishTimeText, String? description
+ int aid, String bvid, String title, String author, String coverUrl, int? cid, int? page, String? pageTitle, String? durationText, String? playCountText, String? danmakuCountText, String? likeCountText, String? coinCountText, String? favoriteCountText, String? shareCountText, int? replyCount, String? replyCountText, String? publishTimeText, String? description
 });
 
 
@@ -340,7 +340,7 @@ class _$PersistedPlayableItemCopyWithImpl<$Res>
 
 /// Create a copy of PersistedPlayableItem
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? aid = null,Object? bvid = null,Object? title = null,Object? author = null,Object? coverUrl = null,Object? cid = freezed,Object? page = freezed,Object? pageTitle = freezed,Object? durationText = freezed,Object? playCountText = freezed,Object? danmakuCountText = freezed,Object? likeCountText = freezed,Object? coinCountText = freezed,Object? favoriteCountText = freezed,Object? shareCountText = freezed,Object? replyCountText = freezed,Object? publishTimeText = freezed,Object? description = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? aid = null,Object? bvid = null,Object? title = null,Object? author = null,Object? coverUrl = null,Object? cid = freezed,Object? page = freezed,Object? pageTitle = freezed,Object? durationText = freezed,Object? playCountText = freezed,Object? danmakuCountText = freezed,Object? likeCountText = freezed,Object? coinCountText = freezed,Object? favoriteCountText = freezed,Object? shareCountText = freezed,Object? replyCount = freezed,Object? replyCountText = freezed,Object? publishTimeText = freezed,Object? description = freezed,}) {
   return _then(_self.copyWith(
 aid: null == aid ? _self.aid : aid // ignore: cast_nullable_to_non_nullable
 as int,bvid: null == bvid ? _self.bvid : bvid // ignore: cast_nullable_to_non_nullable
@@ -357,7 +357,8 @@ as String?,likeCountText: freezed == likeCountText ? _self.likeCountText : likeC
 as String?,coinCountText: freezed == coinCountText ? _self.coinCountText : coinCountText // ignore: cast_nullable_to_non_nullable
 as String?,favoriteCountText: freezed == favoriteCountText ? _self.favoriteCountText : favoriteCountText // ignore: cast_nullable_to_non_nullable
 as String?,shareCountText: freezed == shareCountText ? _self.shareCountText : shareCountText // ignore: cast_nullable_to_non_nullable
-as String?,replyCountText: freezed == replyCountText ? _self.replyCountText : replyCountText // ignore: cast_nullable_to_non_nullable
+as String?,replyCount: freezed == replyCount ? _self.replyCount : replyCount // ignore: cast_nullable_to_non_nullable
+as int?,replyCountText: freezed == replyCountText ? _self.replyCountText : replyCountText // ignore: cast_nullable_to_non_nullable
 as String?,publishTimeText: freezed == publishTimeText ? _self.publishTimeText : publishTimeText // ignore: cast_nullable_to_non_nullable
 as String?,description: freezed == description ? _self.description : description // ignore: cast_nullable_to_non_nullable
 as String?,
@@ -445,10 +446,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int aid,  String bvid,  String title,  String author,  String coverUrl,  int? cid,  int? page,  String? pageTitle,  String? durationText,  String? playCountText,  String? danmakuCountText,  String? likeCountText,  String? coinCountText,  String? favoriteCountText,  String? shareCountText,  String? replyCountText,  String? publishTimeText,  String? description)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int aid,  String bvid,  String title,  String author,  String coverUrl,  int? cid,  int? page,  String? pageTitle,  String? durationText,  String? playCountText,  String? danmakuCountText,  String? likeCountText,  String? coinCountText,  String? favoriteCountText,  String? shareCountText,  int? replyCount,  String? replyCountText,  String? publishTimeText,  String? description)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _PersistedPlayableItem() when $default != null:
-return $default(_that.aid,_that.bvid,_that.title,_that.author,_that.coverUrl,_that.cid,_that.page,_that.pageTitle,_that.durationText,_that.playCountText,_that.danmakuCountText,_that.likeCountText,_that.coinCountText,_that.favoriteCountText,_that.shareCountText,_that.replyCountText,_that.publishTimeText,_that.description);case _:
+return $default(_that.aid,_that.bvid,_that.title,_that.author,_that.coverUrl,_that.cid,_that.page,_that.pageTitle,_that.durationText,_that.playCountText,_that.danmakuCountText,_that.likeCountText,_that.coinCountText,_that.favoriteCountText,_that.shareCountText,_that.replyCount,_that.replyCountText,_that.publishTimeText,_that.description);case _:
   return orElse();
 
 }
@@ -466,10 +467,10 @@ return $default(_that.aid,_that.bvid,_that.title,_that.author,_that.coverUrl,_th
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int aid,  String bvid,  String title,  String author,  String coverUrl,  int? cid,  int? page,  String? pageTitle,  String? durationText,  String? playCountText,  String? danmakuCountText,  String? likeCountText,  String? coinCountText,  String? favoriteCountText,  String? shareCountText,  String? replyCountText,  String? publishTimeText,  String? description)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int aid,  String bvid,  String title,  String author,  String coverUrl,  int? cid,  int? page,  String? pageTitle,  String? durationText,  String? playCountText,  String? danmakuCountText,  String? likeCountText,  String? coinCountText,  String? favoriteCountText,  String? shareCountText,  int? replyCount,  String? replyCountText,  String? publishTimeText,  String? description)  $default,) {final _that = this;
 switch (_that) {
 case _PersistedPlayableItem():
-return $default(_that.aid,_that.bvid,_that.title,_that.author,_that.coverUrl,_that.cid,_that.page,_that.pageTitle,_that.durationText,_that.playCountText,_that.danmakuCountText,_that.likeCountText,_that.coinCountText,_that.favoriteCountText,_that.shareCountText,_that.replyCountText,_that.publishTimeText,_that.description);case _:
+return $default(_that.aid,_that.bvid,_that.title,_that.author,_that.coverUrl,_that.cid,_that.page,_that.pageTitle,_that.durationText,_that.playCountText,_that.danmakuCountText,_that.likeCountText,_that.coinCountText,_that.favoriteCountText,_that.shareCountText,_that.replyCount,_that.replyCountText,_that.publishTimeText,_that.description);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -486,10 +487,10 @@ return $default(_that.aid,_that.bvid,_that.title,_that.author,_that.coverUrl,_th
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int aid,  String bvid,  String title,  String author,  String coverUrl,  int? cid,  int? page,  String? pageTitle,  String? durationText,  String? playCountText,  String? danmakuCountText,  String? likeCountText,  String? coinCountText,  String? favoriteCountText,  String? shareCountText,  String? replyCountText,  String? publishTimeText,  String? description)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int aid,  String bvid,  String title,  String author,  String coverUrl,  int? cid,  int? page,  String? pageTitle,  String? durationText,  String? playCountText,  String? danmakuCountText,  String? likeCountText,  String? coinCountText,  String? favoriteCountText,  String? shareCountText,  int? replyCount,  String? replyCountText,  String? publishTimeText,  String? description)?  $default,) {final _that = this;
 switch (_that) {
 case _PersistedPlayableItem() when $default != null:
-return $default(_that.aid,_that.bvid,_that.title,_that.author,_that.coverUrl,_that.cid,_that.page,_that.pageTitle,_that.durationText,_that.playCountText,_that.danmakuCountText,_that.likeCountText,_that.coinCountText,_that.favoriteCountText,_that.shareCountText,_that.replyCountText,_that.publishTimeText,_that.description);case _:
+return $default(_that.aid,_that.bvid,_that.title,_that.author,_that.coverUrl,_that.cid,_that.page,_that.pageTitle,_that.durationText,_that.playCountText,_that.danmakuCountText,_that.likeCountText,_that.coinCountText,_that.favoriteCountText,_that.shareCountText,_that.replyCount,_that.replyCountText,_that.publishTimeText,_that.description);case _:
   return null;
 
 }
@@ -501,7 +502,7 @@ return $default(_that.aid,_that.bvid,_that.title,_that.author,_that.coverUrl,_th
 
 
 class _PersistedPlayableItem extends PersistedPlayableItem {
-  const _PersistedPlayableItem({required this.aid, required this.bvid, required this.title, required this.author, required this.coverUrl, this.cid, this.page, this.pageTitle, this.durationText, this.playCountText, this.danmakuCountText, this.likeCountText, this.coinCountText, this.favoriteCountText, this.shareCountText, this.replyCountText, this.publishTimeText, this.description}): super._();
+  const _PersistedPlayableItem({required this.aid, required this.bvid, required this.title, required this.author, required this.coverUrl, this.cid, this.page, this.pageTitle, this.durationText, this.playCountText, this.danmakuCountText, this.likeCountText, this.coinCountText, this.favoriteCountText, this.shareCountText, this.replyCount, this.replyCountText, this.publishTimeText, this.description}): super._();
   
 
 @override final  int aid;
@@ -519,6 +520,7 @@ class _PersistedPlayableItem extends PersistedPlayableItem {
 @override final  String? coinCountText;
 @override final  String? favoriteCountText;
 @override final  String? shareCountText;
+@override final  int? replyCount;
 @override final  String? replyCountText;
 @override final  String? publishTimeText;
 @override final  String? description;
@@ -533,16 +535,16 @@ _$PersistedPlayableItemCopyWith<_PersistedPlayableItem> get copyWith => __$Persi
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _PersistedPlayableItem&&(identical(other.aid, aid) || other.aid == aid)&&(identical(other.bvid, bvid) || other.bvid == bvid)&&(identical(other.title, title) || other.title == title)&&(identical(other.author, author) || other.author == author)&&(identical(other.coverUrl, coverUrl) || other.coverUrl == coverUrl)&&(identical(other.cid, cid) || other.cid == cid)&&(identical(other.page, page) || other.page == page)&&(identical(other.pageTitle, pageTitle) || other.pageTitle == pageTitle)&&(identical(other.durationText, durationText) || other.durationText == durationText)&&(identical(other.playCountText, playCountText) || other.playCountText == playCountText)&&(identical(other.danmakuCountText, danmakuCountText) || other.danmakuCountText == danmakuCountText)&&(identical(other.likeCountText, likeCountText) || other.likeCountText == likeCountText)&&(identical(other.coinCountText, coinCountText) || other.coinCountText == coinCountText)&&(identical(other.favoriteCountText, favoriteCountText) || other.favoriteCountText == favoriteCountText)&&(identical(other.shareCountText, shareCountText) || other.shareCountText == shareCountText)&&(identical(other.replyCountText, replyCountText) || other.replyCountText == replyCountText)&&(identical(other.publishTimeText, publishTimeText) || other.publishTimeText == publishTimeText)&&(identical(other.description, description) || other.description == description));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _PersistedPlayableItem&&(identical(other.aid, aid) || other.aid == aid)&&(identical(other.bvid, bvid) || other.bvid == bvid)&&(identical(other.title, title) || other.title == title)&&(identical(other.author, author) || other.author == author)&&(identical(other.coverUrl, coverUrl) || other.coverUrl == coverUrl)&&(identical(other.cid, cid) || other.cid == cid)&&(identical(other.page, page) || other.page == page)&&(identical(other.pageTitle, pageTitle) || other.pageTitle == pageTitle)&&(identical(other.durationText, durationText) || other.durationText == durationText)&&(identical(other.playCountText, playCountText) || other.playCountText == playCountText)&&(identical(other.danmakuCountText, danmakuCountText) || other.danmakuCountText == danmakuCountText)&&(identical(other.likeCountText, likeCountText) || other.likeCountText == likeCountText)&&(identical(other.coinCountText, coinCountText) || other.coinCountText == coinCountText)&&(identical(other.favoriteCountText, favoriteCountText) || other.favoriteCountText == favoriteCountText)&&(identical(other.shareCountText, shareCountText) || other.shareCountText == shareCountText)&&(identical(other.replyCount, replyCount) || other.replyCount == replyCount)&&(identical(other.replyCountText, replyCountText) || other.replyCountText == replyCountText)&&(identical(other.publishTimeText, publishTimeText) || other.publishTimeText == publishTimeText)&&(identical(other.description, description) || other.description == description));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,aid,bvid,title,author,coverUrl,cid,page,pageTitle,durationText,playCountText,danmakuCountText,likeCountText,coinCountText,favoriteCountText,shareCountText,replyCountText,publishTimeText,description);
+int get hashCode => Object.hashAll([runtimeType,aid,bvid,title,author,coverUrl,cid,page,pageTitle,durationText,playCountText,danmakuCountText,likeCountText,coinCountText,favoriteCountText,shareCountText,replyCount,replyCountText,publishTimeText,description]);
 
 @override
 String toString() {
-  return 'PersistedPlayableItem(aid: $aid, bvid: $bvid, title: $title, author: $author, coverUrl: $coverUrl, cid: $cid, page: $page, pageTitle: $pageTitle, durationText: $durationText, playCountText: $playCountText, danmakuCountText: $danmakuCountText, likeCountText: $likeCountText, coinCountText: $coinCountText, favoriteCountText: $favoriteCountText, shareCountText: $shareCountText, replyCountText: $replyCountText, publishTimeText: $publishTimeText, description: $description)';
+  return 'PersistedPlayableItem(aid: $aid, bvid: $bvid, title: $title, author: $author, coverUrl: $coverUrl, cid: $cid, page: $page, pageTitle: $pageTitle, durationText: $durationText, playCountText: $playCountText, danmakuCountText: $danmakuCountText, likeCountText: $likeCountText, coinCountText: $coinCountText, favoriteCountText: $favoriteCountText, shareCountText: $shareCountText, replyCount: $replyCount, replyCountText: $replyCountText, publishTimeText: $publishTimeText, description: $description)';
 }
 
 
@@ -553,7 +555,7 @@ abstract mixin class _$PersistedPlayableItemCopyWith<$Res> implements $Persisted
   factory _$PersistedPlayableItemCopyWith(_PersistedPlayableItem value, $Res Function(_PersistedPlayableItem) _then) = __$PersistedPlayableItemCopyWithImpl;
 @override @useResult
 $Res call({
- int aid, String bvid, String title, String author, String coverUrl, int? cid, int? page, String? pageTitle, String? durationText, String? playCountText, String? danmakuCountText, String? likeCountText, String? coinCountText, String? favoriteCountText, String? shareCountText, String? replyCountText, String? publishTimeText, String? description
+ int aid, String bvid, String title, String author, String coverUrl, int? cid, int? page, String? pageTitle, String? durationText, String? playCountText, String? danmakuCountText, String? likeCountText, String? coinCountText, String? favoriteCountText, String? shareCountText, int? replyCount, String? replyCountText, String? publishTimeText, String? description
 });
 
 
@@ -570,7 +572,7 @@ class __$PersistedPlayableItemCopyWithImpl<$Res>
 
 /// Create a copy of PersistedPlayableItem
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? aid = null,Object? bvid = null,Object? title = null,Object? author = null,Object? coverUrl = null,Object? cid = freezed,Object? page = freezed,Object? pageTitle = freezed,Object? durationText = freezed,Object? playCountText = freezed,Object? danmakuCountText = freezed,Object? likeCountText = freezed,Object? coinCountText = freezed,Object? favoriteCountText = freezed,Object? shareCountText = freezed,Object? replyCountText = freezed,Object? publishTimeText = freezed,Object? description = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? aid = null,Object? bvid = null,Object? title = null,Object? author = null,Object? coverUrl = null,Object? cid = freezed,Object? page = freezed,Object? pageTitle = freezed,Object? durationText = freezed,Object? playCountText = freezed,Object? danmakuCountText = freezed,Object? likeCountText = freezed,Object? coinCountText = freezed,Object? favoriteCountText = freezed,Object? shareCountText = freezed,Object? replyCount = freezed,Object? replyCountText = freezed,Object? publishTimeText = freezed,Object? description = freezed,}) {
   return _then(_PersistedPlayableItem(
 aid: null == aid ? _self.aid : aid // ignore: cast_nullable_to_non_nullable
 as int,bvid: null == bvid ? _self.bvid : bvid // ignore: cast_nullable_to_non_nullable
@@ -587,7 +589,8 @@ as String?,likeCountText: freezed == likeCountText ? _self.likeCountText : likeC
 as String?,coinCountText: freezed == coinCountText ? _self.coinCountText : coinCountText // ignore: cast_nullable_to_non_nullable
 as String?,favoriteCountText: freezed == favoriteCountText ? _self.favoriteCountText : favoriteCountText // ignore: cast_nullable_to_non_nullable
 as String?,shareCountText: freezed == shareCountText ? _self.shareCountText : shareCountText // ignore: cast_nullable_to_non_nullable
-as String?,replyCountText: freezed == replyCountText ? _self.replyCountText : replyCountText // ignore: cast_nullable_to_non_nullable
+as String?,replyCount: freezed == replyCount ? _self.replyCount : replyCount // ignore: cast_nullable_to_non_nullable
+as int?,replyCountText: freezed == replyCountText ? _self.replyCountText : replyCountText // ignore: cast_nullable_to_non_nullable
 as String?,publishTimeText: freezed == publishTimeText ? _self.publishTimeText : publishTimeText // ignore: cast_nullable_to_non_nullable
 as String?,description: freezed == description ? _self.description : description // ignore: cast_nullable_to_non_nullable
 as String?,

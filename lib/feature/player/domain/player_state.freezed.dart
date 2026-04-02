@@ -49,7 +49,7 @@ $Res call({
 });
 
 
-
+$PlayableItemCopyWith<$Res>? get currentItem;
 
 }
 /// @nodoc
@@ -83,7 +83,19 @@ as PlayerStatusHint?,errorMessage: freezed == errorMessage ? _self.errorMessage 
 as String?,
   ));
 }
+/// Create a copy of PlayerState
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$PlayableItemCopyWith<$Res>? get currentItem {
+    if (_self.currentItem == null) {
+    return null;
+  }
 
+  return $PlayableItemCopyWith<$Res>(_self.currentItem!, (value) {
+    return _then(_self.copyWith(currentItem: value));
+  });
+}
 }
 
 
@@ -287,7 +299,7 @@ $Res call({
 });
 
 
-
+@override $PlayableItemCopyWith<$Res>? get currentItem;
 
 }
 /// @nodoc
@@ -322,7 +334,19 @@ as String?,
   ));
 }
 
+/// Create a copy of PlayerState
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$PlayableItemCopyWith<$Res>? get currentItem {
+    if (_self.currentItem == null) {
+    return null;
+  }
 
+  return $PlayableItemCopyWith<$Res>(_self.currentItem!, (value) {
+    return _then(_self.copyWith(currentItem: value));
+  });
+}
 }
 
 // dart format on
