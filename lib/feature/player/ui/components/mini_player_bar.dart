@@ -130,7 +130,7 @@ class MiniPlayerBar extends StatelessWidget {
 class _Artwork extends StatelessWidget {
   const _Artwork({required this.coverUrl, required this.progress});
 
-  static const double _outerSize = 53;
+  static const double _outerSize = 52;
   static const double _imageSize = 48;
 
   final String coverUrl;
@@ -146,23 +146,23 @@ class _Artwork extends StatelessWidget {
       child: Stack(
         alignment: Alignment.center,
         children: <Widget>[
-          CustomPaint(
-            size: const Size(_outerSize, _outerSize),
-            painter: _ArtworkProgressPainter(
-              progress: progress,
-              trackColor: colorScheme.primary.withValues(alpha: 0.14),
-              progressColor: colorScheme.primary,
-            ),
-          ),
+          // CustomPaint(
+          //   size: const Size(_outerSize, _outerSize),
+          //   painter: _ArtworkProgressPainter(
+          //     progress: progress,
+          //     trackColor: colorScheme.primary.withValues(alpha: 0.14),
+          //     progressColor: colorScheme.primary,
+          //   ),
+          // ),
           Container(
             width: _imageSize,
             height: _imageSize,
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(14),
               color: colorScheme.surfaceContainerHigh,
             ),
             child: ClipRRect(
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(14),
               child: CommonCachedImage(
                 imageUrl: coverUrl,
                 fit: BoxFit.cover,
@@ -190,8 +190,8 @@ class _ArtworkProgressPainter extends CustomPainter {
   final Color progressColor;
   final double startAngle = 270;
 
-  static const double _strokeWidth = 3;
-  static const double _radius = 8;
+  static const double _strokeWidth = 2;
+  static const double _radius = 16;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -202,13 +202,13 @@ class _ArtworkProgressPainter extends CustomPainter {
     );
 
     //背景
-    canvas.drawRRect(
-      rrect,
-      Paint()
-        ..color = trackColor
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = _strokeWidth - 1,
-    );
+    // canvas.drawRRect(
+    //   rrect,
+    //   Paint()
+    //     ..color = trackColor
+    //     ..style = PaintingStyle.stroke
+    //     ..strokeWidth = _strokeWidth - 1,
+    // );
 
     PathMetric? metric = _getFirstPathMetric(rrect);
     if (metric == null) {
