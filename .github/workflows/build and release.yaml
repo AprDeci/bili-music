@@ -97,9 +97,9 @@ jobs:
         run: |
           VERSION=${GITHUB_REF_NAME}
           mkdir -p build/artifacts
-          cp build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk "build/artifacts/bili-music-${VERSION}-armeabi-v7a.apk"
-          cp build/app/outputs/flutter-apk/app-arm64-v8a-release.apk "build/artifacts/bili-music-${VERSION}-arm64-v8a.apk"
-          cp build/app/outputs/flutter-apk/app-x86_64-release.apk "build/artifacts/bili-music-${VERSION}-x86_64.apk"
+          cp build/app/outputs/flutter-apk/app-armeabi-v7a-production-release.apk "build/artifacts/bili-music-${VERSION}-armeabi-v7a.apk"
+          cp build/app/outputs/flutter-apk/app-arm64-v8a-production-release.apk "build/artifacts/bili-music-${VERSION}-arm64-v8a.apk"
+          cp build/app/outputs/flutter-apk/app-x86_64-production-release.apk "build/artifacts/bili-music-${VERSION}-x86_64.apk"
 
       - name: Upload Android release assets
         uses: softprops/action-gh-release@v2
