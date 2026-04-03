@@ -84,7 +84,7 @@ jobs:
 
       - name: Build iOS
         run: |
-          flutter build ios --release --no-codesign
+          flutter build ios --release --no-codesign --flavor production
           ln -sf ./build/ios/iphoneos Payload  
           find Payload/Runner.app/Frameworks -type d -name "*.framework" -exec codesign --force --sign - --preserve-metadata=identifier,entitlements {} \;  
           zip -r9 bili-music.ipa Payload/runner.app
