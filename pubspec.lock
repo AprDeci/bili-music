@@ -624,6 +624,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.2.6"
+  media_kit_libs_ios_audio:
+    dependency: "direct main"
+    description:
+      name: media_kit_libs_ios_audio
+      sha256: "78ccf04e27d6b4ba00a355578ccb39b772f00d48269a6ac3db076edf2d51934f"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.1.4"
   media_kit_libs_windows_audio:
     dependency: "direct main"
     description:
