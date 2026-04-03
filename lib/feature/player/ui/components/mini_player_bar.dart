@@ -183,13 +183,12 @@ class _ArtworkProgressPainter extends CustomPainter {
     required this.progress,
     required this.trackColor,
     required this.progressColor,
-    this.startAngle = 270,
   });
 
   final double progress;
   final Color trackColor;
   final Color progressColor;
-  final double startAngle;
+  final double startAngle = 270;
 
   static const double _strokeWidth = 3;
   static const double _radius = 8;
@@ -225,7 +224,6 @@ class _ArtworkProgressPainter extends CustomPainter {
     }
 
     try {
-      final double angleInRadians = startAngle * (pi / 180);
       final double defaultStartAngle = -210; // 12点钟
       final double angleOffset = (startAngle - defaultStartAngle) % 360;
       final double startOffset = totalLength * (angleOffset / 360);
