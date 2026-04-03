@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'dart:ui';
 
 import 'package:bilimusic/common/bottom_height_helper.dart';
@@ -157,12 +158,11 @@ class _Artwork extends StatelessWidget {
             width: _imageSize,
             height: _imageSize,
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(8),
               color: colorScheme.surfaceContainerHigh,
-              border: Border.all(color: colorScheme.outlineVariant),
             ),
             child: ClipRRect(
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(8),
               child: CommonCachedImage(
                 imageUrl: coverUrl,
                 fit: BoxFit.cover,
@@ -183,14 +183,16 @@ class _ArtworkProgressPainter extends CustomPainter {
     required this.progress,
     required this.trackColor,
     required this.progressColor,
+    this.startAngle = 270,
   });
 
   final double progress;
   final Color trackColor;
   final Color progressColor;
+  final double startAngle;
 
-  static const double _strokeWidth = 3.0;
-  static const double _radius = 14;
+  static const double _strokeWidth = 3;
+  static const double _radius = 8;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -200,7 +202,7 @@ class _ArtworkProgressPainter extends CustomPainter {
       const Radius.circular(_radius),
     );
 
-    // 背景
+    //背景
     canvas.drawRRect(
       rrect,
       Paint()
@@ -223,15 +225,47 @@ class _ArtworkProgressPainter extends CustomPainter {
     }
 
     try {
-      final Path progressPath = metric.extractPath(0, progressLength);
-      canvas.drawPath(
-        progressPath,
-        Paint()
-          ..color = progressColor
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = _strokeWidth
-          ..strokeCap = StrokeCap.round,
-      );
+      final double angleInRadians = startAngle * (pi / 180);
+      final double defaultStartAngle = -210; // 12点钟
+      final double angleOffset = (startAngle - defaultStartAngle) % 360;
+      final double startOffset = totalLength * (angleOffset / 360);
+
+      final double endDistance = startOffset + progressLength;
+
+      if (endDistance <= totalLength) {
+        final Path progressPath = metric.extractPath(startOffset, endDistance);
+        canvas.drawPath(
+          progressPath,
+          Paint()
+            ..color = progressColor
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = _strokeWidth
+            ..strokeCap = StrokeCap.round,
+        );
+      } else {
+        final double remaining = endDistance - totalLength;
+
+        final Path firstPart = metric.extractPath(startOffset, totalLength);
+        final Path secondPart = metric.extractPath(0, remaining);
+
+        canvas.drawPath(
+          firstPart,
+          Paint()
+            ..color = progressColor
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = _strokeWidth
+            ..strokeCap = StrokeCap.round,
+        );
+
+        canvas.drawPath(
+          secondPart,
+          Paint()
+            ..color = progressColor
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = _strokeWidth
+            ..strokeCap = StrokeCap.round,
+        );
+      }
     } catch (e) {
       // 忽略提取路径错误
     }
