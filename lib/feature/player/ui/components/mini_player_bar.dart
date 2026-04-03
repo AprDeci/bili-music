@@ -35,7 +35,7 @@ class MiniPlayerBar extends StatelessWidget {
           onTap: onTap,
           child: Ink(
             decoration: BoxDecoration(
-              color: colorScheme.surface.withValues(alpha: 0.6),
+              color: colorScheme.surface.withValues(alpha: 0.8),
               borderRadius: BorderRadius.circular(26),
               border: Border.all(
                 color: colorScheme.primary.withValues(alpha: 0.10),
