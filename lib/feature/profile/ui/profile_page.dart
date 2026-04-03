@@ -1,3 +1,4 @@
+import 'package:bilimusic/common/bottom_height_helper.dart';
 import 'package:bilimusic/common/components/cachedImage.dart';
 import 'package:bilimusic/common/components/searchBar.dart';
 import 'package:bilimusic/core/bili/session/bili_session_controller.dart';
@@ -28,6 +29,9 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
     final FavoritesState favoritesState = ref.watch(
       favoritesControllerProvider,
     );
+    final double bottomSpacing = BottomHeightHelper.tabPageBottomSpacing(
+      context,
+    );
     final int likedCount = favoritesState.itemCountForCollection(
       FavoriteCollection.likedCollectionId,
     );
@@ -55,7 +59,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
         ],
       ),
       body: ListView(
-        padding: const EdgeInsets.fromLTRB(12, 8, 12, 24),
+        padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
         children: <Widget>[
           UserCard(onLogoutPressed: _handleLogoutPressed),
           const SizedBox(height: 18),
@@ -116,6 +120,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                 ),
               ),
             ),
+          SizedBox(height: bottomSpacing),
         ],
       ),
     );

@@ -25,6 +25,9 @@ class FavoriteCollectionPage extends ConsumerWidget {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
     final Color primary = colorScheme.primary;
+    final double bottomSpacing = BottomHeightHelper.overlayPageBottomSpacing(
+      context,
+    );
     FavoriteCollection? collection;
     for (final FavoriteCollection item in state.collections) {
       if (item.id == collectionId) {
@@ -90,7 +93,7 @@ class FavoriteCollectionPage extends ConsumerWidget {
               ),
             )
           : ListView(
-              padding: const EdgeInsets.fromLTRB(0, 0, 0, 24),
+              padding: const EdgeInsets.fromLTRB(0, 0, 0, 0),
               children: <Widget>[
                 const SizedBox(height: 2),
                 ...List<Widget>.generate(items.length, (int index) {
@@ -171,6 +174,7 @@ class FavoriteCollectionPage extends ConsumerWidget {
                     ),
                   );
                 }),
+                SizedBox(height: bottomSpacing),
               ],
             ),
     );

@@ -1,3 +1,4 @@
+import 'package:bilimusic/common/bottom_height_helper.dart';
 import 'package:bilimusic/common/components/cachedImage.dart';
 import 'package:bilimusic/common/util/player_util.dart';
 import 'package:bilimusic/feature/favorites/logic/favorites_controller.dart';
@@ -89,6 +90,9 @@ class _SearchPageState extends ConsumerState<SearchPage> {
     );
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
+    final double bottomSpacing = BottomHeightHelper.overlayPageBottomSpacing(
+      context,
+    );
 
     if (_controller.text != state.query) {
       _controller.value = TextEditingValue(
@@ -164,7 +168,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
             Expanded(
               child: ListView(
                 controller: _scrollController,
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
                 children: <Widget>[
                   if (state.recentKeywords.isNotEmpty &&
                       state.submittedQuery == null) ...<Widget>[
@@ -265,6 +269,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
                       );
                     },
                   ),
+                  SizedBox(height: bottomSpacing),
                 ],
               ),
             ),
