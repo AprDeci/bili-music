@@ -16,6 +16,7 @@ import 'package:bilimusic/feature/player/domain/player_state.dart';
 import 'package:bilimusic/feature/player/logic/app_audio_handler.dart';
 import 'package:bilimusic/feature/player/logic/player_audio_engine.dart';
 import 'package:bilimusic/feature/player/logic/player_media_item_mapper.dart';
+import 'package:bilimusic/feature/recent/logic/recent_playback_controller.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:just_audio/just_audio.dart' as audio;
 
@@ -650,6 +651,13 @@ class PlayerController extends Notifier<PlayerState>
         durationOverride: loadedDuration,
       );
       _recordQueueVisit(queueIndex);
+      if (autoplay) {
+        unawaited(
+          ref.read(recentPlaybackControllerProvider.notifier).recordItem(
+                entry.item,
+              ),
+        );
+      }
       _publishMediaSession();
 
       if (autoplay) {
