@@ -383,3 +383,58 @@ class PersistedPlaybackQueueAdapter
           runtimeType == other.runtimeType &&
           typeId == other.typeId;
 }
+
+class RecentPlaybackEntryAdapter extends TypeAdapter<RecentPlaybackEntry> {
+  @override
+  final typeId = 7;
+
+  @override
+  RecentPlaybackEntry read(BinaryReader reader) {
+    final numOfFields = reader.readByte();
+    final fields = <int, dynamic>{
+      for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
+    };
+    return RecentPlaybackEntry(
+      aid: (fields[0] as num).toInt(),
+      bvid: fields[1] as String,
+      title: fields[2] as String,
+      author: fields[3] as String,
+      coverUrl: fields[4] as String,
+      cid: (fields[5] as num?)?.toInt(),
+      pageTitle: fields[6] as String?,
+      playedAtEpochMs: (fields[7] as num).toInt(),
+    );
+  }
+
+  @override
+  void write(BinaryWriter writer, RecentPlaybackEntry obj) {
+    writer
+      ..writeByte(8)
+      ..writeByte(0)
+      ..write(obj.aid)
+      ..writeByte(1)
+      ..write(obj.bvid)
+      ..writeByte(2)
+      ..write(obj.title)
+      ..writeByte(3)
+      ..write(obj.author)
+      ..writeByte(4)
+      ..write(obj.coverUrl)
+      ..writeByte(5)
+      ..write(obj.cid)
+      ..writeByte(6)
+      ..write(obj.pageTitle)
+      ..writeByte(7)
+      ..write(obj.playedAtEpochMs);
+  }
+
+  @override
+  int get hashCode => typeId.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is RecentPlaybackEntryAdapter &&
+          runtimeType == other.runtimeType &&
+          typeId == other.typeId;
+}
