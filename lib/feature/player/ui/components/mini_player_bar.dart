@@ -1,5 +1,4 @@
 import 'dart:math';
-import 'dart:ui';
 
 import 'package:bilimusic/common/bottom_height_helper.dart';
 import 'package:bilimusic/common/components/cachedImage.dart';
@@ -48,7 +47,6 @@ class MiniPlayerBar extends StatelessWidget {
                 children: <Widget>[
                   _Artwork(
                     coverUrl: state.currentItem?.coverUrl ?? '',
-                    progress: progress,
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -78,19 +76,10 @@ class MiniPlayerBar extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: 12),
-                  IconButton(
+                  _PlaybackButton(
+                    progress: progress,
+                    isPlaying: state.isPlaying,
                     onPressed: onTogglePlayback,
-                    style: IconButton.styleFrom(
-                      backgroundColor: colorScheme.primary.withValues(
-                        alpha: 0.12,
-                      ),
-                      foregroundColor: colorScheme.primary,
-                    ),
-                    icon: Icon(
-                      state.isPlaying
-                          ? Icons.pause_rounded
-                          : Icons.play_arrow_rounded,
-                    ),
                   ),
                 ],
               ),
@@ -128,13 +117,12 @@ class MiniPlayerBar extends StatelessWidget {
 }
 
 class _Artwork extends StatelessWidget {
-  const _Artwork({required this.coverUrl, required this.progress});
+  const _Artwork({required this.coverUrl});
 
   static const double _outerSize = 52;
   static const double _imageSize = 48;
 
   final String coverUrl;
-  final double progress;
 
   @override
   Widget build(BuildContext context) {
@@ -146,14 +134,6 @@ class _Artwork extends StatelessWidget {
       child: Stack(
         alignment: Alignment.center,
         children: <Widget>[
-          // CustomPaint(
-          //   size: const Size(_outerSize, _outerSize),
-          //   painter: _ArtworkProgressPainter(
-          //     progress: progress,
-          //     trackColor: colorScheme.primary.withValues(alpha: 0.14),
-          //     progressColor: colorScheme.primary,
-          //   ),
-          // ),
           Container(
             width: _imageSize,
             height: _imageSize,
@@ -178,8 +158,60 @@ class _Artwork extends StatelessWidget {
   }
 }
 
-class _ArtworkProgressPainter extends CustomPainter {
-  const _ArtworkProgressPainter({
+class _PlaybackButton extends StatelessWidget {
+  const _PlaybackButton({
+    required this.progress,
+    required this.isPlaying,
+    required this.onPressed,
+  });
+
+  final double progress;
+  final bool isPlaying;
+  final VoidCallback onPressed;
+
+  static const double _size = 44;
+  static const double _iconSize = 22;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+
+    return SizedBox(
+      width: _size,
+      height: _size,
+      child: Stack(
+        alignment: Alignment.center,
+        children: <Widget>[
+          CustomPaint(
+            size: const Size(_size - 8, _size - 8),
+            painter: _PlaybackProgressPainter(
+              progress: progress,
+              trackColor: colorScheme.primary.withValues(alpha: 0.14),
+              progressColor: colorScheme.primary,
+            ),
+          ),
+          IconButton(
+            onPressed: onPressed,
+            style: IconButton.styleFrom(
+              minimumSize: const Size(_size - 8, _size - 8),
+              // backgroundColor: colorScheme.primary.withValues(alpha: 0.12),
+              foregroundColor: colorScheme.primary,
+              padding: EdgeInsets.zero,
+            ),
+            iconSize: _iconSize,
+            icon: Icon(
+              isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PlaybackProgressPainter extends CustomPainter {
+  const _PlaybackProgressPainter({
     required this.progress,
     required this.trackColor,
     required this.progressColor,
@@ -188,105 +220,44 @@ class _ArtworkProgressPainter extends CustomPainter {
   final double progress;
   final Color trackColor;
   final Color progressColor;
-  final double startAngle = 270;
 
   static const double _strokeWidth = 2;
-  static const double _radius = 16;
 
   @override
   void paint(Canvas canvas, Size size) {
-    final Rect rect = Offset.zero & size;
-    final RRect rrect = RRect.fromRectAndRadius(
-      rect.deflate(_strokeWidth / 2),
-      const Radius.circular(_radius),
-    );
-
-    //背景
-    // canvas.drawRRect(
-    //   rrect,
-    //   Paint()
-    //     ..color = trackColor
-    //     ..style = PaintingStyle.stroke
-    //     ..strokeWidth = _strokeWidth - 1,
-    // );
-
-    PathMetric? metric = _getFirstPathMetric(rrect);
-    if (metric == null) {
-      return;
-    }
-
-    final double totalLength = metric.length;
     final double clampedProgress = progress.clamp(0.0, 1.0);
-    final double progressLength = totalLength * clampedProgress;
+    final Offset center = size.center(Offset.zero);
+    final double radius = (size.shortestSide - _strokeWidth) / 2;
+    final Rect arcRect = Rect.fromCircle(center: center, radius: radius);
 
-    if (progressLength <= 0 || progressLength > totalLength) {
+    final Paint trackPaint = Paint()
+      ..color = trackColor
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = _strokeWidth;
+
+    final Paint progressPaint = Paint()
+      ..color = progressColor
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = _strokeWidth
+      ..strokeCap = StrokeCap.round;
+
+    canvas.drawCircle(center, radius, trackPaint);
+
+    if (clampedProgress <= 0) {
       return;
     }
 
-    try {
-      final double defaultStartAngle = -210; // 12点钟
-      final double angleOffset = (startAngle - defaultStartAngle) % 360;
-      final double startOffset = totalLength * (angleOffset / 360);
-
-      final double endDistance = startOffset + progressLength;
-
-      if (endDistance <= totalLength) {
-        final Path progressPath = metric.extractPath(startOffset, endDistance);
-        canvas.drawPath(
-          progressPath,
-          Paint()
-            ..color = progressColor
-            ..style = PaintingStyle.stroke
-            ..strokeWidth = _strokeWidth
-            ..strokeCap = StrokeCap.round,
-        );
-      } else {
-        final double remaining = endDistance - totalLength;
-
-        final Path firstPart = metric.extractPath(startOffset, totalLength);
-        final Path secondPart = metric.extractPath(0, remaining);
-
-        canvas.drawPath(
-          firstPart,
-          Paint()
-            ..color = progressColor
-            ..style = PaintingStyle.stroke
-            ..strokeWidth = _strokeWidth
-            ..strokeCap = StrokeCap.round,
-        );
-
-        canvas.drawPath(
-          secondPart,
-          Paint()
-            ..color = progressColor
-            ..style = PaintingStyle.stroke
-            ..strokeWidth = _strokeWidth
-            ..strokeCap = StrokeCap.round,
-        );
-      }
-    } catch (e) {
-      // 忽略提取路径错误
-    }
-  }
-
-  PathMetric? _getFirstPathMetric(RRect rrect) {
-    try {
-      final Path borderPath = Path()..addRRect(rrect);
-      final PathMetrics metrics = borderPath.computeMetrics();
-
-      // 使用 iterator 获取第一个元素
-      final iterator = metrics.iterator;
-      if (iterator.moveNext()) {
-        return iterator.current;
-      }
-      return null;
-    } catch (e) {
-      return null;
-    }
+    canvas.drawArc(
+      arcRect,
+      -pi / 2,
+      2 * pi * clampedProgress,
+      false,
+      progressPaint,
+    );
   }
 
   @override
-  bool shouldRepaint(covariant _ArtworkProgressPainter oldDelegate) {
+  bool shouldRepaint(covariant _PlaybackProgressPainter oldDelegate) {
     return oldDelegate.progress != progress ||
         oldDelegate.trackColor != trackColor ||
         oldDelegate.progressColor != progressColor;
