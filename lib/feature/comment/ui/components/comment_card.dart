@@ -1,4 +1,4 @@
-import 'package:bilimusic/common/components/cachedImage.dart';
+import 'package:bilimusic/common/components/cached_avatar.dart';
 import 'package:bilimusic/feature/comment/domain/comment_item.dart';
 import 'package:flutter/material.dart';
 
@@ -31,17 +31,13 @@ class CommentCard extends StatelessWidget {
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
-            ClipOval(
-              child: CommonCachedImage(
-                imageUrl: item.memberAvatarUrl,
-                width: 36,
-                height: 36,
-                fit: BoxFit.cover,
-                fallbackIcon: Icons.person_outline_rounded,
-                iconColor: colorScheme.onSurfaceVariant,
-                iconSize: 18,
-                backgroundColor: colorScheme.surfaceContainerHigh,
-              ),
+            CommonCachedAvatar(
+              imageUrl: item.memberAvatarUrl,
+              size: 36,
+              fallbackIcon: Icons.person_outline_rounded,
+              iconColor: colorScheme.onSurfaceVariant,
+              iconSize: 18,
+              backgroundColor: colorScheme.surfaceContainerHigh,
             ),
             const SizedBox(width: 12),
             Expanded(

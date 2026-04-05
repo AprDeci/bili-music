@@ -1,6 +1,6 @@
 import 'package:bilimusic/core/bili/session/bili_session.dart';
 import 'package:bilimusic/core/bili/session/bili_session_controller.dart';
-import 'package:cached_network_image/cached_network_image.dart';
+import 'package:bilimusic/common/components/cached_avatar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -20,7 +20,6 @@ class UserCard extends ConsumerWidget {
     final String? face = session?.face;
     final String? uname = session?.uname;
     final int? mid = session?.mid;
-    final bool hasAvatar = isLoggedIn && face != null && face.isNotEmpty;
     final String title = isLoggedIn
         ? (uname?.isNotEmpty == true ? uname! : '已登录 B 站账号')
         : '点击登录';
@@ -41,39 +40,13 @@ class UserCard extends ConsumerWidget {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: <Widget>[
-              CircleAvatar(
+              CommonCachedAvatar(
+                imageUrl: isLoggedIn ? face : null,
                 radius: 24,
                 backgroundColor: const Color(0xFFF2F6FA),
-                child: ClipOval(
-                  child: SizedBox(
-                    width: 48,
-                    height: 48,
-                    child: hasAvatar
-                        ? CachedNetworkImage(
-                            imageUrl: face!,
-                            fit: BoxFit.cover,
-                            placeholder: (BuildContext context, String url) {
-                              return Icon(
-                                Icons.person,
-                                size: 24,
-                                color: themeColor,
-                              );
-                            },
-                            errorWidget: (
-                              BuildContext context,
-                              String url,
-                              Object error,
-                            ) {
-                              return Icon(
-                                Icons.person,
-                                size: 24,
-                                color: themeColor,
-                              );
-                            },
-                          )
-                        : Icon(Icons.person, size: 24, color: themeColor),
-                  ),
-                ),
+                fallbackIcon: Icons.person,
+                iconColor: themeColor,
+                iconSize: 24,
               ),
               const SizedBox(width: 20),
               Expanded(
