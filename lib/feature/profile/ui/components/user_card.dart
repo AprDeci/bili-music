@@ -1,5 +1,6 @@
 import 'package:bilimusic/core/bili/session/bili_session.dart';
 import 'package:bilimusic/core/bili/session/bili_session_controller.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -19,16 +20,11 @@ class UserCard extends ConsumerWidget {
     final String? face = session?.face;
     final String? uname = session?.uname;
     final int? mid = session?.mid;
-    final ImageProvider<Object>? avatarImage =
-        isLoggedIn && face != null && face.isNotEmpty
-        ? NetworkImage(face)
-        : null;
+    final bool hasAvatar = isLoggedIn && face != null && face.isNotEmpty;
     final String title = isLoggedIn
         ? (uname?.isNotEmpty == true ? uname! : '已登录 B 站账号')
         : '点击登录';
-    final String subtitle = isLoggedIn
-        ? 'mid: ${mid ?? '-'}'
-        : '扫码同步 B 站账号信息';
+    final String subtitle = isLoggedIn ? 'mid: ${mid ?? '-'}' : '扫码同步 B 站账号信息';
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -48,10 +44,36 @@ class UserCard extends ConsumerWidget {
               CircleAvatar(
                 radius: 24,
                 backgroundColor: const Color(0xFFF2F6FA),
-                backgroundImage: avatarImage,
-                child: avatarImage == null
-                    ? Icon(Icons.person, size: 24, color: themeColor)
-                    : null,
+                child: ClipOval(
+                  child: SizedBox(
+                    width: 48,
+                    height: 48,
+                    child: hasAvatar
+                        ? CachedNetworkImage(
+                            imageUrl: face!,
+                            fit: BoxFit.cover,
+                            placeholder: (BuildContext context, String url) {
+                              return Icon(
+                                Icons.person,
+                                size: 24,
+                                color: themeColor,
+                              );
+                            },
+                            errorWidget: (
+                              BuildContext context,
+                              String url,
+                              Object error,
+                            ) {
+                              return Icon(
+                                Icons.person,
+                                size: 24,
+                                color: themeColor,
+                              );
+                            },
+                          )
+                        : Icon(Icons.person, size: 24, color: themeColor),
+                  ),
+                ),
               ),
               const SizedBox(width: 20),
               Expanded(
