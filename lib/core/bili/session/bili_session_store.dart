@@ -1,4 +1,5 @@
 import 'package:bilimusic/core/bili/session/bili_session.dart';
+import 'package:bilimusic/core/hive/hive_keys.dart';
 import 'package:hive_ce/hive.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
@@ -6,7 +7,7 @@ part 'bili_session_store.g.dart';
 
 @riverpod
 BiliSessionStore biliSessionStore(Ref ref) {
-  return BiliSessionStore(Hive.box<String>('prefs'));
+  return BiliSessionStore(Hive.box<String>(HiveBoxNames.prefs));
 }
 
 class BiliSessionStore {
@@ -14,69 +15,61 @@ class BiliSessionStore {
 
   final Box<String> _prefsBox;
 
-  static const String _cookieKey = 'bili.cookie';
-  static const String _sessDataKey = 'bili.sessdata';
-  static const String _biliJctKey = 'bili.bili_jct';
-  static const String _dedeUserIdKey = 'bili.dede_user_id';
-  static const String _refreshTokenKey = 'bili.refresh_token';
-  static const String _midKey = 'bili.mid';
-  static const String _unameKey = 'bili.uname';
-  static const String _faceKey = 'bili.face';
-  static const String _imgKey = 'bili.img_key';
-  static const String _subKey = 'bili.sub_key';
-  static const String _buvid3Key = 'bili.buvid3';
-
   Future<void> save(BiliSession session) {
     return Future.wait(<Future<void>>[
-      _prefsBox.put(_cookieKey, session.cookie),
-      _prefsBox.put(_sessDataKey, session.sessData),
-      _prefsBox.put(_biliJctKey, session.biliJct),
-      _prefsBox.put(_dedeUserIdKey, session.dedeUserId),
-      _prefsBox.put(_refreshTokenKey, session.refreshToken),
-      _prefsBox.put(_midKey, session.mid?.toString() ?? ''),
-      _prefsBox.put(_unameKey, session.uname ?? ''),
-      _prefsBox.put(_faceKey, session.face ?? ''),
-      _prefsBox.put(_imgKey, session.imgKey ?? ''),
-      _prefsBox.put(_subKey, session.subKey ?? ''),
-      _prefsBox.put(_buvid3Key, session.buvid3 ?? ''),
+      _prefsBox.put(HiveKeys.biliCookie, session.cookie),
+      _prefsBox.put(HiveKeys.biliSessData, session.sessData),
+      _prefsBox.put(HiveKeys.biliJct, session.biliJct),
+      _prefsBox.put(HiveKeys.biliDedeUserId, session.dedeUserId),
+      _prefsBox.put(HiveKeys.biliRefreshToken, session.refreshToken),
+      _prefsBox.put(HiveKeys.biliMid, session.mid?.toString() ?? ''),
+      _prefsBox.put(HiveKeys.biliUname, session.uname ?? ''),
+      _prefsBox.put(HiveKeys.biliFace, session.face ?? ''),
+      _prefsBox.put(HiveKeys.biliImgKey, session.imgKey ?? ''),
+      _prefsBox.put(HiveKeys.biliSubKey, session.subKey ?? ''),
+      _prefsBox.put(HiveKeys.biliBuvid3, session.buvid3 ?? ''),
     ]);
   }
 
   BiliSession? load() {
-    final String cookie = _prefsBox.get(_cookieKey, defaultValue: '') ?? '';
+    final String cookie =
+        _prefsBox.get(HiveKeys.biliCookie, defaultValue: '') ?? '';
     if (cookie.isEmpty) {
       return null;
     }
 
-    final String midValue = _prefsBox.get(_midKey, defaultValue: '') ?? '';
+    final String midValue =
+        _prefsBox.get(HiveKeys.biliMid, defaultValue: '') ?? '';
     return BiliSession(
-      sessData: _prefsBox.get(_sessDataKey, defaultValue: '') ?? '',
-      biliJct: _prefsBox.get(_biliJctKey, defaultValue: '') ?? '',
-      dedeUserId: _prefsBox.get(_dedeUserIdKey, defaultValue: '') ?? '',
-      refreshToken: _prefsBox.get(_refreshTokenKey, defaultValue: '') ?? '',
+      sessData: _prefsBox.get(HiveKeys.biliSessData, defaultValue: '') ?? '',
+      biliJct: _prefsBox.get(HiveKeys.biliJct, defaultValue: '') ?? '',
+      dedeUserId:
+          _prefsBox.get(HiveKeys.biliDedeUserId, defaultValue: '') ?? '',
+      refreshToken:
+          _prefsBox.get(HiveKeys.biliRefreshToken, defaultValue: '') ?? '',
       cookie: cookie,
       mid: int.tryParse(midValue),
-      uname: _prefsBox.get(_unameKey, defaultValue: ''),
-      face: _prefsBox.get(_faceKey, defaultValue: ''),
-      imgKey: _prefsBox.get(_imgKey, defaultValue: ''),
-      subKey: _prefsBox.get(_subKey, defaultValue: ''),
-      buvid3: _prefsBox.get(_buvid3Key, defaultValue: ''),
+      uname: _prefsBox.get(HiveKeys.biliUname, defaultValue: ''),
+      face: _prefsBox.get(HiveKeys.biliFace, defaultValue: ''),
+      imgKey: _prefsBox.get(HiveKeys.biliImgKey, defaultValue: ''),
+      subKey: _prefsBox.get(HiveKeys.biliSubKey, defaultValue: ''),
+      buvid3: _prefsBox.get(HiveKeys.biliBuvid3, defaultValue: ''),
     );
   }
 
   Future<void> clear() {
     return Future.wait(<Future<void>>[
-      _prefsBox.delete(_cookieKey),
-      _prefsBox.delete(_sessDataKey),
-      _prefsBox.delete(_biliJctKey),
-      _prefsBox.delete(_dedeUserIdKey),
-      _prefsBox.delete(_refreshTokenKey),
-      _prefsBox.delete(_midKey),
-      _prefsBox.delete(_unameKey),
-      _prefsBox.delete(_faceKey),
-      _prefsBox.delete(_imgKey),
-      _prefsBox.delete(_subKey),
-      _prefsBox.delete(_buvid3Key),
+      _prefsBox.delete(HiveKeys.biliCookie),
+      _prefsBox.delete(HiveKeys.biliSessData),
+      _prefsBox.delete(HiveKeys.biliJct),
+      _prefsBox.delete(HiveKeys.biliDedeUserId),
+      _prefsBox.delete(HiveKeys.biliRefreshToken),
+      _prefsBox.delete(HiveKeys.biliMid),
+      _prefsBox.delete(HiveKeys.biliUname),
+      _prefsBox.delete(HiveKeys.biliFace),
+      _prefsBox.delete(HiveKeys.biliImgKey),
+      _prefsBox.delete(HiveKeys.biliSubKey),
+      _prefsBox.delete(HiveKeys.biliBuvid3),
     ]);
   }
 }

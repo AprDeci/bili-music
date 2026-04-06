@@ -53,4 +53,4 @@ final class BiliSessionStoreProvider
   }
 }
 
-String _$biliSessionStoreHash() => r'b6d1cb9c106071606621703623a59e5e9db2bc44';
+String _$biliSessionStoreHash() => r'74fca5429f978402b7e1eedc3b5f569d341d3d3e';
