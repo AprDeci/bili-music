@@ -1,17 +1,15 @@
 import 'package:bilimusic/core/cache/cache_util.dart';
-import 'package:bilimusic/feature/player/logic/player_settings_logic.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-class SettingPage extends ConsumerStatefulWidget {
+class SettingPage extends StatefulWidget {
   const SettingPage({super.key});
 
   @override
-  ConsumerState<SettingPage> createState() => _SettingPageState();
+  State<SettingPage> createState() => _SettingPageState();
 }
 
-class _SettingPageState extends ConsumerState<SettingPage> {
+class _SettingPageState extends State<SettingPage> {
   late Future<String> _cacheSizeFuture;
 
   @override
@@ -47,7 +45,6 @@ class _SettingPageState extends ConsumerState<SettingPage> {
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
-    final bool allowMixWithOthers = ref.watch(playerSettingsLogicProvider);
 
     return Scaffold(
       appBar: AppBar(title: const Text('设置')),
@@ -65,17 +62,13 @@ class _SettingPageState extends ConsumerState<SettingPage> {
             trailing: const Icon(Icons.chevron_right_rounded),
             onTap: () => context.push('/settings/theme'),
           ),
-          SwitchListTile.adaptive(
+          ListTile(
             contentPadding: EdgeInsets.zero,
-            secondary: const Icon(Icons.multitrack_audio_outlined),
-            title: const Text('允许与其他应用同时播放'),
-            subtitle: Text('重启后生效', style: theme.textTheme.bodySmall),
-            value: allowMixWithOthers,
-            onChanged: (bool value) async {
-              await ref
-                  .read(playerSettingsLogicProvider.notifier)
-                  .setAllowMixWithOthers(value);
-            },
+            leading: const Icon(Icons.multitrack_audio_outlined),
+            title: const Text('播放器设置'),
+            subtitle: Text('后台播放与音频策略', style: theme.textTheme.bodySmall),
+            trailing: const Icon(Icons.chevron_right_rounded),
+            onTap: () => context.push('/settings/player'),
           ),
           FutureBuilder<String>(
             future: _cacheSizeFuture,
