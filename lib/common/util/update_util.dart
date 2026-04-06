@@ -1,5 +1,6 @@
 import 'package:bilimusic/common/logger.dart';
 import 'package:bilimusic/common/util/json_util.dart';
+import 'package:bilimusic/core/hive/hive_keys.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:hive_ce/hive.dart';
@@ -15,8 +16,6 @@ class UpdateUtil {
       'https://api.github.com/repos/AprDeci/bili-music/releases/latest';
   static const String _releaseListUrl =
       'https://github.com/AprDeci/bili-music/releases';
-  static const String _dismissedTagKey = 'app.update.dismissed_tag';
-
   static Future<void> checkAndPromptForUpdate(
     BuildContext context, {
     bool manual = false,
@@ -127,7 +126,10 @@ class UpdateUtil {
 
   static String? _loadDismissedTag() {
     final String value =
-        Hive.box<String>('prefs').get(_dismissedTagKey, defaultValue: '') ?? '';
+        Hive.box<String>(
+          HiveBoxNames.prefs,
+        ).get(HiveKeys.updateDismissedTag, defaultValue: '') ??
+        '';
     if (value.isEmpty) {
       return null;
     }
@@ -135,7 +137,9 @@ class UpdateUtil {
   }
 
   static Future<void> _saveDismissedTag(String tagName) {
-    return Hive.box<String>('prefs').put(_dismissedTagKey, tagName);
+    return Hive.box<String>(
+      HiveBoxNames.prefs,
+    ).put(HiveKeys.updateDismissedTag, tagName);
   }
 
   static Future<_UpdateAction?> _showUpdateDialog(

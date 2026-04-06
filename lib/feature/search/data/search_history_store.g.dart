@@ -55,4 +55,4 @@ final class SearchHistoryStoreProvider
 }
 
 String _$searchHistoryStoreHash() =>
-    r'fe3d84673fb1da2f6868013439df3daa2f3e667a';
+    r'942f090b7fab8611d183b06975224753754381fb';

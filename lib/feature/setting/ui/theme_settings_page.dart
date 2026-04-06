@@ -11,9 +11,6 @@ class ThemeSettingsPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final ThemeData theme = Theme.of(context);
     final ThemeUiModel themeState = ref.watch(themeLogicProvider);
-    final List<LightThemeDefinition> lightThemes = LightThemeVariant.values
-        .map(lightThemeDefinitionOf)
-        .toList(growable: false);
 
     return Scaffold(
       appBar: AppBar(title: const Text('主题设置')),

@@ -1,24 +1,22 @@
-import 'package:hive_ce/hive.dart';
+import 'package:bilimusic/core/hive/hive_keys.dart';
+import 'package:bilimusic/core/settings/app_settings_store.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 final NotifierProvider<PlayerSettingsLogic, bool> playerSettingsLogicProvider =
     NotifierProvider<PlayerSettingsLogic, bool>(PlayerSettingsLogic.new);
 
 class PlayerSettingsLogic extends Notifier<bool> {
-  static const String _allowMixWithOthersKey = 'player.allow_mix_with_others';
-
   @override
   bool build() {
-    final Box<String> prefsBox = Hive.box<String>('prefs');
-    final String rawValue =
-        prefsBox.get(_allowMixWithOthersKey, defaultValue: 'false') ?? 'false';
-    return rawValue == 'true';
+    return ref
+        .read(appSettingsStoreProvider)
+        .readBool(HiveKeys.playerAllowMixWithOthers, defaultValue: false);
   }
 
   Future<void> setAllowMixWithOthers(bool value) async {
-    await Hive.box<String>(
-      'prefs',
-    ).put(_allowMixWithOthersKey, value ? 'true' : 'false');
+    await ref
+        .read(appSettingsStoreProvider)
+        .writeBool(HiveKeys.playerAllowMixWithOthers, value);
     state = value;
   }
 }

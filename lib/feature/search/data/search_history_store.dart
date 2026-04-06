@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:bilimusic/core/hive/hive_keys.dart';
 import 'package:hive_ce/hive.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
@@ -7,19 +8,17 @@ part 'search_history_store.g.dart';
 
 @riverpod
 SearchHistoryStore searchHistoryStore(Ref ref) {
-  return SearchHistoryStore(Hive.box<String>('prefs'));
+  return SearchHistoryStore(Hive.box<String>(HiveBoxNames.prefs));
 }
 
 class SearchHistoryStore {
   const SearchHistoryStore(this._prefsBox);
 
-  static const String _historyKey = 'search.history';
-
   final Box<String> _prefsBox;
 
   List<String> load() {
     final String rawValue =
-        _prefsBox.get(_historyKey, defaultValue: '[]') ?? '[]';
+        _prefsBox.get(HiveKeys.searchHistory, defaultValue: '[]') ?? '[]';
 
     try {
       final List<dynamic> decoded = jsonDecode(rawValue) as List<dynamic>;
@@ -40,10 +39,10 @@ class SearchHistoryStore {
         .where((String item) => item.isNotEmpty)
         .take(20)
         .toList();
-    return _prefsBox.put(_historyKey, jsonEncode(sanitized));
+    return _prefsBox.put(HiveKeys.searchHistory, jsonEncode(sanitized));
   }
 
   Future<void> clear() {
-    return _prefsBox.delete(_historyKey);
+    return _prefsBox.delete(HiveKeys.searchHistory);
   }
 }
