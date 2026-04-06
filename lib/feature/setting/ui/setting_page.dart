@@ -1,16 +1,19 @@
 import 'package:bilimusic/core/cache/cache_util.dart';
+import 'package:bilimusic/feature/player/logic/player_controller.dart';
+import 'package:bilimusic/feature/player/logic/player_settings_logic.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-class SettingPage extends StatefulWidget {
+class SettingPage extends ConsumerStatefulWidget {
   const SettingPage({super.key});
 
   @override
-  State<SettingPage> createState() => _SettingPageState();
+  ConsumerState<SettingPage> createState() => _SettingPageState();
 }
 
-class _SettingPageState extends State<SettingPage> {
+class _SettingPageState extends ConsumerState<SettingPage> {
   late Future<String> _cacheSizeFuture;
 
   @override
@@ -46,23 +49,36 @@ class _SettingPageState extends State<SettingPage> {
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
+    final bool allowMixWithOthers = ref.watch(playerSettingsLogicProvider);
 
     return Scaffold(
       appBar: AppBar(title: const Text('设置')),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
         children: <Widget>[
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              leading: const Icon(Icons.palette_outlined),
-              title: const Text('主题设置'),
-              subtitle: Text(
-                '跟随系统、浅色、深色与浅色主题选择',
-                style: theme.textTheme.bodySmall,
-              ),
-              trailing: const Icon(Icons.chevron_right_rounded),
-              onTap: () => context.push('/settings/theme'),
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: const Icon(Icons.palette_outlined),
+            title: const Text('主题设置'),
+            subtitle: Text(
+              '跟随系统、浅色、深色与浅色主题选择',
+              style: theme.textTheme.bodySmall,
             ),
+            trailing: const Icon(Icons.chevron_right_rounded),
+            onTap: () => context.push('/settings/theme'),
+          ),
+          SwitchListTile.adaptive(
+            contentPadding: EdgeInsets.zero,
+            secondary: const Icon(Icons.multitrack_audio_outlined),
+            title: const Text('允许与其他应用同时播放'),
+            subtitle: Text('重启后生效', style: theme.textTheme.bodySmall),
+            value: allowMixWithOthers,
+            onChanged: (bool value) async {
+              await ref
+                  .read(playerSettingsLogicProvider.notifier)
+                  .setAllowMixWithOthers(value);
+            },
+          ),
           FutureBuilder<String>(
             future: _cacheSizeFuture,
             builder: (context, snapshot) {
