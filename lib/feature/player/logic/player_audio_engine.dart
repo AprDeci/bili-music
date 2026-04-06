@@ -4,6 +4,7 @@ import 'package:just_audio/just_audio.dart' as audio;
 class PlayerAudioEngine {
   PlayerAudioEngine()
     : _audioPlayer = audio.AudioPlayer(
+        handleInterruptions: false,
         useProxyForRequestHeaders: !_shouldDisableRequestHeadersProxy,
       );
 
@@ -21,6 +22,7 @@ class PlayerAudioEngine {
   }
 
   bool get playing => _audioPlayer.playing;
+  double get volume => _audioPlayer.volume;
   Duration get position => _audioPlayer.position;
   audio.ProcessingState get processingState => _audioPlayer.processingState;
 
@@ -69,6 +71,10 @@ class PlayerAudioEngine {
 
   Future<void> seek(Duration position) {
     return _audioPlayer.seek(position);
+  }
+
+  Future<void> setVolume(double volume) {
+    return _audioPlayer.setVolume(volume);
   }
 
   Future<void> dispose() {
