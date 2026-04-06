@@ -15,7 +15,9 @@ import 'package:bilimusic/feature/player/domain/persisted_playback_queue.dart';
 import 'package:bilimusic/feature/player/domain/player_state.dart';
 import 'package:bilimusic/feature/player/logic/app_audio_handler.dart';
 import 'package:bilimusic/feature/player/logic/player_audio_engine.dart';
+import 'package:bilimusic/feature/player/logic/player_audio_session_coordinator.dart';
 import 'package:bilimusic/feature/player/logic/player_media_item_mapper.dart';
+import 'package:bilimusic/feature/player/logic/player_settings_logic.dart';
 import 'package:bilimusic/feature/recent/logic/recent_playback_controller.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:just_audio/just_audio.dart' as audio;
@@ -41,6 +43,18 @@ class PlayerController extends Notifier<PlayerState>
   );
   late final AppAudioHandler _audioHandler = ref.read(appAudioHandlerProvider);
   late final PlayerAudioEngine _audioEngine = PlayerAudioEngine();
+  late final PlayerAudioSessionCoordinator _audioSessionCoordinator =
+      PlayerAudioSessionCoordinator(
+        audioEngine: _audioEngine,
+        readAllowMixWithOthers: () => ref.read(playerSettingsLogicProvider),
+        readHasQueue: () => state.hasQueue,
+        readIsPlaying: () => state.isPlaying,
+        readIsReady: () => state.isReady,
+        readIsLoading: () => state.isLoading,
+        readHasError: () => state.hasError,
+        play: play,
+        pause: pause,
+      );
 
   final Map<String, _ResolvedQueueEntry> _resolvedEntries =
       <String, _ResolvedQueueEntry>{};
@@ -58,6 +72,7 @@ class PlayerController extends Notifier<PlayerState>
     if (!_isBound) {
       _bindPlayerStreams();
       _audioHandler.attachTarget(this);
+      unawaited(_audioSessionCoordinator.bind());
       _isBound = true;
     }
 
@@ -74,6 +89,7 @@ class PlayerController extends Notifier<PlayerState>
     }
     _isDisposed = true;
     _audioHandler.detachTarget(this);
+    await _audioSessionCoordinator.dispose();
 
     for (final StreamSubscription<dynamic> subscription in _subscriptions) {
       await subscription.cancel();
@@ -653,9 +669,9 @@ class PlayerController extends Notifier<PlayerState>
       _recordQueueVisit(queueIndex);
       if (autoplay) {
         unawaited(
-          ref.read(recentPlaybackControllerProvider.notifier).recordItem(
-                entry.item,
-              ),
+          ref
+              .read(recentPlaybackControllerProvider.notifier)
+              .recordItem(entry.item),
         );
       }
       _publishMediaSession();
