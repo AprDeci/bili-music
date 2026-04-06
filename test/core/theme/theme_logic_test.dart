@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:bilimusic/core/hive/hive_keys.dart';
 import 'package:bilimusic/core/theme/theme_logic.dart';
 import 'package:bilimusic/core/theme/theme_ui_model.dart';
 import 'package:flutter/material.dart';
@@ -13,7 +14,7 @@ void main() {
   setUp(() async {
     tempDirectory = await Directory.systemTemp.createTemp('theme_logic_test_');
     Hive.init(tempDirectory.path);
-    await Hive.openBox<String>('prefs');
+    await Hive.openBox<String>(HiveBoxNames.prefs);
   });
 
   tearDown(() async {
@@ -24,9 +25,9 @@ void main() {
   });
 
   test('reads persisted theme preferences', () async {
-    final Box<String> prefsBox = Hive.box<String>('prefs');
-    await prefsBox.put('themeMode', 'dark');
-    await prefsBox.put('lightThemeVariant', 'classicGreen');
+    final Box<String> prefsBox = Hive.box<String>(HiveBoxNames.prefs);
+    await prefsBox.put(HiveKeys.themeMode, 'dark');
+    await prefsBox.put(HiveKeys.lightThemeVariant, 'classicGreen');
 
     final ProviderContainer container = ProviderContainer();
     addTearDown(container.dispose);
@@ -46,11 +47,11 @@ void main() {
     notifier.setLightThemeVariant(LightThemeVariant.classicGreen);
 
     final ThemeUiModel state = container.read(themeLogicProvider);
-    final Box<String> prefsBox = Hive.box<String>('prefs');
+    final Box<String> prefsBox = Hive.box<String>(HiveBoxNames.prefs);
 
     expect(state.themeMode, ThemeMode.light);
     expect(state.lightThemeVariant, LightThemeVariant.classicGreen);
-    expect(prefsBox.get('themeMode'), 'light');
-    expect(prefsBox.get('lightThemeVariant'), 'classicGreen');
+    expect(prefsBox.get(HiveKeys.themeMode), 'light');
+    expect(prefsBox.get(HiveKeys.lightThemeVariant), 'classicGreen');
   });
 }

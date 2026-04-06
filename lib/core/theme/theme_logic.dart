@@ -1,7 +1,8 @@
 // ignore_for_file: cast_nullable_to_non_nullable
 
+import 'package:bilimusic/core/hive/hive_keys.dart';
 import 'package:flutter/material.dart';
-import 'package:hive_ce/hive_ce.dart';
+import 'package:bilimusic/core/settings/app_settings_store.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import 'theme_ui_model.dart';
@@ -10,30 +11,34 @@ part 'theme_logic.g.dart';
 
 @riverpod
 class ThemeLogic extends _$ThemeLogic {
-  static const String _themeModeKey = 'themeMode';
-  static const String _lightThemeVariantKey = 'lightThemeVariant';
-
   @override
   ThemeUiModel build() {
-    final Box<String> prefsBox = Hive.box<String>('prefs');
+    final AppSettingsStore settingsStore = ref.watch(appSettingsStoreProvider);
 
     return ThemeUiModel(
-      themeMode: _readThemeMode(prefsBox.get(_themeModeKey)),
+      themeMode: _readThemeMode(
+        settingsStore.readString(HiveKeys.themeMode, defaultValue: ''),
+      ),
       lightThemeVariant: _readLightThemeVariant(
-        prefsBox.get(_lightThemeVariantKey),
+        settingsStore.readString(HiveKeys.lightThemeVariant, defaultValue: ''),
       ),
     );
   }
 
   void setThemeMode(ThemeMode mode) {
-    Hive.box<String>('prefs').put(_themeModeKey, _themeModeValue(mode));
+    ref
+        .read(appSettingsStoreProvider)
+        .writeString(HiveKeys.themeMode, _themeModeValue(mode));
     state = state.copyWith(themeMode: mode);
   }
 
   void setLightThemeVariant(LightThemeVariant variant) {
-    Hive.box<String>(
-      'prefs',
-    ).put(_lightThemeVariantKey, _lightThemeVariantValue(variant));
+    ref
+        .read(appSettingsStoreProvider)
+        .writeString(
+          HiveKeys.lightThemeVariant,
+          _lightThemeVariantValue(variant),
+        );
     state = state.copyWith(lightThemeVariant: variant);
   }
 
@@ -91,8 +96,6 @@ class ThemeLogic extends _$ThemeLogic {
       case ThemeMode.dark:
         return 'dark';
     }
-
-    return 'system';
   }
 
   String _lightThemeVariantValue(LightThemeVariant variant) {
@@ -108,7 +111,5 @@ class ThemeLogic extends _$ThemeLogic {
       case LightThemeVariant.sunsetOrange:
         return 'sunsetOrange';
     }
-
-    return 'classicGreen';
   }
 }

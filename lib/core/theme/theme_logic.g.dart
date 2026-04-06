@@ -41,7 +41,7 @@ final class ThemeLogicProvider
   }
 }
 
-String _$themeLogicHash() => r'90399f9612e7c10a1feadb158a7209395c2c8d35';
+String _$themeLogicHash() => r'13d10a7a8fb93bb54df6d37d37e20409a84947de';
 
 abstract class _$ThemeLogic extends $Notifier<ThemeUiModel> {
   ThemeUiModel build();
