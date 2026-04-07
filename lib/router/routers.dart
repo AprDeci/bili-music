@@ -8,6 +8,7 @@ import 'package:bilimusic/feature/player/ui/player_page.dart';
 import 'package:bilimusic/feature/profile/ui/profile_page.dart';
 import 'package:bilimusic/feature/search/ui/search_page.dart';
 import 'package:bilimusic/feature/setting/ui/about_settings_page.dart';
+import 'package:bilimusic/feature/setting/ui/cache_settings_page.dart';
 import 'package:bilimusic/feature/setting/ui/setting_page.dart';
 import 'package:bilimusic/feature/setting/ui/theme_settings_page.dart';
 import 'package:bilimusic/router/ScaffoldWithNavBar.dart';
@@ -35,11 +36,6 @@ GoRouter router(Ref ref) => GoRouter(
         return CommentPage(target: target);
       },
     ),
-    // GoRoute(
-    //   path: '/search',
-    //   parentNavigatorKey: _rootNavigatorKey,
-    //   builder: (context, state) => const SearchPage(),
-    // ),
     GoRoute(
       path: '/player',
       parentNavigatorKey: _rootNavigatorKey,
@@ -77,6 +73,11 @@ GoRouter router(Ref ref) => GoRouter(
       path: '/settings/theme',
       parentNavigatorKey: _rootNavigatorKey,
       builder: (context, state) => const ThemeSettingsPage(),
+    ),
+    GoRoute(
+      path: '/settings/cache',
+      parentNavigatorKey: _rootNavigatorKey,
+      builder: (context, state) => const CacheSettingsPage(),
     ),
     GoRoute(
       path: '/settings/about',
