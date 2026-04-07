@@ -2,7 +2,9 @@ import 'package:bilimusic/common/util/color_util.dart';
 import 'package:bilimusic/common/util/format_util.dart';
 import 'package:bilimusic/core/cache/cache_util.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:lottie/lottie.dart';
 
 class CacheSettingsPage extends StatefulWidget {
   const CacheSettingsPage({super.key});
@@ -11,18 +13,27 @@ class CacheSettingsPage extends StatefulWidget {
   State<CacheSettingsPage> createState() => _CacheSettingsPageState();
 }
 
-class _CacheSettingsPageState extends State<CacheSettingsPage> {
+class _CacheSettingsPageState extends State<CacheSettingsPage>
+    with SingleTickerProviderStateMixin {
   int _imageCacheBytes = 0;
   int _audioCacheBytes = 0;
   bool _imageSelected = true;
   bool _audioSelected = true;
   bool _isLoading = true;
   bool _isClearing = false;
+  late final AnimationController _controller;
 
   @override
   void initState() {
     super.initState();
     _loadCacheSizes();
+    _controller = AnimationController(vsync: this);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
   }
 
   int get _totalCacheBytes => _imageCacheBytes + _audioCacheBytes;
@@ -87,6 +98,10 @@ class _CacheSettingsPageState extends State<CacheSettingsPage> {
 
       await Future.wait<void>(tasks);
       await _loadCacheSizes();
+
+      if (mounted && _totalCacheBytes <= 0) {
+        _controller.forward(from: 0.0);
+      }
 
       if (!mounted) {
         return;
@@ -167,8 +182,40 @@ class _CacheSettingsPageState extends State<CacheSettingsPage> {
                 duration: const Duration(milliseconds: 800),
                 curve: Curves.easeInOut,
                   )
-                : Container(
-                ),          
+                : Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      Positioned(
+                        top: -60,
+                        child: Lottie.asset(
+                          'assets/lottie/Done.json',
+                          width: 360,
+                          height: 240,
+                          fit: BoxFit.fitWidth,
+                          controller: _controller,
+                          repeat: false,
+                          onLoaded: (composition) {
+                            _controller
+                              ..duration = composition.duration
+                              ..forward(); // 加载完立即播放一次
+                          },
+                        ),
+                      ),
+                      Positioned(
+                        bottom: 24,
+                        child: Text(
+                          '缓存已清理',
+                          style: TextStyle(
+                            color:
+                                theme.textTheme.bodyMedium?.color ??
+                                Colors.grey,
+                            fontSize: 24,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),       
           ),
           Container(
             margin: EdgeInsets.zero,
@@ -207,6 +254,36 @@ class _CacheSettingsPageState extends State<CacheSettingsPage> {
                   )
                 : Text('清空所选缓存 ${formatBytes(_selectedCacheBytes)}'),
           ),
+          if (kDebugMode)
+            Column(
+              children: [
+                Row(
+                  children: [
+                    // Play backward
+                    IconButton(
+                      icon: const Icon(Icons.arrow_left),
+                      onPressed: () {
+                        _controller.reverse();
+                      },
+                    ),
+                    // Pause
+                    IconButton(
+                      icon: const Icon(Icons.pause),
+                      onPressed: () {
+                        _controller.stop();
+                      },
+                    ),
+                    // Play forward
+                    IconButton(
+                      icon: const Icon(Icons.arrow_right),
+                      onPressed: () {
+                        _controller.forward();
+                      },
+                    ),
+                  ],
+                ),
+              ],
+            )
         ],
       ),
     );
