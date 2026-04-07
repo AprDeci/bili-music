@@ -42,7 +42,7 @@ final class PlayerSettingsLogicProvider
 }
 
 String _$playerSettingsLogicHash() =>
-    r'30f9e59593078ca57d6f41fd3f18064c8d3b1bb3';
+    r'257a6e8c865d0104efa777e89bfd5478b5b66857';
 
 abstract class _$PlayerSettingsLogic extends $Notifier<bool> {
   bool build();
