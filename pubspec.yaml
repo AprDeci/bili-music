@@ -61,6 +61,7 @@ dependencies:
   media_kit_libs_macos_audio: ^1.1.4
   media_kit_libs_linux: ^1.2.1
   fl_chart: ^1.2.0
+  color_palette_plus: ^2.0.0
 
 dev_dependencies:
   flutter_test:
