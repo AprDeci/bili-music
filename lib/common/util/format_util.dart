@@ -8,6 +8,26 @@ String formatCompactCount(int value) {
   return value.toString();
 }
 
+String formatBytes(int bytes) {
+  if (bytes < 1024) {
+    return '$bytes B';
+  }
+
+  const int kb = 1024;
+  const int mb = 1024 * 1024;
+  const int gb = 1024 * 1024 * 1024;
+
+  if (bytes < mb) {
+    return '${(bytes / kb).toStringAsFixed(1)} KB';
+  }
+
+  if (bytes < gb) {
+    return '${(bytes / mb).toStringAsFixed(1)} MB';
+  }
+
+  return '${(bytes / gb).toStringAsFixed(2)} GB';
+}
+
 String? formatYyyyMmDdFromUnixSeconds(int timestamp) {
   if (timestamp <= 0) {
     return null;
