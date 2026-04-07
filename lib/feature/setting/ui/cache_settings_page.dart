@@ -1,3 +1,4 @@
+import 'package:bilimusic/common/util/color_util.dart';
 import 'package:bilimusic/common/util/format_util.dart';
 import 'package:bilimusic/core/cache/cache_util.dart';
 import 'package:fl_chart/fl_chart.dart';
@@ -124,10 +125,10 @@ class _CacheSettingsPageState extends State<CacheSettingsPage> {
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
         children: <Widget>[
-          if (_totalCacheBytes > 0)
             AspectRatio(
               aspectRatio: 1.2,
-              child: PieChart(
+            child: _totalCacheBytes > 0
+                ? PieChart(
                 PieChartData(
                   sectionsSpace: 2,
                   centerSpaceRadius: 50,
@@ -141,7 +142,9 @@ class _CacheSettingsPageState extends State<CacheSettingsPage> {
                                 .toDouble()
                           : 0,
                       titleStyle: TextStyle(color: Colors.white),
-                      color: theme.colorScheme.primary.withValues(blue: 0.4),
+                          color: ColorUtil.getAnalogous(
+                            theme.colorScheme.primary,
+                          )[4],
                       radius: 45,
                   ),
                     PieChartSectionData(
@@ -152,10 +155,10 @@ class _CacheSettingsPageState extends State<CacheSettingsPage> {
                           ? (_audioCacheBytes / _totalCacheBytes * 100)
                                 .toDouble()
                           : 0,
-                      color: theme.colorScheme.primary.withValues(
-                        red: 0.1,
-                        blue: 0.1,
-                      ),
+                          color: ColorUtil.getShade(
+                            theme.colorScheme.primary,
+                            400,
+                          ),
                       titleStyle: TextStyle(color: Colors.white),
                       radius: 45,
                   ),
@@ -163,7 +166,9 @@ class _CacheSettingsPageState extends State<CacheSettingsPage> {
               ),
                 duration: const Duration(milliseconds: 800),
                 curve: Curves.easeInOut,
-            ),
+                  )
+                : Container(
+                ),          
           ),
           Container(
             margin: EdgeInsets.zero,
