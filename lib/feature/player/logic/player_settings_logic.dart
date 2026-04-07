@@ -1,11 +1,11 @@
 import 'package:bilimusic/core/hive/hive_keys.dart';
 import 'package:bilimusic/core/settings/app_settings_store.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-final NotifierProvider<PlayerSettingsLogic, bool> playerSettingsLogicProvider =
-    NotifierProvider<PlayerSettingsLogic, bool>(PlayerSettingsLogic.new);
+part 'player_settings_logic.g.dart';
 
-class PlayerSettingsLogic extends Notifier<bool> {
+@Riverpod(keepAlive: true)
+class PlayerSettingsLogic extends _$PlayerSettingsLogic {
   @override
   bool build() {
     return ref
@@ -14,9 +14,9 @@ class PlayerSettingsLogic extends Notifier<bool> {
   }
 
   Future<void> setAllowMixWithOthers(bool value) async {
+    state = value;
     await ref
         .read(appSettingsStoreProvider)
         .writeBool(HiveKeys.playerAllowMixWithOthers, value);
-    state = value;
   }
 }
