@@ -142,7 +142,7 @@ String? _buildAudienceLabel(PlayerOnlineAudience audience) {
   if (preferredText.contains('人')) {
     return preferredText;
   }
-  return '${preferredText}人在听';
+  return '$preferredText人在听';
 }
 
 class _PlayerToolBar extends StatelessWidget {
