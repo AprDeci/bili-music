@@ -1,4 +1,5 @@
 import 'package:bilimusic/core/cache/cache_util.dart';
+import 'package:bilimusic/common/util/format_util.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -10,36 +11,18 @@ class SettingPage extends StatefulWidget {
 }
 
 class _SettingPageState extends State<SettingPage> {
-  late Future<String> _cacheSizeFuture;
+  late Future<int> _cacheSizeFuture;
 
   @override
   void initState() {
     super.initState();
-    _cacheSizeFuture = CacheUtil.getImageCacheSize();
+    _cacheSizeFuture = CacheUtil.getTotalCacheSizeBytes();
   }
 
   Future<void> _reloadCacheSize() async {
     setState(() {
-      _cacheSizeFuture = CacheUtil.getImageCacheSize();
+      _cacheSizeFuture = CacheUtil.getTotalCacheSizeBytes();
     });
-  }
-
-  Future<void> _handleClearCache() async {
-    final bool shouldClear = await _showClearCacheDialog(context) ?? false;
-    if (!shouldClear) {
-      return;
-    }
-
-    await CacheUtil.clearImageCache();
-    await _reloadCacheSize();
-
-    if (!mounted) {
-      return;
-    }
-
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('缓存已清理')));
   }
 
   @override
@@ -70,18 +53,25 @@ class _SettingPageState extends State<SettingPage> {
             trailing: const Icon(Icons.chevron_right_rounded),
             onTap: () => context.push('/settings/player'),
           ),
-          FutureBuilder<String>(
+          FutureBuilder<int>(
             future: _cacheSizeFuture,
             builder: (context, snapshot) {
               return ListTile(
                 contentPadding: EdgeInsets.zero,
-                leading: const Icon(Icons.delete_outlined),
-                title: const Text('清理缓存'),
+                leading: const Icon(Icons.pie_chart_outline),
+                title: const Text('缓存设置'),
                 subtitle: Text(
-                  '${snapshot.data ?? '0'} MB',
+                  '管理图片与音频缓存 · ${formatBytes(snapshot.data ?? 0)}',
                   style: theme.textTheme.bodySmall,
                 ),
-                onTap: _handleClearCache,
+                trailing: const Icon(Icons.chevron_right_rounded),
+                onTap: () async {
+                  await context.push('/settings/cache');
+                  if (!mounted) {
+                    return;
+                  }
+                  await _reloadCacheSize();
+                },
               );
             },
           ),
@@ -99,26 +89,4 @@ class _SettingPageState extends State<SettingPage> {
       ),
     );
   }
-}
-
-Future<bool?> _showClearCacheDialog(BuildContext context) async {
-  return await showDialog<bool>(
-    context: context,
-    builder: (context) => AlertDialog(
-      title: const Text('确认清理缓存吗？'),
-      content: const Text('缓存内容为图片'),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context, false),
-          child: const Text('取消'),
-        ),
-        TextButton(
-          onPressed: () {
-            Navigator.pop(context, true);
-          },
-          child: const Text('确认'),
-        ),
-      ],
-    ),
-  );
 }
