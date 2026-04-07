@@ -1,3 +1,4 @@
+import 'package:bilimusic/common/util/color_util.dart';
 import 'package:flutter/material.dart';
 
 class PlayerTrackHeader extends StatelessWidget {
@@ -120,6 +121,35 @@ class PlayerBackdropOrb extends StatelessWidget {
               primary.withValues(alpha: 0),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class PlayerBadge extends StatelessWidget {
+  const PlayerBadge({super.key, required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: ColorUtil.getShade(
+          theme.colorScheme.primary,
+          500,
+        ).withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Text(
+        label,
+        style: theme.textTheme.bodySmall?.copyWith(
+          color: Colors.white70,
+          fontWeight: FontWeight.w600,
         ),
       ),
     );

@@ -1,12 +1,15 @@
 import 'package:bilimusic/feature/player/domain/playable_item.dart';
+import 'package:bilimusic/feature/player/domain/player_online_audience.dart';
 import 'package:bilimusic/feature/player/domain/player_state.dart';
+import 'package:bilimusic/feature/player/logic/player_online_audience_controller.dart';
 import 'package:bilimusic/feature/player/ui/components/player_artwork.dart';
 import 'package:bilimusic/feature/player/ui/components/player_controls.dart';
 import 'package:bilimusic/feature/player/ui/components/player_shared.dart';
 import 'package:bilimusic/feature/player/ui/components/player_ui_helpers.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class PlayerMainPage extends StatelessWidget {
+class PlayerMainPage extends ConsumerWidget {
   const PlayerMainPage({
     super.key,
     required this.state,
@@ -43,12 +46,22 @@ class PlayerMainPage extends StatelessWidget {
   final VoidCallback? onOpenComments;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final MediaQueryData mediaQuery = MediaQuery.of(context);
     final Size screenSize = mediaQuery.size;
     final bool canOpenPartSelector = item != null && availableParts.length > 1;
     final bool showStatusHint = state.statusHint != null;
     final double artworkSize = (screenSize.height * 0.31).clamp(190.0, 320.0);
+    final AsyncValue<PlayerOnlineAudience?> onlineAudienceAsync = ref.watch(
+      playerOnlineAudienceControllerProvider,
+    );
+    final PlayerOnlineAudience? onlineAudience = switch (onlineAudienceAsync) {
+      AsyncData<PlayerOnlineAudience?>(:final value) => value,
+      _ => null,
+    };
+    final String? onlineAudienceLabel = onlineAudience == null
+        ? null
+        : _buildAudienceLabel(onlineAudience);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -71,6 +84,10 @@ class PlayerMainPage extends StatelessWidget {
           isFavorite: isFavorite,
           onFavoriteToggle: onFavoriteToggle,
         ),
+        if (onlineAudienceLabel != null) ...<Widget>[
+          const SizedBox(height: 12),
+          Row(children: <Widget>[PlayerBadge(label: onlineAudienceLabel)]),
+        ],
         const Spacer(),
         Column(
           mainAxisSize: MainAxisSize.min,
@@ -103,6 +120,29 @@ class PlayerMainPage extends StatelessWidget {
       ],
     );
   }
+}
+
+String? _buildAudienceLabel(PlayerOnlineAudience audience) {
+  final String? preferredText = switch ((
+    audience.showTotal,
+    audience.showCount,
+  )) {
+    (true, _) when audience.totalText?.isNotEmpty ?? false =>
+      audience.totalText,
+    (_, true) when audience.countText?.isNotEmpty ?? false =>
+      audience.countText,
+    _ when audience.totalText?.isNotEmpty ?? false => audience.totalText,
+    _ when audience.countText?.isNotEmpty ?? false => audience.countText,
+    _ => null,
+  };
+
+  if (preferredText == null) {
+    return null;
+  }
+  if (preferredText.contains('人')) {
+    return preferredText;
+  }
+  return '${preferredText}人在听';
 }
 
 class _PlayerToolBar extends StatelessWidget {
