@@ -5,6 +5,7 @@ import 'package:bilimusic/core/bili/session/bili_session.dart';
 import 'package:bilimusic/core/net/net_config.dart';
 import 'package:bilimusic/feature/player/domain/audio_stream_info.dart';
 import 'package:bilimusic/feature/player/domain/playable_item.dart';
+import 'package:bilimusic/feature/player/domain/player_online_audience.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 final Provider<BiliPlayerRepository> biliPlayerRepositoryProvider =
@@ -16,6 +17,45 @@ class BiliPlayerRepository {
   const BiliPlayerRepository(this._apiClient);
 
   final BiliApiClient _apiClient;
+
+  Future<PlayerOnlineAudience> fetchOnlineAudience({
+    required int cid,
+    required int aid,
+    required String bvid,
+  }) async {
+    if (cid <= 0) {
+      throw const BiliPlayerException(
+        'Missing cid for online audience request.',
+      );
+    }
+    if (aid <= 0 && bvid.isEmpty) {
+      throw const BiliPlayerException(
+        'Missing video identity for online audience request.',
+      );
+    }
+
+    final Map<String, dynamic> json = await _apiClient.getJson(
+      '/x/player/online/total',
+      queryParameters: <String, dynamic>{
+        if (aid > 0) 'aid': aid,
+        if (aid <= 0 && bvid.isNotEmpty) 'bvid': bvid,
+        'cid': cid,
+      },
+    );
+
+    final Map<String, dynamic> data = _asMap(json['data']);
+    final Map<String, dynamic> showSwitch = _asMapOrEmpty(data['show_switch']);
+    final String? totalText = _readNonEmptyString(data['total']);
+    final String? countText = _readNonEmptyString(data['count']);
+
+    return PlayerOnlineAudience(
+      totalText: totalText,
+      countText: countText,
+      showTotal: showSwitch['total'] as bool? ?? totalText != null,
+      showCount: showSwitch['count'] as bool? ?? countText != null,
+      fetchedAt: DateTime.now(),
+    );
+  }
 
   Future<PlayableItem> resolvePreferredPart(
     PlayableItem item, {
@@ -171,9 +211,9 @@ class BiliPlayerRepository {
     final String? origin = NetConfig.defaultHeaders['Origin'] as String?;
 
     return <String, String>{
-      if (userAgent != null) 'User-Agent': userAgent,
-      if (referer != null) 'Referer': referer,
-      if (origin != null) 'Origin': origin,
+      if (userAgent case final String userAgent) 'User-Agent': userAgent,
+      if (referer case final String referer) 'Referer': referer,
+      if (origin case final String origin) 'Origin': origin,
       if (session != null && session.cookie.isNotEmpty)
         'Cookie': session.cookie,
     };
@@ -230,6 +270,12 @@ class BiliPlayerRepository {
       return null;
     }
     return formatCompactCount(value);
+  }
+
+  String? _readNonEmptyString(dynamic value) {
+    final String text = value as String? ?? '';
+    final String trimmed = text.trim();
+    return trimmed.isEmpty ? null : trimmed;
   }
 }
 
