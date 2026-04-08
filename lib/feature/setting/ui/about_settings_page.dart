@@ -15,7 +15,7 @@ class AboutSettingsPage extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(title: const Text('关于')),
       body: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
