@@ -67,11 +67,14 @@ class PlayerMainPage extends ConsumerWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
         const SizedBox(height: 12),
-        Center(
-          child: SizedBox(
-            width: artworkSize,
-            height: artworkSize,
-            child: PlayerArtworkFrame(coverUrl: item?.coverUrl ?? ''),
+        Hero(
+          tag: "artwork",
+          child: Center(
+            child: SizedBox(
+              width: artworkSize,
+              height: artworkSize,
+              child: PlayerArtworkFrame(coverUrl: item?.coverUrl ?? ''),
+            ),
           ),
         ),
         const SizedBox(height: 28),

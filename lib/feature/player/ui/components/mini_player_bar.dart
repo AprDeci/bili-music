@@ -45,8 +45,11 @@ class MiniPlayerBar extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               child: Row(
                 children: <Widget>[
-                  _Artwork(
-                    coverUrl: state.currentItem?.coverUrl ?? '',
+                  Hero(
+                    tag: "artwork",
+                    child: _Artwork(
+                      coverUrl: state.currentItem?.coverUrl ?? '',
+                    ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
