@@ -55,7 +55,7 @@ final class BiliSearchRepositoryProvider
 }
 
 String _$biliSearchRepositoryHash() =>
-    r'a09b29d03e173da28c5f96721ee1a7392d2bfbb8';
+    r'369d51f4e5e772bd9f588b2dcbd425628db4df04';
 
 @ProviderFor(SearchPageController)
 final searchPageControllerProvider = SearchPageControllerProvider._();
@@ -90,7 +90,7 @@ final class SearchPageControllerProvider
 }
 
 String _$searchPageControllerHash() =>
-    r'3426ccd1a387f00126e76a90ccf0d28d5efa325d';
+    r'fb7a9d1387e869bcc98e8dc10f36de5f07538b25';
 
 abstract class _$SearchPageController extends $Notifier<SearchState> {
   SearchState build();
