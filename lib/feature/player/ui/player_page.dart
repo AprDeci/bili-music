@@ -14,6 +14,7 @@ import 'package:bilimusic/router/player_navigation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class PlayerPage extends ConsumerStatefulWidget {
   const PlayerPage({super.key, this.initialItem});
@@ -109,7 +110,9 @@ class _PlayerPageState extends ConsumerState<PlayerPage> {
                       PlayerTopBar(
                         currentPage: _currentPage,
                         onBack: () => Navigator.of(context).maybePop(),
-                        onMore: item == null ? null : null,
+                        onOpenInBrowser: item == null
+                            ? null
+                            : () => _openInBrowser(item),
                       ),
                       const SizedBox(height: 18),
                       Expanded(
@@ -220,5 +223,16 @@ class _PlayerPageState extends ConsumerState<PlayerPage> {
       coverUrl: item.coverUrl,
     );
     await context.push('/comments', extra: target);
+  }
+}
+
+Future<void> _openInBrowser(PlayableItem item) async {
+  if (item.aid <= 0) {
+    return;
+  }
+  try {
+    await launchUrl(Uri.parse('bilibili://video/${item.bvid}'));
+  } catch (e) {
+    await launchUrl(Uri.parse('https://www.bilibili.com/video/${item.bvid}'));
   }
 }

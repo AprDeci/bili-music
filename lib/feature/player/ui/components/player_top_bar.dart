@@ -5,12 +5,12 @@ class PlayerTopBar extends StatelessWidget {
     super.key,
     required this.currentPage,
     required this.onBack,
-    required this.onMore,
+    required this.onOpenInBrowser,
   });
 
   final int currentPage;
   final VoidCallback onBack;
-  final VoidCallback? onMore;
+  final VoidCallback? onOpenInBrowser;
 
   @override
   Widget build(BuildContext context) {
@@ -30,8 +30,8 @@ class PlayerTopBar extends StatelessWidget {
             child: Center(child: PlayerPageIndicator(currentPage: currentPage)),
           ),
           IconButton(
-            onPressed: onMore,
-            icon: const Icon(Icons.more_vert_rounded),
+            onPressed: onOpenInBrowser,
+            icon: const Icon(Icons.ios_share_outlined),
             color: iconColor,
           ),
         ],
