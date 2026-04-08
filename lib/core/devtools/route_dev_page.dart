@@ -9,70 +9,150 @@ class RouteDevPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final GoRouter router = ref.watch(routerProvider);
-    final RouteInformationProvider routeInformationProvider =
-        router.routeInformationProvider;
-    return ValueListenableBuilder<RouteInformation>(
-      valueListenable: routeInformationProvider,
-      builder:
-          (
-            BuildContext context,
-            RouteInformation routeInformation,
-            Widget? child,
-          ) {
-            final Uri uri = routeInformation.uri;
-            final Object? state = routeInformation.state;
-            final Map<String, String> queryParameters = uri.queryParameters;
-            final List<String> segments = uri.pathSegments;
+    final GoRouterDelegate delegate = router.routerDelegate;
 
-            return ListView(
-              children: <Widget>[
-                _SectionTitle(title: '当前路由'),
-                _FieldTile(label: 'location', value: uri.toString()),
-                _FieldTile(label: 'path', value: uri.path.ifEmpty('/')),
-                _FieldTile(label: 'fragment', value: uri.fragment),
-                const SizedBox(height: 20),
-                _SectionTitle(title: 'Query Parameters'),
-                if (queryParameters.isEmpty)
-                  const _EmptyState(message: '当前没有 query 参数。')
-                else
-                  ...queryParameters.entries.map(
-                    (MapEntry<String, String> entry) =>
-                        _FieldTile(label: entry.key, value: entry.value),
-                  ),
-                const SizedBox(height: 20),
-                _SectionTitle(title: 'Path Segments'),
-                if (segments.isEmpty)
-                  const _EmptyState(message: '当前路径没有 segment。')
-                else
-                  ...segments.asMap().entries.map(
-                    (MapEntry<int, String> entry) => _FieldTile(
-                      label: 'segment[${entry.key}]',
-                      value: entry.value,
-                    ),
-                  ),
-                const SizedBox(height: 20),
-                _SectionTitle(title: 'Route State'),
-                _FieldTile(
-                  label: 'stateType',
-                  value: state?.runtimeType.toString() ?? 'null',
-                ),
-                _FieldTile(
-                  label: 'statePreview',
-                  value: state?.toString() ?? 'null',
+    return ListenableBuilder(
+      listenable: delegate,
+      builder: (BuildContext context, Widget? child) {
+        final RouteDebugSnapshot snapshot = RouteDebugSnapshot.fromRouter(
+          router,
+        );
+
+        return ListView(
+          children: <Widget>[
+            _SectionTitle(title: '当前路由'),
+            _FieldTile(label: 'uri', value: snapshot.uri.toString()),
+            _FieldTile(
+              label: 'matchedLocation',
+              value: snapshot.matchedLocation,
+            ),
+            _FieldTile(label: 'fullPath', value: snapshot.fullPath),
+            _FieldTile(label: 'leafPath', value: snapshot.leafPath),
+            _FieldTile(label: 'leafName', value: snapshot.leafName),
+            const SizedBox(height: 20),
+            _SectionTitle(title: 'Path Parameters'),
+            if (snapshot.pathParameters.isEmpty)
+              const _EmptyState(message: '当前没有 path 参数。')
+            else
+              ...snapshot.pathParameters.entries.map(
+                (MapEntry<String, String> entry) =>
+                    _FieldTile(label: entry.key, value: entry.value),
+              ),
+            const SizedBox(height: 20),
+            _SectionTitle(title: 'Query Parameters'),
+            if (snapshot.queryParameters.isEmpty)
+              const _EmptyState(message: '当前没有 query 参数。')
+            else
+              ...snapshot.queryParameters.entries.map(
+                (MapEntry<String, String> entry) =>
+                    _FieldTile(label: entry.key, value: entry.value),
+              ),
+            const SizedBox(height: 20),
+            _SectionTitle(title: 'Extra'),
+            _FieldTile(label: 'extraType', value: snapshot.extraType),
+            _FieldTile(
+              label: 'extraPreview',
+              value: snapshot.extraPreview,
+              multiline: true,
+            ),
+            const SizedBox(height: 20),
+            _SectionTitle(title: 'Match Stack'),
+            if (snapshot.matchStack.isEmpty)
+              const _EmptyState(message: '当前没有可用的 route match。')
+            else
+              ...snapshot.matchStack.asMap().entries.map(
+                (MapEntry<int, String> entry) => _FieldTile(
+                  label: 'match[${entry.key}]',
+                  value: entry.value,
                   multiline: true,
                 ),
-                const SizedBox(height: 20),
-                _SectionTitle(title: 'URI Breakdown'),
-                _FieldTile(label: 'scheme', value: uri.scheme),
-                _FieldTile(label: 'host', value: uri.host),
-                _FieldTile(
-                  label: 'port',
-                  value: uri.hasPort ? '${uri.port}' : '',
-                ),
-              ],
-            );
-          },
+              ),
+          ],
+        );
+      },
     );
+  }
+}
+
+class RouteDebugSnapshot {
+  const RouteDebugSnapshot({
+    required this.uri,
+    required this.matchedLocation,
+    required this.fullPath,
+    required this.leafPath,
+    required this.leafName,
+    required this.pathParameters,
+    required this.queryParameters,
+    required this.extraType,
+    required this.extraPreview,
+    required this.matchStack,
+  });
+
+  final Uri uri;
+  final String matchedLocation;
+  final String fullPath;
+  final String leafPath;
+  final String leafName;
+  final Map<String, String> pathParameters;
+  final Map<String, String> queryParameters;
+  final String extraType;
+  final String extraPreview;
+  final List<String> matchStack;
+
+  factory RouteDebugSnapshot.fromRouter(GoRouter router) {
+    final RouteMatchList configuration =
+        router.routerDelegate.currentConfiguration;
+    final GoRouterState topState = router.state;
+    final RouteMatch? leafMatch = configuration.lastOrNull;
+    final GoRoute? leafRoute = leafMatch?.route;
+
+    return RouteDebugSnapshot(
+      uri: configuration.uri,
+      matchedLocation: topState.matchedLocation,
+      fullPath: topState.fullPath ?? '',
+      leafPath: leafRoute?.path ?? topState.path ?? '',
+      leafName: topState.name ?? '',
+      pathParameters: configuration.pathParameters,
+      queryParameters: configuration.uri.queryParameters,
+      extraType: configuration.extra?.runtimeType.toString() ?? 'null',
+      extraPreview: configuration.extra?.toString() ?? 'null',
+      matchStack: _buildMatchStack(configuration),
+    );
+  }
+
+  String toSummary() {
+    return <String>[
+      'uri=${uri.toString()}',
+      'matchedLocation=$matchedLocation',
+      'fullPath=${fullPath.ifEmpty('-')}',
+      'leafPath=${leafPath.ifEmpty('-')}',
+      'leafName=${leafName.ifEmpty('-')}',
+      'pathParameters=$pathParameters',
+      'queryParameters=$queryParameters',
+      'extraType=$extraType',
+      'extraPreview=$extraPreview',
+      'matchStack=$matchStack',
+    ].join('\n');
+  }
+
+  static List<String> _buildMatchStack(RouteMatchList configuration) {
+    return configuration.matches
+        .map((RouteMatchBase match) => _describeMatch(match))
+        .toList(growable: false);
+  }
+
+  static String _describeMatch(RouteMatchBase match) {
+    if (match is RouteMatch) {
+      return <String>[
+        'type=RouteMatch',
+        'matchedLocation=${match.matchedLocation}',
+        'routePath=${match.route.path}',
+        'routeName=${match.route.name ?? '-'}',
+        'pageKey=${match.pageKey.value}',
+      ].join('\n');
+    }
+
+    return match.toString();
   }
 }
 

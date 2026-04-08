@@ -67,7 +67,6 @@ class _DevOverlayPanelState extends ConsumerState<_DevOverlayPanel> {
 
   @override
   Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
     final BiliSession? session = ref.watch(biliSessionControllerProvider);
     final double maxHeight = MediaQuery.of(context).size.height * 0.82;
 
@@ -124,18 +123,10 @@ class _DevOverlayPanelState extends ConsumerState<_DevOverlayPanel> {
 
   Future<void> _copySummary(BuildContext context, BiliSession? session) async {
     if (_currentPageIndex != 0) {
-      final Uri uri = ref
-          .read(routerProvider)
-          .routeInformationProvider
-          .value
-          .uri;
-      final String routeSummary = <String>[
-        'location=${uri.toString()}',
-        'path=${uri.path.ifEmpty('/')}',
-        'fragment=${uri.fragment}',
-        'query=${uri.queryParameters}',
-        'segments=${uri.pathSegments}',
-      ].join('\n');
+      final RouteDebugSnapshot snapshot = RouteDebugSnapshot.fromRouter(
+        ref.read(routerProvider),
+      );
+      final String routeSummary = snapshot.toSummary();
 
       await Clipboard.setData(ClipboardData(text: routeSummary));
       if (!context.mounted) {
