@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:bilimusic/feature/search/data/bili_search_repository.dart';
 import 'package:bilimusic/feature/search/data/search_history_store.dart';
 import 'package:bilimusic/feature/search/domain/search_page_result.dart';
+import 'package:bilimusic/feature/search/domain/search_state.dart';
 import 'package:bilimusic/feature/search/domain/search_sort.dart';
 import 'package:bilimusic/feature/search/logic/search_controller.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -23,6 +24,12 @@ void main() {
       ],
     );
     addTearDown(container.dispose);
+    final ProviderSubscription<SearchState> subscription = container.listen(
+      searchPageControllerProvider,
+      (_, _) {},
+      fireImmediately: true,
+    );
+    addTearDown(subscription.close);
 
     final SearchPageController controller = container.read(
       searchPageControllerProvider.notifier,
@@ -50,6 +57,12 @@ void main() {
       ],
     );
     addTearDown(container.dispose);
+    final ProviderSubscription<SearchState> subscription = container.listen(
+      searchPageControllerProvider,
+      (_, _) {},
+      fireImmediately: true,
+    );
+    addTearDown(subscription.close);
 
     final SearchPageController controller = container.read(
       searchPageControllerProvider.notifier,
@@ -77,6 +90,12 @@ void main() {
       ],
     );
     addTearDown(container.dispose);
+    final ProviderSubscription<SearchState> subscription = container.listen(
+      searchPageControllerProvider,
+      (_, _) {},
+      fireImmediately: true,
+    );
+    addTearDown(subscription.close);
 
     final SearchPageController controller = container.read(
       searchPageControllerProvider.notifier,
