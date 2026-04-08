@@ -1,5 +1,5 @@
 import 'package:bilimusic/common/bottom_height_helper.dart';
-import 'package:bilimusic/common/components/cachedImage.dart';
+import 'package:bilimusic/common/components/cached_image.dart';
 import 'package:bilimusic/common/logger.dart';
 import 'package:bilimusic/common/util/player_util.dart';
 import 'package:bilimusic/feature/favorites/domain/favorite_collection.dart';

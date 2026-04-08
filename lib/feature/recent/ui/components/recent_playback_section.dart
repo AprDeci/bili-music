@@ -1,4 +1,4 @@
-import 'package:bilimusic/common/components/cachedImage.dart';
+import 'package:bilimusic/common/components/cached_image.dart';
 import 'package:bilimusic/common/util/player_util.dart';
 import 'package:bilimusic/feature/recent/domain/recent_playback_entry.dart';
 import 'package:bilimusic/feature/recent/logic/recent_playback_controller.dart';

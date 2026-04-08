@@ -1,7 +1,7 @@
 import 'dart:math';
 
 import 'package:bilimusic/common/bottom_height_helper.dart';
-import 'package:bilimusic/common/components/cachedImage.dart';
+import 'package:bilimusic/common/components/cached_image.dart';
 import 'package:bilimusic/feature/player/domain/player_state.dart';
 import 'package:flutter/material.dart';
 

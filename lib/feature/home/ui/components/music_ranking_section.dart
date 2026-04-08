@@ -1,6 +1,6 @@
 import 'dart:math' as math;
 
-import 'package:bilimusic/common/components/cachedImage.dart';
+import 'package:bilimusic/common/components/cached_image.dart';
 import 'package:bilimusic/common/util/player_util.dart';
 import 'package:bilimusic/feature/home/domain/music_ranking_item.dart';
 import 'package:bilimusic/feature/home/logic/music_ranking_controller.dart';
