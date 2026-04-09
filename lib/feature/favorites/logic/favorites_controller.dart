@@ -24,6 +24,10 @@ class FavoritesController extends _$FavoritesController {
     state = nextState;
   }
 
+  Future<void> reload() async {
+    state = _repository.loadState();
+  }
+
   Future<bool> toggleLiked(PlayableItem item) async {
     final String itemId = item.stableId;
     final String membershipId = FavoriteMembership.membershipId(
