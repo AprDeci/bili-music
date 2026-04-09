@@ -2,6 +2,7 @@ import 'package:bilimusic/feature/player/domain/playable_item.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 
 part 'favorite_entry.freezed.dart';
+part 'favorite_entry.g.dart';
 
 @freezed
 abstract class FavoriteEntry with _$FavoriteEntry {
@@ -21,6 +22,9 @@ abstract class FavoriteEntry with _$FavoriteEntry {
     required DateTime createdAt,
     required DateTime updatedAt,
   }) = _FavoriteEntry;
+
+  factory FavoriteEntry.fromJson(Map<String, dynamic> json) =>
+      _$FavoriteEntryFromJson(json);
 
   factory FavoriteEntry.fromPlayableItem(PlayableItem item, {DateTime? now}) {
     final DateTime timestamp = now ?? DateTime.now();

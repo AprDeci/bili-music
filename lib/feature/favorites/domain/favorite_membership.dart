@@ -1,6 +1,7 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 
 part 'favorite_membership.freezed.dart';
+part 'favorite_membership.g.dart';
 
 @freezed
 abstract class FavoriteMembership with _$FavoriteMembership {
@@ -12,6 +13,9 @@ abstract class FavoriteMembership with _$FavoriteMembership {
     required String itemId,
     required DateTime addedAt,
   }) = _FavoriteMembership;
+
+  factory FavoriteMembership.fromJson(Map<String, dynamic> json) =>
+      _$FavoriteMembershipFromJson(json);
 
   factory FavoriteMembership.create({
     required String collectionId,
