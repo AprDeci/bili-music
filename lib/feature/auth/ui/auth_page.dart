@@ -82,24 +82,6 @@ class _AuthPageState extends ConsumerState<AuthPage> {
               constraints: const BoxConstraints(maxWidth: 460),
               child: Container(
                 padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: <Color>[
-                      colorScheme.surfaceContainerLowest,
-                      colorScheme.surfaceContainerLow,
-                    ],
-                  ),
-                  borderRadius: BorderRadius.circular(28),
-                  boxShadow: <BoxShadow>[
-                    BoxShadow(
-                      color: colorScheme.shadow.withValues(alpha: 0.08),
-                      blurRadius: 30,
-                      offset: Offset(0, 16),
-                    ),
-                  ],
-                ),
                 child: _AuthContent(
                   state: authState,
                   onStart: controller.startQrLogin,
@@ -163,7 +145,7 @@ class _AuthContent extends StatelessWidget {
             foregroundColor: Colors.white,
             padding: const EdgeInsets.symmetric(vertical: 18),
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(18),
+              borderRadius: BorderRadius.circular(8),
             ),
           ),
           child: Text(
@@ -394,37 +376,15 @@ class _QrCard extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              OutlinedButton.icon(
+              TextButton.icon(
                 onPressed: () => _saveQrImage(context),
                 icon: const Icon(Icons.download_rounded),
                 label: const Text('保存'),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: colorScheme.primary,
-                  side: BorderSide(color: colorScheme.outlineVariant),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 18,
-                    vertical: 12,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                ),
               ),
-              OutlinedButton.icon(
+              TextButton.icon(
                 onPressed: () => _openQrUrl(context),
                 icon: const Icon(Icons.open_in_new),
                 label: const Text('其他App打开'),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: colorScheme.primary,
-                  side: BorderSide(color: colorScheme.outlineVariant),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 12,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                ),
               ),
             ],
           ),
@@ -448,10 +408,6 @@ class _StatusBanner extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      decoration: BoxDecoration(
-        color: appearance.background,
-        borderRadius: BorderRadius.circular(16),
-      ),
       child: Text(
         appearance.text,
         style: theme.textTheme.bodyMedium?.copyWith(
