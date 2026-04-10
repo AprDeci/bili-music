@@ -92,7 +92,12 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                 coverUrl: latestItem?.coverUrl,
                 onTap: () =>
                     context.push('/profile/favorites/${collection.id}'),
-                onLongPress: () => _showDeleteCollectionDialog(collection),
+                onLongPressStart: (LongPressStartDetails details) {
+                  _showCollectionActionMenu(
+                    details: details,
+                    collection: collection,
+                  );
+                },
               ),
             );
           }),
@@ -131,17 +136,124 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
       context: context,
       useRootNavigator: true,
       builder: (BuildContext context) {
-        return const _CreateCollectionDialog();
+        return const _CollectionNameDialog(
+          title: '新建歌单',
+          hintText: '例如：深夜循环',
+          confirmText: '创建',
+        );
       },
     );
 
     if (result == null || result.trim().isEmpty) {
+      if (result != null) {
+        _showMessage('歌单名称不能为空');
+      }
       return;
     }
 
-    await ref
+    final FavoritesController controller = ref.read(
+      favoritesControllerProvider.notifier,
+    );
+    final FavoritesState previousState = ref.read(favoritesControllerProvider);
+    await controller.createCollection(result);
+    if (!mounted) {
+      return;
+    }
+
+    final FavoritesState nextState = ref.read(favoritesControllerProvider);
+    if (nextState.collections.length == previousState.collections.length) {
+      _showMessage('歌单名称已存在');
+    }
+  }
+
+  Future<void> _showCollectionActionMenu({
+    required LongPressStartDetails details,
+    required FavoriteCollection collection,
+  }) async {
+    final OverlayState overlay = Overlay.of(context);
+    final RenderBox overlayBox =
+        overlay.context.findRenderObject()! as RenderBox;
+    final RelativeRect position = RelativeRect.fromRect(
+      Rect.fromPoints(
+        details.globalPosition,
+        details.globalPosition.translate(1, 1),
+      ),
+      Offset.zero & overlayBox.size,
+    );
+
+    final _CollectionAction? action = await showMenu<_CollectionAction>(
+      context: context,
+      position: position,
+      items: const <PopupMenuEntry<_CollectionAction>>[
+        PopupMenuItem<_CollectionAction>(
+          value: _CollectionAction.rename,
+          child: ListTile(
+            leading: Icon(Icons.drive_file_rename_outline_rounded),
+            title: Text('重命名'),
+            contentPadding: EdgeInsets.zero,
+          ),
+        ),
+        PopupMenuItem<_CollectionAction>(
+          value: _CollectionAction.delete,
+          child: ListTile(
+            leading: Icon(Icons.delete_outline_rounded),
+            title: Text('删除'),
+            contentPadding: EdgeInsets.zero,
+          ),
+        ),
+      ],
+    );
+
+    if (!mounted || action == null) {
+      return;
+    }
+
+    switch (action) {
+      case _CollectionAction.rename:
+        await _showRenameCollectionDialog(collection);
+      case _CollectionAction.delete:
+        await _showDeleteCollectionDialog(collection);
+    }
+  }
+
+  Future<void> _showRenameCollectionDialog(
+    FavoriteCollection collection,
+  ) async {
+    final String? result = await showDialog<String>(
+      context: context,
+      useRootNavigator: true,
+      builder: (BuildContext context) {
+        return _CollectionNameDialog(
+          title: '重命名歌单',
+          hintText: '请输入歌单名称',
+          confirmText: '保存',
+          initialValue: collection.name,
+        );
+      },
+    );
+
+    if (result == null) {
+      return;
+    }
+
+    final String trimmedName = result.trim();
+    if (trimmedName.isEmpty) {
+      _showMessage('歌单名称不能为空');
+      return;
+    }
+
+    if (trimmedName == collection.name.trim()) {
+      return;
+    }
+
+    final bool renamed = await ref
         .read(favoritesControllerProvider.notifier)
-        .createCollection(result);
+        .renameCollection(collectionId: collection.id, name: trimmedName);
+    if (!mounted) {
+      return;
+    }
+
+    _showMessage(renamed ? '已重命名歌单' : '歌单名称已存在');
   }
 
   Future<void> _handleLogoutPressed() async {
@@ -227,23 +339,43 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
       ..hideCurrentSnackBar()
       ..showSnackBar(SnackBar(content: Text(deleted ? '已删除歌单' : '删除失败')));
   }
+
+  void _showMessage(String message) {
+    if (!mounted) {
+      return;
+    }
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(message)));
+  }
 }
 
-class _CreateCollectionDialog extends StatefulWidget {
-  const _CreateCollectionDialog();
+enum _CollectionAction { rename, delete }
+
+class _CollectionNameDialog extends StatefulWidget {
+  const _CollectionNameDialog({
+    required this.title,
+    required this.hintText,
+    required this.confirmText,
+    this.initialValue = '',
+  });
+
+  final String title;
+  final String hintText;
+  final String confirmText;
+  final String initialValue;
 
   @override
-  State<_CreateCollectionDialog> createState() =>
-      _CreateCollectionDialogState();
+  State<_CollectionNameDialog> createState() => _CollectionNameDialogState();
 }
 
-class _CreateCollectionDialogState extends State<_CreateCollectionDialog> {
+class _CollectionNameDialogState extends State<_CollectionNameDialog> {
   late final TextEditingController _controller;
 
   @override
   void initState() {
     super.initState();
-    _controller = TextEditingController();
+    _controller = TextEditingController(text: widget.initialValue);
   }
 
   @override
@@ -255,11 +387,12 @@ class _CreateCollectionDialogState extends State<_CreateCollectionDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('新建歌单'),
+      title: Text(widget.title),
       content: TextField(
         controller: _controller,
         maxLength: 24,
-        decoration: const InputDecoration(hintText: '例如：深夜循环'),
+        autofocus: true,
+        decoration: InputDecoration(hintText: widget.hintText),
         onSubmitted: (String value) {
           Navigator.of(context).pop(value);
         },
@@ -271,7 +404,7 @@ class _CreateCollectionDialogState extends State<_CreateCollectionDialog> {
         ),
         FilledButton(
           onPressed: () => Navigator.of(context).pop(_controller.text),
-          child: const Text('创建'),
+          child: Text(widget.confirmText),
         ),
       ],
     );
@@ -433,14 +566,14 @@ class _PlaylistTile extends StatelessWidget {
     required this.count,
     required this.coverUrl,
     required this.onTap,
-    required this.onLongPress,
+    required this.onLongPressStart,
   });
 
   final String title;
   final int count;
   final String? coverUrl;
   final VoidCallback onTap;
-  final VoidCallback onLongPress;
+  final ValueChanged<LongPressStartDetails> onLongPressStart;
 
   @override
   Widget build(BuildContext context) {
@@ -449,46 +582,48 @@ class _PlaylistTile extends StatelessWidget {
 
     return Material(
       color: Colors.transparent,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(18),
-        onTap: onTap,
-        onLongPress: onLongPress,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8),
-          child: Row(
-            children: <Widget>[
-              _PlaylistCover(coverUrl: coverUrl),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    Text(
-                      title,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        color: colorScheme.onSurface,
-                        fontWeight: FontWeight.w800,
+      child: GestureDetector(
+        onLongPressStart: onLongPressStart,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(18),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: Row(
+              children: <Widget>[
+                _PlaylistCover(coverUrl: coverUrl),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Text(
+                        title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          color: colorScheme.onSurface,
+                          fontWeight: FontWeight.w800,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      '$count 首',
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: colorScheme.onSurfaceVariant,
-                        fontWeight: FontWeight.w600,
+                      const SizedBox(height: 6),
+                      Text(
+                        '$count 首',
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-              const SizedBox(width: 8),
-              Icon(
-                Icons.chevron_right_rounded,
-                color: colorScheme.onSurfaceVariant,
-              ),
-            ],
+                const SizedBox(width: 8),
+                Icon(
+                  Icons.chevron_right_rounded,
+                  color: colorScheme.onSurfaceVariant,
+                ),
+              ],
+            ),
           ),
         ),
       ),
