@@ -64,6 +64,7 @@ dependencies:
   color_palette_plus: ^2.0.0
   lottie: ^3.3.2
   file_picker: ^10.3.2
+  liquid_glass_widgets: ^0.7.7
 
 dev_dependencies:
   flutter_test:
