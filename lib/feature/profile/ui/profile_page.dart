@@ -10,6 +10,7 @@ import 'package:bilimusic/feature/favorites/domain/favorites_state.dart';
 import 'package:bilimusic/feature/favorites/logic/favorites_controller.dart';
 import 'package:bilimusic/feature/profile/ui/components/user_card.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -181,6 +182,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
       Offset.zero & overlayBox.size,
     );
 
+    HapticFeedback.lightImpact();
     final _CollectionAction? action = await showMenu<_CollectionAction>(
       context: context,
       position: position,
