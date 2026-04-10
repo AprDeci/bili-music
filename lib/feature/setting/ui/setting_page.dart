@@ -53,6 +53,14 @@ class _SettingPageState extends State<SettingPage> {
             trailing: const Icon(Icons.chevron_right_rounded),
             onTap: () => context.push('/settings/player'),
           ),
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: const Icon(Icons.import_export_rounded),
+            title: const Text('收藏导入导出'),
+            subtitle: Text('导出或导入我喜欢与自建歌单', style: theme.textTheme.bodySmall),
+            trailing: const Icon(Icons.chevron_right_rounded),
+            onTap: () => context.push('/settings/favorites-transfer'),
+          ),
           FutureBuilder<int>(
             future: _cacheSizeFuture,
             builder: (context, snapshot) {

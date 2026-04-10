@@ -9,6 +9,7 @@ import 'package:bilimusic/feature/profile/ui/profile_page.dart';
 import 'package:bilimusic/feature/search/ui/search_page.dart';
 import 'package:bilimusic/feature/setting/ui/about_settings_page.dart';
 import 'package:bilimusic/feature/setting/ui/cache_settings_page.dart';
+import 'package:bilimusic/feature/setting/ui/favorites_transfer_page.dart';
 import 'package:bilimusic/feature/setting/ui/player_settings_page.dart';
 import 'package:bilimusic/feature/setting/ui/setting_page.dart';
 import 'package:bilimusic/feature/setting/ui/theme_settings_page.dart';
@@ -84,6 +85,11 @@ GoRouter router(Ref ref) => GoRouter(
       path: '/settings/player',
       parentNavigatorKey: _rootNavigatorKey,
       builder: (context, state) => const PlayerSettingsPage(),
+    ),
+    GoRoute(
+      path: '/settings/favorites-transfer',
+      parentNavigatorKey: _rootNavigatorKey,
+      builder: (context, state) => const FavoritesTransferPage(),
     ),
     GoRoute(
       path: '/settings/about',
