@@ -2,7 +2,7 @@ import 'package:bilimusic/common/bottom_height_helper.dart';
 import 'package:bilimusic/common/util/update_util.dart';
 import 'package:bilimusic/feature/player/domain/player_state.dart';
 import 'package:bilimusic/feature/player/logic/player_controller.dart';
-import 'package:bilimusic/feature/player/ui/components/mini_player_bar.dart';
+import 'package:bilimusic/feature/player/ui/mini_player_bar.dart';
 import 'package:bilimusic/router/player_navigation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_floating_bottom_bar/flutter_floating_bottom_bar.dart';
