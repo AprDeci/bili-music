@@ -1,3 +1,4 @@
+import 'package:bilimusic/common/util/platform_util.dart';
 import 'package:bilimusic/core/bili/session/bili_session_controller.dart';
 import 'package:bilimusic/core/hive/hive.dart';
 import 'package:bilimusic/feature/favorites/logic/favorites_controller.dart';
@@ -19,16 +20,6 @@ Future<void> bootstrap() async {
     macOS: true,
   );
   await initHive();
-}
-
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  await bootstrap();
-runApp(
-    LiquidGlassWidgets.wrap(
-      const ProviderScope(child: _AppBootstrap(child: MyApp())),
-    ),
-  );
 }
 
 class _AppBootstrap extends ConsumerStatefulWidget {
@@ -63,4 +54,15 @@ class _AppBootstrapState extends ConsumerState<_AppBootstrap> {
   Widget build(BuildContext context) {
     return widget.child;
   }
+}
+
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await bootstrap();
+  runApp(
+    LiquidGlassWidgets.wrap(
+      const ProviderScope(child: _AppBootstrap(child: MyApp())),
+    ),
+  );
 }
