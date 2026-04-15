@@ -8,6 +8,7 @@ import 'package:bilimusic/router/routers.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_smart_dialog/flutter_smart_dialog.dart';
 import 'package:go_router/go_router.dart';
 
 class MyApp extends ConsumerStatefulWidget {
@@ -29,7 +30,8 @@ class _MyAppState extends ConsumerState<MyApp> {
       theme: AppTheme.lightTheme(currentTheme.lightThemeVariant),
       darkTheme: AppTheme.darkTheme(),
       scrollBehavior: MyBehavior(),
-      builder: (BuildContext context, Widget? child) {
+      builder: FlutterSmartDialog.init(
+        builder: (BuildContext context, Widget? child) {
         return Stack(
           children: <Widget>[
             child ?? const SizedBox.shrink(),
@@ -37,6 +39,8 @@ class _MyAppState extends ConsumerState<MyApp> {
           ],
         );
       },
+      ),
+
     );
   }
 }
