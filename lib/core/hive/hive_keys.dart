@@ -12,6 +12,7 @@ class HiveKeys {
   static const String playerAllowMixWithOthers = 'player.allow_mix_with_others';
   static const String searchHistory = 'search.history';
   static const String updateDismissedTag = 'app.update.dismissed_tag';
+  static const String appearanceUseGlassBar = 'app.appearance.use_glass_bar';
 
   static const String biliCookie = 'bili.cookie';
   static const String biliSessData = 'bili.sessdata';

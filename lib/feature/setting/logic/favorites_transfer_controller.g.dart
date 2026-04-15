@@ -56,4 +56,4 @@ final class FavoritesTransferControllerProvider
 }
 
 String _$favoritesTransferControllerHash() =>
-    r'b6eea732f52c8b70ffe54bf0095af7f51932c943';
+    r'c3ec75829a0f842bad54fad08d04d7caac424411';

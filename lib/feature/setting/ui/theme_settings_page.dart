@@ -1,6 +1,7 @@
 import 'package:bilimusic/core/theme/light_theme_catalog.dart';
 import 'package:bilimusic/core/theme/theme_logic.dart';
 import 'package:bilimusic/core/theme/theme_ui_model.dart';
+import 'package:bilimusic/feature/setting/logic/appearance_setting_logic.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -11,12 +12,22 @@ class ThemeSettingsPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final ThemeData theme = Theme.of(context);
     final ThemeUiModel themeState = ref.watch(themeLogicProvider);
+    final bool useGlassBar = ref.watch(appearanceSettingLogicProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('主题设置')),
+      appBar: AppBar(title: const Text('外观设置')),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
         children: <Widget>[
+          SwitchListTile.adaptive(
+            title: const Text('启用玻璃导航栏/播放栏'),
+            value: useGlassBar,
+            onChanged: (bool value) async {
+              await ref
+                  .read(appearanceSettingLogicProvider.notifier)
+                  .setUseGlassBar(value);
+            },
+          ),
           Text('主题模式', style: theme.textTheme.titleMedium),
           const SizedBox(height: 8),
           Card(
