@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:bilimusic/common/util/toast_util.dart';
 import 'package:bilimusic/feature/favorites/logic/favorites_controller.dart';
 import 'package:bilimusic/feature/setting/domain/favorites_import_preview.dart';
 import 'package:bilimusic/feature/setting/logic/favorites_transfer_controller.dart';
@@ -214,9 +215,7 @@ class _FavoritesTransferPageState extends ConsumerState<FavoritesTransferPage> {
   }
 
   void _showMessage(String message) {
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(content: Text(message)));
+    ToastUtil.show(message);
   }
 }
 

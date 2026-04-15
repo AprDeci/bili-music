@@ -1,6 +1,7 @@
 import 'package:bilimusic/common/bottom_height_helper.dart';
 import 'package:bilimusic/common/components/cached_image.dart';
 import 'package:bilimusic/common/util/player_util.dart';
+import 'package:bilimusic/common/util/toast_util.dart';
 import 'package:bilimusic/feature/favorites/logic/favorites_controller.dart';
 import 'package:bilimusic/feature/player/data/bili_player_repository.dart';
 import 'package:bilimusic/feature/player/domain/playable_item.dart';
@@ -713,8 +714,6 @@ class _SearchResultSection extends StatelessWidget {
                           children: <Widget>[
                             InkResponse(
                               onTap: () async {
-                                final ScaffoldMessengerState messenger =
-                                    ScaffoldMessenger.of(context);
                                 try {
                                   final resolvedItem = await ref
                                       .read(biliPlayerRepositoryProvider)
@@ -728,23 +727,13 @@ class _SearchResultSection extends StatelessWidget {
                                       )
                                       .toggleLiked(resolvedItem);
                                   if (context.mounted) {
-                                    messenger
-                                      ..hideCurrentSnackBar()
-                                      ..showSnackBar(
-                                        SnackBar(
-                                          content: Text(
-                                            liked ? '已收藏 P1' : '已从“我喜欢”移除',
-                                          ),
-                                        ),
-                                      );
+                                    ToastUtil.show(
+                                      liked ? '已收藏 P1' : '已从“我喜欢”移除',
+                                    );
                                   }
                                 } on Object catch (error) {
                                   if (context.mounted) {
-                                    messenger
-                                      ..hideCurrentSnackBar()
-                                      ..showSnackBar(
-                                        SnackBar(content: Text('收藏失败: $error')),
-                                      );
+                                    ToastUtil.show('收藏失败: $error');
                                   }
                                 }
                               },
@@ -772,40 +761,22 @@ class _SearchResultSection extends StatelessWidget {
                               tooltip: '队列操作',
                               padding: EdgeInsets.zero,
                               onSelected: (_SearchQueueAction action) async {
-                                final ScaffoldMessengerState messenger =
-                                    ScaffoldMessenger.of(context);
                                 try {
                                   switch (action) {
                                     case _SearchQueueAction.playNext:
                                       await onPlayNext(item);
                                       if (context.mounted) {
-                                        messenger
-                                          ..hideCurrentSnackBar()
-                                          ..showSnackBar(
-                                            const SnackBar(
-                                              content: Text('已加入下一首'),
-                                            ),
-                                          );
+                                        ToastUtil.show('已加入下一首');
                                       }
                                     case _SearchQueueAction.enqueue:
                                       await onEnqueue(item);
                                       if (context.mounted) {
-                                        messenger
-                                          ..hideCurrentSnackBar()
-                                          ..showSnackBar(
-                                            const SnackBar(
-                                              content: Text('已加入播放队列'),
-                                            ),
-                                          );
+                                        ToastUtil.show('已加入播放队列');
                                       }
                                   }
                                 } on Object catch (error) {
                                   if (context.mounted) {
-                                    messenger
-                                      ..hideCurrentSnackBar()
-                                      ..showSnackBar(
-                                        SnackBar(content: Text('操作失败: $error')),
-                                      );
+                                    ToastUtil.show('操作失败: $error');
                                   }
                                 }
                               },

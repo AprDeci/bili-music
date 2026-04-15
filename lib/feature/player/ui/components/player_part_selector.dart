@@ -1,3 +1,4 @@
+import 'package:bilimusic/common/util/toast_util.dart';
 import 'package:bilimusic/feature/player/domain/playable_item.dart';
 import 'package:bilimusic/feature/player/domain/player_state.dart';
 import 'package:bilimusic/feature/player/logic/player_controller.dart';
@@ -93,15 +94,7 @@ class _PlayerPartSelectorSheet extends StatelessWidget {
                       if (!context.mounted) {
                         return;
                       }
-                      ScaffoldMessenger.of(context)
-                        ..hideCurrentSnackBar()
-                        ..showSnackBar(
-                          SnackBar(
-                            content: Text(
-                              '已将 ${partsToEnqueue.length} 个分P加入队列',
-                            ),
-                          ),
-                        );
+                      ToastUtil.show('已将 ${partsToEnqueue.length} 个分P加入队列');
                     },
             );
           }

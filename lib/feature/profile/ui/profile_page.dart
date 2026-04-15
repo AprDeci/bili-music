@@ -1,6 +1,7 @@
 import 'package:bilimusic/common/bottom_height_helper.dart';
 import 'package:bilimusic/common/components/cached_image.dart';
 import 'package:bilimusic/common/components/searchBar.dart';
+import 'package:bilimusic/common/util/toast_util.dart';
 import 'package:bilimusic/core/bili/session/bili_session_controller.dart';
 import 'package:bilimusic/feature/auth/data/bili_auth_repository.dart';
 import 'package:bilimusic/feature/auth/logic/bili_auth_controller.dart';
@@ -295,9 +296,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
         : (result.message?.isNotEmpty == true
               ? '服务端退出失败，已清除本地登录状态'
               : '已清除本地登录状态');
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(content: Text(message)));
+    ToastUtil.show(message);
   }
 
   Future<void> _showDeleteCollectionDialog(
@@ -337,18 +336,14 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
     if (!mounted) {
       return;
     }
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(content: Text(deleted ? '已删除歌单' : '删除失败')));
+    ToastUtil.show(deleted ? '已删除歌单' : '删除失败');
   }
 
   void _showMessage(String message) {
     if (!mounted) {
       return;
     }
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(content: Text(message)));
+    ToastUtil.show(message);
   }
 }
 

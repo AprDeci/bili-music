@@ -2,6 +2,7 @@ import 'dart:io';
 import 'dart:ui' as ui;
 import 'dart:typed_data';
 
+import 'package:bilimusic/common/util/toast_util.dart';
 import 'package:bilimusic/feature/auth/domain/bili_auth_models.dart';
 import 'package:bilimusic/feature/auth/logic/bili_auth_controller.dart';
 import 'package:flutter/material.dart';
@@ -41,9 +42,7 @@ class _AuthPageState extends ConsumerState<AuthPage> {
         if (!mounted) {
           return;
         }
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('登录成功')));
+        ToastUtil.show('登录成功');
         if (context.canPop()) {
           context.pop();
         }
@@ -243,12 +242,9 @@ class _QrCard extends StatelessWidget {
   final String qrUrl;
 
   Future<void> _saveQrImage(BuildContext context) async {
-    final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
     try {
       if (!Platform.isAndroid && !Platform.isIOS) {
-        messenger.showSnackBar(
-          const SnackBar(content: Text('当前平台暂不支持直接保存到系统相册')),
-        );
+        ToastUtil.show('当前平台暂不支持直接保存到系统相册');
         return;
       }
 
@@ -303,18 +299,16 @@ class _QrCard extends StatelessWidget {
       }
 
       if (result.isSuccess) {
-        messenger.showSnackBar(const SnackBar(content: Text('二维码已保存到系统相册')));
+        ToastUtil.show('二维码已保存到系统相册');
         return;
       }
 
-      messenger.showSnackBar(
-        SnackBar(content: Text(result.errorMessage ?? '保存二维码失败')),
-      );
+      ToastUtil.show(result.errorMessage ?? '保存二维码失败');
     } on Object catch (_) {
       if (!context.mounted) {
         return;
       }
-      messenger.showSnackBar(const SnackBar(content: Text('保存二维码失败，请稍后重试')));
+      ToastUtil.show('保存二维码失败，请稍后重试');
     }
   }
 
@@ -328,9 +322,7 @@ class _QrCard extends StatelessWidget {
         uri,
         mode: LaunchMode.externalNonBrowserApplication,
       )) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('打开二维码失败')));
+        ToastUtil.show('打开二维码失败');
       }
     } catch (_) {
       // 处理异常

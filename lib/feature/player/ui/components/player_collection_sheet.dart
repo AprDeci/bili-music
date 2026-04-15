@@ -1,3 +1,4 @@
+import 'package:bilimusic/common/util/toast_util.dart';
 import 'package:bilimusic/feature/favorites/domain/favorite_collection.dart';
 import 'package:bilimusic/feature/favorites/domain/favorites_state.dart';
 import 'package:bilimusic/feature/favorites/logic/favorites_controller.dart';
@@ -112,9 +113,7 @@ class _PlayerCollectionSheet extends ConsumerWidget {
                         if (!context.mounted) {
                           return;
                         }
-                        ScaffoldMessenger.of(context)
-                          ..hideCurrentSnackBar()
-                          ..showSnackBar(SnackBar(content: Text(message)));
+                        ToastUtil.show(message);
                       },
                       child: Padding(
                         padding: const EdgeInsets.symmetric(

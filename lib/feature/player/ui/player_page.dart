@@ -1,3 +1,4 @@
+import 'package:bilimusic/common/util/toast_util.dart';
 import 'package:bilimusic/feature/comment/domain/comment_target.dart';
 import 'package:bilimusic/feature/favorites/logic/favorites_controller.dart';
 import 'package:bilimusic/feature/player/domain/playable_item.dart';
@@ -204,11 +205,7 @@ class _PlayerPageState extends ConsumerState<PlayerPage> {
     if (!mounted) {
       return;
     }
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
-        SnackBar(content: Text(isLiked ? '已加入“我喜欢”' : '已从“我喜欢”移除')),
-      );
+    ToastUtil.show(isLiked ? '已加入“我喜欢”' : '已从“我喜欢”移除');
   }
 
   Future<void> _openComments(PlayableItem item) async {

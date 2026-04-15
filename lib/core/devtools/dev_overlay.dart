@@ -1,3 +1,4 @@
+import 'package:bilimusic/common/util/toast_util.dart';
 import 'package:bilimusic/core/bili/session/bili_session.dart';
 import 'package:bilimusic/core/bili/session/bili_session_controller.dart';
 import 'package:bilimusic/core/devtools/route_dev_page.dart';
@@ -133,9 +134,7 @@ class _DevOverlayPanelState extends ConsumerState<_DevOverlayPanel> {
         return;
       }
 
-      ScaffoldMessenger.of(context)
-        ..hideCurrentSnackBar()
-        ..showSnackBar(const SnackBar(content: Text('已复制路由摘要')));
+      ToastUtil.show('已复制路由摘要');
       return;
     }
 
@@ -158,9 +157,7 @@ class _DevOverlayPanelState extends ConsumerState<_DevOverlayPanel> {
       return;
     }
 
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(const SnackBar(content: Text('已复制 session 摘要')));
+    ToastUtil.show('已复制 session 摘要');
   }
 }
 
@@ -425,11 +422,7 @@ class _FieldTileState extends State<_FieldTile> {
                         if (!context.mounted) {
                           return;
                         }
-                        ScaffoldMessenger.of(context)
-                          ..hideCurrentSnackBar()
-                          ..showSnackBar(
-                            SnackBar(content: Text('已复制 ${widget.label}')),
-                          );
+                        ToastUtil.show('已复制 ${widget.label}');
                       },
                 icon: const Icon(Icons.copy_all_rounded),
               ),

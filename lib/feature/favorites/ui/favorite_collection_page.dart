@@ -2,6 +2,7 @@ import 'package:bilimusic/common/bottom_height_helper.dart';
 import 'package:bilimusic/common/components/cached_image.dart';
 import 'package:bilimusic/common/logger.dart';
 import 'package:bilimusic/common/util/player_util.dart';
+import 'package:bilimusic/common/util/toast_util.dart';
 import 'package:bilimusic/feature/favorites/domain/favorite_collection.dart';
 import 'package:bilimusic/feature/favorites/domain/favorite_entry.dart';
 import 'package:bilimusic/feature/favorites/domain/favorites_state.dart';
@@ -291,15 +292,9 @@ class FavoriteCollectionPage extends ConsumerWidget {
                       if (!context.mounted) {
                         return;
                       }
-                      ScaffoldMessenger.of(context)
-                        ..hideCurrentSnackBar()
-                        ..showSnackBar(
-                          SnackBar(
-                            content: Text(
-                              removed ? '已从“${collection.name}”移除' : '取消收藏失败',
-                            ),
-                          ),
-                        );
+                      ToastUtil.show(
+                        removed ? '已从“${collection.name}”移除' : '取消收藏失败',
+                      );
                     },
                   ),
                   _FavoriteActionTile(
@@ -324,9 +319,7 @@ class FavoriteCollectionPage extends ConsumerWidget {
                       if (!context.mounted) {
                         return;
                       }
-                      ScaffoldMessenger.of(context)
-                        ..hideCurrentSnackBar()
-                        ..showSnackBar(const SnackBar(content: Text('已加入下一首')));
+                      ToastUtil.show('已加入下一首');
                     },
                   ),
                   _FavoriteActionTile(
@@ -334,11 +327,7 @@ class FavoriteCollectionPage extends ConsumerWidget {
                     title: '分享',
                     onTap: () {
                       Navigator.of(sheetContext).pop();
-                      ScaffoldMessenger.of(context)
-                        ..hideCurrentSnackBar()
-                        ..showSnackBar(
-                          const SnackBar(content: Text('分享功能暂未开放')),
-                        );
+                      ToastUtil.show('分享功能暂未开放');
                     },
                   ),
                 ],
