@@ -13,6 +13,9 @@ class HiveKeys {
   static const String searchHistory = 'search.history';
   static const String updateDismissedTag = 'app.update.dismissed_tag';
   static const String appearanceUseGlassBar = 'app.appearance.use_glass_bar';
+  static const String webDavBaseUrl = 'webdav.base_url';
+  static const String webDavUsername = 'webdav.username';
+  static const String webDavPassword = 'webdav.password';
 
   static const String biliCookie = 'bili.cookie';
   static const String biliSessData = 'bili.sessdata';
