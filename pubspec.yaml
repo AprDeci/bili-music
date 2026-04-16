@@ -65,6 +65,7 @@ dependencies:
   file_picker: ^10.3.2
   liquid_glass_widgets: ^0.7.8
   flutter_smart_dialog: ^5.1.0
+  webdav_client: ^1.2.2
 
 dev_dependencies:
   flutter_test:
