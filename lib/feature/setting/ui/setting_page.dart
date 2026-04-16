@@ -37,9 +37,9 @@ class _SettingPageState extends State<SettingPage> {
           ListTile(
             contentPadding: EdgeInsets.zero,
             leading: const Icon(Icons.palette_outlined),
-            title: const Text('主题设置'),
+            title: const Text('外观设置'),
             subtitle: Text(
-              '跟随系统、浅色、深色与浅色主题选择',
+              '外观,主题选择',
               style: theme.textTheme.bodySmall,
             ),
             trailing: const Icon(Icons.chevron_right_rounded),
