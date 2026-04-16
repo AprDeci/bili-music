@@ -42,7 +42,7 @@ final class AppearanceSettingLogicProvider
 }
 
 String _$appearanceSettingLogicHash() =>
-    r'684cdbe4b9b7aa376a6803b57ac2d68d4d0dabce';
+    r'9f0788672bd05484587f3531e8bd1cd452c935a0';
 
 abstract class _$AppearanceSettingLogic extends $Notifier<bool> {
   bool build();
