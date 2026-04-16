@@ -3,11 +3,15 @@ import 'package:bilimusic/common/util/update_util.dart';
 import 'package:bilimusic/feature/player/domain/player_state.dart';
 import 'package:bilimusic/feature/player/logic/player_controller.dart';
 import 'package:bilimusic/feature/player/ui/mini_player_bar.dart';
+import 'package:bilimusic/feature/player/ui/mini_player_glass_bar.dart';
+import 'package:bilimusic/feature/setting/logic/appearance_setting_logic.dart';
 import 'package:bilimusic/router/player_navigation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_floating_bottom_bar/flutter_floating_bottom_bar.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
+import 'package:liquid_glass_widgets/widgets/surfaces/glass_bottom_bar.dart';
 
 class ScaffoldWithNavBar extends ConsumerStatefulWidget {
   const ScaffoldWithNavBar({
@@ -68,6 +72,7 @@ class _ScaffoldWithNavBarState extends ConsumerState<ScaffoldWithNavBar> {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
     final PlayerState playerState = ref.watch(playerControllerProvider);
+    final bool useGlassBar = ref.watch(appearanceSettingLogicProvider);
     final bool isFavoritesPage = _isFavoritesPage(widget.currentLocation);
     final double miniPlayerVisibleBottomPadding =
         BottomHeightHelper.miniPlayerBottomPaddingWithBottomBar(
@@ -82,6 +87,7 @@ class _ScaffoldWithNavBarState extends ConsumerState<ScaffoldWithNavBar> {
       context,
       playerState,
       isFavoritesPage,
+      useGlassBar,
       miniPlayerVisibleBottomPadding,
       miniPlayerCollapsedBottomPadding,
     );
@@ -110,44 +116,29 @@ class _ScaffoldWithNavBarState extends ConsumerState<ScaffoldWithNavBar> {
               offset: isFavoritesPage
                   ? const Offset(0, _navHiddenSlideOffset)
                   : Offset.zero,
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  color: colorScheme.surface,
-                  borderRadius: BorderRadius.circular(40),
-                  border: Border.all(
-                    color: colorScheme.primary.withValues(alpha: 0.08),
-                  ),
-                  boxShadow: const <BoxShadow>[
-                    BoxShadow(
-                      color: Color(0x14000000),
-                      blurRadius: 30,
-                      offset: Offset(0, 16),
-                    ),
-                  ],
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(40),
-                  child: NavigationBarTheme(
-                    data: NavigationBarThemeData(
-                      backgroundColor: Colors.transparent,
-                      elevation: 0,
-                      height: BottomHeightHelper.bottomBarHeight,
-                      indicatorColor: colorScheme.primary.withValues(
-                        alpha: 0.12,
-                      ),
-                      iconTheme: WidgetStateProperty.resolveWith<IconThemeData>(
-                        (Set<WidgetState> states) {
-                          if (states.contains(WidgetState.selected)) {
-                            return IconThemeData(color: colorScheme.primary);
-                          }
-
-                          return const IconThemeData(color: Color(0xFF7B8698));
-                        },
-                      ),
-                    ),
-                    child: NavigationBar(
+              child: useGlassBar
+                  ? GlassBottomBar(
+                      glassSettings: const LiquidGlassSettings(),
+                      spacing: 4,
+                      verticalPadding: 4,
+                      barHeight: 54,
+                      horizontalPadding: 64,
+                      unselectedIconColor:
+                          theme.textTheme.bodyMedium?.color ?? Colors.black,
+                      selectedIconColor:
+                          theme.textTheme.bodyMedium?.color ?? Colors.black,
+                      tabs: const <GlassBottomBarTab>[
+                        GlassBottomBarTab(
+                          icon: Icon(Icons.home_outlined),
+                          label: '首页',
+                        ),
+                        GlassBottomBarTab(
+                          icon: Icon(Icons.person_outlined),
+                          label: '我的',
+                        ),
+                      ],
                       selectedIndex: _currentIndex,
-                      onDestinationSelected: (int index) {
+                      onTabSelected: (int index) {
                         setState(() => _currentIndex = index);
                         widget.navigationShell.goBranch(
                           index,
@@ -155,24 +146,76 @@ class _ScaffoldWithNavBarState extends ConsumerState<ScaffoldWithNavBar> {
                               index == widget.navigationShell.currentIndex,
                         );
                       },
-                      labelBehavior:
-                          NavigationDestinationLabelBehavior.alwaysHide,
-                      destinations: const <NavigationDestination>[
-                        NavigationDestination(
-                          icon: Icon(Icons.home_outlined),
-                          selectedIcon: Icon(Icons.home),
-                          label: '首页',
+                    )
+                  : DecoratedBox(
+                      decoration: BoxDecoration(
+                        color: colorScheme.surface,
+                        borderRadius: BorderRadius.circular(40),
+                        border: Border.all(
+                          color: colorScheme.primary.withValues(alpha: 0.08),
                         ),
-                        NavigationDestination(
-                          icon: Icon(Icons.person_outlined),
-                          selectedIcon: Icon(Icons.person),
-                          label: '我的',
+                        boxShadow: const <BoxShadow>[
+                          BoxShadow(
+                            color: Color(0x14000000),
+                            blurRadius: 30,
+                            offset: Offset(0, 16),
+                          ),
+                        ],
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(40),
+                        child: NavigationBarTheme(
+                          data: NavigationBarThemeData(
+                            backgroundColor: Colors.transparent,
+                            elevation: 0,
+                            height: BottomHeightHelper.bottomBarHeight,
+                            indicatorColor: colorScheme.primary.withValues(
+                              alpha: 0.12,
+                            ),
+                            iconTheme:
+                                WidgetStateProperty.resolveWith<IconThemeData>((
+                                  Set<WidgetState> states,
+                                ) {
+                                  if (states.contains(WidgetState.selected)) {
+                                    return IconThemeData(
+                                      color: colorScheme.primary,
+                                    );
+                                  }
+
+                                  return const IconThemeData(
+                                    color: Color(0xFF7B8698),
+                                  );
+                                }),
+                          ),
+                          child: NavigationBar(
+                            selectedIndex: _currentIndex,
+                            onDestinationSelected: (int index) {
+                              setState(() => _currentIndex = index);
+                              widget.navigationShell.goBranch(
+                                index,
+                                initialLocation:
+                                    index ==
+                                    widget.navigationShell.currentIndex,
+                              );
+                            },
+                            labelBehavior:
+                                NavigationDestinationLabelBehavior.alwaysHide,
+                            destinations: const <NavigationDestination>[
+                              NavigationDestination(
+                                icon: Icon(Icons.home_outlined),
+                                selectedIcon: Icon(Icons.home),
+                                label: '首页',
+                              ),
+                              NavigationDestination(
+                                icon: Icon(Icons.person_outlined),
+                                selectedIcon: Icon(Icons.person),
+                                label: '我的',
+                              ),
+                            ],
+                          ),
                         ),
-                      ],
+                      ),
                     ),
-                  ),
-                ),
-              ),
             ),
           ),
         ),
@@ -186,6 +229,7 @@ class _ScaffoldWithNavBarState extends ConsumerState<ScaffoldWithNavBar> {
     BuildContext context,
     PlayerState playerState,
     bool isFavoritesPage,
+    bool useGlassBar,
     double miniPlayerVisibleBottomPadding,
     double miniPlayerCollapsedBottomPadding,
   ) {
@@ -206,18 +250,31 @@ class _ScaffoldWithNavBarState extends ConsumerState<ScaffoldWithNavBar> {
                 duration: _animationDuration,
                 curve: _animationCurve,
                 offset: isFavoritesPage ? const Offset(0, 0.12) : Offset.zero,
-                child: MiniPlayerBar(
-                  state: playerState,
-                  bottomPadding: isFavoritesPage
-                      ? miniPlayerCollapsedBottomPadding
-                      : miniPlayerVisibleBottomPadding,
-                  onTap: () => openPlayerPage(context),
-                  onTogglePlayback: () {
-                    ref
-                        .read(playerControllerProvider.notifier)
-                        .togglePlayback();
-                  },
-                ),
+                child: useGlassBar
+                    ? MiniPlayerGlassBar(
+                        state: playerState,
+                        bottomPadding: isFavoritesPage
+                            ? miniPlayerCollapsedBottomPadding
+                            : miniPlayerVisibleBottomPadding,
+                        onTap: () => openPlayerPage(context),
+                        onTogglePlayback: () {
+                          ref
+                              .read(playerControllerProvider.notifier)
+                              .togglePlayback();
+                        },
+                      )
+                    : MiniPlayerBar(
+                        state: playerState,
+                        bottomPadding: isFavoritesPage
+                            ? miniPlayerCollapsedBottomPadding
+                            : miniPlayerVisibleBottomPadding,
+                        onTap: () => openPlayerPage(context),
+                        onTogglePlayback: () {
+                          ref
+                              .read(playerControllerProvider.notifier)
+                              .togglePlayback();
+                        },
+                      ),
               ),
             );
           },
