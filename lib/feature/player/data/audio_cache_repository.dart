@@ -23,10 +23,10 @@ class PlayerAudioCacheRepository {
     required PlayableItem item,
     required AudioStreamInfo audioStream,
   }) {
-    final String? quality = audioStream.qualityLabel?.trim();
-    final String qualityKey = quality == null || quality.isEmpty
-        ? 'default'
-        : quality;
+    final String qualityKey =
+        audioStream.qualityId?.toString() ??
+        audioStream.qualityLabel?.trim() ??
+        'default';
     return 'audio:${item.stableId}:$qualityKey';
   }
 
