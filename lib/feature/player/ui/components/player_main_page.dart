@@ -314,7 +314,7 @@ Future<void> _showPlayerQualitySheet({
     builder: (BuildContext context) {
       return SafeArea(
         child: ListView.separated(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
           itemCount: qualities.length,
           separatorBuilder: (_, _) => const SizedBox(height: 10),
           itemBuilder: (BuildContext context, int index) {
@@ -326,19 +326,12 @@ Future<void> _showPlayerQualitySheet({
               ),
               tileColor: isSelected
                   ? theme.colorScheme.primary.withValues(alpha: 0.1)
-                  : theme.colorScheme.surfaceContainerHighest.withValues(
-                      alpha: 0.35,
-                    ),
+                  : null,
               title: Text(
                 option.label,
                 style: theme.textTheme.titleSmall?.copyWith(
                   fontWeight: FontWeight.w800,
                 ),
-              ),
-              subtitle: Text(
-                option.bandwidth > 0
-                    ? '${(option.bandwidth / 1000).round()} kbps'
-                    : '当前可用音质',
               ),
               trailing: isSelected
                   ? Icon(Icons.check_rounded, color: theme.colorScheme.primary)
