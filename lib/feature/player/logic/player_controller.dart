@@ -15,6 +15,7 @@ import 'package:bilimusic/feature/player/domain/persisted_playback_queue.dart';
 import 'package:bilimusic/feature/player/domain/player_state.dart';
 import 'package:bilimusic/feature/player/logic/app_audio_handler.dart';
 import 'package:bilimusic/feature/player/logic/player_audio_engine.dart';
+import 'package:bilimusic/feature/player/logic/player_audio_quality_preference_logic.dart';
 import 'package:bilimusic/feature/player/logic/player_audio_session_coordinator.dart';
 import 'package:bilimusic/feature/player/logic/player_media_item_mapper.dart';
 import 'package:bilimusic/feature/player/logic/player_settings_logic.dart';
@@ -56,8 +57,16 @@ class PlayerController extends Notifier<PlayerState>
         pause: pause,
       );
 
+  void _removeResolvedEntryCachesForItem(PlayableItem item) {
+    final String prefix = '${item.stableId}:';
+    _resolvedEntries.removeWhere(
+      (String key, _ResolvedQueueEntry _) => key.startsWith(prefix),
+    );
+  }
+
   final Map<String, _ResolvedQueueEntry> _resolvedEntries =
       <String, _ResolvedQueueEntry>{};
+  final Map<String, int?> _qualityOverrides = <String, int?>{};
   final List<StreamSubscription<dynamic>> _subscriptions =
       <StreamSubscription<dynamic>>[];
   final List<int> _shuffleHistory = <int>[];
@@ -149,6 +158,91 @@ class PlayerController extends Notifier<PlayerState>
     await play();
   }
 
+  Future<void> setAudioQualityPreference(
+    PlayerAudioQualityPreference preference,
+  ) async {
+    final PlayerAudioQualityPreference currentPreference = ref.read(
+      playerAudioQualityPreferenceLogicProvider,
+    );
+    if (currentPreference == preference) {
+      return;
+    }
+
+    await ref
+        .read(playerAudioQualityPreferenceLogicProvider.notifier)
+        .setPreference(preference);
+
+    if (!state.hasActiveQueueIndex || state.currentItem == null) {
+      return;
+    }
+
+    _qualityOverrides.remove(state.currentItem!.stableId);
+
+    final String currentCacheKey = _resolvedEntryCacheKey(
+      state.currentItem!,
+      preference: currentPreference,
+    );
+    final String nextCacheKey = _resolvedEntryCacheKey(
+      state.currentItem!,
+      preference: preference,
+    );
+    _resolvedEntries.remove(currentCacheKey);
+    _resolvedEntries.remove(nextCacheKey);
+
+    final int queueIndex = state.currentQueueIndex!;
+    final bool wasPlaying = state.isPlaying;
+    final Duration position = state.position;
+    await _loadQueueIndex(
+      queueIndex,
+      autoplay: wasPlaying,
+      initialPosition: position,
+    );
+    if (!wasPlaying && state.isReady) {
+      await _audioEngine.pause();
+      state = state.copyWith(isPlaying: false, isBuffering: false);
+      _publishMediaSession();
+      await _persistQueueSnapshot();
+    }
+  }
+
+  Future<void> switchCurrentAudioQuality(int? qualityId) async {
+    final PlayableItem? currentItem = state.currentItem;
+    if (!state.hasActiveQueueIndex || currentItem == null) {
+      return;
+    }
+
+    final int? currentQualityId = state.audioStream?.qualityId;
+    if (currentQualityId == qualityId) {
+      return;
+    }
+
+    final PlayerAudioQualityPreference qualityPreference = ref.read(
+      playerAudioQualityPreferenceLogicProvider,
+    );
+    final String cacheKey = _resolvedEntryCacheKey(
+      currentItem,
+      preference: qualityPreference,
+      preferredQualityId: qualityId,
+    );
+    _resolvedEntries.remove(cacheKey);
+    _qualityOverrides[currentItem.stableId] = qualityId;
+
+    final int queueIndex = state.currentQueueIndex!;
+    final bool wasPlaying = state.isPlaying;
+    final Duration position = state.position;
+    await _loadQueueIndex(
+      queueIndex,
+      autoplay: wasPlaying,
+      initialPosition: position,
+    );
+    if (!wasPlaying && state.isReady) {
+      await _audioEngine.pause();
+      state = state.copyWith(isPlaying: false, isBuffering: false);
+      _publishMediaSession();
+      await _persistQueueSnapshot();
+    }
+  }
+
   @override
   Future<void> seek(Duration position) {
     return _audioEngine.seek(position);
@@ -197,6 +291,7 @@ class PlayerController extends Notifier<PlayerState>
     final int generation = _nextGeneration();
     final int resolvedIndex = startIndex.clamp(0, items.length - 1);
     final List<PlayableItem> queue = List<PlayableItem>.unmodifiable(items);
+    _qualityOverrides.clear();
     _shuffleHistory
       ..clear()
       ..add(resolvedIndex);
@@ -243,8 +338,9 @@ class PlayerController extends Notifier<PlayerState>
     final int generation = _nextGeneration();
     final List<PlayableItem> nextQueue = List<PlayableItem>.of(state.queue);
     final PlayableItem previousItem = nextQueue[currentIndex];
+    _qualityOverrides.remove(previousItem.stableId);
     nextQueue[currentIndex] = item;
-    _resolvedEntries.remove(previousItem.stableId);
+    _removeResolvedEntryCachesForItem(previousItem);
     state = state.copyWith(
       queue: List<PlayableItem>.unmodifiable(nextQueue),
       currentQueueIndex: currentIndex,
@@ -313,9 +409,10 @@ class PlayerController extends Notifier<PlayerState>
     }
 
     final PlayableItem removedItem = state.queue[index];
+    _qualityOverrides.remove(removedItem.stableId);
     final List<PlayableItem> nextQueue = List<PlayableItem>.of(state.queue)
       ..removeAt(index);
-    _resolvedEntries.remove(removedItem.stableId);
+    _removeResolvedEntryCachesForItem(removedItem);
 
     if (nextQueue.isEmpty) {
       await clearQueue();
@@ -379,6 +476,7 @@ class PlayerController extends Notifier<PlayerState>
   Future<void> clearQueue() async {
     _nextGeneration();
     _shuffleHistory.clear();
+    _qualityOverrides.clear();
     await _audioEngine.stop();
     state = state.copyWith(
       queue: const <PlayableItem>[],
@@ -717,7 +815,16 @@ class PlayerController extends Notifier<PlayerState>
   }
 
   Future<_ResolvedQueueEntry> _resolveQueueEntry(PlayableItem item) async {
-    final _ResolvedQueueEntry? cached = _resolvedEntries[item.stableId];
+    final PlayerAudioQualityPreference qualityPreference = ref.read(
+      playerAudioQualityPreferenceLogicProvider,
+    );
+    final int? preferredQualityId = _qualityOverrides[item.stableId];
+    final String cacheKey = _resolvedEntryCacheKey(
+      item,
+      preference: qualityPreference,
+      preferredQualityId: preferredQualityId,
+    );
+    final _ResolvedQueueEntry? cached = _resolvedEntries[cacheKey];
     if (cached != null) {
       return cached;
     }
@@ -730,6 +837,8 @@ class PlayerController extends Notifier<PlayerState>
     final PlayerLoadResult loadResult = await _repository.resolveAudioStream(
       item,
       session: session,
+      qualityPreference: qualityPreference,
+      preferredQualityId: preferredQualityId,
     );
     final _ResolvedQueueEntry entry = _ResolvedQueueEntry(
       item: loadResult.item,
@@ -738,9 +847,23 @@ class PlayerController extends Notifier<PlayerState>
       ),
       audioStream: loadResult.audioStream,
     );
-    _resolvedEntries[item.stableId] = entry;
-    _resolvedEntries[loadResult.item.stableId] = entry;
+    _resolvedEntries[cacheKey] = entry;
+    _resolvedEntries[_resolvedEntryCacheKey(
+          loadResult.item,
+          preference: qualityPreference,
+          preferredQualityId: preferredQualityId,
+        )] =
+        entry;
     return entry;
+  }
+
+  String _resolvedEntryCacheKey(
+    PlayableItem item, {
+    required PlayerAudioQualityPreference preference,
+    int? preferredQualityId,
+  }) {
+    final String overrideKey = preferredQualityId?.toString() ?? 'default';
+    return '${item.stableId}:${preference.storageValue}:$overrideKey';
   }
 
   Future<Duration?> _setSourceForEntry({
