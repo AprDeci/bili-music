@@ -1,20 +1,18 @@
 import 'dart:async';
-import 'dart:io';
 import 'dart:math';
 
-import 'package:audio_service/audio_service.dart' hide PlayerState;
+import 'package:audio_service/audio_service.dart';
 import 'package:bilimusic/common/logger.dart';
-import 'package:bilimusic/core/bili/session/bili_session.dart';
 import 'package:bilimusic/core/bili/session/bili_session_controller.dart';
 import 'package:bilimusic/feature/player/data/audio_cache_repository.dart';
 import 'package:bilimusic/feature/player/data/bili_player_repository.dart';
 import 'package:bilimusic/feature/player/data/player_queue_local_repository.dart';
-import 'package:bilimusic/feature/player/domain/audio_stream_info.dart';
 import 'package:bilimusic/feature/player/domain/player_audio_quality_preference.dart';
 import 'package:bilimusic/feature/player/domain/playable_item.dart';
 import 'package:bilimusic/feature/player/domain/persisted_playback_queue.dart';
 import 'package:bilimusic/feature/player/domain/player_state.dart';
 import 'package:bilimusic/feature/player/logic/app_audio_handler.dart';
+import 'package:bilimusic/feature/player/logic/controller/player_playback_loader.dart';
 import 'package:bilimusic/feature/player/logic/player_audio_engine.dart';
 import 'package:bilimusic/feature/player/logic/player_audio_quality_preference_logic.dart';
 import 'package:bilimusic/feature/player/logic/player_audio_session_coordinator.dart';
@@ -34,17 +32,20 @@ class PlayerController extends Notifier<PlayerState>
   final AppLogger _logger = AppLogger('PlayerController');
   final Random _random;
 
-  late final BiliPlayerRepository _repository = ref.read(
-    biliPlayerRepositoryProvider,
-  );
-  late final PlayerAudioCacheRepository _audioCacheRepository = ref.read(
-    playerAudioCacheRepositoryProvider,
-  );
   late final PlayerQueueLocalRepository _queueRepository = ref.read(
     playerQueueLocalRepositoryProvider,
   );
   late final AppAudioHandler _audioHandler = ref.read(appAudioHandlerProvider);
   late final PlayerAudioEngine _audioEngine = PlayerAudioEngine();
+  late final PlayerPlaybackLoader _playbackLoader = PlayerPlaybackLoader(
+    repository: ref.read(biliPlayerRepositoryProvider),
+    audioCacheRepository: ref.read(playerAudioCacheRepositoryProvider),
+    audioEngine: _audioEngine,
+    readSession: () => ref.read(biliSessionControllerProvider),
+    readQualityPreference: () =>
+        ref.read(playerAudioQualityPreferenceLogicProvider),
+    logEvent: _logPlayerEvent,
+  );
   late final PlayerAudioSessionCoordinator _audioSessionCoordinator =
       PlayerAudioSessionCoordinator(
         audioEngine: _audioEngine,
@@ -58,15 +59,6 @@ class PlayerController extends Notifier<PlayerState>
         pause: pause,
       );
 
-  void _removeResolvedEntryCachesForItem(PlayableItem item) {
-    final String prefix = '${item.stableId}:';
-    _resolvedEntries.removeWhere(
-      (String key, _ResolvedQueueEntry _) => key.startsWith(prefix),
-    );
-  }
-
-  final Map<String, _ResolvedQueueEntry> _resolvedEntries =
-      <String, _ResolvedQueueEntry>{};
   final Map<String, int?> _qualityOverrides = <String, int?>{};
   final List<StreamSubscription<dynamic>> _subscriptions =
       <StreamSubscription<dynamic>>[];
@@ -179,16 +171,14 @@ class PlayerController extends Notifier<PlayerState>
 
     _qualityOverrides.remove(state.currentItem!.stableId);
 
-    final String currentCacheKey = _resolvedEntryCacheKey(
-      state.currentItem!,
+    _playbackLoader.clearResolvedEntryCache(
+      item: state.currentItem!,
       preference: currentPreference,
     );
-    final String nextCacheKey = _resolvedEntryCacheKey(
-      state.currentItem!,
+    _playbackLoader.clearResolvedEntryCache(
+      item: state.currentItem!,
       preference: preference,
     );
-    _resolvedEntries.remove(currentCacheKey);
-    _resolvedEntries.remove(nextCacheKey);
 
     final int queueIndex = state.currentQueueIndex!;
     final bool wasPlaying = state.isPlaying;
@@ -220,12 +210,11 @@ class PlayerController extends Notifier<PlayerState>
     final PlayerAudioQualityPreference qualityPreference = ref.read(
       playerAudioQualityPreferenceLogicProvider,
     );
-    final String cacheKey = _resolvedEntryCacheKey(
-      currentItem,
+    _playbackLoader.clearResolvedEntryCache(
+      item: currentItem,
       preference: qualityPreference,
       preferredQualityId: qualityId,
     );
-    _resolvedEntries.remove(cacheKey);
     _qualityOverrides[currentItem.stableId] = qualityId;
 
     final int queueIndex = state.currentQueueIndex!;
@@ -341,7 +330,7 @@ class PlayerController extends Notifier<PlayerState>
     final PlayableItem previousItem = nextQueue[currentIndex];
     _qualityOverrides.remove(previousItem.stableId);
     nextQueue[currentIndex] = item;
-    _removeResolvedEntryCachesForItem(previousItem);
+    _playbackLoader.removeResolvedEntryCachesForItem(previousItem);
     state = state.copyWith(
       queue: List<PlayableItem>.unmodifiable(nextQueue),
       currentQueueIndex: currentIndex,
@@ -413,7 +402,7 @@ class PlayerController extends Notifier<PlayerState>
     _qualityOverrides.remove(removedItem.stableId);
     final List<PlayableItem> nextQueue = List<PlayableItem>.of(state.queue)
       ..removeAt(index);
-    _removeResolvedEntryCachesForItem(removedItem);
+    _playbackLoader.removeResolvedEntryCachesForItem(removedItem);
 
     if (nextQueue.isEmpty) {
       await clearQueue();
@@ -747,14 +736,21 @@ class PlayerController extends Notifier<PlayerState>
     _publishMediaSession();
 
     try {
-      final _ResolvedQueueEntry entry = await _resolveQueueEntry(targetItem);
+      final ResolvedQueueEntry entry = await _playbackLoader.resolveQueueEntry(
+        targetItem,
+        preferredQualityId: _qualityOverrides[targetItem.stableId],
+      );
       if (!_isCurrentGeneration(effectiveGeneration)) {
         return false;
       }
 
-      final Duration? loadedDuration = await _setSourceForEntry(
+      final Duration? loadedDuration = await _playbackLoader.setSourceForEntry(
         entry: entry,
+        queueSourceLabel: state.queueSourceLabel,
         initialPosition: initialPosition,
+        onStatusHint: (PlayerStatusHint hint) {
+          state = state.copyWith(statusHint: hint);
+        },
       );
       if (!_isCurrentGeneration(effectiveGeneration)) {
         return false;
@@ -784,7 +780,7 @@ class PlayerController extends Notifier<PlayerState>
         return false;
       }
 
-      unawaited(_cacheEntryInBackground(entry));
+      unawaited(_playbackLoader.cacheEntryInBackground(entry));
 
       if (persistAfterLoad) {
         await _persistQueueSnapshot();
@@ -815,148 +811,16 @@ class PlayerController extends Notifier<PlayerState>
     }
   }
 
-  Future<_ResolvedQueueEntry> _resolveQueueEntry(PlayableItem item) async {
-    final PlayerAudioQualityPreference qualityPreference = ref.read(
-      playerAudioQualityPreferenceLogicProvider,
-    );
-    final int? preferredQualityId = _qualityOverrides[item.stableId];
-    final String cacheKey = _resolvedEntryCacheKey(
-      item,
-      preference: qualityPreference,
-      preferredQualityId: preferredQualityId,
-    );
-    final _ResolvedQueueEntry? cached = _resolvedEntries[cacheKey];
-    if (cached != null) {
-      return cached;
-    }
-
-    if (!item.hasIdentity) {
-      throw const BiliPlayerException('当前搜索结果缺少可播放的视频标识。');
-    }
-
-    final BiliSession? session = ref.read(biliSessionControllerProvider);
-    final PlayerLoadResult loadResult = await _repository.resolveAudioStream(
-      item,
-      session: session,
-      qualityPreference: qualityPreference,
-      preferredQualityId: preferredQualityId,
-    );
-    final _ResolvedQueueEntry entry = _ResolvedQueueEntry(
-      item: loadResult.item,
-      availableParts: List<PlayableItem>.unmodifiable(
-        loadResult.availableParts,
-      ),
-      audioStream: loadResult.audioStream,
-    );
-    _resolvedEntries[cacheKey] = entry;
-    _resolvedEntries[_resolvedEntryCacheKey(
-          loadResult.item,
-          preference: qualityPreference,
-          preferredQualityId: preferredQualityId,
-        )] =
-        entry;
-    return entry;
-  }
-
-  String _resolvedEntryCacheKey(
-    PlayableItem item, {
-    required PlayerAudioQualityPreference preference,
-    int? preferredQualityId,
-  }) {
-    final String overrideKey = preferredQualityId?.toString() ?? 'default';
-    return '${item.stableId}:${preference.storageValue}:$overrideKey';
-  }
-
-  Future<Duration?> _setSourceForEntry({
-    required _ResolvedQueueEntry entry,
-    required Duration initialPosition,
-  }) async {
-    final MediaItem mediaItem = buildPlayerMediaItem(
-      entry.item,
-      audioStream: entry.audioStream,
-      queueSourceLabel: state.queueSourceLabel,
-      duration: entry.audioStream.duration,
-    );
-    state = state.copyWith(statusHint: PlayerStatusHint.connectingStream);
-    final Duration? effectiveInitialPosition = initialPosition > Duration.zero
-        ? initialPosition
-        : null;
-    final File? cachedFile = await _audioCacheRepository.getCachedFile(
-      item: entry.item,
-      audioStream: entry.audioStream,
-    );
-
-    if (cachedFile != null) {
-      try {
-        state = state.copyWith(statusHint: PlayerStatusHint.loadingCache);
-        _logPlayerEvent(
-          'loadQueueIndex:cache-hit',
-          details: <String, Object?>{
-            'stableId': entry.item.stableId,
-            'path': cachedFile.path,
-          },
-        );
-        return await _audioEngine.setFileSource(
-          filePath: cachedFile.path,
-          tag: mediaItem,
-          initialPosition: effectiveInitialPosition,
-        );
-      } on Object catch (error) {
-        _logPlayerEvent(
-          'loadQueueIndex:cache-fallback',
-          details: <String, Object?>{
-            'stableId': entry.item.stableId,
-            'error': error,
-          },
-        );
-        await _audioCacheRepository.removeCachedFile(
-          item: entry.item,
-          audioStream: entry.audioStream,
-        );
-      }
-    }
-
-    _logPlayerEvent(
-      'loadQueueIndex:remote-source',
-      details: <String, Object?>{'stableId': entry.item.stableId},
-    );
-    return _audioEngine.setRemoteSource(
-      uri: Uri.parse(entry.audioStream.streamUrl),
-      headers: entry.audioStream.headers.isEmpty
-          ? null
-          : entry.audioStream.headers,
-      tag: mediaItem,
-      initialPosition: effectiveInitialPosition,
-    );
-  }
-
-  Future<void> _cacheEntryInBackground(_ResolvedQueueEntry entry) async {
-    try {
-      await _audioCacheRepository.cacheAudio(
-        item: entry.item,
-        audioStream: entry.audioStream,
-      );
-      _logPlayerEvent(
-        'audio-cache:completed',
-        details: <String, Object?>{'stableId': entry.item.stableId},
-      );
-    } on Object catch (error) {
-      _logPlayerEvent(
-        'audio-cache:failed',
-        details: <String, Object?>{
-          'stableId': entry.item.stableId,
-          'error': error,
-        },
-      );
-    }
-  }
-
   void _applyResolvedCurrentEntry({
     required int queueIndex,
-    required _ResolvedQueueEntry entry,
+    required ResolvedQueueEntry entry,
     Duration? durationOverride,
   }) {
-    final List<PlayableItem> queue = _replaceQueueEntry(queueIndex, entry.item);
+    final List<PlayableItem> queue = _playbackLoader.replaceQueueEntry(
+      queue: state.queue,
+      index: queueIndex,
+      item: entry.item,
+    );
     state = state.copyWith(
       queue: queue,
       currentQueueIndex: queueIndex,
@@ -969,15 +833,6 @@ class PlayerController extends Notifier<PlayerState>
       statusHint: null,
       errorMessage: null,
     );
-  }
-
-  List<PlayableItem> _replaceQueueEntry(int index, PlayableItem item) {
-    if (index < 0 || index >= state.queue.length) {
-      return state.queue;
-    }
-    final List<PlayableItem> nextQueue = List<PlayableItem>.of(state.queue);
-    nextQueue[index] = item;
-    return List<PlayableItem>.unmodifiable(nextQueue);
   }
 
   void _recordQueueVisit(int index) {
@@ -1157,7 +1012,7 @@ class PlayerController extends Notifier<PlayerState>
     _audioHandler.updateQueue(queueItems);
 
     final PlayableItem? currentItem = state.currentItem;
-    final AudioStreamInfo? audioStream = state.audioStream;
+    final audioStream = state.audioStream;
     if (currentItem == null || audioStream == null) {
       _audioHandler.updateCurrentMediaItem(
         currentItem == null
@@ -1215,16 +1070,4 @@ class PlayerController extends Notifier<PlayerState>
           : '[PlayerDebug] $event | $detailText',
     );
   }
-}
-
-class _ResolvedQueueEntry {
-  const _ResolvedQueueEntry({
-    required this.item,
-    required this.availableParts,
-    required this.audioStream,
-  });
-
-  final PlayableItem item;
-  final List<PlayableItem> availableParts;
-  final AudioStreamInfo audioStream;
 }
