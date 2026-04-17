@@ -17,6 +17,8 @@
 
 ## Commands
 
+Before running any `flutter` or `dart` command, first ensure the command is executed from the project root directory for this repository.
+
 ### Setup
 - Install dependencies: `flutter pub get`
 - Check Flutter environment: `flutter doctor`
@@ -35,8 +37,8 @@
 
 ### Lint and Format
 - Static analysis: `flutter analyze`
-- Format entire repo: `dart format .`
-- Format common source roots only: `dart format lib test`
+- Format only Dart files changed for the current task, for example `dart format lib/feature/auth/ui/login_page.dart test/widget_test.dart`.
+- Do not format the entire repository unless the user explicitly asks for it.
 
 ### Tests
 - Run all tests: `flutter test`
@@ -50,7 +52,7 @@
 
 ### Recommended Validation Flow After Changes
 - `flutter pub get` if dependencies changed.
-- `dart format lib test`
+- `dart format <changed Dart files only>`.
 - `flutter analyze`
 - `flutter test`
 - `dart run build_runner build --delete-conflicting-outputs` if any `@riverpod`, `@freezed`, Hive adapters, or `part` files changed.
@@ -117,7 +119,8 @@
 
 ## Riverpod Conventions
 - This repo uses generator-based Riverpod via `@riverpod` and generated `*.g.dart` files.
-- Prefer Riverpod generator APIs by default; when adding or refactoring providers, use `@riverpod`/generated notifiers unless there is a clear technical reason not to.
+- Riverpod providers must use generator annotations (`@riverpod`) and generated `*.g.dart` wiring.
+- When adding or refactoring providers, use `@riverpod`/generated notifiers rather than manual provider declarations.
 - Prefer keeping provider declaration and implementation in the same source file.
 - For notifier-style providers, extend the generated base class such as `_$BiliAuthController`.
 - Read dependencies through `ref.read(...)` and subscribe with `ref.watch(...)`.
