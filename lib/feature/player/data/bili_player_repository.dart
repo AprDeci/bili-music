@@ -3,9 +3,11 @@ import 'package:bilimusic/common/util/json_util.dart';
 import 'package:bilimusic/core/bili/net/bili_api_client.dart';
 import 'package:bilimusic/core/bili/session/bili_session.dart';
 import 'package:bilimusic/core/net/net_config.dart';
+import 'package:dio/dio.dart';
 import 'package:bilimusic/feature/player/domain/audio_stream_info.dart';
 import 'package:bilimusic/feature/player/domain/playable_item.dart';
 import 'package:bilimusic/feature/player/domain/player_online_audience.dart';
+import 'package:bilimusic/feature/player/logic/player_audio_quality_preference_logic.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 final Provider<BiliPlayerRepository> biliPlayerRepositoryProvider =
@@ -74,6 +76,8 @@ class BiliPlayerRepository {
   Future<PlayerLoadResult> resolveAudioStream(
     PlayableItem item, {
     required BiliSession? session,
+    required PlayerAudioQualityPreference qualityPreference,
+    int? preferredQualityId,
   }) async {
     if (!item.hasIdentity) {
       throw const BiliPlayerException('Missing video identity for playback.');
@@ -88,39 +92,55 @@ class BiliPlayerRepository {
         if (item.bvid.isNotEmpty) 'bvid': item.bvid,
         if (item.aid > 0) 'avid': item.aid,
         'cid': pageInfo.cid,
-        'fnval': 16,
+        'fnval': 4048,
+        'fnver': 0,
         'qn': 80,
         'fourk': 1,
       },
       requiresWbi: true,
+      options: Options(headers: _buildPlayurlRequestHeaders(session)),
     );
 
     final Map<String, dynamic> data = _asMap(json['data']);
     final Map<String, dynamic> dash = _asMap(data['dash']);
-    final List<Map<String, dynamic>> audioList = _asListOfMaps(dash['audio']);
-    if (audioList.isEmpty) {
+    final Map<String, dynamic> flac = _asMapOrEmpty(dash['flac']);
+    final Map<String, dynamic> dolby = _asMapOrEmpty(dash['dolby']);
+    final List<_AudioStreamCandidate> audioCandidates = <_AudioStreamCandidate>[
+      ..._asListOfMaps(
+        dash['audio'],
+      ).map(_mapAudioStreamCandidate).whereType<_AudioStreamCandidate>(),
+      ..._readFlacAudioCandidate(flac),
+    ];
+    if (audioCandidates.isEmpty) {
       throw const BiliPlayerException(
         'No audio stream available for this video.',
       );
     }
 
-    audioList.sort((Map<String, dynamic> left, Map<String, dynamic> right) {
-      final int leftBandwidth = (left['bandwidth'] as num? ?? 0).toInt();
-      final int rightBandwidth = (right['bandwidth'] as num? ?? 0).toInt();
-      return rightBandwidth.compareTo(leftBandwidth);
-    });
+    audioCandidates.sort(
+      (_AudioStreamCandidate left, _AudioStreamCandidate right) =>
+          right.bandwidth.compareTo(left.bandwidth),
+    );
 
-    final Map<String, dynamic> selected = audioList.first;
-    final String streamUrl =
-        selected['baseUrl'] as String? ?? selected['base_url'] as String? ?? '';
-    if (streamUrl.isEmpty) {
-      throw const BiliPlayerException('Audio stream URL is missing.');
-    }
-
-    final List<String> backupUrls = <String>[
-      ..._asStringList(selected['backupUrl']),
-      ..._asStringList(selected['backup_url']),
-    ];
+    final _AudioStreamCandidate selected = _selectAudioCandidate(
+      audioCandidates,
+      qualityPreference: qualityPreference,
+      preferredQualityId: preferredQualityId,
+    );
+    final List<AudioQualityOption> availableQualities = audioCandidates
+        .map(
+          (_AudioStreamCandidate candidate) => AudioQualityOption(
+            qualityId: candidate.qualityId,
+            bandwidth: candidate.bandwidth,
+            label:
+                candidate.qualityLabel ?? _buildFallbackQualityLabel(candidate),
+            isSelected:
+                candidate.qualityId == selected.qualityId &&
+                candidate.bandwidth == selected.bandwidth &&
+                candidate.streamUrl == selected.streamUrl,
+          ),
+        )
+        .toList(growable: false);
 
     final int durationSeconds =
         (data['timelength'] as num? ?? 0).toInt() ~/ 1000;
@@ -129,15 +149,18 @@ class BiliPlayerRepository {
       item: viewInfo.enrich(item, pageInfo),
       availableParts: viewInfo.buildPlayableItems(item),
       audioStream: AudioStreamInfo(
-        streamUrl: streamUrl,
-        backupUrls: backupUrls,
+        streamUrl: selected.streamUrl,
+        backupUrls: selected.backupUrls,
         headers: _buildPlaybackHeaders(session),
         cid: pageInfo.cid,
         duration: durationSeconds > 0
             ? Duration(seconds: durationSeconds)
             : null,
+        bandwidth: selected.bandwidth,
+        availableQualities: availableQualities,
         pageTitle: pageInfo.part,
-        qualityLabel: _buildQualityLabel(selected),
+        qualityId: selected.qualityId,
+        qualityLabel: selected.qualityLabel,
       ),
     );
   }
@@ -219,8 +242,111 @@ class BiliPlayerRepository {
     };
   }
 
-  String? _buildQualityLabel(Map<String, dynamic> json) {
+  Map<String, String> _buildPlayurlRequestHeaders(BiliSession? session) {
+    if (session == null || session.cookie.isEmpty) {
+      return const <String, String>{};
+    }
+    return <String, String>{'Cookie': session.cookie};
+  }
+
+  _AudioStreamCandidate? _mapAudioStreamCandidate(Map<String, dynamic> json) {
+    final String streamUrl =
+        json['baseUrl'] as String? ?? json['base_url'] as String? ?? '';
+    if (streamUrl.isEmpty) {
+      return null;
+    }
+
+    final int qualityId = (json['id'] as num? ?? 0).toInt();
     final int bandwidth = (json['bandwidth'] as num? ?? 0).toInt();
+    final List<String> backupUrls = <String>[
+      ..._asStringList(json['backupUrl']),
+      ..._asStringList(json['backup_url']),
+    ];
+
+    return _AudioStreamCandidate(
+      qualityId: qualityId > 0 ? qualityId : null,
+      bandwidth: bandwidth,
+      streamUrl: streamUrl,
+      backupUrls: backupUrls,
+      qualityLabel: _buildQualityLabel(
+        qualityId: qualityId > 0 ? qualityId : null,
+        bandwidth: bandwidth,
+      ),
+    );
+  }
+
+  Iterable<_AudioStreamCandidate> _readFlacAudioCandidate(
+    Map<String, dynamic> flac,
+  ) sync* {
+    if (flac.isEmpty) {
+      return;
+    }
+
+    final Map<String, dynamic> flacAudio = _asMapOrEmpty(flac['audio']);
+    if (flacAudio.isEmpty) {
+      return;
+    }
+
+    final _AudioStreamCandidate? candidate = _mapAudioStreamCandidate(
+      flacAudio,
+    );
+    if (candidate != null) {
+      yield candidate;
+    }
+  }
+
+  _AudioStreamCandidate _selectAudioCandidate(
+    List<_AudioStreamCandidate> candidates, {
+    required PlayerAudioQualityPreference qualityPreference,
+    required int? preferredQualityId,
+  }) {
+    if (preferredQualityId != null) {
+      for (final _AudioStreamCandidate candidate in candidates) {
+        if (candidate.qualityId == preferredQualityId) {
+          return candidate;
+        }
+      }
+    }
+
+    final int? preferredQualityFromSetting = switch (qualityPreference) {
+      PlayerAudioQualityPreference.auto => null,
+      PlayerAudioQualityPreference.hires => 30251,
+      PlayerAudioQualityPreference.k192 => 30280,
+      PlayerAudioQualityPreference.k132 => 30232,
+    };
+    if (preferredQualityFromSetting == null) {
+      return candidates.first;
+    }
+
+    for (final _AudioStreamCandidate candidate in candidates) {
+      if (candidate.qualityId == preferredQualityFromSetting) {
+        return candidate;
+      }
+    }
+    return candidates.first;
+  }
+
+  String _buildFallbackQualityLabel(_AudioStreamCandidate candidate) {
+    return candidate.qualityLabel ??
+        '${(candidate.bandwidth / 1000).round()} kbps';
+  }
+
+  String? _buildQualityLabel({
+    required int? qualityId,
+    required int bandwidth,
+  }) {
+    switch (qualityId) {
+      case 30251:
+        return 'Hi-Res';
+      case 30280:
+        return '192K';
+      case 30232:
+        return '132K';
+      case 30216:
+        return '64K';
+      case 30250:
+        return '杜比';
+    }
     if (bandwidth <= 0) {
       return null;
     }
@@ -289,6 +415,22 @@ class PlayerLoadResult {
   final PlayableItem item;
   final List<PlayableItem> availableParts;
   final AudioStreamInfo audioStream;
+}
+
+class _AudioStreamCandidate {
+  const _AudioStreamCandidate({
+    required this.qualityId,
+    required this.bandwidth,
+    required this.streamUrl,
+    required this.backupUrls,
+    required this.qualityLabel,
+  });
+
+  final int? qualityId;
+  final int bandwidth;
+  final String streamUrl;
+  final List<String> backupUrls;
+  final String? qualityLabel;
 }
 
 class BiliPlayerException implements Exception {
