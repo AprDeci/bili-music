@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:math';
 
 import 'package:audio_service/audio_service.dart';
 import 'package:bilimusic/common/logger.dart';
@@ -13,6 +12,7 @@ import 'package:bilimusic/feature/player/domain/persisted_playback_queue.dart';
 import 'package:bilimusic/feature/player/domain/player_state.dart';
 import 'package:bilimusic/feature/player/logic/app_audio_handler.dart';
 import 'package:bilimusic/feature/player/logic/controller/player_playback_loader.dart';
+import 'package:bilimusic/feature/player/logic/controller/player_queue_manager.dart';
 import 'package:bilimusic/feature/player/logic/player_audio_engine.dart';
 import 'package:bilimusic/feature/player/logic/player_audio_quality_preference_logic.dart';
 import 'package:bilimusic/feature/player/logic/player_audio_session_coordinator.dart';
@@ -27,10 +27,7 @@ final NotifierProvider<PlayerController, PlayerState> playerControllerProvider =
 
 class PlayerController extends Notifier<PlayerState>
     implements PlayerCommandTarget {
-  PlayerController() : _random = Random();
-
   final AppLogger _logger = AppLogger('PlayerController');
-  final Random _random;
 
   late final PlayerQueueLocalRepository _queueRepository = ref.read(
     playerQueueLocalRepositoryProvider,
@@ -46,6 +43,7 @@ class PlayerController extends Notifier<PlayerState>
         ref.read(playerAudioQualityPreferenceLogicProvider),
     logEvent: _logPlayerEvent,
   );
+  late final PlayerQueueManager _queueManager = PlayerQueueManager();
   late final PlayerAudioSessionCoordinator _audioSessionCoordinator =
       PlayerAudioSessionCoordinator(
         audioEngine: _audioEngine,
@@ -62,7 +60,6 @@ class PlayerController extends Notifier<PlayerState>
   final Map<String, int?> _qualityOverrides = <String, int?>{};
   final List<StreamSubscription<dynamic>> _subscriptions =
       <StreamSubscription<dynamic>>[];
-  final List<int> _shuffleHistory = <int>[];
 
   bool _isBound = false;
   bool _isDisposed = false;
@@ -282,9 +279,7 @@ class PlayerController extends Notifier<PlayerState>
     final int resolvedIndex = startIndex.clamp(0, items.length - 1);
     final List<PlayableItem> queue = List<PlayableItem>.unmodifiable(items);
     _qualityOverrides.clear();
-    _shuffleHistory
-      ..clear()
-      ..add(resolvedIndex);
+    _queueManager.resetForQueue(currentIndex: resolvedIndex);
     state = state.copyWith(
       queue: queue,
       currentQueueIndex: resolvedIndex,
@@ -400,8 +395,12 @@ class PlayerController extends Notifier<PlayerState>
 
     final PlayableItem removedItem = state.queue[index];
     _qualityOverrides.remove(removedItem.stableId);
-    final List<PlayableItem> nextQueue = List<PlayableItem>.of(state.queue)
-      ..removeAt(index);
+    final QueueRemovalResult removal = _queueManager.removeAt(
+      queue: state.queue,
+      currentIndex: state.currentQueueIndex,
+      removedIndex: index,
+    );
+    final List<PlayableItem> nextQueue = removal.queue;
     _playbackLoader.removeResolvedEntryCachesForItem(removedItem);
 
     if (nextQueue.isEmpty) {
@@ -409,38 +408,28 @@ class PlayerController extends Notifier<PlayerState>
       return;
     }
 
-    int? nextCurrentIndex = state.currentQueueIndex;
-    if (nextCurrentIndex != null) {
-      if (index < nextCurrentIndex) {
-        nextCurrentIndex -= 1;
-      } else if (index == nextCurrentIndex) {
-        nextCurrentIndex = nextCurrentIndex >= nextQueue.length
-            ? nextQueue.length - 1
-            : nextCurrentIndex;
-      }
-    }
-
     final int generation = _nextGeneration();
     final int? previousCurrentIndex = state.currentQueueIndex;
+    final int? nextCurrentIndex = removal.nextCurrentIndex;
     state = state.copyWith(
       queue: List<PlayableItem>.unmodifiable(nextQueue),
       currentQueueIndex: nextCurrentIndex,
       currentItem: nextCurrentIndex == null
           ? null
           : nextQueue[nextCurrentIndex],
-      availableParts: index == previousCurrentIndex
+      availableParts: removal.removedCurrentItem
           ? const <PlayableItem>[]
           : state.availableParts,
-      audioStream: index == previousCurrentIndex ? null : state.audioStream,
-      duration: index == previousCurrentIndex ? null : state.duration,
-      position: index == previousCurrentIndex ? Duration.zero : state.position,
-      bufferedPosition: index == previousCurrentIndex
+      audioStream: removal.removedCurrentItem ? null : state.audioStream,
+      duration: removal.removedCurrentItem ? null : state.duration,
+      position: removal.removedCurrentItem ? Duration.zero : state.position,
+      bufferedPosition: removal.removedCurrentItem
           ? Duration.zero
           : state.bufferedPosition,
-      isReady: index == previousCurrentIndex ? false : state.isReady,
-      isPlaying: index == previousCurrentIndex ? false : state.isPlaying,
+      isReady: removal.removedCurrentItem ? false : state.isReady,
+      isPlaying: removal.removedCurrentItem ? false : state.isPlaying,
       isBuffering: false,
-      statusHint: index == previousCurrentIndex ? null : state.statusHint,
+      statusHint: removal.removedCurrentItem ? null : state.statusHint,
       errorMessage: null,
     );
     _publishMediaSession();
@@ -450,7 +439,7 @@ class PlayerController extends Notifier<PlayerState>
       return;
     }
 
-    if (index == previousCurrentIndex) {
+    if (removal.removedCurrentItem && previousCurrentIndex != null) {
       await _loadQueueIndex(
         nextCurrentIndex,
         autoplay: state.isPlaying,
@@ -465,7 +454,7 @@ class PlayerController extends Notifier<PlayerState>
 
   Future<void> clearQueue() async {
     _nextGeneration();
-    _shuffleHistory.clear();
+    _queueManager.resetForQueue(currentIndex: null);
     _qualityOverrides.clear();
     await _audioEngine.stop();
     state = state.copyWith(
@@ -496,7 +485,11 @@ class PlayerController extends Notifier<PlayerState>
       return;
     }
 
-    final int? targetIndex = _resolvePreviousQueueIndex();
+    final int? targetIndex = _queueManager.resolvePreviousIndex(
+      queue: state.queue,
+      currentIndex: state.currentQueueIndex,
+      mode: state.queueMode,
+    );
     if (targetIndex == null) {
       await seek(Duration.zero);
       return;
@@ -513,7 +506,11 @@ class PlayerController extends Notifier<PlayerState>
 
     _isAdvancingQueue = true;
     try {
-      final int? targetIndex = _resolveNextQueueIndex();
+      final int? targetIndex = _queueManager.resolveNextIndex(
+        queue: state.queue,
+        currentIndex: state.currentQueueIndex,
+        mode: state.queueMode,
+      );
       if (targetIndex == null) {
         state = state.copyWith(isPlaying: false, isBuffering: false);
         _publishMediaSession();
@@ -560,15 +557,10 @@ class PlayerController extends Notifier<PlayerState>
       PlayerQueueMode.singleRepeat => PlayerQueueMode.shuffle,
       PlayerQueueMode.shuffle => PlayerQueueMode.sequence,
     };
-    if (nextMode != PlayerQueueMode.shuffle) {
-      _shuffleHistory
-        ..clear()
-        ..addAll(
-          state.hasActiveQueueIndex
-              ? <int>[state.currentQueueIndex!]
-              : const <int>[],
-        );
-    }
+    _queueManager.resetForMode(
+      mode: nextMode,
+      currentIndex: state.currentQueueIndex,
+    );
     state = state.copyWith(queueMode: nextMode);
     _publishMediaSession();
     unawaited(_persistQueueSnapshot());
@@ -590,13 +582,10 @@ class PlayerController extends Notifier<PlayerState>
     }
 
     final int generation = _nextGeneration();
-    _shuffleHistory
-      ..clear()
-      ..addAll(
-        snapshot.queueMode == PlayerQueueMode.shuffle
-            ? <int>[restoredIndex]
-            : const <int>[],
-      );
+    _queueManager.resetForMode(
+      mode: snapshot.queueMode,
+      currentIndex: restoredIndex,
+    );
     state = state.copyWith(
       queue: List<PlayableItem>.unmodifiable(restoredQueue),
       currentQueueIndex: restoredIndex,
@@ -636,61 +625,6 @@ class PlayerController extends Notifier<PlayerState>
     state = state.copyWith(isPlaying: false, isBuffering: false);
     _publishMediaSession();
     await _persistQueueSnapshot();
-  }
-
-  int? _resolveNextQueueIndex() {
-    if (!state.hasActiveQueueIndex || state.queue.isEmpty) {
-      return null;
-    }
-
-    return switch (state.queueMode) {
-      PlayerQueueMode.singleRepeat => state.currentQueueIndex,
-      PlayerQueueMode.sequence => _wrapQueueIndex(
-        state.currentQueueIndex! + 1,
-        state.queue.length,
-      ),
-      PlayerQueueMode.shuffle => _pickRandomNextQueueIndex(),
-    };
-  }
-
-  int? _resolvePreviousQueueIndex() {
-    if (!state.hasActiveQueueIndex || state.queue.isEmpty) {
-      return null;
-    }
-
-    if (state.queueMode == PlayerQueueMode.singleRepeat) {
-      return state.currentQueueIndex;
-    }
-
-    if (state.queueMode == PlayerQueueMode.shuffle) {
-      if (_shuffleHistory.length >= 2) {
-        _shuffleHistory.removeLast();
-        return _shuffleHistory.last;
-      }
-      return state.currentQueueIndex;
-    }
-
-    if (state.queue.length == 1) {
-      return state.currentQueueIndex;
-    }
-    return _wrapQueueIndex(state.currentQueueIndex! - 1, state.queue.length);
-  }
-
-  int? _pickRandomNextQueueIndex() {
-    final int length = state.queue.length;
-    if (length == 0) {
-      return null;
-    }
-    if (length == 1) {
-      return state.currentQueueIndex;
-    }
-
-    final int currentIndex = state.currentQueueIndex ?? 0;
-    int nextIndex = currentIndex;
-    while (nextIndex == currentIndex) {
-      nextIndex = _random.nextInt(length);
-    }
-    return nextIndex;
   }
 
   Future<bool> _loadQueueIndex(
@@ -761,7 +695,7 @@ class PlayerController extends Notifier<PlayerState>
         entry: entry,
         durationOverride: loadedDuration,
       );
-      _recordQueueVisit(queueIndex);
+      _queueManager.recordVisit(mode: state.queueMode, index: queueIndex);
       if (autoplay) {
         unawaited(
           ref
@@ -833,15 +767,6 @@ class PlayerController extends Notifier<PlayerState>
       statusHint: null,
       errorMessage: null,
     );
-  }
-
-  void _recordQueueVisit(int index) {
-    if (state.queueMode != PlayerQueueMode.shuffle) {
-      return;
-    }
-    if (_shuffleHistory.isEmpty || _shuffleHistory.last != index) {
-      _shuffleHistory.add(index);
-    }
   }
 
   void _bindPlayerStreams() {
@@ -938,13 +863,6 @@ class PlayerController extends Notifier<PlayerState>
 
   bool _isCurrentGeneration(int generation) {
     return generation == _operationGeneration;
-  }
-
-  int _wrapQueueIndex(int value, int length) {
-    if (length <= 0) {
-      return 0;
-    }
-    return ((value % length) + length) % length;
   }
 
   Future<void> _persistQueueSnapshot() async {
