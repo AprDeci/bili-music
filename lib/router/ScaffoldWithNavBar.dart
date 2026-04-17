@@ -73,7 +73,9 @@ class _ScaffoldWithNavBarState extends ConsumerState<ScaffoldWithNavBar> {
     final ColorScheme colorScheme = theme.colorScheme;
     final PlayerState playerState = ref.watch(playerControllerProvider);
     final bool useGlassBar = ref.watch(appearanceSettingLogicProvider);
-    final bool isFavoritesPage = _isFavoritesPage(widget.currentLocation);
+    final bool usesCollapsedBottomChrome = _usesCollapsedBottomChrome(
+      widget.currentLocation,
+    );
     final double miniPlayerVisibleBottomPadding =
         BottomHeightHelper.miniPlayerBottomPaddingWithBottomBar(
           bottomInset: bottomInset,
@@ -86,13 +88,13 @@ class _ScaffoldWithNavBarState extends ConsumerState<ScaffoldWithNavBar> {
     final Widget content = _buildShellContent(
       context,
       playerState,
-      isFavoritesPage,
+      usesCollapsedBottomChrome,
       useGlassBar,
       miniPlayerVisibleBottomPadding,
       miniPlayerCollapsedBottomPadding,
     );
 
-    if (isFavoritesPage) {
+    if (usesCollapsedBottomChrome) {
       return Scaffold(body: content);
     }
 
@@ -105,15 +107,15 @@ class _ScaffoldWithNavBarState extends ConsumerState<ScaffoldWithNavBar> {
         duration: _animationDuration,
         width: screenWidth * 0.92,
         child: IgnorePointer(
-          ignoring: isFavoritesPage,
+          ignoring: usesCollapsedBottomChrome,
           child: AnimatedOpacity(
             duration: _animationDuration,
             curve: _animationCurve,
-            opacity: isFavoritesPage ? 0 : 1,
+            opacity: usesCollapsedBottomChrome ? 0 : 1,
             child: AnimatedSlide(
               duration: _animationDuration,
               curve: _animationCurve,
-              offset: isFavoritesPage
+              offset: usesCollapsedBottomChrome
                   ? const Offset(0, _navHiddenSlideOffset)
                   : Offset.zero,
               child: useGlassBar
@@ -228,7 +230,7 @@ class _ScaffoldWithNavBarState extends ConsumerState<ScaffoldWithNavBar> {
   Widget _buildShellContent(
     BuildContext context,
     PlayerState playerState,
-    bool isFavoritesPage,
+    bool usesCollapsedBottomChrome,
     bool useGlassBar,
     double miniPlayerVisibleBottomPadding,
     double miniPlayerCollapsedBottomPadding,
@@ -249,11 +251,13 @@ class _ScaffoldWithNavBarState extends ConsumerState<ScaffoldWithNavBar> {
               child: AnimatedSlide(
                 duration: _animationDuration,
                 curve: _animationCurve,
-                offset: isFavoritesPage ? const Offset(0, 0.12) : Offset.zero,
+                offset: usesCollapsedBottomChrome
+                    ? const Offset(0, 0.12)
+                    : Offset.zero,
                 child: useGlassBar
                     ? MiniPlayerGlassBar(
                         state: playerState,
-                        bottomPadding: isFavoritesPage
+                        bottomPadding: usesCollapsedBottomChrome
                             ? miniPlayerCollapsedBottomPadding
                             : miniPlayerVisibleBottomPadding,
                         onTap: () => openPlayerPage(context),
@@ -265,7 +269,7 @@ class _ScaffoldWithNavBarState extends ConsumerState<ScaffoldWithNavBar> {
                       )
                     : MiniPlayerBar(
                         state: playerState,
-                        bottomPadding: isFavoritesPage
+                        bottomPadding: usesCollapsedBottomChrome
                             ? miniPlayerCollapsedBottomPadding
                             : miniPlayerVisibleBottomPadding,
                         onTap: () => openPlayerPage(context),
@@ -283,7 +287,7 @@ class _ScaffoldWithNavBarState extends ConsumerState<ScaffoldWithNavBar> {
     );
   }
 
-  bool _isFavoritesPage(String location) {
+  bool _usesCollapsedBottomChrome(String location) {
     return location == '/profile/favorites' ||
         location.startsWith('/profile/favorites/') ||
         location == '/search';
