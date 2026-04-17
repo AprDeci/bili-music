@@ -52,7 +52,6 @@ class PlayerMainPage extends ConsumerWidget {
     final MediaQueryData mediaQuery = MediaQuery.of(context);
     final Size screenSize = mediaQuery.size;
     final bool canOpenPartSelector = item != null && availableParts.length > 1;
-    final bool showStatusHint = state.statusHint != null;
     final double artworkSize = (screenSize.height * 0.31).clamp(190.0, 320.0);
     final AsyncValue<PlayerOnlineAudience?> onlineAudienceAsync = ref.watch(
       playerOnlineAudienceControllerProvider,
@@ -97,8 +96,8 @@ class PlayerMainPage extends ConsumerWidget {
         Column(
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
-            if (showStatusHint || true) PlayerPlaybackStatusChip(state: state),
-            if (showStatusHint) const SizedBox(height: 12),
+            PlayerPlaybackStatusChip(state: state),
+            if (state.statusHint != null) const SizedBox(height: 12),
             _PlayerToolBar(
               state: state,
               hasItem: item != null,
