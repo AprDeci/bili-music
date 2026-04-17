@@ -31,7 +31,7 @@ class MiniPlayerBar extends StatelessWidget {
           child: Ink(
             decoration: BoxDecoration(
               color: colorScheme.surface.withValues(alpha: 0.8),
-              borderRadius: BorderRadius.circular(26),
+              borderRadius: BorderRadius.circular(24),
               border: Border.all(
                 color: colorScheme.primary.withValues(alpha: 0.10),
               ),
@@ -39,6 +39,7 @@ class MiniPlayerBar extends StatelessWidget {
             child: MiniPlayerContent(
               state: state,
               onTogglePlayback: onTogglePlayback,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
             ),
           ),
         ),
