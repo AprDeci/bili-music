@@ -5,9 +5,9 @@ import 'package:bilimusic/core/bili/session/bili_session.dart';
 import 'package:bilimusic/core/net/net_config.dart';
 import 'package:dio/dio.dart';
 import 'package:bilimusic/feature/player/domain/audio_stream_info.dart';
+import 'package:bilimusic/feature/player/domain/player_audio_quality_preference.dart';
 import 'package:bilimusic/feature/player/domain/playable_item.dart';
 import 'package:bilimusic/feature/player/domain/player_online_audience.dart';
-import 'package:bilimusic/feature/player/logic/player_audio_quality_preference_logic.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 final Provider<BiliPlayerRepository> biliPlayerRepositoryProvider =
