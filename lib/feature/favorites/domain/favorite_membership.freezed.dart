@@ -11,6 +11,7 @@ part of 'favorite_membership.dart';
 
 // dart format off
 T _$identity<T>(T value) => value;
+
 /// @nodoc
 mixin _$FavoriteMembership {
 
@@ -21,6 +22,8 @@ mixin _$FavoriteMembership {
 @pragma('vm:prefer-inline')
 $FavoriteMembershipCopyWith<FavoriteMembership> get copyWith => _$FavoriteMembershipCopyWithImpl<FavoriteMembership>(this as FavoriteMembership, _$identity);
 
+  /// Serializes this FavoriteMembership to a JSON map.
+  Map<String, dynamic> toJson();
 
 
 @override
@@ -28,7 +31,7 @@ bool operator ==(Object other) {
   return identical(this, other) || (other.runtimeType == runtimeType&&other is FavoriteMembership&&(identical(other.id, id) || other.id == id)&&(identical(other.collectionId, collectionId) || other.collectionId == collectionId)&&(identical(other.itemId, itemId) || other.itemId == itemId)&&(identical(other.addedAt, addedAt) || other.addedAt == addedAt));
 }
 
-
+@JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode => Object.hash(runtimeType,id,collectionId,itemId,addedAt);
 
@@ -206,11 +209,11 @@ return $default(_that.id,_that.collectionId,_that.itemId,_that.addedAt);case _:
 }
 
 /// @nodoc
-
+@JsonSerializable()
 
 class _FavoriteMembership extends FavoriteMembership {
   const _FavoriteMembership({required this.id, required this.collectionId, required this.itemId, required this.addedAt}): super._();
-  
+  factory _FavoriteMembership.fromJson(Map<String, dynamic> json) => _$FavoriteMembershipFromJson(json);
 
 @override final  String id;
 @override final  String collectionId;
@@ -223,14 +226,17 @@ class _FavoriteMembership extends FavoriteMembership {
 @pragma('vm:prefer-inline')
 _$FavoriteMembershipCopyWith<_FavoriteMembership> get copyWith => __$FavoriteMembershipCopyWithImpl<_FavoriteMembership>(this, _$identity);
 
-
+@override
+Map<String, dynamic> toJson() {
+  return _$FavoriteMembershipToJson(this, );
+}
 
 @override
 bool operator ==(Object other) {
   return identical(this, other) || (other.runtimeType == runtimeType&&other is _FavoriteMembership&&(identical(other.id, id) || other.id == id)&&(identical(other.collectionId, collectionId) || other.collectionId == collectionId)&&(identical(other.itemId, itemId) || other.itemId == itemId)&&(identical(other.addedAt, addedAt) || other.addedAt == addedAt));
 }
 
-
+@JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode => Object.hash(runtimeType,id,collectionId,itemId,addedAt);
 

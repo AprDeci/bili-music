@@ -1,13 +1,16 @@
 import 'package:bilimusic/common/bottom_height_helper.dart';
-import 'package:bilimusic/common/components/cachedImage.dart';
+import 'package:bilimusic/common/components/cached_image.dart';
 import 'package:bilimusic/common/util/player_util.dart';
+import 'package:bilimusic/common/util/toast_util.dart';
 import 'package:bilimusic/feature/favorites/logic/favorites_controller.dart';
 import 'package:bilimusic/feature/player/data/bili_player_repository.dart';
 import 'package:bilimusic/feature/player/domain/playable_item.dart';
 import 'package:bilimusic/feature/player/logic/player_controller.dart';
 import 'package:bilimusic/feature/search/domain/search_state.dart';
 import 'package:bilimusic/feature/search/domain/search_result_item.dart';
+import 'package:bilimusic/feature/search/domain/search_sort.dart';
 import 'package:bilimusic/feature/search/logic/search_controller.dart';
+import 'package:bilimusic/feature/search/ui/components/highlight_text.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -93,6 +96,10 @@ class _SearchPageState extends ConsumerState<SearchPage> {
     final double bottomSpacing = BottomHeightHelper.overlayPageBottomSpacing(
       context,
     );
+    final String trimmedQuery = state.query.trim();
+    final String trimmedSubmittedQuery = state.submittedQuery?.trim() ?? '';
+    final bool isShowingSuggestions =
+        trimmedQuery.isNotEmpty && trimmedQuery != trimmedSubmittedQuery;
 
     if (_controller.text != state.query) {
       _controller.value = TextEditingValue(
@@ -166,115 +173,275 @@ class _SearchPageState extends ConsumerState<SearchPage> {
               ),
             ),
             Expanded(
-              child: ListView(
-                controller: _scrollController,
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
+              child: Stack(
                 children: <Widget>[
-                  if (state.recentKeywords.isNotEmpty &&
-                      state.submittedQuery == null) ...<Widget>[
-                    Row(
-                      children: <Widget>[
-                        Text(
-                          '搜索历史',
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w700,
-                          ),
+                  ListView(
+                    controller: _scrollController,
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
+                    children: <Widget>[
+                      if (!isShowingSuggestions &&
+                          state.recentKeywords.isNotEmpty &&
+                          state.submittedQuery == null) ...<Widget>[
+                        Row(
+                          children: <Widget>[
+                            Text(
+                              '搜索历史',
+                              style: theme.textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            const Spacer(),
+                            TextButton(
+                              onPressed: controller.clearHistory,
+                              child: const Text('清空'),
+                            ),
+                          ],
                         ),
-                        const Spacer(),
-                        TextButton(
-                          onPressed: controller.clearHistory,
-                          child: const Text('清空'),
+                        const SizedBox(height: 12),
+                        Wrap(
+                          spacing: 10,
+                          runSpacing: 10,
+                          children: state.recentKeywords.map((String item) {
+                            return ActionChip(
+                              label: Text(item),
+                              backgroundColor:
+                                  colorScheme.surfaceContainerLowest,
+                              side: BorderSide(
+                                color: colorScheme.outlineVariant,
+                              ),
+                              labelStyle: theme.textTheme.bodyMedium?.copyWith(
+                                color: colorScheme.onSurface,
+                                fontWeight: FontWeight.w600,
+                              ),
+                              onPressed: () {
+                                _selectKeyword(controller, item);
+                              },
+                            );
+                          }).toList(),
                         ),
+                        const SizedBox(height: 24),
                       ],
-                    ),
-                    const SizedBox(height: 12),
-                    Wrap(
-                      spacing: 10,
-                      runSpacing: 10,
-                      children: state.recentKeywords.map((String item) {
-                        return ActionChip(
-                          label: Text(item),
-                          backgroundColor: colorScheme.surfaceContainerLowest,
-                          side: BorderSide(color: colorScheme.outlineVariant),
-                          labelStyle: theme.textTheme.bodyMedium?.copyWith(
-                            color: colorScheme.onSurface,
-                            fontWeight: FontWeight.w600,
-                          ),
-                          onPressed: () {
-                            _selectKeyword(controller, item);
-                          },
-                        );
-                      }).toList(),
-                    ),
-                    const SizedBox(height: 24),
-                  ],
-                  if (state.submittedQuery != null &&
-                      state.submittedQuery!.isNotEmpty)
-                    Row(
-                      children: <Widget>[
-                        Text(
-                          '搜索结果',
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w700,
-                          ),
+                      if (state.submittedQuery != null &&
+                          state.submittedQuery!.isNotEmpty)
+                        Row(
+                          children: <Widget>[
+                            Text(
+                              '搜索结果',
+                              style: theme.textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            PopupMenuButton<SearchSort>(
+                              tooltip: '切换排序',
+                              onSelected: (SearchSort sort) async {
+                                await controller.changeSort(sort);
+                                if (!mounted || !_scrollController.hasClients) {
+                                  return;
+                                }
+
+                                await _scrollController.animateTo(
+                                  0,
+                                  duration: const Duration(milliseconds: 250),
+                                  curve: Curves.easeOut,
+                                );
+                              },
+                              itemBuilder: (BuildContext context) {
+                                return SearchSort.values.map((SearchSort sort) {
+                                  return PopupMenuItem<SearchSort>(
+                                    value: sort,
+                                    child: Text(
+                                      sort.label,
+                                      style: theme.textTheme.bodyMedium
+                                          ?.copyWith(
+                                            fontWeight: state.sort == sort
+                                                ? FontWeight.w700
+                                                : FontWeight.w500,
+                                          ),
+                                    ),
+                                  );
+                                }).toList();
+                              },
+                              child: Text(
+                                state.sort.label,
+                                style: theme.textTheme.bodyMedium?.copyWith(
+                                  color: colorScheme.primary,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ),
+                            const Spacer(),
+                            Text(
+                              '${state.results.length} 条',
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: colorScheme.onSurfaceVariant,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
                         ),
-                        const Spacer(),
-                        Text(
-                          '${state.results.length} 条',
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: colorScheme.onSurfaceVariant,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
-                    ),
-                  const SizedBox(height: 12),
-                  _SearchResultSection(
-                    submittedQuery: state.submittedQuery,
-                    results: state.results,
-                    isLoading: state.isLoading,
-                    isLoadingMore: state.isLoadingMore,
-                    hasMore: state.hasMore,
-                    errorMessage: state.errorMessage,
-                    loadMoreErrorMessage: state.loadMoreErrorMessage,
-                    onRetryLoadMore: controller.loadNextPage,
-                    onPlayItem: (SearchResultItem item) async {
-                      await PlayerUtil.playItemAndOpenPlayer(
-                        context,
-                        ref,
-                        item: item.toPlayableItem(),
-                        sourceLabel: '搜索结果',
-                      );
-                    },
-                    onPlayNext: (SearchResultItem item) async {
-                      final PlayableItem resolvedItem = await ref
-                          .read(biliPlayerRepositoryProvider)
-                          .resolvePreferredPart(
-                            item.toPlayableItem(),
-                            preferredPage: 1,
+                      const SizedBox(height: 12),
+                      _SearchResultSection(
+                        submittedQuery: state.submittedQuery,
+                        results: state.results,
+                        isLoading: state.isLoading,
+                        isLoadingMore: state.isLoadingMore,
+                        hasMore: state.hasMore,
+                        errorMessage: state.errorMessage,
+                        loadMoreErrorMessage: state.loadMoreErrorMessage,
+                        onRetryLoadMore: controller.loadNextPage,
+                        onPlayItem: (SearchResultItem item) async {
+                          await PlayerUtil.playItemAndOpenPlayer(
+                            context,
+                            ref,
+                            item: item.toPlayableItem(),
+                            sourceLabel: '搜索结果',
                           );
-                      await ref
-                          .read(playerControllerProvider.notifier)
-                          .playNext(resolvedItem);
-                    },
-                    onEnqueue: (SearchResultItem item) async {
-                      final PlayableItem resolvedItem = await ref
-                          .read(biliPlayerRepositoryProvider)
-                          .resolvePreferredPart(
-                            item.toPlayableItem(),
-                            preferredPage: 1,
-                          );
-                      await ref.read(playerControllerProvider.notifier).enqueue(
-                        <PlayableItem>[resolvedItem],
-                      );
-                    },
+                        },
+                        onPlayNext: (SearchResultItem item) async {
+                          final PlayableItem resolvedItem = await ref
+                              .read(biliPlayerRepositoryProvider)
+                              .resolvePreferredPart(
+                                item.toPlayableItem(),
+                                preferredPage: 1,
+                              );
+                          await ref
+                              .read(playerControllerProvider.notifier)
+                              .playNext(resolvedItem);
+                        },
+                        onEnqueue: (SearchResultItem item) async {
+                          final PlayableItem resolvedItem = await ref
+                              .read(biliPlayerRepositoryProvider)
+                              .resolvePreferredPart(
+                                item.toPlayableItem(),
+                                preferredPage: 1,
+                              );
+                          await ref
+                              .read(playerControllerProvider.notifier)
+                              .enqueue(<PlayableItem>[resolvedItem]);
+                        },
+                      ),
+                      SizedBox(height: bottomSpacing),
+                    ],
                   ),
-                  SizedBox(height: bottomSpacing),
+                  if (isShowingSuggestions)
+                    Positioned.fill(
+                      child: _SearchSuggestionOverlay(
+                        query: trimmedQuery,
+                        suggestions: state.suggestions,
+                        isLoadingSuggestions: state.isLoadingSuggestions,
+                        onSelectSuggestion: (String value) {
+                          _selectKeyword(controller, value);
+                        },
+                      ),
+                    ),
                 ],
               ),
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _SearchSuggestionOverlay extends StatelessWidget {
+  const _SearchSuggestionOverlay({
+    required this.suggestions,
+    required this.isLoadingSuggestions,
+    required this.query,
+    required this.onSelectSuggestion,
+  });
+
+  final List<String> suggestions;
+  final bool isLoadingSuggestions;
+  final String query;
+  final ValueChanged<String> onSelectSuggestion;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+
+    return ColoredBox(
+      color: colorScheme.surfaceContainerLowest,
+      child: Column(
+        children: <Widget>[
+          if (isLoadingSuggestions && suggestions.isEmpty)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 12, 20, 8),
+              child: Row(
+                children: <Widget>[
+                  SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: colorScheme.primary,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Text(
+                    '正在获取联想词',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          Expanded(
+            child: ListView.separated(
+              padding: const EdgeInsets.only(bottom: 16),
+              itemCount: suggestions.length,
+              separatorBuilder: (BuildContext context, int index) {
+                return Divider(
+                  height: 1,
+                  indent: 14,
+                  endIndent: 16,
+                  color: colorScheme.outlineVariant.withValues(alpha: 0.6),
+                );
+              },
+              itemBuilder: (BuildContext context, int index) {
+                final String suggestion = suggestions[index];
+                return Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: () => onSelectSuggestion(suggestion),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 14,
+                      ),
+                      child: Row(
+                        children: <Widget>[
+                          Expanded(
+                            child: HighlightText(
+                              text: suggestion,
+                              highlight: query,
+                              normalStyle: theme.textTheme.bodyMedium!.copyWith(
+                                fontWeight: FontWeight.w600,
+                                fontSize: 13,
+                                color: colorScheme.onSurface,
+                              ),
+                              highlightStyle: theme.textTheme.bodyMedium!
+                                  .copyWith(
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 13,
+                                    color: colorScheme.primary,
+                                  ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -319,7 +486,7 @@ class _SearchResultSection extends StatelessWidget {
         decoration: BoxDecoration(borderRadius: BorderRadius.circular(24)),
         child: Column(
           children: <Widget>[
-            Container(
+            SizedBox(
               width: 56,
               height: 56,
               child: Icon(
@@ -547,8 +714,6 @@ class _SearchResultSection extends StatelessWidget {
                           children: <Widget>[
                             InkResponse(
                               onTap: () async {
-                                final ScaffoldMessengerState messenger =
-                                    ScaffoldMessenger.of(context);
                                 try {
                                   final resolvedItem = await ref
                                       .read(biliPlayerRepositoryProvider)
@@ -562,23 +727,13 @@ class _SearchResultSection extends StatelessWidget {
                                       )
                                       .toggleLiked(resolvedItem);
                                   if (context.mounted) {
-                                    messenger
-                                      ..hideCurrentSnackBar()
-                                      ..showSnackBar(
-                                        SnackBar(
-                                          content: Text(
-                                            liked ? '已收藏 P1' : '已从“我喜欢”移除',
-                                          ),
-                                        ),
-                                      );
+                                    ToastUtil.show(
+                                      liked ? '已收藏 P1' : '已从“我喜欢”移除',
+                                    );
                                   }
                                 } on Object catch (error) {
                                   if (context.mounted) {
-                                    messenger
-                                      ..hideCurrentSnackBar()
-                                      ..showSnackBar(
-                                        SnackBar(content: Text('收藏失败: $error')),
-                                      );
+                                    ToastUtil.show('收藏失败: $error');
                                   }
                                 }
                               },
@@ -606,40 +761,22 @@ class _SearchResultSection extends StatelessWidget {
                               tooltip: '队列操作',
                               padding: EdgeInsets.zero,
                               onSelected: (_SearchQueueAction action) async {
-                                final ScaffoldMessengerState messenger =
-                                    ScaffoldMessenger.of(context);
                                 try {
                                   switch (action) {
                                     case _SearchQueueAction.playNext:
                                       await onPlayNext(item);
                                       if (context.mounted) {
-                                        messenger
-                                          ..hideCurrentSnackBar()
-                                          ..showSnackBar(
-                                            const SnackBar(
-                                              content: Text('已加入下一首'),
-                                            ),
-                                          );
+                                        ToastUtil.show('已加入下一首');
                                       }
                                     case _SearchQueueAction.enqueue:
                                       await onEnqueue(item);
                                       if (context.mounted) {
-                                        messenger
-                                          ..hideCurrentSnackBar()
-                                          ..showSnackBar(
-                                            const SnackBar(
-                                              content: Text('已加入播放队列'),
-                                            ),
-                                          );
+                                        ToastUtil.show('已加入播放队列');
                                       }
                                   }
                                 } on Object catch (error) {
                                   if (context.mounted) {
-                                    messenger
-                                      ..hideCurrentSnackBar()
-                                      ..showSnackBar(
-                                        SnackBar(content: Text('操作失败: $error')),
-                                      );
+                                    ToastUtil.show('操作失败: $error');
                                   }
                                 }
                               },

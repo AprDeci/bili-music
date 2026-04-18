@@ -1,6 +1,7 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 
 part 'favorite_collection.freezed.dart';
+part 'favorite_collection.g.dart';
 
 @freezed
 abstract class FavoriteCollection with _$FavoriteCollection {
@@ -13,6 +14,9 @@ abstract class FavoriteCollection with _$FavoriteCollection {
     required DateTime createdAt,
     required DateTime updatedAt,
   }) = _FavoriteCollection;
+
+  factory FavoriteCollection.fromJson(Map<String, dynamic> json) =>
+      _$FavoriteCollectionFromJson(json);
 
   static const String likedCollectionId = 'liked';
 

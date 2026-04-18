@@ -1,3 +1,4 @@
+import 'package:bilimusic/common/util/toast_util.dart';
 import 'package:bilimusic/feature/comment/domain/comment_target.dart';
 import 'package:bilimusic/feature/favorites/logic/favorites_controller.dart';
 import 'package:bilimusic/feature/player/domain/playable_item.dart';
@@ -14,6 +15,7 @@ import 'package:bilimusic/router/player_navigation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class PlayerPage extends ConsumerStatefulWidget {
   const PlayerPage({super.key, this.initialItem});
@@ -109,7 +111,9 @@ class _PlayerPageState extends ConsumerState<PlayerPage> {
                       PlayerTopBar(
                         currentPage: _currentPage,
                         onBack: () => Navigator.of(context).maybePop(),
-                        onMore: item == null ? null : null,
+                        onOpenInBrowser: item == null
+                            ? null
+                            : () => _openInBrowser(item),
                       ),
                       const SizedBox(height: 18),
                       Expanded(
@@ -201,11 +205,7 @@ class _PlayerPageState extends ConsumerState<PlayerPage> {
     if (!mounted) {
       return;
     }
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
-        SnackBar(content: Text(isLiked ? '已加入“我喜欢”' : '已从“我喜欢”移除')),
-      );
+    ToastUtil.show(isLiked ? '已加入“我喜欢”' : '已从“我喜欢”移除');
   }
 
   Future<void> _openComments(PlayableItem item) async {
@@ -220,5 +220,16 @@ class _PlayerPageState extends ConsumerState<PlayerPage> {
       coverUrl: item.coverUrl,
     );
     await context.push('/comments', extra: target);
+  }
+}
+
+Future<void> _openInBrowser(PlayableItem item) async {
+  if (item.aid <= 0) {
+    return;
+  }
+  try {
+    await launchUrl(Uri.parse('bilibili://video/${item.bvid}'));
+  } catch (e) {
+    await launchUrl(Uri.parse('https://www.bilibili.com/video/${item.bvid}'));
   }
 }

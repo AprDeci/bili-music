@@ -15,10 +15,12 @@ class AboutSettingsPage extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(title: const Text('关于')),
       body: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
+            const AboutHero(),
+            const SizedBox(height: 24),
             FutureBuilder<PackageInfo>(
               future: PackageInfo.fromPlatform(),
               builder:
@@ -70,6 +72,31 @@ class AboutSettingsPage extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+class AboutHero extends StatelessWidget {
+  const AboutHero({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    return Column(
+      children: [
+        SizedBox(
+          width: 100,
+          height: 100,
+          child: Image.asset('assets/icons/icon2.png'),
+        ),
+        const SizedBox(height: 24),
+        Text(
+          'Bili-Music',
+          style: theme.textTheme.titleMedium?.copyWith(fontSize: 24),
+        ),
+        const SizedBox(height: 8),
+        Text('Bilibili 音乐播放器', style: theme.textTheme.bodySmall),
+      ],
     );
   }
 }

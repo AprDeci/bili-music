@@ -1,123 +1,103 @@
 import 'dart:math';
 
-import 'package:bilimusic/common/bottom_height_helper.dart';
-import 'package:bilimusic/common/components/cachedImage.dart';
+import 'package:bilimusic/common/components/cached_image.dart';
 import 'package:bilimusic/feature/player/domain/player_state.dart';
 import 'package:flutter/material.dart';
 
-class MiniPlayerBar extends StatelessWidget {
-  const MiniPlayerBar({
+class MiniPlayerContent extends StatelessWidget {
+  const MiniPlayerContent({
     super.key,
     required this.state,
-    required this.onTap,
     required this.onTogglePlayback,
-    this.bottomPadding = BottomHeightHelper.miniPlayerCollapsedBottomPadding,
+    this.padding = const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
   });
 
   final PlayerState state;
-  final VoidCallback onTap;
   final VoidCallback onTogglePlayback;
-  final double bottomPadding;
+  final EdgeInsets padding;
 
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
-    final String subtitle = _buildSubtitle(state);
-    final double progress = _buildProgress(state);
+    final String subtitle = buildMiniPlayerSubtitle(state);
+    final double progress = buildMiniPlayerProgress(state);
 
     return Padding(
-      padding: EdgeInsets.fromLTRB(20, 0, 20, bottomPadding),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(26),
-          onTap: onTap,
-          child: Ink(
-            decoration: BoxDecoration(
-              color: colorScheme.surface.withValues(alpha: 0.8),
-              borderRadius: BorderRadius.circular(26),
-              border: Border.all(
-                color: colorScheme.primary.withValues(alpha: 0.10),
-              ),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              child: Row(
-                children: <Widget>[
-                  _Artwork(
-                    coverUrl: state.currentItem?.coverUrl ?? '',
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: <Widget>[
-                        Text(
-                          state.currentItem?.title ?? '未选择播放内容',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: theme.textTheme.titleSmall?.copyWith(
-                            color: colorScheme.onSurface,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          subtitle,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  _PlaybackButton(
-                    progress: progress,
-                    isPlaying: state.isPlaying,
-                    onPressed: onTogglePlayback,
-                  ),
-                ],
-              ),
+      padding: padding,
+      child: Row(
+        children: <Widget>[
+          Hero(
+            tag: 'artwork',
+            child: MiniPlayerArtwork(
+              coverUrl: state.currentItem?.coverUrl ?? '',
             ),
           ),
-        ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                Text(
+                  state.currentItem?.title ?? '未选择播放内容',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    color: colorScheme.onSurface,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  subtitle,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          MiniPlayerPlaybackButton(
+            progress: progress,
+            isPlaying: state.isPlaying,
+            onPressed: onTogglePlayback,
+          ),
+        ],
       ),
-    );
-  }
-
-  String _buildSubtitle(PlayerState state) {
-    return switch (state.statusHint) {
-      PlayerStatusHint.resolvingAudio => '正在解析音频...',
-      PlayerStatusHint.connectingStream => '正在连接播放流...',
-      PlayerStatusHint.loadingCache => '正在加载缓存音频...',
-      PlayerStatusHint.buffering => '缓冲中...',
-      PlayerStatusHint.error => state.errorMessage ?? '播放失败，请稍后重试',
-      null =>
-        state.audioStream?.qualityLabel ?? state.currentItem?.author ?? '',
-    };
-  }
-
-  double _buildProgress(PlayerState state) {
-    final Duration? duration = state.duration;
-
-    if (duration == null || duration <= Duration.zero) {
-      return 0;
-    }
-
-    return (state.position.inMilliseconds / duration.inMilliseconds).clamp(
-      0.0,
-      1.0,
     );
   }
 }
 
-class _Artwork extends StatelessWidget {
-  const _Artwork({required this.coverUrl});
+String buildMiniPlayerSubtitle(PlayerState state) {
+  return switch (state.statusHint) {
+    PlayerStatusHint.resolvingAudio => '正在解析音频...',
+    PlayerStatusHint.connectingStream => '正在连接播放流...',
+    PlayerStatusHint.loadingCache => '正在加载缓存音频...',
+    PlayerStatusHint.buffering => '缓冲中...',
+    PlayerStatusHint.error => state.errorMessage ?? '播放失败，请稍后重试',
+    null => state.audioStream?.qualityLabel ?? state.currentItem?.author ?? '',
+  };
+}
+
+double buildMiniPlayerProgress(PlayerState state) {
+  final Duration? duration = state.duration;
+
+  if (duration == null || duration <= Duration.zero) {
+    return 0;
+  }
+
+  return (state.position.inMilliseconds / duration.inMilliseconds).clamp(
+    0.0,
+    1.0,
+  );
+}
+
+class MiniPlayerArtwork extends StatelessWidget {
+  const MiniPlayerArtwork({super.key, required this.coverUrl});
 
   static const double _outerSize = 52;
   static const double _imageSize = 48;
@@ -158,8 +138,9 @@ class _Artwork extends StatelessWidget {
   }
 }
 
-class _PlaybackButton extends StatelessWidget {
-  const _PlaybackButton({
+class MiniPlayerPlaybackButton extends StatelessWidget {
+  const MiniPlayerPlaybackButton({
+    super.key,
     required this.progress,
     required this.isPlaying,
     required this.onPressed,
@@ -185,7 +166,7 @@ class _PlaybackButton extends StatelessWidget {
         children: <Widget>[
           CustomPaint(
             size: const Size(_size - 8, _size - 8),
-            painter: _PlaybackProgressPainter(
+            painter: MiniPlayerPlaybackProgressPainter(
               progress: progress,
               trackColor: colorScheme.primary.withValues(alpha: 0.14),
               progressColor: colorScheme.primary,
@@ -195,7 +176,6 @@ class _PlaybackButton extends StatelessWidget {
             onPressed: onPressed,
             style: IconButton.styleFrom(
               minimumSize: const Size(_size - 8, _size - 8),
-              // backgroundColor: colorScheme.primary.withValues(alpha: 0.12),
               foregroundColor: colorScheme.primary,
               padding: EdgeInsets.zero,
             ),
@@ -210,8 +190,8 @@ class _PlaybackButton extends StatelessWidget {
   }
 }
 
-class _PlaybackProgressPainter extends CustomPainter {
-  const _PlaybackProgressPainter({
+class MiniPlayerPlaybackProgressPainter extends CustomPainter {
+  const MiniPlayerPlaybackProgressPainter({
     required this.progress,
     required this.trackColor,
     required this.progressColor,
@@ -257,7 +237,7 @@ class _PlaybackProgressPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant _PlaybackProgressPainter oldDelegate) {
+  bool shouldRepaint(covariant MiniPlayerPlaybackProgressPainter oldDelegate) {
     return oldDelegate.progress != progress ||
         oldDelegate.trackColor != trackColor ||
         oldDelegate.progressColor != progressColor;

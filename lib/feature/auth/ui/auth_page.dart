@@ -2,6 +2,7 @@ import 'dart:io';
 import 'dart:ui' as ui;
 import 'dart:typed_data';
 
+import 'package:bilimusic/common/util/toast_util.dart';
 import 'package:bilimusic/feature/auth/domain/bili_auth_models.dart';
 import 'package:bilimusic/feature/auth/logic/bili_auth_controller.dart';
 import 'package:flutter/material.dart';
@@ -41,9 +42,7 @@ class _AuthPageState extends ConsumerState<AuthPage> {
         if (!mounted) {
           return;
         }
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('登录成功')));
+        ToastUtil.show('登录成功');
         if (context.canPop()) {
           context.pop();
         }
@@ -82,24 +81,6 @@ class _AuthPageState extends ConsumerState<AuthPage> {
               constraints: const BoxConstraints(maxWidth: 460),
               child: Container(
                 padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: <Color>[
-                      colorScheme.surfaceContainerLowest,
-                      colorScheme.surfaceContainerLow,
-                    ],
-                  ),
-                  borderRadius: BorderRadius.circular(28),
-                  boxShadow: <BoxShadow>[
-                    BoxShadow(
-                      color: colorScheme.shadow.withValues(alpha: 0.08),
-                      blurRadius: 30,
-                      offset: Offset(0, 16),
-                    ),
-                  ],
-                ),
                 child: _AuthContent(
                   state: authState,
                   onStart: controller.startQrLogin,
@@ -163,7 +144,7 @@ class _AuthContent extends StatelessWidget {
             foregroundColor: Colors.white,
             padding: const EdgeInsets.symmetric(vertical: 18),
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(18),
+              borderRadius: BorderRadius.circular(8),
             ),
           ),
           child: Text(
@@ -261,12 +242,9 @@ class _QrCard extends StatelessWidget {
   final String qrUrl;
 
   Future<void> _saveQrImage(BuildContext context) async {
-    final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
     try {
       if (!Platform.isAndroid && !Platform.isIOS) {
-        messenger.showSnackBar(
-          const SnackBar(content: Text('当前平台暂不支持直接保存到系统相册')),
-        );
+        ToastUtil.show('当前平台暂不支持直接保存到系统相册');
         return;
       }
 
@@ -321,18 +299,16 @@ class _QrCard extends StatelessWidget {
       }
 
       if (result.isSuccess) {
-        messenger.showSnackBar(const SnackBar(content: Text('二维码已保存到系统相册')));
+        ToastUtil.show('二维码已保存到系统相册');
         return;
       }
 
-      messenger.showSnackBar(
-        SnackBar(content: Text(result.errorMessage ?? '保存二维码失败')),
-      );
+      ToastUtil.show(result.errorMessage ?? '保存二维码失败');
     } on Object catch (_) {
       if (!context.mounted) {
         return;
       }
-      messenger.showSnackBar(const SnackBar(content: Text('保存二维码失败，请稍后重试')));
+      ToastUtil.show('保存二维码失败，请稍后重试');
     }
   }
 
@@ -346,9 +322,7 @@ class _QrCard extends StatelessWidget {
         uri,
         mode: LaunchMode.externalNonBrowserApplication,
       )) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('打开二维码失败')));
+        ToastUtil.show('打开二维码失败');
       }
     } catch (_) {
       // 处理异常
@@ -394,37 +368,15 @@ class _QrCard extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              OutlinedButton.icon(
+              TextButton.icon(
                 onPressed: () => _saveQrImage(context),
                 icon: const Icon(Icons.download_rounded),
                 label: const Text('保存'),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: colorScheme.primary,
-                  side: BorderSide(color: colorScheme.outlineVariant),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 18,
-                    vertical: 12,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                ),
               ),
-              OutlinedButton.icon(
+              TextButton.icon(
                 onPressed: () => _openQrUrl(context),
                 icon: const Icon(Icons.open_in_new),
                 label: const Text('其他App打开'),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: colorScheme.primary,
-                  side: BorderSide(color: colorScheme.outlineVariant),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 12,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                ),
               ),
             ],
           ),
@@ -448,10 +400,6 @@ class _StatusBanner extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      decoration: BoxDecoration(
-        color: appearance.background,
-        borderRadius: BorderRadius.circular(16),
-      ),
       child: Text(
         appearance.text,
         style: theme.textTheme.bodyMedium?.copyWith(

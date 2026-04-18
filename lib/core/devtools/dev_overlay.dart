@@ -1,5 +1,7 @@
+import 'package:bilimusic/common/util/toast_util.dart';
 import 'package:bilimusic/core/bili/session/bili_session.dart';
 import 'package:bilimusic/core/bili/session/bili_session_controller.dart';
+import 'package:bilimusic/core/devtools/route_dev_page.dart';
 import 'package:bilimusic/router/routers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -41,12 +43,31 @@ class DevOverlay extends ConsumerWidget {
   }
 }
 
-class _DevOverlayPanel extends ConsumerWidget {
+class _DevOverlayPanel extends ConsumerStatefulWidget {
   const _DevOverlayPanel();
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final ThemeData theme = Theme.of(context);
+  ConsumerState<_DevOverlayPanel> createState() => _DevOverlayPanelState();
+}
+
+class _DevOverlayPanelState extends ConsumerState<_DevOverlayPanel> {
+  late final PageController _pageController;
+  int _currentPageIndex = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _pageController = PageController();
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final BiliSession? session = ref.watch(biliSessionControllerProvider);
     final double maxHeight = MediaQuery.of(context).size.height * 0.82;
 
@@ -60,12 +81,21 @@ class _DevOverlayPanel extends ConsumerWidget {
           children: <Widget>[
             Row(
               children: <Widget>[
-                Text('Dev Overlay', style: theme.textTheme.titleLarge),
-                const SizedBox(width: 12),
                 _StatusChip(session: session),
+                const SizedBox(width: 12),
+                _PanelTabSwitcher(
+                  currentPageIndex: _currentPageIndex,
+                  onSelected: (int index) {
+                    _pageController.animateToPage(
+                      index,
+                      duration: const Duration(milliseconds: 220),
+                      curve: Curves.easeOutCubic,
+                    );
+                  },
+                ),
                 const Spacer(),
                 IconButton(
-                  tooltip: '复制摘要',
+                  tooltip: _currentPageIndex == 0 ? '复制摘要' : '复制路由',
                   onPressed: () => _copySummary(context, session),
                   icon: const Icon(Icons.content_copy_rounded),
                 ),
@@ -73,72 +103,16 @@ class _DevOverlayPanel extends ConsumerWidget {
             ),
             const SizedBox(height: 12),
             Expanded(
-              child: ListView(
+              child: PageView(
+                controller: _pageController,
+                onPageChanged: (int index) {
+                  setState(() {
+                    _currentPageIndex = index;
+                  });
+                },
                 children: <Widget>[
-                  _SectionTitle(title: 'Session 状态'),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: <Widget>[
-                      _BoolChip(
-                        label: 'hasCookie',
-                        value: session?.hasCookie ?? false,
-                      ),
-                      _BoolChip(
-                        label: 'isLoggedIn',
-                        value: session?.isLoggedIn ?? false,
-                      ),
-                      _BoolChip(
-                        label: 'hasProfile',
-                        value: session?.hasProfile ?? false,
-                      ),
-                      _BoolChip(
-                        label: 'hasWbiKeys',
-                        value: session?.hasWbiKeys ?? false,
-                      ),
-                      _BoolChip(
-                        label: 'isReady',
-                        value: session?.isReady ?? false,
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 20),
-                  _SectionTitle(title: 'Session 字段'),
-                  if (session == null)
-                    const _EmptyState()
-                  else ...<Widget>[
-                    _FieldTile(
-                      label: 'mid',
-                      value: session.mid?.toString() ?? '',
-                    ),
-                    _FieldTile(label: 'uname', value: session.uname ?? ''),
-                    _FieldTile(label: 'face', value: session.face ?? ''),
-                    _FieldTile(label: 'dedeUserId', value: session.dedeUserId),
-                    _FieldTile(
-                      label: 'sessData',
-                      value: session.sessData,
-                      masked: true,
-                    ),
-                    _FieldTile(
-                      label: 'biliJct',
-                      value: session.biliJct,
-                      masked: true,
-                    ),
-                    _FieldTile(
-                      label: 'refreshToken',
-                      value: session.refreshToken,
-                      masked: true,
-                    ),
-                    _FieldTile(label: 'buvid3', value: session.buvid3 ?? ''),
-                    _FieldTile(label: 'imgKey', value: session.imgKey ?? ''),
-                    _FieldTile(label: 'subKey', value: session.subKey ?? ''),
-                    _FieldTile(
-                      label: 'cookie',
-                      value: session.cookie,
-                      masked: true,
-                      multiline: true,
-                    ),
-                  ],
+                  _SessionDevPage(session: session),
+                  const RouteDevPage(),
                 ],
               ),
             ),
@@ -149,6 +123,21 @@ class _DevOverlayPanel extends ConsumerWidget {
   }
 
   Future<void> _copySummary(BuildContext context, BiliSession? session) async {
+    if (_currentPageIndex != 0) {
+      final RouteDebugSnapshot snapshot = RouteDebugSnapshot.fromRouter(
+        ref.read(routerProvider),
+      );
+      final String routeSummary = snapshot.toSummary();
+
+      await Clipboard.setData(ClipboardData(text: routeSummary));
+      if (!context.mounted) {
+        return;
+      }
+
+      ToastUtil.show('已复制路由摘要');
+      return;
+    }
+
     final String summary = session == null
         ? 'session: null'
         : <String>[
@@ -168,9 +157,96 @@ class _DevOverlayPanel extends ConsumerWidget {
       return;
     }
 
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(const SnackBar(content: Text('已复制 session 摘要')));
+    ToastUtil.show('已复制 session 摘要');
+  }
+}
+
+class _PanelTabSwitcher extends StatelessWidget {
+  const _PanelTabSwitcher({
+    required this.currentPageIndex,
+    required this.onSelected,
+  });
+
+  final int currentPageIndex;
+  final ValueChanged<int> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    return SegmentedButton<int>(
+      segments: const <ButtonSegment<int>>[
+        ButtonSegment<int>(value: 0, label: Text('Session')),
+        ButtonSegment<int>(value: 1, label: Text('Route')),
+      ],
+      selected: <int>{currentPageIndex},
+      onSelectionChanged: (Set<int> selection) {
+        onSelected(selection.first);
+      },
+      showSelectedIcon: false,
+      style: ButtonStyle(
+        visualDensity: VisualDensity.compact,
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      ),
+    );
+  }
+}
+
+class _SessionDevPage extends StatelessWidget {
+  const _SessionDevPage({required this.session});
+
+  final BiliSession? session;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      children: <Widget>[
+        _SectionTitle(title: 'Session 状态'),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: <Widget>[
+            _BoolChip(label: 'hasCookie', value: session?.hasCookie ?? false),
+            _BoolChip(label: 'isLoggedIn', value: session?.isLoggedIn ?? false),
+            _BoolChip(label: 'hasProfile', value: session?.hasProfile ?? false),
+            _BoolChip(label: 'hasWbiKeys', value: session?.hasWbiKeys ?? false),
+            _BoolChip(label: 'isReady', value: session?.isReady ?? false),
+          ],
+        ),
+        const SizedBox(height: 20),
+        _SectionTitle(title: 'Session 字段'),
+        if (session == null)
+          const _EmptyState()
+        else ...<Widget>[
+          _FieldTile(label: 'mid', value: session?.mid?.toString() ?? ''),
+          _FieldTile(label: 'uname', value: session?.uname ?? ''),
+          _FieldTile(label: 'face', value: session?.face ?? ''),
+          _FieldTile(label: 'dedeUserId', value: session?.dedeUserId ?? ''),
+          _FieldTile(
+            label: 'sessData',
+            value: session?.sessData ?? '',
+            masked: true,
+          ),
+          _FieldTile(
+            label: 'biliJct',
+            value: session?.biliJct ?? '',
+            masked: true,
+          ),
+          _FieldTile(
+            label: 'refreshToken',
+            value: session?.refreshToken ?? '',
+            masked: true,
+          ),
+          _FieldTile(label: 'buvid3', value: session?.buvid3 ?? ''),
+          _FieldTile(label: 'imgKey', value: session?.imgKey ?? ''),
+          _FieldTile(label: 'subKey', value: session?.subKey ?? ''),
+          _FieldTile(
+            label: 'cookie',
+            value: session?.cookie ?? '',
+            masked: true,
+            multiline: true,
+          ),
+        ],
+      ],
+    );
   }
 }
 
@@ -346,11 +422,7 @@ class _FieldTileState extends State<_FieldTile> {
                         if (!context.mounted) {
                           return;
                         }
-                        ScaffoldMessenger.of(context)
-                          ..hideCurrentSnackBar()
-                          ..showSnackBar(
-                            SnackBar(content: Text('已复制 ${widget.label}')),
-                          );
+                        ToastUtil.show('已复制 ${widget.label}');
                       },
                 icon: const Icon(Icons.copy_all_rounded),
               ),

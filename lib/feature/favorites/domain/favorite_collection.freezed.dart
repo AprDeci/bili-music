@@ -11,6 +11,7 @@ part of 'favorite_collection.dart';
 
 // dart format off
 T _$identity<T>(T value) => value;
+
 /// @nodoc
 mixin _$FavoriteCollection {
 
@@ -21,6 +22,8 @@ mixin _$FavoriteCollection {
 @pragma('vm:prefer-inline')
 $FavoriteCollectionCopyWith<FavoriteCollection> get copyWith => _$FavoriteCollectionCopyWithImpl<FavoriteCollection>(this as FavoriteCollection, _$identity);
 
+  /// Serializes this FavoriteCollection to a JSON map.
+  Map<String, dynamic> toJson();
 
 
 @override
@@ -28,7 +31,7 @@ bool operator ==(Object other) {
   return identical(this, other) || (other.runtimeType == runtimeType&&other is FavoriteCollection&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.isSystem, isSystem) || other.isSystem == isSystem)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt));
 }
 
-
+@JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode => Object.hash(runtimeType,id,name,isSystem,createdAt,updatedAt);
 
@@ -207,11 +210,11 @@ return $default(_that.id,_that.name,_that.isSystem,_that.createdAt,_that.updated
 }
 
 /// @nodoc
-
+@JsonSerializable()
 
 class _FavoriteCollection extends FavoriteCollection {
   const _FavoriteCollection({required this.id, required this.name, required this.isSystem, required this.createdAt, required this.updatedAt}): super._();
-  
+  factory _FavoriteCollection.fromJson(Map<String, dynamic> json) => _$FavoriteCollectionFromJson(json);
 
 @override final  String id;
 @override final  String name;
@@ -225,14 +228,17 @@ class _FavoriteCollection extends FavoriteCollection {
 @pragma('vm:prefer-inline')
 _$FavoriteCollectionCopyWith<_FavoriteCollection> get copyWith => __$FavoriteCollectionCopyWithImpl<_FavoriteCollection>(this, _$identity);
 
-
+@override
+Map<String, dynamic> toJson() {
+  return _$FavoriteCollectionToJson(this, );
+}
 
 @override
 bool operator ==(Object other) {
   return identical(this, other) || (other.runtimeType == runtimeType&&other is _FavoriteCollection&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.isSystem, isSystem) || other.isSystem == isSystem)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt));
 }
 
-
+@JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode => Object.hash(runtimeType,id,name,isSystem,createdAt,updatedAt);
 

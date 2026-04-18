@@ -1,5 +1,6 @@
 import 'package:bilimusic/common/logger.dart';
 import 'package:bilimusic/common/util/json_util.dart';
+import 'package:bilimusic/common/util/toast_util.dart';
 import 'package:bilimusic/core/hive/hive_keys.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
@@ -28,7 +29,7 @@ class UpdateUtil {
       );
       if (currentVersion == null) {
         if (manual && context.mounted) {
-          _showSnackBar(context, '检查更新失败');
+          _showToast('检查更新失败');
         }
         return;
       }
@@ -39,14 +40,14 @@ class UpdateUtil {
       );
       if (latestVersion == null) {
         if (manual && context.mounted) {
-          _showSnackBar(context, '检查更新失败');
+          _showToast('检查更新失败');
         }
         return;
       }
 
       if (latestVersion.compareTo(currentVersion) <= 0) {
         if (manual && context.mounted) {
-          _showSnackBar(context, '当前已是最新版本');
+          _showToast('当前已是最新版本');
         }
         return;
       }
@@ -80,7 +81,7 @@ class UpdateUtil {
       }
     } on Object {
       if (manual && context.mounted) {
-        _showSnackBar(context, '检查更新失败');
+        _showToast('检查更新失败');
       }
     }
   }
@@ -189,10 +190,8 @@ class UpdateUtil {
     );
   }
 
-  static void _showSnackBar(BuildContext context, String message) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
+  static void _showToast(String message) {
+    ToastUtil.show(message);
   }
 }
 

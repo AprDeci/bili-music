@@ -2,22 +2,33 @@ import 'package:bilimusic/common/util/format_util.dart';
 import 'package:bilimusic/common/util/json_util.dart';
 import 'package:bilimusic/common/util/url_util.dart';
 import 'package:bilimusic/core/bili/net/bili_api_client.dart';
+import 'package:bilimusic/core/net/bili_client.dart';
+import 'package:dio/dio.dart';
 import 'package:bilimusic/feature/search/domain/search_page_result.dart';
 import 'package:bilimusic/feature/search/domain/search_result_item.dart';
+import 'package:bilimusic/feature/search/domain/search_sort.dart';
 
 class BiliSearchRepository {
-  const BiliSearchRepository(this._apiClient);
+  const BiliSearchRepository(this._apiClient, this._client);
 
   static const int _defaultPageSize = 20;
+  static const String _suggestEndpoint =
+      'https://s.search.bilibili.com/main/suggest';
 
   final BiliApiClient _apiClient;
+  final BiliClient _client;
 
-  Future<SearchPageResult> searchVideos(String keyword, {int page = 1}) async {
+  Future<SearchPageResult> searchVideos(
+    String keyword, {
+    int page = 1,
+    SearchSort sort = SearchSort.comprehensive,
+  }) async {
     final Map<String, dynamic> json = await _apiClient.getJson(
       '/x/web-interface/wbi/search/type',
       queryParameters: <String, dynamic>{
         'search_type': 'video',
         'keyword': keyword,
+        'order': sort.apiValue,
         'page': page,
       },
       requiresWbi: true,
@@ -51,6 +62,33 @@ class BiliSearchRepository {
         pageSize: pageSize,
       ),
     );
+  }
+
+  Future<List<String>> fetchSuggestions(String term) async {
+    final Response<dynamic> response = await _client.get<dynamic>(
+      _suggestEndpoint,
+      queryParameters: <String, dynamic>{'term': term},
+    );
+    final Map<String, dynamic> json = _asMap(response.data);
+    final Map<String, dynamic>? result = _asNullableMap(json['result']);
+    final List<dynamic> rawTags =
+        result?['tag'] as List<dynamic>? ?? <dynamic>[];
+
+    final Set<String> seen = <String>{};
+    final List<String> suggestions = <String>[];
+    for (final dynamic rawTag in rawTags) {
+      final Map<String, dynamic>? tag = _asNullableMap(rawTag);
+      final String value = (tag?['value'] as String? ?? '').trim();
+      if (value.isEmpty || !seen.add(value)) {
+        continue;
+      }
+      suggestions.add(value);
+      if (suggestions.length >= 10) {
+        break;
+      }
+    }
+
+    return suggestions;
   }
 
   SearchResultItem _mapVideoItem(Map<String, dynamic> json) {
@@ -88,7 +126,9 @@ class BiliSearchRepository {
   }
 
   int? _readTotalPages(Map<String, dynamic> data) {
-    final Map<String, dynamic>? pageInfo = asNullableStringKeyedMap(data['pageinfo']);
+    final Map<String, dynamic>? pageInfo = asNullableStringKeyedMap(
+      data['pageinfo'],
+    );
 
     return _readPositiveInt(data['numPages']) ??
         _readPositiveInt(data['num_pages']) ??
@@ -141,7 +181,6 @@ class BiliSearchRepository {
         .trim();
     return cleaned.isEmpty ? null : cleaned;
   }
-
 }
 
 class BiliSearchException implements Exception {

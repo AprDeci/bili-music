@@ -11,6 +11,7 @@ part of 'favorite_entry.dart';
 
 // dart format off
 T _$identity<T>(T value) => value;
+
 /// @nodoc
 mixin _$FavoriteEntry {
 
@@ -21,6 +22,8 @@ mixin _$FavoriteEntry {
 @pragma('vm:prefer-inline')
 $FavoriteEntryCopyWith<FavoriteEntry> get copyWith => _$FavoriteEntryCopyWithImpl<FavoriteEntry>(this as FavoriteEntry, _$identity);
 
+  /// Serializes this FavoriteEntry to a JSON map.
+  Map<String, dynamic> toJson();
 
 
 @override
@@ -28,7 +31,7 @@ bool operator ==(Object other) {
   return identical(this, other) || (other.runtimeType == runtimeType&&other is FavoriteEntry&&(identical(other.itemId, itemId) || other.itemId == itemId)&&(identical(other.aid, aid) || other.aid == aid)&&(identical(other.bvid, bvid) || other.bvid == bvid)&&(identical(other.title, title) || other.title == title)&&(identical(other.author, author) || other.author == author)&&(identical(other.coverUrl, coverUrl) || other.coverUrl == coverUrl)&&(identical(other.cid, cid) || other.cid == cid)&&(identical(other.page, page) || other.page == page)&&(identical(other.pageTitle, pageTitle) || other.pageTitle == pageTitle)&&(identical(other.durationText, durationText) || other.durationText == durationText)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt));
 }
 
-
+@JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode => Object.hash(runtimeType,itemId,aid,bvid,title,author,coverUrl,cid,page,pageTitle,durationText,createdAt,updatedAt);
 
@@ -214,11 +217,11 @@ return $default(_that.itemId,_that.aid,_that.bvid,_that.title,_that.author,_that
 }
 
 /// @nodoc
-
+@JsonSerializable()
 
 class _FavoriteEntry extends FavoriteEntry {
   const _FavoriteEntry({required this.itemId, required this.aid, required this.bvid, required this.title, required this.author, required this.coverUrl, this.cid, this.page, this.pageTitle, this.durationText, required this.createdAt, required this.updatedAt}): super._();
-  
+  factory _FavoriteEntry.fromJson(Map<String, dynamic> json) => _$FavoriteEntryFromJson(json);
 
 @override final  String itemId;
 @override final  int aid;
@@ -239,14 +242,17 @@ class _FavoriteEntry extends FavoriteEntry {
 @pragma('vm:prefer-inline')
 _$FavoriteEntryCopyWith<_FavoriteEntry> get copyWith => __$FavoriteEntryCopyWithImpl<_FavoriteEntry>(this, _$identity);
 
-
+@override
+Map<String, dynamic> toJson() {
+  return _$FavoriteEntryToJson(this, );
+}
 
 @override
 bool operator ==(Object other) {
   return identical(this, other) || (other.runtimeType == runtimeType&&other is _FavoriteEntry&&(identical(other.itemId, itemId) || other.itemId == itemId)&&(identical(other.aid, aid) || other.aid == aid)&&(identical(other.bvid, bvid) || other.bvid == bvid)&&(identical(other.title, title) || other.title == title)&&(identical(other.author, author) || other.author == author)&&(identical(other.coverUrl, coverUrl) || other.coverUrl == coverUrl)&&(identical(other.cid, cid) || other.cid == cid)&&(identical(other.page, page) || other.page == page)&&(identical(other.pageTitle, pageTitle) || other.pageTitle == pageTitle)&&(identical(other.durationText, durationText) || other.durationText == durationText)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt));
 }
 
-
+@JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode => Object.hash(runtimeType,itemId,aid,bvid,title,author,coverUrl,cid,page,pageTitle,durationText,createdAt,updatedAt);
 

@@ -10,8 +10,14 @@ class HiveKeys {
   static const String themeMode = 'themeMode';
   static const String lightThemeVariant = 'lightThemeVariant';
   static const String playerAllowMixWithOthers = 'player.allow_mix_with_others';
+  static const String playerAudioQualityPreference =
+      'player.audio_quality_preference';
   static const String searchHistory = 'search.history';
   static const String updateDismissedTag = 'app.update.dismissed_tag';
+  static const String appearanceUseGlassBar = 'app.appearance.use_glass_bar';
+  static const String webDavBaseUrl = 'webdav.base_url';
+  static const String webDavUsername = 'webdav.username';
+  static const String webDavPassword = 'webdav.password';
 
   static const String biliCookie = 'bili.cookie';
   static const String biliSessData = 'bili.sessdata';

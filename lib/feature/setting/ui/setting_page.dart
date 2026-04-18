@@ -37,9 +37,9 @@ class _SettingPageState extends State<SettingPage> {
           ListTile(
             contentPadding: EdgeInsets.zero,
             leading: const Icon(Icons.palette_outlined),
-            title: const Text('主题设置'),
+            title: const Text('外观设置'),
             subtitle: Text(
-              '跟随系统、浅色、深色与浅色主题选择',
+              '外观,主题选择',
               style: theme.textTheme.bodySmall,
             ),
             trailing: const Icon(Icons.chevron_right_rounded),
@@ -52,6 +52,14 @@ class _SettingPageState extends State<SettingPage> {
             subtitle: Text('后台播放与音频策略', style: theme.textTheme.bodySmall),
             trailing: const Icon(Icons.chevron_right_rounded),
             onTap: () => context.push('/settings/player'),
+          ),
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: const Icon(Icons.import_export_rounded),
+            title: const Text('收藏导入导出'),
+            subtitle: Text('导出或导入我喜欢与自建歌单', style: theme.textTheme.bodySmall),
+            trailing: const Icon(Icons.chevron_right_rounded),
+            onTap: () => context.push('/settings/favorites-transfer'),
           ),
           FutureBuilder<int>(
             future: _cacheSizeFuture,

@@ -1,6 +1,8 @@
+import 'package:bilimusic/feature/player/domain/audio_stream_info.dart';
 import 'package:bilimusic/feature/player/domain/playable_item.dart';
 import 'package:bilimusic/feature/player/domain/player_online_audience.dart';
 import 'package:bilimusic/feature/player/domain/player_state.dart';
+import 'package:bilimusic/feature/player/logic/player_controller.dart';
 import 'package:bilimusic/feature/player/logic/player_online_audience_controller.dart';
 import 'package:bilimusic/feature/player/ui/components/player_artwork.dart';
 import 'package:bilimusic/feature/player/ui/components/player_controls.dart';
@@ -50,7 +52,6 @@ class PlayerMainPage extends ConsumerWidget {
     final MediaQueryData mediaQuery = MediaQuery.of(context);
     final Size screenSize = mediaQuery.size;
     final bool canOpenPartSelector = item != null && availableParts.length > 1;
-    final bool showStatusHint = state.statusHint != null;
     final double artworkSize = (screenSize.height * 0.31).clamp(190.0, 320.0);
     final AsyncValue<PlayerOnlineAudience?> onlineAudienceAsync = ref.watch(
       playerOnlineAudienceControllerProvider,
@@ -67,11 +68,14 @@ class PlayerMainPage extends ConsumerWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
         const SizedBox(height: 12),
-        Center(
-          child: SizedBox(
-            width: artworkSize,
-            height: artworkSize,
-            child: PlayerArtworkFrame(coverUrl: item?.coverUrl ?? ''),
+        Hero(
+          tag: "artwork",
+          child: Center(
+            child: SizedBox(
+              width: artworkSize,
+              height: artworkSize,
+              child: PlayerArtworkFrame(coverUrl: item?.coverUrl ?? ''),
+            ),
           ),
         ),
         const SizedBox(height: 28),
@@ -92,9 +96,10 @@ class PlayerMainPage extends ConsumerWidget {
         Column(
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
-            if (showStatusHint || true) PlayerPlaybackStatusChip(state: state),
-            if (showStatusHint) const SizedBox(height: 12),
+            PlayerPlaybackStatusChip(state: state),
+            if (state.statusHint != null) const SizedBox(height: 12),
             _PlayerToolBar(
+              state: state,
               hasItem: item != null,
               item: item,
               commentCount: commentCount,
@@ -147,6 +152,7 @@ String? _buildAudienceLabel(PlayerOnlineAudience audience) {
 
 class _PlayerToolBar extends StatelessWidget {
   const _PlayerToolBar({
+    required this.state,
     required this.hasItem,
     required this.item,
     required this.commentCount,
@@ -156,6 +162,7 @@ class _PlayerToolBar extends StatelessWidget {
     required this.onOpenComments,
   });
 
+  final PlayerState state;
   final bool hasItem;
   final PlayableItem? item;
   final int? commentCount;
@@ -166,6 +173,9 @@ class _PlayerToolBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final List<AudioQualityOption> availableQualities =
+        state.audioStream?.availableQualities ?? const <AudioQualityOption>[];
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceAround,
       children: <Widget>[
@@ -178,6 +188,10 @@ class _PlayerToolBar extends StatelessWidget {
           icon: Icons.folder_open_outlined,
           isEnabled: hasItem,
           onTap: onOpenCollectionSheet,
+        ),
+        _PlayerQualityToolButton(
+          qualities: availableQualities,
+          isEnabled: hasItem && availableQualities.isNotEmpty,
         ),
         _PlayerCommentToolButton(
           commentCount: commentCount,
@@ -244,6 +258,97 @@ class _PlayerCommentToolButton extends StatelessWidget {
   }
 }
 
+class _PlayerQualityToolButton extends ConsumerWidget {
+  const _PlayerQualityToolButton({
+    required this.qualities,
+    required this.isEnabled,
+  });
+
+  final List<AudioQualityOption> qualities;
+  final bool isEnabled;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final AudioQualityOption? selected = qualities
+        .where((AudioQualityOption option) => option.isSelected)
+        .firstOrNull;
+
+    return Stack(
+      clipBehavior: Clip.none,
+      children: <Widget>[
+        _PlayerToolButton(
+          icon: Icons.graphic_eq_rounded,
+          isEnabled: isEnabled,
+          onTap: !isEnabled
+              ? null
+              : () => _showPlayerQualitySheet(
+                  context: context,
+                  ref: ref,
+                  qualities: qualities,
+                ),
+        ),
+        if (isEnabled && selected != null)
+          Positioned(
+            top: -2,
+            right: -12,
+            child: IgnorePointer(
+              child: _ToolButtonBadge(label: selected.label),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+Future<void> _showPlayerQualitySheet({
+  required BuildContext context,
+  required WidgetRef ref,
+  required List<AudioQualityOption> qualities,
+}) async {
+  final ThemeData theme = Theme.of(context);
+  await showModalBottomSheet<void>(
+    context: context,
+    showDragHandle: true,
+    backgroundColor: theme.colorScheme.surface,
+    builder: (BuildContext context) {
+      return SafeArea(
+        child: ListView.separated(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+          itemCount: qualities.length,
+          separatorBuilder: (_, _) => const SizedBox(height: 10),
+          itemBuilder: (BuildContext context, int index) {
+            final AudioQualityOption option = qualities[index];
+            final bool isSelected = option.isSelected;
+            return ListTile(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(18),
+              ),
+              tileColor: isSelected
+                  ? theme.colorScheme.primary.withValues(alpha: 0.1)
+                  : null,
+              title: Text(
+                option.label,
+                style: theme.textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              trailing: isSelected
+                  ? Icon(Icons.check_rounded, color: theme.colorScheme.primary)
+                  : const Icon(Icons.play_arrow_rounded),
+              onTap: () async {
+                Navigator.of(context).pop();
+                await ref
+                    .read(playerControllerProvider.notifier)
+                    .switchCurrentAudioQuality(option.qualityId);
+              },
+            );
+          },
+        ),
+      );
+    },
+  );
+}
+
 String? _formatCommentBadgeCount(int? count) {
   if (count == null || count <= 0) {
     return null;
@@ -271,7 +376,6 @@ class _PlayerPartToolButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
     final int currentPage = item?.page ?? 1;
 
     return Stack(
@@ -287,27 +391,40 @@ class _PlayerPartToolButton extends StatelessWidget {
             top: -2,
             right: -8,
             child: IgnorePointer(
-              child: Container(
-                constraints: const BoxConstraints(minWidth: 18, minHeight: 18),
-                padding: const EdgeInsets.symmetric(horizontal: 5),
-                decoration: BoxDecoration(
-                  color: colorScheme.primary,
-                  borderRadius: BorderRadius.circular(999),
-                ),
-                alignment: Alignment.center,
-                child: Text(
-                  'P$currentPage',
-                  textAlign: TextAlign.center,
-                  style: theme.textTheme.labelSmall?.copyWith(
-                    color: colorScheme.onPrimary,
-                    fontWeight: FontWeight.w800,
-                    height: 1,
-                  ),
-                ),
-              ),
+              child: _ToolButtonBadge(label: 'P$currentPage'),
             ),
           ),
       ],
+    );
+  }
+}
+
+class _ToolButtonBadge extends StatelessWidget {
+  const _ToolButtonBadge({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+    return Container(
+      constraints: const BoxConstraints(minWidth: 18, minHeight: 18),
+      padding: const EdgeInsets.symmetric(horizontal: 5),
+      decoration: BoxDecoration(
+        color: colorScheme.primary,
+        borderRadius: BorderRadius.circular(999),
+      ),
+      alignment: Alignment.center,
+      child: Text(
+        label,
+        textAlign: TextAlign.center,
+        style: theme.textTheme.labelSmall?.copyWith(
+          color: colorScheme.onPrimary,
+          fontWeight: FontWeight.w800,
+          height: 1,
+        ),
+      ),
     );
   }
 }

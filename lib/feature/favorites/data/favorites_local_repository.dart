@@ -73,6 +73,51 @@ class FavoritesLocalRepository {
     return _membershipsBox.put(membership.id, membership);
   }
 
+  Future<void> saveAll({
+    required Iterable<FavoriteCollection> collections,
+    required Iterable<FavoriteEntry> entries,
+    required Iterable<FavoriteMembership> memberships,
+  }) {
+    final Map<String, FavoriteCollection> collectionMap =
+        <String, FavoriteCollection>{
+          for (final FavoriteCollection collection in collections)
+            collection.id: collection,
+        };
+    final Map<String, FavoriteEntry> entryMap = <String, FavoriteEntry>{
+      for (final FavoriteEntry entry in entries) entry.itemId: entry,
+    };
+    final Map<String, FavoriteMembership> membershipMap =
+        <String, FavoriteMembership>{
+          for (final FavoriteMembership membership in memberships)
+            membership.id: membership,
+        };
+
+    return Future.wait(<Future<void>>[
+      _collectionsBox.putAll(collectionMap),
+      _entriesBox.putAll(entryMap),
+      _membershipsBox.putAll(membershipMap),
+    ]);
+  }
+
+  Future<void> replaceAll(FavoritesState nextState) async {
+    await Future.wait(<Future<void>>[
+      _collectionsBox.clear(),
+      _entriesBox.clear(),
+      _membershipsBox.clear(),
+    ]);
+    await saveAll(
+      collections: nextState.collections,
+      entries: nextState.entries,
+      memberships: nextState.memberships,
+    );
+    if (!_collectionsBox.containsKey(FavoriteCollection.likedCollectionId)) {
+      await _collectionsBox.put(
+        FavoriteCollection.likedCollectionId,
+        FavoriteCollection.liked(),
+      );
+    }
+  }
+
   Future<void> deleteMembership(String membershipId) {
     return _membershipsBox.delete(membershipId);
   }

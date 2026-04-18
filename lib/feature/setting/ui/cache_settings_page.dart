@@ -1,5 +1,6 @@
 import 'package:bilimusic/common/util/color_util.dart';
 import 'package:bilimusic/common/util/format_util.dart';
+import 'package:bilimusic/common/util/toast_util.dart';
 import 'package:bilimusic/core/cache/cache_util.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/foundation.dart';
@@ -107,9 +108,7 @@ class _CacheSettingsPageState extends State<CacheSettingsPage>
         return;
       }
 
-      ScaffoldMessenger.of(context)
-        ..hideCurrentSnackBar()
-        ..showSnackBar(const SnackBar(content: Text('所选缓存已清理')));
+      ToastUtil.show('所选缓存已清理');
     } finally {
       if (mounted) {
         setState(() {
@@ -140,47 +139,47 @@ class _CacheSettingsPageState extends State<CacheSettingsPage>
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
         children: <Widget>[
-            AspectRatio(
-              aspectRatio: 1.2,
+          AspectRatio(
+            aspectRatio: 1.2,
             child: _totalCacheBytes > 0
                 ? PieChart(
-                PieChartData(
-                  sectionsSpace: 2,
-                  centerSpaceRadius: 50,
-                  sections: [
-                    PieChartSectionData(
-                      title: _imageCacheBytes > 0
-                          ? '图片 ${(_imageCacheBytes / _totalCacheBytes * 100).toStringAsFixed(0)}%'
-                          : null,
-                      value: _imageSelected
-                          ? (_imageCacheBytes / _totalCacheBytes * 100)
-                                .toDouble()
-                          : 0,
-                      titleStyle: TextStyle(color: Colors.white),
+                    PieChartData(
+                      sectionsSpace: 2,
+                      centerSpaceRadius: 50,
+                      sections: [
+                        PieChartSectionData(
+                          title: _imageCacheBytes > 0
+                              ? '图片 ${(_imageCacheBytes / _totalCacheBytes * 100).toStringAsFixed(0)}%'
+                              : null,
+                          value: _imageSelected
+                              ? (_imageCacheBytes / _totalCacheBytes * 100)
+                                    .toDouble()
+                              : 0,
+                          titleStyle: TextStyle(color: Colors.white),
                           color: ColorUtil.getAnalogous(
                             theme.colorScheme.primary,
                           )[4],
-                      radius: 45,
-                  ),
-                    PieChartSectionData(
-                      title: _audioCacheBytes > 0
-                          ? '音频 ${(_audioCacheBytes / _totalCacheBytes * 100).toStringAsFixed(0)}%'
-                          : null,
-                      value: _audioSelected
-                          ? (_audioCacheBytes / _totalCacheBytes * 100)
-                                .toDouble()
-                          : 0,
+                          radius: 45,
+                        ),
+                        PieChartSectionData(
+                          title: _audioCacheBytes > 0
+                              ? '音频 ${(_audioCacheBytes / _totalCacheBytes * 100).toStringAsFixed(0)}%'
+                              : null,
+                          value: _audioSelected
+                              ? (_audioCacheBytes / _totalCacheBytes * 100)
+                                    .toDouble()
+                              : 0,
                           color: ColorUtil.getShade(
                             theme.colorScheme.primary,
                             400,
                           ),
-                      titleStyle: TextStyle(color: Colors.white),
-                      radius: 45,
-                  ),
-                ],
-              ),
-                duration: const Duration(milliseconds: 800),
-                curve: Curves.easeInOut,
+                          titleStyle: TextStyle(color: Colors.white),
+                          radius: 45,
+                        ),
+                      ],
+                    ),
+                    duration: const Duration(milliseconds: 800),
+                    curve: Curves.easeInOut,
                   )
                 : Stack(
                     alignment: Alignment.center,
@@ -215,7 +214,7 @@ class _CacheSettingsPageState extends State<CacheSettingsPage>
                         ),
                       ),
                     ],
-                  ),       
+                  ),
           ),
           Container(
             margin: EdgeInsets.zero,
@@ -283,7 +282,7 @@ class _CacheSettingsPageState extends State<CacheSettingsPage>
                   ],
                 ),
               ],
-            )
+            ),
         ],
       ),
     );

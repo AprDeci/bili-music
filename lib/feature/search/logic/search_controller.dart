@@ -1,8 +1,10 @@
 import 'package:bilimusic/core/bili/net/bili_api_client.dart';
+import 'package:bilimusic/core/net/bili_client.dart';
 import 'package:bilimusic/feature/search/data/bili_search_repository.dart';
 import 'package:bilimusic/feature/search/data/search_history_store.dart';
 import 'package:bilimusic/feature/search/domain/search_page_result.dart';
 import 'package:bilimusic/feature/search/domain/search_result_item.dart';
+import 'package:bilimusic/feature/search/domain/search_sort.dart';
 import 'package:bilimusic/feature/search/domain/search_state.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
@@ -10,7 +12,10 @@ part 'search_controller.g.dart';
 
 @riverpod
 BiliSearchRepository biliSearchRepository(Ref ref) {
-  return BiliSearchRepository(ref.read(biliApiClientProvider));
+  return BiliSearchRepository(
+    ref.read(biliApiClientProvider),
+    ref.read(biliClientProvider.notifier),
+  );
 }
 
 @riverpod
@@ -21,6 +26,7 @@ class SearchPageController extends _$SearchPageController {
   late final SearchHistoryStore _historyStore = ref.read(
     searchHistoryStoreProvider,
   );
+  int _suggestionRequestId = 0;
 
   @override
   SearchState build() {
@@ -28,7 +34,13 @@ class SearchPageController extends _$SearchPageController {
   }
 
   void updateQuery(String value) {
-    state = state.copyWith(query: value, errorMessage: null);
+    final String nextQuery = value.trimLeft();
+    state = state.copyWith(
+      query: nextQuery,
+      errorMessage: null,
+      suggestionsErrorMessage: null,
+    );
+    loadSuggestions(nextQuery);
   }
 
   Future<void> submitSearch([String? value]) async {
@@ -37,12 +49,15 @@ class SearchPageController extends _$SearchPageController {
       state = state.copyWith(
         query: '',
         submittedQuery: null,
+        suggestions: const <String>[],
         results: const <SearchResultItem>[],
         isLoading: false,
+        isLoadingSuggestions: false,
         isLoadingMore: false,
         currentPage: 0,
         hasMore: false,
         errorMessage: null,
+        suggestionsErrorMessage: null,
         loadMoreErrorMessage: null,
       );
       return;
@@ -57,12 +72,15 @@ class SearchPageController extends _$SearchPageController {
       query: nextQuery,
       submittedQuery: nextQuery,
       recentKeywords: nextRecentKeywords,
+      suggestions: const <String>[],
       results: const <SearchResultItem>[],
       isLoading: true,
+      isLoadingSuggestions: false,
       isLoadingMore: false,
       currentPage: 0,
       hasMore: false,
       errorMessage: null,
+      suggestionsErrorMessage: null,
       loadMoreErrorMessage: null,
     );
 
@@ -72,6 +90,7 @@ class SearchPageController extends _$SearchPageController {
       final SearchPageResult page = await _repository.searchVideos(
         nextQuery,
         page: 1,
+        sort: state.sort,
       );
 
       state = state.copyWith(
@@ -84,10 +103,12 @@ class SearchPageController extends _$SearchPageController {
       state = state.copyWith(
         results: const <SearchResultItem>[],
         isLoading: false,
+        isLoadingSuggestions: false,
         isLoadingMore: false,
         currentPage: 0,
         hasMore: false,
         errorMessage: error.toString(),
+        suggestionsErrorMessage: null,
         loadMoreErrorMessage: null,
       );
     }
@@ -109,6 +130,7 @@ class SearchPageController extends _$SearchPageController {
       final SearchPageResult page = await _repository.searchVideos(
         submittedQuery,
         page: nextPage,
+        sort: state.sort,
       );
       final List<SearchResultItem> nextResults = <SearchResultItem>[
         ...state.results,
@@ -135,16 +157,83 @@ class SearchPageController extends _$SearchPageController {
     await submitSearch(value);
   }
 
+  Future<void> loadSuggestions(String value) async {
+    final String term = value.trim();
+    final int requestId = ++_suggestionRequestId;
+
+    if (term.isEmpty) {
+      state = state.copyWith(
+        suggestions: const <String>[],
+        isLoadingSuggestions: false,
+        suggestionsErrorMessage: null,
+      );
+      return;
+    }
+
+    if (state.submittedQuery == term) {
+      state = state.copyWith(
+        suggestions: const <String>[],
+        isLoadingSuggestions: false,
+        suggestionsErrorMessage: null,
+      );
+      return;
+    }
+
+    state = state.copyWith(
+      isLoadingSuggestions: true,
+      suggestionsErrorMessage: null,
+    );
+
+    try {
+      final List<String> suggestions = await _repository.fetchSuggestions(term);
+      if (requestId != _suggestionRequestId || state.query.trim() != term) {
+        return;
+      }
+
+      state = state.copyWith(
+        suggestions: suggestions,
+        isLoadingSuggestions: false,
+        suggestionsErrorMessage: null,
+      );
+    } on Object catch (error) {
+      if (requestId != _suggestionRequestId || state.query.trim() != term) {
+        return;
+      }
+
+      state = state.copyWith(
+        suggestions: const <String>[],
+        isLoadingSuggestions: false,
+        suggestionsErrorMessage: error.toString(),
+      );
+    }
+  }
+
+  Future<void> changeSort(SearchSort sort) async {
+    if (state.sort == sort) {
+      return;
+    }
+
+    state = state.copyWith(sort: sort, loadMoreErrorMessage: null);
+    if ((state.submittedQuery?.isNotEmpty ?? false) ||
+        state.query.trim().isNotEmpty) {
+      await submitSearch(state.submittedQuery ?? state.query);
+    }
+  }
+
   void clearQuery() {
+    _suggestionRequestId++;
     state = state.copyWith(
       query: '',
       submittedQuery: null,
+      suggestions: const <String>[],
       results: const <SearchResultItem>[],
       isLoading: false,
+      isLoadingSuggestions: false,
       isLoadingMore: false,
       currentPage: 0,
       hasMore: false,
       errorMessage: null,
+      suggestionsErrorMessage: null,
       loadMoreErrorMessage: null,
     );
   }

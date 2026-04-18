@@ -24,6 +24,10 @@ class FavoritesController extends _$FavoritesController {
     state = nextState;
   }
 
+  Future<void> reload() async {
+    state = _repository.loadState();
+  }
+
   Future<bool> toggleLiked(PlayableItem item) async {
     final String itemId = item.stableId;
     final String membershipId = FavoriteMembership.membershipId(
@@ -175,7 +179,7 @@ class FavoritesController extends _$FavoritesController {
 
   Future<void> createCollection(String name) async {
     final String trimmedName = name.trim();
-    if (trimmedName.isEmpty) {
+    if (trimmedName.isEmpty || _hasDuplicateCustomCollectionName(trimmedName)) {
       return;
     }
 
@@ -189,6 +193,42 @@ class FavoritesController extends _$FavoritesController {
     );
     await _repository.saveCollection(collection);
     state = _repository.loadState();
+  }
+
+  Future<bool> renameCollection({
+    required String collectionId,
+    required String name,
+  }) async {
+    final String trimmedName = name.trim();
+    if (trimmedName.isEmpty ||
+        collectionId == FavoriteCollection.likedCollectionId) {
+      return false;
+    }
+
+    FavoriteCollection? targetCollection;
+    for (final FavoriteCollection collection in state.collections) {
+      if (collection.id == collectionId) {
+        targetCollection = collection;
+        break;
+      }
+    }
+
+    if (targetCollection == null || targetCollection.isSystem) {
+      return false;
+    }
+
+    if (_hasDuplicateCustomCollectionName(
+      trimmedName,
+      excludeId: collectionId,
+    )) {
+      return false;
+    }
+
+    await _repository.saveCollection(
+      targetCollection.copyWith(name: trimmedName, updatedAt: DateTime.now()),
+    );
+    state = _repository.loadState();
+    return true;
   }
 
   Future<bool> deleteCollection(String collectionId) async {
@@ -256,5 +296,18 @@ class FavoritesController extends _$FavoritesController {
         break;
       }
     }
+  }
+
+  bool _hasDuplicateCustomCollectionName(String name, {String? excludeId}) {
+    final String normalizedName = name.trim();
+    for (final FavoriteCollection collection in state.collections) {
+      if (collection.isSystem || collection.id == excludeId) {
+        continue;
+      }
+      if (collection.name.trim() == normalizedName) {
+        return true;
+      }
+    }
+    return false;
   }
 }

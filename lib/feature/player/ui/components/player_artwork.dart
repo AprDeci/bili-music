@@ -1,4 +1,4 @@
-import 'package:bilimusic/common/components/cachedImage.dart';
+import 'package:bilimusic/common/components/cached_image.dart';
 import 'package:flutter/material.dart';
 
 class PlayerArtworkFrame extends StatelessWidget {
