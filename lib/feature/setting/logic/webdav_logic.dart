@@ -14,7 +14,7 @@ WebDavLogic webDavLogic(Ref ref) {
   return WebDavLogic(
     repository: ref.read(webDavRepositoryProvider),
     favoritesTransferController: ref.read(favoritesTransferControllerProvider),
-    ref: ref,
+    favoritesController: ref.read(favoritesControllerProvider.notifier),
   );
 }
 
@@ -22,14 +22,14 @@ class WebDavLogic {
   WebDavLogic({
     required WebDavRepository repository,
     required FavoritesTransferController favoritesTransferController,
-    required Ref ref,
+    required FavoritesController favoritesController,
   }) : _repository = repository,
        _favoritesTransferController = favoritesTransferController,
-       _ref = ref;
+       _favoritesController = favoritesController;
 
   final WebDavRepository _repository;
   final FavoritesTransferController _favoritesTransferController;
-  final Ref _ref;
+  final FavoritesController _favoritesController;
 
   WebDavConfig loadConfig() {
     return _repository.loadConfig();
@@ -70,7 +70,7 @@ class WebDavLogic {
       importLikedCollection: importLikedCollection,
       selectedCollectionIds: selectedCollectionIds,
     );
-    await _ref.read(favoritesControllerProvider.notifier).reload();
+    await _favoritesController.reload();
   }
 
   Future<void> deleteBackup(String remotePath) {
