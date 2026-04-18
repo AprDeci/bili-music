@@ -17,6 +17,7 @@ Future<void> bootstrap() async {
     windows: true, // default: true  - dependency: media_kit_libs_windows_audio
     iOS: true, // default: false - dependency: media_kit_libs_ios_audio
     macOS: true,
+    android: true,
   );
   await initHive();
 }
@@ -24,7 +25,7 @@ Future<void> bootstrap() async {
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await bootstrap();
-runApp(
+  runApp(
     LiquidGlassWidgets.wrap(
       const ProviderScope(child: _AppBootstrap(child: MyApp())),
     ),
