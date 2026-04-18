@@ -103,7 +103,7 @@ class CommentCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: item.replies.take(2).map((CommentItem reply) {
                 return Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
+                  padding: const EdgeInsets.symmetric(vertical: 2),
                   child: RichText(
                     text: TextSpan(
                       style: theme.textTheme.bodySmall?.copyWith(
@@ -133,14 +133,17 @@ class CommentCard extends StatelessWidget {
         ],
         if (showReplyEntry && item.replyCount > 0) ...<Widget>[
           const SizedBox(height: 10),
-          GestureDetector(
-            onTap: onOpenReplies,
-            behavior: HitTestBehavior.opaque,
-            child: Text(
-              '查看全部 ${item.replyCount} 条回复',
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: colorScheme.primary,
-                fontWeight: FontWeight.w700,
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8.0),
+            child: GestureDetector(
+              onTap: onOpenReplies,
+              behavior: HitTestBehavior.opaque,
+              child: Text(
+                '查看全部 ${item.replyCount} 条回复',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: colorScheme.primary,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
             ),
           ),
