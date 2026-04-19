@@ -6,6 +6,7 @@ import 'package:just_audio/just_audio.dart' as audio;
 class PlayerAudioEngine {
   PlayerAudioEngine()
     : _audioPlayer = audio.AudioPlayer(
+        androidApplyAudioAttributes: false,
         handleInterruptions: false,
         useProxyForRequestHeaders: !_shouldDisableRequestHeadersProxy,
       );
