@@ -163,11 +163,11 @@ class PlayerAudioSessionCoordinator {
 
     _volumeBeforeUnknownInterruption = _audioEngine.volume;
     _isDuckedForUnknownInterruption = true;
-    await _audioEngine.setVolume(
-      _volumeBeforeUnknownInterruption <= _unknownInterruptionDuckVolume
-          ? _volumeBeforeUnknownInterruption
-          : _unknownInterruptionDuckVolume,
-    );
+    // await _audioEngine.setVolume(
+    //   _volumeBeforeUnknownInterruption <= _unknownInterruptionDuckVolume
+    //       ? _volumeBeforeUnknownInterruption
+    //       : _unknownInterruptionDuckVolume,
+    // );
   }
 
   Future<void> _restoreVolumeAfterUnknownInterruption() async {
