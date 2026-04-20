@@ -16,7 +16,7 @@ class MetingRepository {
 
   final Dio _dio;
 
-  Future<List<MetingSearchItem>> searchSongs({
+  Future<List<MetingSearchItem>> search({
     required String keyword,
     MetingServer server = MetingServer.netease,
   }) async {
