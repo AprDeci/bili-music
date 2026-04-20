@@ -3,6 +3,7 @@ import 'package:bilimusic/core/hive/hive.dart';
 import 'package:bilimusic/feature/favorites/logic/favorites_controller.dart';
 import 'package:bilimusic/feature/player/logic/app_audio_handler.dart';
 import 'package:bilimusic/feature/player/logic/player_controller.dart';
+import 'package:bilimusic/feature/player/logic/player_lyrics_controller.dart';
 import 'package:bilimusic/myApp.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -62,6 +63,7 @@ class _AppBootstrapState extends ConsumerState<_AppBootstrap> {
 
   @override
   Widget build(BuildContext context) {
+    ref.listen(playerLyricsControllerProvider, (previous, next) {});
     return widget.child;
   }
 }
