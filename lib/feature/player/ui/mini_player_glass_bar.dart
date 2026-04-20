@@ -23,6 +23,7 @@ class MiniPlayerGlassBar extends StatelessWidget {
     return Padding(
       padding: EdgeInsets.fromLTRB(20, 0, 20, bottomPadding),
       child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
         onTap: onTap,
         child: GlassContainer(
           shape: const LiquidRoundedSuperellipse(borderRadius: 24),
