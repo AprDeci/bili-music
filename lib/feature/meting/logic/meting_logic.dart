@@ -38,6 +38,11 @@ class MetingLogic {
     required String title,
     MetingServer server = MetingServer.netease,
   }) async {
+    if (title.contains("周杰伦") ||
+        title.contains("jay") ||
+        title.contains("Jay")) {
+      server = MetingServer.kugou;
+    }
     final MetingSearchItem? item = await find(title: title, server: server);
     if (item == null) {
       return null;
