@@ -4,6 +4,7 @@ import 'package:bilimusic/feature/favorites/logic/favorites_controller.dart';
 import 'package:bilimusic/feature/player/domain/playable_item.dart';
 import 'package:bilimusic/feature/player/domain/player_state.dart';
 import 'package:bilimusic/feature/player/logic/player_controller.dart';
+import 'package:bilimusic/feature/player/ui/components/player_lyric_page.dart';
 import 'package:bilimusic/feature/player/ui/components/player_main_page.dart';
 import 'package:bilimusic/feature/player/ui/components/player_collection_sheet.dart';
 import 'package:bilimusic/feature/player/ui/components/player_meta_page.dart';
@@ -182,6 +183,16 @@ class _PlayerPageState extends ConsumerState<PlayerPage> {
                                 onOpenComments: item == null
                                     ? null
                                     : () => _openComments(item),
+                              ),
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                              ),
+                              child: PlayerLyricPage(
+                                state: state,
+                                item: item,
+                                onSeek: playerController.seek,
                               ),
                             ),
                           ],

@@ -41,9 +41,14 @@ class PlayerTopBar extends StatelessWidget {
 }
 
 class PlayerPageIndicator extends StatelessWidget {
-  const PlayerPageIndicator({super.key, required this.currentPage});
+  const PlayerPageIndicator({
+    super.key,
+    required this.currentPage,
+    this.pageCount = 3,
+  });
 
   final int currentPage;
+  final int pageCount;
 
   @override
   Widget build(BuildContext context) {
@@ -51,14 +56,14 @@ class PlayerPageIndicator extends StatelessWidget {
 
     return Row(
       mainAxisSize: MainAxisSize.min,
-      children: List<Widget>.generate(2, (int index) {
+      children: List<Widget>.generate(pageCount, (int index) {
         final bool isActive = index == currentPage;
         return AnimatedContainer(
           duration: const Duration(milliseconds: 220),
           curve: Curves.easeOutCubic,
           width: isActive ? 18 : 6,
           height: 6,
-          margin: EdgeInsets.only(right: index == 0 ? 8 : 0),
+          margin: EdgeInsets.only(right: index < pageCount - 1 ? 8 : 0),
           decoration: BoxDecoration(
             color: isActive
                 ? colorScheme.primary
