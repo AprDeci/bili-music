@@ -1,4 +1,5 @@
 import 'package:bilimusic/common/bottom_height_helper.dart';
+import 'package:bilimusic/common/util/color_util.dart';
 import 'package:bilimusic/common/util/update_util.dart';
 import 'package:bilimusic/feature/player/domain/player_state.dart';
 import 'package:bilimusic/feature/player/logic/player_controller.dart';
@@ -127,8 +128,10 @@ class _ScaffoldWithNavBarState extends ConsumerState<ScaffoldWithNavBar> {
                       horizontalPadding: 64,
                       unselectedIconColor:
                           theme.textTheme.bodyMedium?.color ?? Colors.black,
-                      selectedIconColor:
-                          theme.textTheme.bodyMedium?.color ?? Colors.black,
+                      selectedIconColor: colorScheme.primary,
+                      indicatorColor: ColorUtil.getLight(
+                        colorScheme.primary,
+                      ).withValues(alpha: 0.2),
                       tabs: const <GlassBottomBarTab>[
                         GlassBottomBarTab(
                           icon: Icon(Icons.home_outlined),
