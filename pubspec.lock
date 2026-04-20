@@ -398,6 +398,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "6.0.0"
+  flutter_lyric:
+    dependency: "direct main"
+    description:
+      name: flutter_lyric
+      sha256: "5925b073aa897a09758b473a49988e69d10c24aa038b0bf2143a307114177438"
+      url: "https://pub.dev"
+    source: hosted
+    version: "3.0.3"
   flutter_plugin_android_lifecycle:
     dependency: transitive
     description:
