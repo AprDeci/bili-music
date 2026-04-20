@@ -34,6 +34,17 @@ class MetingLogic {
     return results.isEmpty ? null : results.first;
   }
 
+  Future<String?> findLyrics({
+    required String title,
+    MetingServer server = MetingServer.netease,
+  }) async {
+    final MetingSearchItem? item = await find(title: title, server: server);
+    if (item == null) {
+      return null;
+    }
+    return _repository.fetchLyrics(item);
+  }
+
   String _extractName(String value) {
     String result = value.trim();
     final priorityRegex = RegExp(r'《(.+?)》|「(.+?)」');

@@ -10,11 +10,11 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   group('MetingRepository', () {
-    test('searchSongs rejects missing base URL', () async {
+    test('search rejects missing base URL', () async {
       final MetingRepository repository = MetingRepository(Dio());
 
       await expectLater(
-        repository.searchSongs(keyword: '周杰伦'),
+        repository.search(keyword: '周杰伦'),
         throwsA(
           isA<MetingException>().having(
             (MetingException error) => error.message,
@@ -25,19 +25,19 @@ void main() {
       );
     });
 
-    test('searchSongs returns empty list for empty keyword', () async {
+    test('search returns empty list for empty keyword', () async {
       final MetingRepository repository = MetingRepository(
         _dioWithResponse(<Map<String, dynamic>>[]),
       );
 
-      final List<MetingSearchItem> items = await repository.searchSongs(
+      final List<MetingSearchItem> items = await repository.search(
         keyword: '   ',
       );
 
       expect(items, isEmpty);
     });
 
-    test('searchSongs parses search response', () async {
+    test('search parses search response', () async {
       final _FakeHttpClientAdapter adapter = _FakeHttpClientAdapter(
         <Map<String, dynamic>>[
           <String, dynamic>{
@@ -53,7 +53,7 @@ void main() {
         _dioWithAdapter(adapter),
       );
 
-      final List<MetingSearchItem> items = await repository.searchSongs(
+      final List<MetingSearchItem> items = await repository.search(
         keyword: ' 晴天 ',
         server: MetingServer.tencent,
       );
@@ -68,39 +68,85 @@ void main() {
       expect(adapter.requests.single.queryParameters['id'], '晴天');
     });
 
-    test(
-      'searchSongs falls back to empty strings for missing fields',
-      () async {
-        final MetingRepository repository = MetingRepository(
-          _dioWithResponse(<Map<String, dynamic>>[
-            <String, dynamic>{'title': '歌曲'},
-          ]),
-        );
+    test('search falls back to empty strings for missing fields', () async {
+      final MetingRepository repository = MetingRepository(
+        _dioWithResponse(<Map<String, dynamic>>[
+          <String, dynamic>{'title': '歌曲'},
+        ]),
+      );
 
-        final List<MetingSearchItem> items = await repository.searchSongs(
-          keyword: '歌曲',
-        );
+      final List<MetingSearchItem> items = await repository.search(
+        keyword: '歌曲',
+      );
 
-        expect(items.single.title, '歌曲');
-        expect(items.single.author, isEmpty);
-        expect(items.single.url, isEmpty);
-        expect(items.single.pic, isEmpty);
-        expect(items.single.lrc, isEmpty);
-      },
-    );
+      expect(items.single.title, '歌曲');
+      expect(items.single.author, isEmpty);
+      expect(items.single.url, isEmpty);
+      expect(items.single.pic, isEmpty);
+      expect(items.single.lrc, isEmpty);
+    });
 
-    test('searchSongs rejects malformed response', () async {
+    test('search rejects malformed response', () async {
       final MetingRepository repository = MetingRepository(
         _dioWithResponse(<String, dynamic>{'bad': true}),
       );
 
       await expectLater(
-        repository.searchSongs(keyword: '晴天'),
+        repository.search(keyword: '晴天'),
         throwsA(
           isA<MetingException>().having(
             (MetingException error) => error.message,
             'message',
             contains('返回格式异常'),
+          ),
+        ),
+      );
+    });
+
+    test('fetchLyrics returns plain lrc text', () async {
+      const String lyrics = '[00:00.000] 歌词第一行';
+      final _FakeHttpClientAdapter adapter = _FakeHttpClientAdapter(
+        lyrics,
+        responseType: _FakeResponseType.text,
+      );
+      final MetingRepository repository = MetingRepository(
+        _dioWithAdapter(adapter),
+      );
+
+      final String result = await repository.fetchLyrics(
+        const MetingSearchItem(
+          title: '晴天',
+          author: '周杰伦',
+          url: '',
+          pic: '',
+          lrc: 'https://meting.example/api?server=netease&type=lrc&id=1',
+        ),
+      );
+
+      expect(result, lyrics);
+      expect(adapter.requests.single.path, contains('/api'));
+    });
+
+    test('fetchLyrics rejects empty lrc url', () async {
+      final MetingRepository repository = MetingRepository(
+        _dioWithResponse(<Map<String, dynamic>>[]),
+      );
+
+      await expectLater(
+        repository.fetchLyrics(
+          const MetingSearchItem(
+            title: '晴天',
+            author: '周杰伦',
+            url: '',
+            pic: '',
+            lrc: '',
+          ),
+        ),
+        throwsA(
+          isA<MetingException>().having(
+            (MetingException error) => error.message,
+            'message',
+            contains('没有歌词地址'),
           ),
         ),
       );
@@ -118,9 +164,13 @@ Dio _dioWithAdapter(_FakeHttpClientAdapter adapter) {
 }
 
 class _FakeHttpClientAdapter implements HttpClientAdapter {
-  _FakeHttpClientAdapter(this.response);
+  _FakeHttpClientAdapter(
+    this.response, {
+    this.responseType = _FakeResponseType.json,
+  });
 
   final Object response;
+  final _FakeResponseType responseType;
   final List<_Request> requests = <_Request>[];
 
   @override
@@ -136,6 +186,16 @@ class _FakeHttpClientAdapter implements HttpClientAdapter {
       ),
     );
 
+    if (responseType == _FakeResponseType.text) {
+      return ResponseBody.fromString(
+        response.toString(),
+        200,
+        headers: <String, List<String>>{
+          Headers.contentTypeHeader: <String>['text/plain'],
+        },
+      );
+    }
+
     return ResponseBody.fromString(
       jsonEncode(response),
       200,
@@ -148,6 +208,8 @@ class _FakeHttpClientAdapter implements HttpClientAdapter {
   @override
   void close({bool force = false}) {}
 }
+
+enum _FakeResponseType { json, text }
 
 class _Request {
   const _Request({required this.path, required this.queryParameters});

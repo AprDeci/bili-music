@@ -56,6 +56,31 @@ class MetingRepository {
     }
   }
 
+  Future<String> fetchLyrics(MetingSearchItem item) async {
+    final String lrcUrl = item.lrc.trim();
+    if (lrcUrl.isEmpty) {
+      throw const MetingException('当前歌曲没有歌词地址。');
+    }
+
+    try {
+      final Response<dynamic> response = await _dio.get<dynamic>(
+        lrcUrl,
+        options: Options(responseType: ResponseType.plain),
+      );
+      final dynamic data = response.data;
+      if (data is String) {
+        return data;
+      }
+      throw const MetingException('Meting API 歌词返回格式异常。');
+    } on MetingException {
+      rethrow;
+    } on DioException catch (error) {
+      throw MetingException(_describeDioError(error));
+    } on Object catch (error) {
+      throw MetingException('Meting API 请求失败：$error');
+    }
+  }
+
   MetingSearchItem _mapSearchItem(Map<String, dynamic> json) {
     return MetingSearchItem(
       title: _readString(json['title']),
