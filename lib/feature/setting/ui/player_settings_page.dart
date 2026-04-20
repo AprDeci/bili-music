@@ -1,15 +1,39 @@
+import 'package:bilimusic/common/util/toast_util.dart';
 import 'package:bilimusic/feature/player/domain/player_audio_quality_preference.dart';
+import 'package:bilimusic/feature/meting/logic/meting_settings_logic.dart';
 import 'package:bilimusic/feature/player/logic/player_audio_quality_preference_logic.dart';
 import 'package:bilimusic/feature/player/logic/player_controller.dart';
 import 'package:bilimusic/feature/player/logic/player_settings_logic.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class PlayerSettingsPage extends ConsumerWidget {
+class PlayerSettingsPage extends ConsumerStatefulWidget {
   const PlayerSettingsPage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<PlayerSettingsPage> createState() => _PlayerSettingsPageState();
+}
+
+class _PlayerSettingsPageState extends ConsumerState<PlayerSettingsPage> {
+  late final TextEditingController _metingBaseUrlController;
+  bool _isSavingMetingBaseUrl = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _metingBaseUrlController = TextEditingController(
+      text: ref.read(metingSettingsLogicProvider),
+    );
+  }
+
+  @override
+  void dispose() {
+    _metingBaseUrlController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final bool allowMixWithOthers = ref.watch(playerSettingsLogicProvider);
     final PlayerAudioQualityPreference audioQualityPreference = ref.watch(
@@ -44,9 +68,113 @@ class PlayerSettingsPage extends ConsumerWidget {
             trailing: const Icon(Icons.chevron_right_rounded),
             onTap: () => _showAudioQualitySheet(context, ref),
           ),
+          Theme(
+            data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+            child: ExpansionTile(
+              tilePadding: EdgeInsets.zero,
+              leading: const Icon(Icons.lyrics_outlined),
+              title: const Text('Meting API 地址'),
+              subtitle: Text(
+                ref.watch(metingSettingsLogicProvider).isEmpty
+                    ? '未配置歌词查询服务'
+                    : ref.watch(metingSettingsLogicProvider),
+                style: theme.textTheme.bodySmall,
+              ),
+              children: <Widget>[
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(0, 8, 0, 16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      TextField(
+                        controller: _metingBaseUrlController,
+                        keyboardType: TextInputType.url,
+                        textInputAction: TextInputAction.done,
+                        decoration: const InputDecoration(
+                          labelText: '服务地址',
+                          hintText: 'https://meting.example.com',
+                        ),
+                        onSubmitted: (_) => _handleSaveMetingBaseUrl(),
+                      ),
+                      const SizedBox(height: 16),
+                      Wrap(
+                        spacing: 12,
+                        runSpacing: 12,
+                        children: <Widget>[
+                          FilledButton.icon(
+                            onPressed: _isSavingMetingBaseUrl
+                                ? null
+                                : _handleSaveMetingBaseUrl,
+                            icon: _isSavingMetingBaseUrl
+                                ? const SizedBox(
+                                    width: 18,
+                                    height: 18,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                    ),
+                                  )
+                                : const Icon(Icons.save_rounded),
+                            label: Text(
+                              _isSavingMetingBaseUrl ? '保存中...' : '保存地址',
+                            ),
+                          ),
+                          OutlinedButton.icon(
+                            onPressed: _isSavingMetingBaseUrl
+                                ? null
+                                : _handleClearMetingBaseUrl,
+                            icon: const Icon(Icons.clear_rounded),
+                            label: const Text('清空'),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );
+  }
+
+  Future<void> _handleSaveMetingBaseUrl() async {
+    final String value = _metingBaseUrlController.text.trim();
+    if (value.isNotEmpty) {
+      final Uri? uri = Uri.tryParse(value);
+      final bool isValidHttpUrl =
+          uri != null &&
+          (uri.scheme == 'http' || uri.scheme == 'https') &&
+          uri.host.isNotEmpty;
+      if (!isValidHttpUrl) {
+        ToastUtil.show('请输入有效的 http 或 https 地址');
+        return;
+      }
+    }
+
+    setState(() {
+      _isSavingMetingBaseUrl = true;
+    });
+
+    try {
+      await ref.read(metingSettingsLogicProvider.notifier).setBaseUrl(value);
+      if (!mounted) {
+        return;
+      }
+      _metingBaseUrlController.text = ref.read(metingSettingsLogicProvider);
+      ToastUtil.show(value.isEmpty ? '已清空 Meting API 地址' : 'Meting API 地址已保存');
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSavingMetingBaseUrl = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _handleClearMetingBaseUrl() async {
+    _metingBaseUrlController.clear();
+    await _handleSaveMetingBaseUrl();
   }
 }
 
