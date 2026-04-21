@@ -1,6 +1,7 @@
 import 'package:bilimusic/common/logger.dart';
 import 'package:bilimusic/feature/meting/data/meting_repository.dart';
 import 'package:bilimusic/feature/meting/domain/meting_search_item.dart';
+import 'package:bilimusic/feature/meting/domain/meting_search_response.dart';
 import 'package:bilimusic/feature/meting/domain/meting_server.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
@@ -18,19 +19,42 @@ class MetingLogic {
 
   final _logger = AppLogger('MetingLogic');
 
+  Future<MetingSearchResponse> search({
+    required String keyword,
+    MetingServer server = MetingServer.netease,
+  }) async {
+    final String trimmedKeyword = keyword.trim();
+    if (trimmedKeyword.isEmpty) {
+      return const MetingSearchResponse(
+        keyword: '',
+        results: <MetingSearchItem>[],
+      );
+    }
+
+    final List<MetingSearchItem> results = await _repository.search(
+      keyword: trimmedKeyword,
+      server: server,
+    );
+    return MetingSearchResponse(keyword: trimmedKeyword, results: results);
+  }
+
+  Future<String> fetchLyrics(MetingSearchItem item) {
+    return _repository.fetchLyrics(item);
+  }
+
   Future<MetingSearchItem?> find({
     required String title,
     MetingServer server = MetingServer.netease,
   }) async {
-    final String query = _extractName(title);
+    final String query = extractSearchKeyword(title);
     if (query.isEmpty) {
       return null;
     }
 
-    final List<MetingSearchItem> results = await _repository.search(
+    final List<MetingSearchItem> results = (await search(
       keyword: query,
-      server: server,
-    );
+      server: resolveServer(title, server: server),
+    )).results;
     return results.isEmpty ? null : results.first;
   }
 
@@ -38,16 +62,28 @@ class MetingLogic {
     required String title,
     MetingServer server = MetingServer.netease,
   }) async {
-    if (title.contains("周杰伦") ||
-        title.contains("jay") ||
-        title.contains("Jay")) {
-      server = MetingServer.kugou;
-    }
+    server = resolveServer(title, server: server);
     final MetingSearchItem? item = await find(title: title, server: server);
     if (item == null) {
       return null;
     }
     return _repository.fetchLyrics(item);
+  }
+
+  String extractSearchKeyword(String value) {
+    return _extractName(value);
+  }
+
+  MetingServer resolveServer(
+    String value, {
+    MetingServer server = MetingServer.netease,
+  }) {
+    if (value.contains('周杰伦') ||
+        value.contains('jay') ||
+        value.contains('Jay')) {
+      return MetingServer.kugou;
+    }
+    return server;
   }
 
   String _extractName(String value) {
