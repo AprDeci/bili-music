@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:bilimusic/common/logger.dart';
 import 'package:bilimusic/feature/meting/data/meting_repository.dart';
+import 'package:bilimusic/feature/meting/domain/meting_search_item.dart';
+import 'package:bilimusic/feature/meting/domain/meting_search_response.dart';
 import 'package:bilimusic/feature/meting/logic/meting_logic.dart';
 import 'package:bilimusic/feature/player/domain/playable_item.dart';
 import 'package:bilimusic/feature/player/domain/player_lyrics_state.dart';
@@ -70,6 +72,123 @@ class PlayerLyricsController extends _$PlayerLyricsController {
     state = nextState;
   }
 
+  Future<void> searchManual(String keyword) async {
+    final PlayableItem? item = ref.read(playerControllerProvider).currentItem;
+    final String? stableId = item?.stableId;
+    if (item == null || stableId == null || state.stableId != stableId) {
+      return;
+    }
+
+    final String trimmedKeyword = keyword.trim();
+    final PlayerLyricsState searchingState = state.copyWith(
+      searchKeyword: trimmedKeyword,
+      manualSearchError: null,
+      isSearching: true,
+    );
+    _cache[stableId] = searchingState;
+    state = searchingState;
+
+    try {
+      final MetingLogic metingLogic = ref.read(metingLogicProvider);
+      final MetingSearchResponse response = await metingLogic.search(
+        keyword: trimmedKeyword,
+        server: metingLogic.resolveServer(trimmedKeyword),
+      );
+      if (state.stableId != stableId) {
+        return;
+      }
+      final PlayerLyricsState nextState = state.copyWith(
+        searchKeyword: response.keyword,
+        searchResults: response.results,
+        manualSearchError: null,
+        isSearching: false,
+      );
+      _cache[stableId] = nextState;
+      state = nextState;
+    } on MetingException catch (error) {
+      if (state.stableId != stableId) {
+        return;
+      }
+      final PlayerLyricsState nextState = state.copyWith(
+        searchKeyword: trimmedKeyword,
+        searchResults: const <MetingSearchItem>[],
+        manualSearchError: error.message,
+        isSearching: false,
+      );
+      _cache[stableId] = nextState;
+      state = nextState;
+    } on Object catch (error) {
+      if (state.stableId != stableId) {
+        return;
+      }
+      _logger.e('manual lyrics search failed', error);
+      final PlayerLyricsState nextState = state.copyWith(
+        searchKeyword: trimmedKeyword,
+        searchResults: const <MetingSearchItem>[],
+        manualSearchError: '搜索失败：$error',
+        isSearching: false,
+      );
+      _cache[stableId] = nextState;
+      state = nextState;
+    }
+  }
+
+  Future<void> applyManualResult(MetingSearchItem item) async {
+    final PlayableItem? currentItem = ref
+        .read(playerControllerProvider)
+        .currentItem;
+    final String? stableId = currentItem?.stableId;
+    if (currentItem == null || stableId == null || state.stableId != stableId) {
+      return;
+    }
+
+    final PlayerLyricsState applyingState = state.copyWith(
+      manualSearchError: null,
+      isSearching: true,
+    );
+    _cache[stableId] = applyingState;
+    state = applyingState;
+
+    try {
+      final String rawLyrics = await ref
+          .read(metingLogicProvider)
+          .fetchLyrics(item);
+      if (state.stableId != stableId) {
+        return;
+      }
+      final PlayerLyricsState nextState = state.copyWith(
+        rawLyrics: _normalizeLyrics(rawLyrics),
+        errorMessage: null,
+        manualSearchError: null,
+        isSearching: false,
+        hasSearched: true,
+      );
+      _cache[stableId] = nextState;
+      state = nextState;
+    } on MetingException catch (error) {
+      if (state.stableId != stableId) {
+        return;
+      }
+      final PlayerLyricsState nextState = state.copyWith(
+        manualSearchError: error.message,
+        isSearching: false,
+      );
+      _cache[stableId] = nextState;
+      state = nextState;
+    } on Object catch (error) {
+      if (state.stableId != stableId) {
+        return;
+      }
+      _logger.e('apply manual lyrics result failed', error);
+      final PlayerLyricsState nextState = state.copyWith(
+        manualSearchError: '歌词加载失败：$error',
+        isSearching: false,
+      );
+      _cache[stableId] = nextState;
+      state = nextState;
+    }
+  }
+
   Future<void> _loadCurrentItemLyrics() async {
     final PlayableItem? item = ref.read(playerControllerProvider).currentItem;
     await _loadForItem(item);
@@ -92,15 +211,17 @@ class PlayerLyricsController extends _$PlayerLyricsController {
     state = PlayerLyricsState(stableId: stableId, isLoading: true);
 
     try {
-      final String? rawLyrics = await _findLyricsForItem(item);
+      final lookupResult = await _findLyricsForItem(item);
       if (!_isActiveRequest(requestGeneration, stableId)) {
         return;
       }
 
-      final String? normalizedLyrics = _normalizeLyrics(rawLyrics);
+      final String? normalizedLyrics = _normalizeLyrics(lookupResult.rawLyrics);
       final PlayerLyricsState nextState = PlayerLyricsState(
         stableId: stableId,
         rawLyrics: normalizedLyrics,
+        searchKeyword: lookupResult.searchKeyword,
+        searchResults: lookupResult.searchResults,
         hasSearched: true,
       );
       _cache[stableId] = nextState;
@@ -112,6 +233,7 @@ class PlayerLyricsController extends _$PlayerLyricsController {
       state = PlayerLyricsState(
         stableId: stableId,
         errorMessage: error.message,
+        searchKeyword: _defaultSearchKeyword(item),
         hasSearched: true,
       );
     } on Object catch (error) {
@@ -122,23 +244,50 @@ class PlayerLyricsController extends _$PlayerLyricsController {
       state = PlayerLyricsState(
         stableId: stableId,
         errorMessage: '歌词查询失败：$error',
+        searchKeyword: _defaultSearchKeyword(item),
         hasSearched: true,
       );
     }
   }
 
-  Future<String?> _findLyricsForItem(PlayableItem item) async {
+  Future<
+    ({
+      String? rawLyrics,
+      String? searchKeyword,
+      List<MetingSearchItem> searchResults,
+    })
+  >
+  _findLyricsForItem(PlayableItem item) async {
+    String? fallbackKeyword;
+    final MetingLogic metingLogic = ref.read(metingLogicProvider);
     for (final String title in item.lyricSearchTitles) {
-      final String? rawLyrics = await ref
-          .read(metingLogicProvider)
-          .findLyrics(title: title);
-      final String? normalizedLyrics = _normalizeLyrics(rawLyrics);
-      if (normalizedLyrics != null) {
-        return normalizedLyrics;
+      final String keyword = metingLogic.extractSearchKeyword(title).trim();
+      if (fallbackKeyword == null && keyword.isNotEmpty) {
+        fallbackKeyword = keyword;
+      }
+      final MetingSearchResponse response = await metingLogic.search(
+        keyword: keyword,
+        server: metingLogic.resolveServer(title),
+      );
+      for (final MetingSearchItem result in response.results) {
+        final String? normalizedLyrics = _normalizeLyrics(
+          await metingLogic.fetchLyrics(result),
+        );
+        if (normalizedLyrics != null) {
+          return (
+            rawLyrics: normalizedLyrics,
+            searchKeyword: keyword.isNotEmpty ? keyword : fallbackKeyword,
+            searchResults: response.results,
+          );
+        }
       }
     }
 
-    return null;
+    return (
+      rawLyrics: null,
+      searchKeyword: fallbackKeyword,
+      searchResults: const <MetingSearchItem>[],
+    );
   }
 
   bool _isActiveRequest(int requestGeneration, String stableId) {
@@ -148,5 +297,15 @@ class PlayerLyricsController extends _$PlayerLyricsController {
   String? _normalizeLyrics(String? value) {
     final String trimmed = value?.trim() ?? '';
     return trimmed.isEmpty ? null : trimmed;
+  }
+
+  String? _defaultSearchKeyword(PlayableItem item) {
+    for (final String title in item.lyricSearchTitles) {
+      final String keyword = title.trim();
+      if (keyword.isNotEmpty) {
+        return keyword;
+      }
+    }
+    return null;
   }
 }
