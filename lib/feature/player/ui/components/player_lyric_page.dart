@@ -61,6 +61,23 @@ class _PlayerLyricPageState extends ConsumerState<PlayerLyricPage> {
     );
     _syncLyrics(lyricsState);
 
+    final Widget content = _buildContent(context, lyricsState);
+    if (widget.item == null) {
+      return content;
+    }
+
+    return Column(
+      children: <Widget>[
+        Expanded(child: content),
+        _PlayerLyricToolbar(
+          onSearch: null,
+          onOffset: () => _showLyricOffsetSheet(context),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildContent(BuildContext context, PlayerLyricsState lyricsState) {
     if (widget.item == null) {
       return const _PlayerLyricStatusView(
         icon: Icons.music_note_outlined,
@@ -118,6 +135,8 @@ class _PlayerLyricPageState extends ConsumerState<PlayerLyricPage> {
   }
 
   void _syncLyrics(PlayerLyricsState lyricsState) {
+    _lyricController.lyricOffset = lyricsState.lyricOffsetMs;
+
     final String? rawLyrics = lyricsState.rawLyrics;
     final String? stableId = lyricsState.stableId;
     final String? renderableLyrics = PlayerUtil.buildRenderableLyrics(
@@ -190,6 +209,118 @@ class _PlayerLyricPageState extends ConsumerState<PlayerLyricPage> {
       activeAnchorPosition: 0.42,
       fadeRange: FadeRange(top: 0.42, bottom: 0.8),
     );
+  }
+
+  Future<void> _showLyricOffsetSheet(BuildContext context) async {
+    await showModalBottomSheet<void>(
+      context: context,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
+      ),
+      builder: (BuildContext context) {
+        return const _LyricOffsetSheet();
+      },
+    );
+  }
+}
+
+class _PlayerLyricToolbar extends StatelessWidget {
+  const _PlayerLyricToolbar({required this.onOffset, this.onSearch});
+
+  final VoidCallback? onSearch;
+  final VoidCallback onOffset;
+
+  @override
+  Widget build(BuildContext context) {
+    final ColorScheme colorScheme = Theme.of(context).colorScheme;
+    final Color iconColor = colorScheme.primary.withValues(alpha: 0.72);
+
+    return SafeArea(
+      top: false,
+      child: Padding(
+        padding: const EdgeInsets.only(bottom: 4),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.start,
+          children: <Widget>[
+            IconButton(
+              tooltip: '手动匹配歌词',
+              onPressed: onSearch,
+              color: iconColor,
+              icon: const Icon(Icons.search_rounded),
+            ),
+            const SizedBox(width: 20),
+            IconButton(
+              tooltip: '歌词偏移',
+              onPressed: onOffset,
+              color: iconColor,
+              icon: const Icon(Icons.hourglass_empty_rounded),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _LyricOffsetSheet extends ConsumerWidget {
+  const _LyricOffsetSheet();
+
+  static const int _stepMs = 500;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final PlayerLyricsState lyricsState = ref.watch(
+      playerLyricsControllerProvider,
+    );
+    final PlayerLyricsController controller = ref.read(
+      playerLyricsControllerProvider.notifier,
+    );
+    final TextTheme textTheme = Theme.of(context).textTheme;
+    final ColorScheme colorScheme = Theme.of(context).colorScheme;
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: <Widget>[
+        Padding(
+          padding: const EdgeInsets.fromLTRB(24, 16, 24, 20),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: <Widget>[
+              IconButton(
+                tooltip: '歌词提前 0.5 秒',
+                onPressed: () => controller.adjustOffset(-_stepMs),
+                icon: const Icon(Icons.remove_rounded),
+              ),
+              SizedBox(
+                width: 96,
+                child: Center(
+                  child: Text(
+                    _formatOffset(lyricsState.lyricOffsetMs),
+                    style: textTheme.titleMedium?.copyWith(
+                      color: colorScheme.onSurface,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+              ),
+              IconButton(
+                tooltip: '歌词延后 0.5 秒',
+                onPressed: () => controller.adjustOffset(_stepMs),
+                icon: const Icon(Icons.add_rounded),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  String _formatOffset(int offsetMs) {
+    final double seconds = offsetMs / Duration.millisecondsPerSecond;
+    if (offsetMs > 0) {
+      return '+${seconds.toStringAsFixed(1)}s';
+    }
+    return '${seconds.toStringAsFixed(1)}s';
   }
 }
 

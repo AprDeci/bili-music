@@ -44,6 +44,32 @@ class PlayerLyricsController extends _$PlayerLyricsController {
     await _loadForItem(item);
   }
 
+  void adjustOffset(int deltaMs) {
+    final PlayableItem? item = ref.read(playerControllerProvider).currentItem;
+    final String? stableId = item?.stableId;
+    if (stableId == null || state.stableId != stableId) {
+      return;
+    }
+
+    final PlayerLyricsState nextState = state.copyWith(
+      lyricOffsetMs: state.lyricOffsetMs + deltaMs,
+    );
+    _cache[stableId] = nextState;
+    state = nextState;
+  }
+
+  void resetOffset() {
+    final PlayableItem? item = ref.read(playerControllerProvider).currentItem;
+    final String? stableId = item?.stableId;
+    if (stableId == null || state.stableId != stableId) {
+      return;
+    }
+
+    final PlayerLyricsState nextState = state.copyWith(lyricOffsetMs: 0);
+    _cache[stableId] = nextState;
+    state = nextState;
+  }
+
   Future<void> _loadCurrentItemLyrics() async {
     final PlayableItem? item = ref.read(playerControllerProvider).currentItem;
     await _loadForItem(item);

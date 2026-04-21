@@ -14,7 +14,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$PlayerLyricsState {
 
- String? get stableId; String? get rawLyrics; String? get errorMessage; bool get isLoading; bool get hasSearched;
+ String? get stableId; String? get rawLyrics; String? get errorMessage; int get lyricOffsetMs; bool get isLoading; bool get hasSearched;
 /// Create a copy of PlayerLyricsState
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -25,16 +25,16 @@ $PlayerLyricsStateCopyWith<PlayerLyricsState> get copyWith => _$PlayerLyricsStat
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is PlayerLyricsState&&(identical(other.stableId, stableId) || other.stableId == stableId)&&(identical(other.rawLyrics, rawLyrics) || other.rawLyrics == rawLyrics)&&(identical(other.errorMessage, errorMessage) || other.errorMessage == errorMessage)&&(identical(other.isLoading, isLoading) || other.isLoading == isLoading)&&(identical(other.hasSearched, hasSearched) || other.hasSearched == hasSearched));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is PlayerLyricsState&&(identical(other.stableId, stableId) || other.stableId == stableId)&&(identical(other.rawLyrics, rawLyrics) || other.rawLyrics == rawLyrics)&&(identical(other.errorMessage, errorMessage) || other.errorMessage == errorMessage)&&(identical(other.lyricOffsetMs, lyricOffsetMs) || other.lyricOffsetMs == lyricOffsetMs)&&(identical(other.isLoading, isLoading) || other.isLoading == isLoading)&&(identical(other.hasSearched, hasSearched) || other.hasSearched == hasSearched));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,stableId,rawLyrics,errorMessage,isLoading,hasSearched);
+int get hashCode => Object.hash(runtimeType,stableId,rawLyrics,errorMessage,lyricOffsetMs,isLoading,hasSearched);
 
 @override
 String toString() {
-  return 'PlayerLyricsState(stableId: $stableId, rawLyrics: $rawLyrics, errorMessage: $errorMessage, isLoading: $isLoading, hasSearched: $hasSearched)';
+  return 'PlayerLyricsState(stableId: $stableId, rawLyrics: $rawLyrics, errorMessage: $errorMessage, lyricOffsetMs: $lyricOffsetMs, isLoading: $isLoading, hasSearched: $hasSearched)';
 }
 
 
@@ -45,7 +45,7 @@ abstract mixin class $PlayerLyricsStateCopyWith<$Res>  {
   factory $PlayerLyricsStateCopyWith(PlayerLyricsState value, $Res Function(PlayerLyricsState) _then) = _$PlayerLyricsStateCopyWithImpl;
 @useResult
 $Res call({
- String? stableId, String? rawLyrics, String? errorMessage, bool isLoading, bool hasSearched
+ String? stableId, String? rawLyrics, String? errorMessage, int lyricOffsetMs, bool isLoading, bool hasSearched
 });
 
 
@@ -62,12 +62,13 @@ class _$PlayerLyricsStateCopyWithImpl<$Res>
 
 /// Create a copy of PlayerLyricsState
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? stableId = freezed,Object? rawLyrics = freezed,Object? errorMessage = freezed,Object? isLoading = null,Object? hasSearched = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? stableId = freezed,Object? rawLyrics = freezed,Object? errorMessage = freezed,Object? lyricOffsetMs = null,Object? isLoading = null,Object? hasSearched = null,}) {
   return _then(_self.copyWith(
 stableId: freezed == stableId ? _self.stableId : stableId // ignore: cast_nullable_to_non_nullable
 as String?,rawLyrics: freezed == rawLyrics ? _self.rawLyrics : rawLyrics // ignore: cast_nullable_to_non_nullable
 as String?,errorMessage: freezed == errorMessage ? _self.errorMessage : errorMessage // ignore: cast_nullable_to_non_nullable
-as String?,isLoading: null == isLoading ? _self.isLoading : isLoading // ignore: cast_nullable_to_non_nullable
+as String?,lyricOffsetMs: null == lyricOffsetMs ? _self.lyricOffsetMs : lyricOffsetMs // ignore: cast_nullable_to_non_nullable
+as int,isLoading: null == isLoading ? _self.isLoading : isLoading // ignore: cast_nullable_to_non_nullable
 as bool,hasSearched: null == hasSearched ? _self.hasSearched : hasSearched // ignore: cast_nullable_to_non_nullable
 as bool,
   ));
@@ -154,10 +155,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String? stableId,  String? rawLyrics,  String? errorMessage,  bool isLoading,  bool hasSearched)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String? stableId,  String? rawLyrics,  String? errorMessage,  int lyricOffsetMs,  bool isLoading,  bool hasSearched)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _PlayerLyricsState() when $default != null:
-return $default(_that.stableId,_that.rawLyrics,_that.errorMessage,_that.isLoading,_that.hasSearched);case _:
+return $default(_that.stableId,_that.rawLyrics,_that.errorMessage,_that.lyricOffsetMs,_that.isLoading,_that.hasSearched);case _:
   return orElse();
 
 }
@@ -175,10 +176,10 @@ return $default(_that.stableId,_that.rawLyrics,_that.errorMessage,_that.isLoadin
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String? stableId,  String? rawLyrics,  String? errorMessage,  bool isLoading,  bool hasSearched)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String? stableId,  String? rawLyrics,  String? errorMessage,  int lyricOffsetMs,  bool isLoading,  bool hasSearched)  $default,) {final _that = this;
 switch (_that) {
 case _PlayerLyricsState():
-return $default(_that.stableId,_that.rawLyrics,_that.errorMessage,_that.isLoading,_that.hasSearched);case _:
+return $default(_that.stableId,_that.rawLyrics,_that.errorMessage,_that.lyricOffsetMs,_that.isLoading,_that.hasSearched);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -195,10 +196,10 @@ return $default(_that.stableId,_that.rawLyrics,_that.errorMessage,_that.isLoadin
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String? stableId,  String? rawLyrics,  String? errorMessage,  bool isLoading,  bool hasSearched)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String? stableId,  String? rawLyrics,  String? errorMessage,  int lyricOffsetMs,  bool isLoading,  bool hasSearched)?  $default,) {final _that = this;
 switch (_that) {
 case _PlayerLyricsState() when $default != null:
-return $default(_that.stableId,_that.rawLyrics,_that.errorMessage,_that.isLoading,_that.hasSearched);case _:
+return $default(_that.stableId,_that.rawLyrics,_that.errorMessage,_that.lyricOffsetMs,_that.isLoading,_that.hasSearched);case _:
   return null;
 
 }
@@ -210,12 +211,13 @@ return $default(_that.stableId,_that.rawLyrics,_that.errorMessage,_that.isLoadin
 
 
 class _PlayerLyricsState extends PlayerLyricsState {
-  const _PlayerLyricsState({this.stableId, this.rawLyrics, this.errorMessage, this.isLoading = false, this.hasSearched = false}): super._();
+  const _PlayerLyricsState({this.stableId, this.rawLyrics, this.errorMessage, this.lyricOffsetMs = 0, this.isLoading = false, this.hasSearched = false}): super._();
   
 
 @override final  String? stableId;
 @override final  String? rawLyrics;
 @override final  String? errorMessage;
+@override@JsonKey() final  int lyricOffsetMs;
 @override@JsonKey() final  bool isLoading;
 @override@JsonKey() final  bool hasSearched;
 
@@ -229,16 +231,16 @@ _$PlayerLyricsStateCopyWith<_PlayerLyricsState> get copyWith => __$PlayerLyricsS
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _PlayerLyricsState&&(identical(other.stableId, stableId) || other.stableId == stableId)&&(identical(other.rawLyrics, rawLyrics) || other.rawLyrics == rawLyrics)&&(identical(other.errorMessage, errorMessage) || other.errorMessage == errorMessage)&&(identical(other.isLoading, isLoading) || other.isLoading == isLoading)&&(identical(other.hasSearched, hasSearched) || other.hasSearched == hasSearched));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _PlayerLyricsState&&(identical(other.stableId, stableId) || other.stableId == stableId)&&(identical(other.rawLyrics, rawLyrics) || other.rawLyrics == rawLyrics)&&(identical(other.errorMessage, errorMessage) || other.errorMessage == errorMessage)&&(identical(other.lyricOffsetMs, lyricOffsetMs) || other.lyricOffsetMs == lyricOffsetMs)&&(identical(other.isLoading, isLoading) || other.isLoading == isLoading)&&(identical(other.hasSearched, hasSearched) || other.hasSearched == hasSearched));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,stableId,rawLyrics,errorMessage,isLoading,hasSearched);
+int get hashCode => Object.hash(runtimeType,stableId,rawLyrics,errorMessage,lyricOffsetMs,isLoading,hasSearched);
 
 @override
 String toString() {
-  return 'PlayerLyricsState(stableId: $stableId, rawLyrics: $rawLyrics, errorMessage: $errorMessage, isLoading: $isLoading, hasSearched: $hasSearched)';
+  return 'PlayerLyricsState(stableId: $stableId, rawLyrics: $rawLyrics, errorMessage: $errorMessage, lyricOffsetMs: $lyricOffsetMs, isLoading: $isLoading, hasSearched: $hasSearched)';
 }
 
 
@@ -249,7 +251,7 @@ abstract mixin class _$PlayerLyricsStateCopyWith<$Res> implements $PlayerLyricsS
   factory _$PlayerLyricsStateCopyWith(_PlayerLyricsState value, $Res Function(_PlayerLyricsState) _then) = __$PlayerLyricsStateCopyWithImpl;
 @override @useResult
 $Res call({
- String? stableId, String? rawLyrics, String? errorMessage, bool isLoading, bool hasSearched
+ String? stableId, String? rawLyrics, String? errorMessage, int lyricOffsetMs, bool isLoading, bool hasSearched
 });
 
 
@@ -266,12 +268,13 @@ class __$PlayerLyricsStateCopyWithImpl<$Res>
 
 /// Create a copy of PlayerLyricsState
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? stableId = freezed,Object? rawLyrics = freezed,Object? errorMessage = freezed,Object? isLoading = null,Object? hasSearched = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? stableId = freezed,Object? rawLyrics = freezed,Object? errorMessage = freezed,Object? lyricOffsetMs = null,Object? isLoading = null,Object? hasSearched = null,}) {
   return _then(_PlayerLyricsState(
 stableId: freezed == stableId ? _self.stableId : stableId // ignore: cast_nullable_to_non_nullable
 as String?,rawLyrics: freezed == rawLyrics ? _self.rawLyrics : rawLyrics // ignore: cast_nullable_to_non_nullable
 as String?,errorMessage: freezed == errorMessage ? _self.errorMessage : errorMessage // ignore: cast_nullable_to_non_nullable
-as String?,isLoading: null == isLoading ? _self.isLoading : isLoading // ignore: cast_nullable_to_non_nullable
+as String?,lyricOffsetMs: null == lyricOffsetMs ? _self.lyricOffsetMs : lyricOffsetMs // ignore: cast_nullable_to_non_nullable
+as int,isLoading: null == isLoading ? _self.isLoading : isLoading // ignore: cast_nullable_to_non_nullable
 as bool,hasSearched: null == hasSearched ? _self.hasSearched : hasSearched // ignore: cast_nullable_to_non_nullable
 as bool,
   ));

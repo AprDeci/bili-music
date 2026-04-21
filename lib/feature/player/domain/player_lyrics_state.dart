@@ -8,6 +8,7 @@ abstract class PlayerLyricsState with _$PlayerLyricsState {
     String? stableId,
     String? rawLyrics,
     String? errorMessage,
+    @Default(0) int lyricOffsetMs,
     @Default(false) bool isLoading,
     @Default(false) bool hasSearched,
   }) = _PlayerLyricsState;
