@@ -1,3 +1,4 @@
+import 'package:bilimusic/feature/meting/domain/meting_search_item.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 
 part 'player_lyrics_state.freezed.dart';
@@ -8,7 +9,11 @@ abstract class PlayerLyricsState with _$PlayerLyricsState {
     String? stableId,
     String? rawLyrics,
     String? errorMessage,
+    String? searchKeyword,
+    String? manualSearchError,
+    @Default(<MetingSearchItem>[]) List<MetingSearchItem> searchResults,
     @Default(0) int lyricOffsetMs,
+    @Default(false) bool isSearching,
     @Default(false) bool isLoading,
     @Default(false) bool hasSearched,
   }) = _PlayerLyricsState;
