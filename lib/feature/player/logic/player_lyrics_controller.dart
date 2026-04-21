@@ -66,9 +66,7 @@ class PlayerLyricsController extends _$PlayerLyricsController {
     state = PlayerLyricsState(stableId: stableId, isLoading: true);
 
     try {
-      final String? rawLyrics = await ref
-          .read(metingLogicProvider)
-          .findLyrics(title: item.title);
+      final String? rawLyrics = await _findLyricsForItem(item);
       if (!_isActiveRequest(requestGeneration, stableId)) {
         return;
       }
@@ -101,6 +99,20 @@ class PlayerLyricsController extends _$PlayerLyricsController {
         hasSearched: true,
       );
     }
+  }
+
+  Future<String?> _findLyricsForItem(PlayableItem item) async {
+    for (final String title in item.lyricSearchTitles) {
+      final String? rawLyrics = await ref
+          .read(metingLogicProvider)
+          .findLyrics(title: title);
+      final String? normalizedLyrics = _normalizeLyrics(rawLyrics);
+      if (normalizedLyrics != null) {
+        return normalizedLyrics;
+      }
+    }
+
+    return null;
   }
 
   bool _isActiveRequest(int requestGeneration, String stableId) {

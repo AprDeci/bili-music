@@ -30,6 +30,21 @@ abstract class PlayableItem with _$PlayableItem {
 
   bool get hasIdentity => aid > 0 || bvid.isNotEmpty;
 
+  List<String> get lyricSearchTitles {
+    final List<String> titles = <String>[];
+    final String partTitle = pageTitle?.trim() ?? '';
+    final String videoTitle = title.trim();
+
+    if (partTitle.isNotEmpty) {
+      titles.add(partTitle);
+    }
+    if (videoTitle.isNotEmpty && !titles.contains(videoTitle)) {
+      titles.add(videoTitle);
+    }
+
+    return titles;
+  }
+
   String get stableId {
     final int? resolvedCid = cid;
     if (resolvedCid != null && resolvedCid > 0) {
