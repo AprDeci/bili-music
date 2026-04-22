@@ -10,7 +10,7 @@ class AppearanceSettingLogic extends _$AppearanceSettingLogic {
   bool build() {
     return ref
         .read(appSettingsStoreProvider)
-        .readBool(HiveKeys.appearanceUseGlassBar, defaultValue: false);
+        .readBool(HiveKeys.appearanceUseGlassBar, defaultValue: true);
   }
 
   Future<void> setUseGlassBar(bool value) async {
