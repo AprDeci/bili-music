@@ -152,71 +152,74 @@ class _ScaffoldWithNavBarState extends ConsumerState<ScaffoldWithNavBar> {
                         );
                       },
                     )
-                  : DecoratedBox(
-                      decoration: BoxDecoration(
-                        color: colorScheme.surface,
-                        borderRadius: BorderRadius.circular(40),
-                        border: Border.all(
-                          color: colorScheme.primary.withValues(alpha: 0.08),
-                        ),
-                        boxShadow: const <BoxShadow>[
-                          BoxShadow(
-                            color: Color(0x14000000),
-                            blurRadius: 30,
-                            offset: Offset(0, 16),
+                  : Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 64.0),
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          color: colorScheme.surface,
+                          borderRadius: BorderRadius.circular(40),
+                          border: Border.all(
+                            color: colorScheme.primary.withValues(alpha: 0.08),
                           ),
-                        ],
-                      ),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(40),
-                        child: NavigationBarTheme(
-                          data: NavigationBarThemeData(
-                            backgroundColor: Colors.transparent,
-                            elevation: 0,
-                            height: BottomHeightHelper.bottomBarHeight,
-                            indicatorColor: colorScheme.primary.withValues(
-                              alpha: 0.12,
+                          boxShadow: const <BoxShadow>[
+                            BoxShadow(
+                              color: Color(0x14000000),
+                              blurRadius: 30,
+                              offset: Offset(0, 16),
                             ),
-                            iconTheme:
-                                WidgetStateProperty.resolveWith<IconThemeData>((
-                                  Set<WidgetState> states,
-                                ) {
-                                  if (states.contains(WidgetState.selected)) {
-                                    return IconThemeData(
-                                      color: colorScheme.primary,
-                                    );
-                                  }
+                          ],
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(40),
+                          child: NavigationBarTheme(
+                            data: NavigationBarThemeData(
+                              backgroundColor: Colors.transparent,
+                              elevation: 0,
+                              height: BottomHeightHelper.bottomBarHeight,
+                              indicatorColor: colorScheme.primary.withValues(
+                                alpha: 0.12,
+                              ),
+                              iconTheme:
+                                  WidgetStateProperty.resolveWith<
+                                    IconThemeData
+                                  >((Set<WidgetState> states) {
+                                    if (states.contains(WidgetState.selected)) {
+                                      return IconThemeData(
+                                        color: colorScheme.primary,
+                                      );
+                                    }
 
-                                  return const IconThemeData(
-                                    color: Color(0xFF7B8698),
-                                  );
-                                }),
-                          ),
-                          child: NavigationBar(
-                            selectedIndex: _currentIndex,
-                            onDestinationSelected: (int index) {
-                              setState(() => _currentIndex = index);
-                              widget.navigationShell.goBranch(
-                                index,
-                                initialLocation:
-                                    index ==
-                                    widget.navigationShell.currentIndex,
-                              );
-                            },
-                            labelBehavior:
-                                NavigationDestinationLabelBehavior.alwaysHide,
-                            destinations: const <NavigationDestination>[
-                              NavigationDestination(
-                                icon: Icon(Icons.home_outlined),
-                                selectedIcon: Icon(Icons.home),
-                                label: '首页',
-                              ),
-                              NavigationDestination(
-                                icon: Icon(Icons.person_outlined),
-                                selectedIcon: Icon(Icons.person),
-                                label: '我的',
-                              ),
-                            ],
+                                    return const IconThemeData(
+                                      color: Color(0xFF7B8698),
+                                    );
+                                  }),
+                            ),
+                            child: NavigationBar(
+                              selectedIndex: _currentIndex,
+                              onDestinationSelected: (int index) {
+                                setState(() => _currentIndex = index);
+                                widget.navigationShell.goBranch(
+                                  index,
+                                  initialLocation:
+                                      index ==
+                                      widget.navigationShell.currentIndex,
+                                );
+                              },
+                              labelBehavior:
+                                  NavigationDestinationLabelBehavior.alwaysHide,
+                              destinations: const <NavigationDestination>[
+                                NavigationDestination(
+                                  icon: Icon(Icons.home_outlined),
+                                  selectedIcon: Icon(Icons.home),
+                                  label: '首页',
+                                ),
+                                NavigationDestination(
+                                  icon: Icon(Icons.person_outlined),
+                                  selectedIcon: Icon(Icons.person),
+                                  label: '我的',
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                       ),
