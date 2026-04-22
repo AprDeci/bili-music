@@ -6,6 +6,7 @@ class CacheUtil {
 
   static CacheManager get imageCacheManager => AppImageCacheManager.instance;
   static CacheManager get audioCacheManager => AppAudioCacheManager.instance;
+  static CacheManager get lyricsCacheManager => AppLyricsCacheManager.instance;
 
   static Future<void> clearImageCache() async {
     await imageCacheManager.emptyCache();
@@ -15,8 +16,16 @@ class CacheUtil {
     await audioCacheManager.emptyCache();
   }
 
+  static Future<void> clearLyricsCache() async {
+    await lyricsCacheManager.emptyCache();
+  }
+
   static Future<void> clearAllCache() async {
-    await Future.wait(<Future<void>>[clearImageCache(), clearAudioCache()]);
+    await Future.wait(<Future<void>>[
+      clearImageCache(),
+      clearAudioCache(),
+      clearLyricsCache(),
+    ]);
   }
 
   static Future<void> removeImageCache(String url) async {
@@ -27,12 +36,20 @@ class CacheUtil {
     await audioCacheManager.removeFile(url);
   }
 
+  static Future<void> removeLyricsCache(String key) async {
+    await lyricsCacheManager.removeFile(key);
+  }
+
   static Future<FileInfo?> getImageCache(String url) async {
     return await imageCacheManager.getFileFromCache(url);
   }
 
   static Future<FileInfo?> getAudioCache(String url) async {
     return await audioCacheManager.getFileFromCache(url);
+  }
+
+  static Future<FileInfo?> getLyricsCache(String key) async {
+    return await lyricsCacheManager.getFileFromCache(key);
   }
 
   static Future<int> getImageCacheSizeBytes() async {
@@ -43,10 +60,15 @@ class CacheUtil {
     return audioCacheManager.store.getCacheSize();
   }
 
+  static Future<int> getLyricsCacheSizeBytes() async {
+    return lyricsCacheManager.store.getCacheSize();
+  }
+
   static Future<int> getTotalCacheSizeBytes() async {
     final List<int> sizes = await Future.wait<int>(<Future<int>>[
       getImageCacheSizeBytes(),
       getAudioCacheSizeBytes(),
+      getLyricsCacheSizeBytes(),
     ]);
     return sizes.fold<int>(0, (int total, int item) => total + item);
   }
