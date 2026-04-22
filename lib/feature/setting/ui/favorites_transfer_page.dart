@@ -263,7 +263,7 @@ class _FavoritesTransferPageState extends ConsumerState<FavoritesTransferPage> {
     });
 
     try {
-      final String? directoryPath = await FilePicker.platform.getDirectoryPath(
+      final String? directoryPath = await FilePicker.getDirectoryPath(
         dialogTitle: '选择导出目录',
       );
       if (directoryPath == null) {
@@ -302,7 +302,7 @@ class _FavoritesTransferPageState extends ConsumerState<FavoritesTransferPage> {
     });
 
     try {
-      final FilePickerResult? result = await FilePicker.platform.pickFiles(
+      final FilePickerResult? result = await FilePicker.pickFiles(
         type: FileType.custom,
         allowedExtensions: const <String>['json'],
         withData: true,
