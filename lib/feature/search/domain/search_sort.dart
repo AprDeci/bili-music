@@ -1,14 +1,17 @@
-enum SearchSort { comprehensive, newest, mostFavorite }
+enum SearchSort { comprehensive, newest, mostFavorite, click }
 
 extension SearchSortExtension on SearchSort {
   String get label {
     switch (this) {
       case SearchSort.comprehensive:
         return '综合';
+      case SearchSort.click:
+        return '最多点击';
       case SearchSort.newest:
         return '最新发布';
       case SearchSort.mostFavorite:
         return '最多收藏';
+      
     }
   }
 
@@ -16,6 +19,8 @@ extension SearchSortExtension on SearchSort {
     switch (this) {
       case SearchSort.comprehensive:
         return 'totalrank';
+      case SearchSort.click:
+        return 'click';
       case SearchSort.newest:
         return 'pubdate';
       case SearchSort.mostFavorite:
