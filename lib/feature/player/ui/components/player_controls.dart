@@ -86,6 +86,7 @@ class PlayerTransportControls extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ColorScheme colorScheme = Theme.of(context).colorScheme;
+    final bool canTogglePlayback = state.hasQueue && !state.isLoading;
     final Color iconColor = state.isReady
         ? colorScheme.onSurface
         : colorScheme.onSurface.withValues(alpha: 0.3);
@@ -124,7 +125,7 @@ class PlayerTransportControls extends StatelessWidget {
             ],
           ),
           child: FilledButton(
-            onPressed: state.isReady ? onTogglePlayback : null,
+            onPressed: canTogglePlayback ? onTogglePlayback : null,
             style: FilledButton.styleFrom(
               minimumSize: const Size(54, 54),
               shape: const CircleBorder(),
