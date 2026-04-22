@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 class BottomHeightHelper {
   static const double bottomBarHeight = 60;
-  static const double miniPlayerBarHeight = 72;
+  static const double miniPlayerBarHeight = 56;
   static const double miniPlayerGapWithBottomBar = 10;
   static const double miniPlayerGapWithoutBottomBar = 20;
   static const double contentBottomGap = 16;
