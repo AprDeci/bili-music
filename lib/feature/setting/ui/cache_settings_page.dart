@@ -18,8 +18,10 @@ class _CacheSettingsPageState extends State<CacheSettingsPage>
     with SingleTickerProviderStateMixin {
   int _imageCacheBytes = 0;
   int _audioCacheBytes = 0;
+  int _lyricsCacheBytes = 0;
   bool _imageSelected = true;
   bool _audioSelected = true;
+  bool _lyricsSelected = true;
   bool _isLoading = true;
   bool _isClearing = false;
   late final AnimationController _controller;
@@ -37,7 +39,8 @@ class _CacheSettingsPageState extends State<CacheSettingsPage>
     super.dispose();
   }
 
-  int get _totalCacheBytes => _imageCacheBytes + _audioCacheBytes;
+  int get _totalCacheBytes =>
+      _imageCacheBytes + _audioCacheBytes + _lyricsCacheBytes;
 
   int get _selectedCacheBytes {
     int total = 0;
@@ -46,6 +49,9 @@ class _CacheSettingsPageState extends State<CacheSettingsPage>
     }
     if (_audioSelected) {
       total += _audioCacheBytes;
+    }
+    if (_lyricsSelected) {
+      total += _lyricsCacheBytes;
     }
     return total;
   }
@@ -56,6 +62,7 @@ class _CacheSettingsPageState extends State<CacheSettingsPage>
     final List<int> sizes = await Future.wait<int>(<Future<int>>[
       CacheUtil.getImageCacheSizeBytes(),
       CacheUtil.getAudioCacheSizeBytes(),
+      CacheUtil.getLyricsCacheSizeBytes(),
     ]);
 
     if (!mounted) {
@@ -65,6 +72,7 @@ class _CacheSettingsPageState extends State<CacheSettingsPage>
     setState(() {
       _imageCacheBytes = sizes[0];
       _audioCacheBytes = sizes[1];
+      _lyricsCacheBytes = sizes[2];
       _isLoading = false;
     });
   }
@@ -95,6 +103,9 @@ class _CacheSettingsPageState extends State<CacheSettingsPage>
       }
       if (_audioSelected) {
         tasks.add(CacheUtil.clearAudioCache());
+      }
+      if (_lyricsSelected) {
+        tasks.add(CacheUtil.clearLyricsCache());
       }
 
       await Future.wait<void>(tasks);
@@ -127,6 +138,12 @@ class _CacheSettingsPageState extends State<CacheSettingsPage>
   void _toggleAudioSelected() {
     setState(() {
       _audioSelected = !_audioSelected;
+    });
+  }
+
+  void _toggleLyricsSelected() {
+    setState(() {
+      _lyricsSelected = !_lyricsSelected;
     });
   }
 
@@ -174,6 +191,21 @@ class _CacheSettingsPageState extends State<CacheSettingsPage>
                             400,
                           ),
                           titleStyle: TextStyle(color: Colors.white),
+                          radius: 45,
+                        ),
+                        PieChartSectionData(
+                          title: _lyricsCacheBytes > 0
+                              ? '歌词 ${(_lyricsCacheBytes / _totalCacheBytes * 100).toStringAsFixed(0)}%'
+                              : null,
+                          value: _lyricsSelected
+                              ? (_lyricsCacheBytes / _totalCacheBytes * 100)
+                                    .toDouble()
+                              : 0,
+                          color: ColorUtil.getShade(
+                            theme.colorScheme.primary,
+                            700,
+                          ),
+                          titleStyle: const TextStyle(color: Colors.white),
                           radius: 45,
                         ),
                       ],
@@ -236,6 +268,15 @@ class _CacheSettingsPageState extends State<CacheSettingsPage>
                   selected: _audioSelected,
                   enabled: !_isLoading && !_isClearing,
                   onTap: _toggleAudioSelected,
+                ),
+                const Divider(height: 1),
+                _CacheCategoryTile(
+                  icon: Icons.lyrics_outlined,
+                  title: '歌词',
+                  valueLabel: formatBytes(_lyricsCacheBytes),
+                  selected: _lyricsSelected,
+                  enabled: !_isLoading && !_isClearing,
+                  onTap: _toggleLyricsSelected,
                 ),
               ],
             ),
@@ -337,7 +378,7 @@ Future<bool?> _showClearCacheDialog(
     builder: (BuildContext context) {
       return AlertDialog(
         title: const Text('确认清空所选缓存吗？'),
-        content: Text('将清理 $cacheSizeLabel 的图片与音频缓存，后续使用时会重新下载。'),
+        content: Text('将清理 $cacheSizeLabel 的图片、音频与歌词缓存，后续使用时会重新下载或重新拉取。'),
         actions: <Widget>[
           TextButton(
             onPressed: () => Navigator.pop(context, false),
