@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:bilimusic/core/hive/hive_keys.dart';
 import 'package:bilimusic/core/settings/app_settings_store.dart';
+import 'package:bilimusic/common/components/url_text_input.dart';
 import 'package:bilimusic/feature/setting/domain/webdav_config.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:webdav_client/webdav_client.dart' as webdav;
@@ -142,7 +143,7 @@ class WebDavRepository {
 
   WebDavConfig _normalizeConfig(WebDavConfig config) {
     return config.copyWith(
-      baseUrl: config.baseUrl.trim(),
+      baseUrl: normalizeHttpUrl(config.baseUrl),
       username: config.username.trim(),
       password: config.password,
     );

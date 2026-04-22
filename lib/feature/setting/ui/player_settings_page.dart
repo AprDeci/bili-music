@@ -1,4 +1,5 @@
 import 'package:bilimusic/common/util/toast_util.dart';
+import 'package:bilimusic/common/components/url_text_input.dart';
 import 'package:bilimusic/feature/player/domain/player_audio_quality_preference.dart';
 import 'package:bilimusic/feature/meting/logic/meting_settings_logic.dart';
 import 'package:bilimusic/feature/player/logic/player_audio_quality_preference_logic.dart';
@@ -15,21 +16,13 @@ class PlayerSettingsPage extends ConsumerStatefulWidget {
 }
 
 class _PlayerSettingsPageState extends ConsumerState<PlayerSettingsPage> {
-  late final TextEditingController _metingBaseUrlController;
+  late String _metingBaseUrlValue;
   bool _isSavingMetingBaseUrl = false;
 
   @override
   void initState() {
     super.initState();
-    _metingBaseUrlController = TextEditingController(
-      text: ref.read(metingSettingsLogicProvider),
-    );
-  }
-
-  @override
-  void dispose() {
-    _metingBaseUrlController.dispose();
-    super.dispose();
+    _metingBaseUrlValue = ref.read(metingSettingsLogicProvider);
   }
 
   @override
@@ -86,14 +79,14 @@ class _PlayerSettingsPageState extends ConsumerState<PlayerSettingsPage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: <Widget>[
-                      TextField(
-                        controller: _metingBaseUrlController,
-                        keyboardType: TextInputType.url,
-                        textInputAction: TextInputAction.done,
-                        decoration: const InputDecoration(
-                          labelText: '服务地址',
-                          hintText: 'https://meting.example.com',
-                        ),
+                      UrlTextInput(
+                        labelText: '服务地址',
+                        hintText: 'meting.example.com',
+                        value: _metingBaseUrlValue,
+                        enabled: !_isSavingMetingBaseUrl,
+                        onChanged: (String value) {
+                          _metingBaseUrlValue = value;
+                        },
                         onSubmitted: (_) => _handleSaveMetingBaseUrl(),
                       ),
                       const SizedBox(height: 16),
@@ -139,17 +132,10 @@ class _PlayerSettingsPageState extends ConsumerState<PlayerSettingsPage> {
   }
 
   Future<void> _handleSaveMetingBaseUrl() async {
-    final String value = _metingBaseUrlController.text.trim();
-    if (value.isNotEmpty) {
-      final Uri? uri = Uri.tryParse(value);
-      final bool isValidHttpUrl =
-          uri != null &&
-          (uri.scheme == 'http' || uri.scheme == 'https') &&
-          uri.host.isNotEmpty;
-      if (!isValidHttpUrl) {
-        ToastUtil.show('请输入有效的 http 或 https 地址');
-        return;
-      }
+    final String value = normalizeHttpUrl(_metingBaseUrlValue);
+    if (!isValidHttpUrl(value)) {
+      ToastUtil.show('请输入有效的 http 或 https 地址');
+      return;
     }
 
     setState(() {
@@ -161,7 +147,9 @@ class _PlayerSettingsPageState extends ConsumerState<PlayerSettingsPage> {
       if (!mounted) {
         return;
       }
-      _metingBaseUrlController.text = ref.read(metingSettingsLogicProvider);
+      setState(() {
+        _metingBaseUrlValue = ref.read(metingSettingsLogicProvider);
+      });
       ToastUtil.show(value.isEmpty ? '已清空 Meting API 地址' : 'Meting API 地址已保存');
     } finally {
       if (mounted) {
@@ -173,7 +161,9 @@ class _PlayerSettingsPageState extends ConsumerState<PlayerSettingsPage> {
   }
 
   Future<void> _handleClearMetingBaseUrl() async {
-    _metingBaseUrlController.clear();
+    setState(() {
+      _metingBaseUrlValue = '';
+    });
     await _handleSaveMetingBaseUrl();
   }
 }

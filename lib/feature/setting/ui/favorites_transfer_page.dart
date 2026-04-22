@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:bilimusic/common/util/format_util.dart';
 import 'package:bilimusic/common/util/toast_util.dart';
+import 'package:bilimusic/common/components/url_text_input.dart';
 import 'package:bilimusic/feature/favorites/logic/favorites_controller.dart';
 import 'package:bilimusic/feature/setting/data/webdav_repository.dart';
 import 'package:bilimusic/feature/setting/domain/favorites_import_preview.dart';
@@ -28,8 +29,7 @@ class _FavoritesTransferPageState extends ConsumerState<FavoritesTransferPage> {
   bool _isSavingWebDav = false;
   bool _isUploadingWebDav = false;
   bool _isImportingWebDav = false;
-  final TextEditingController _webDavBaseUrlController =
-      TextEditingController();
+  String _webDavBaseUrlValue = '';
   final TextEditingController _webDavUsernameController =
       TextEditingController();
   final TextEditingController _webDavPasswordController =
@@ -43,7 +43,6 @@ class _FavoritesTransferPageState extends ConsumerState<FavoritesTransferPage> {
 
   @override
   void dispose() {
-    _webDavBaseUrlController.dispose();
     _webDavUsernameController.dispose();
     _webDavPasswordController.dispose();
     super.dispose();
@@ -73,12 +72,18 @@ class _FavoritesTransferPageState extends ConsumerState<FavoritesTransferPage> {
                         style: theme.textTheme.bodyMedium,
                       ),
                       const SizedBox(height: 16),
-                      TextField(
-                        controller: _webDavBaseUrlController,
-                        decoration: const InputDecoration(
-                          labelText: '服务器地址',
-                          hintText: 'https://dav.example.com/dav',
-                        ),
+                      UrlTextInput(
+                        labelText: '服务器地址',
+                        hintText: 'dav.example.com/dav',
+                        value: _webDavBaseUrlValue,
+                        enabled:
+                            !_isSavingWebDav &&
+                            !_isTestingWebDav &&
+                            !_isUploadingWebDav &&
+                            !_isImportingWebDav,
+                        onChanged: (String value) {
+                          _webDavBaseUrlValue = value;
+                        },
                       ),
                       const SizedBox(height: 12),
                       TextField(
@@ -247,7 +252,7 @@ class _FavoritesTransferPageState extends ConsumerState<FavoritesTransferPage> {
 
   void _loadWebDavConfig() {
     final WebDavConfig config = ref.read(webDavLogicProvider).loadConfig();
-    _webDavBaseUrlController.text = config.baseUrl;
+    _webDavBaseUrlValue = config.baseUrl;
     _webDavUsernameController.text = config.username;
     _webDavPasswordController.text = config.password;
   }
@@ -362,15 +367,24 @@ class _FavoritesTransferPageState extends ConsumerState<FavoritesTransferPage> {
   }
 
   Future<void> _handleSaveWebDav() async {
+    final WebDavConfig config = _buildWebDavConfig();
+    if (config.baseUrl.isNotEmpty && !isValidHttpUrl(config.baseUrl)) {
+      ToastUtil.show('请输入有效的 http 或 https WebDAV 地址');
+      return;
+    }
+
     setState(() {
       _isSavingWebDav = true;
     });
 
     try {
-      await ref.read(webDavLogicProvider).saveConfig(_buildWebDavConfig());
+      await ref.read(webDavLogicProvider).saveConfig(config);
       if (!mounted) {
         return;
       }
+      setState(() {
+        _webDavBaseUrlValue = normalizeHttpUrl(config.baseUrl);
+      });
       ToastUtil.show('WebDAV 配置已保存');
     } on Object catch (error) {
       if (!mounted) {
@@ -387,16 +401,25 @@ class _FavoritesTransferPageState extends ConsumerState<FavoritesTransferPage> {
   }
 
   Future<void> _handleTestWebDav() async {
+    final WebDavConfig config = _buildWebDavConfig();
+    if (config.baseUrl.isNotEmpty && !isValidHttpUrl(config.baseUrl)) {
+      ToastUtil.show('请输入有效的 http 或 https WebDAV 地址');
+      return;
+    }
+
     setState(() {
       _isTestingWebDav = true;
     });
 
     try {
-      await ref.read(webDavLogicProvider).saveConfig(_buildWebDavConfig());
+      await ref.read(webDavLogicProvider).saveConfig(config);
       await ref.read(webDavLogicProvider).testConnection();
       if (!mounted) {
         return;
       }
+      setState(() {
+        _webDavBaseUrlValue = normalizeHttpUrl(config.baseUrl);
+      });
       ToastUtil.show('WebDAV 连接成功');
     } on Object catch (error) {
       if (!mounted) {
@@ -413,16 +436,25 @@ class _FavoritesTransferPageState extends ConsumerState<FavoritesTransferPage> {
   }
 
   Future<void> _handleUploadToWebDav() async {
+    final WebDavConfig config = _buildWebDavConfig();
+    if (config.baseUrl.isNotEmpty && !isValidHttpUrl(config.baseUrl)) {
+      ToastUtil.show('请输入有效的 http 或 https WebDAV 地址');
+      return;
+    }
+
     setState(() {
       _isUploadingWebDav = true;
     });
 
     try {
-      await ref.read(webDavLogicProvider).saveConfig(_buildWebDavConfig());
+      await ref.read(webDavLogicProvider).saveConfig(config);
       await ref.read(webDavLogicProvider).uploadCurrentFavoritesBackup();
       if (!mounted) {
         return;
       }
+      setState(() {
+        _webDavBaseUrlValue = normalizeHttpUrl(config.baseUrl);
+      });
       ToastUtil.show('已上传当前收藏到 WebDAV');
     } on Object catch (error) {
       if (!mounted) {
@@ -440,10 +472,20 @@ class _FavoritesTransferPageState extends ConsumerState<FavoritesTransferPage> {
 
   Future<void> _handleRemoteImportPressed() async {
     try {
-      await ref.read(webDavLogicProvider).saveConfig(_buildWebDavConfig());
+      final WebDavConfig config = _buildWebDavConfig();
+      if (config.baseUrl.isNotEmpty && !isValidHttpUrl(config.baseUrl)) {
+        ToastUtil.show('请输入有效的 http 或 https WebDAV 地址');
+        return;
+      }
+
+      await ref.read(webDavLogicProvider).saveConfig(config);
       if (!mounted) {
         return;
       }
+
+      setState(() {
+        _webDavBaseUrlValue = normalizeHttpUrl(config.baseUrl);
+      });
 
       final WebDavBackupItem? selected = await showDialog<WebDavBackupItem>(
         context: context,
@@ -515,7 +557,7 @@ class _FavoritesTransferPageState extends ConsumerState<FavoritesTransferPage> {
 
   WebDavConfig _buildWebDavConfig() {
     return WebDavConfig(
-      baseUrl: _webDavBaseUrlController.text,
+      baseUrl: normalizeHttpUrl(_webDavBaseUrlValue),
       username: _webDavUsernameController.text,
       password: _webDavPasswordController.text,
     );
@@ -531,7 +573,6 @@ class _FavoritesTransferPageState extends ConsumerState<FavoritesTransferPage> {
     final String ss = now.second.toString().padLeft(2, '0');
     return 'bilimusic-favorites-$yyyy$mm$dd-$hh$min$ss.json';
   }
-
 }
 
 class _RemoteImportDialog extends ConsumerStatefulWidget {

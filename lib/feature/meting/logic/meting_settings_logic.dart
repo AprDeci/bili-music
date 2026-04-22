@@ -1,5 +1,6 @@
 import 'package:bilimusic/core/hive/hive_keys.dart';
 import 'package:bilimusic/core/settings/app_settings_store.dart';
+import 'package:bilimusic/common/components/url_text_input.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'meting_settings_logic.g.dart';
@@ -24,6 +25,6 @@ class MetingSettingsLogic extends _$MetingSettingsLogic {
   }
 
   String _normalizeBaseUrl(String value) {
-    return value.trim().replaceFirst(RegExp(r'/+$'), '');
+    return normalizeHttpUrl(value);
   }
 }
