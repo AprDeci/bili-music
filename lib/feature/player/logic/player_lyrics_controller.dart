@@ -1,11 +1,14 @@
 import 'dart:async';
 
 import 'package:bilimusic/common/logger.dart';
+import 'package:bilimusic/feature/favorites/logic/favorites_controller.dart';
 import 'package:bilimusic/feature/meting/data/meting_repository.dart';
 import 'package:bilimusic/feature/meting/domain/meting_search_item.dart';
 import 'package:bilimusic/feature/meting/domain/meting_search_response.dart';
 import 'package:bilimusic/feature/meting/logic/meting_logic.dart';
+import 'package:bilimusic/feature/player/data/player_lyrics_cache_repository.dart';
 import 'package:bilimusic/feature/player/domain/playable_item.dart';
+import 'package:bilimusic/feature/player/domain/player_lyrics_cache_entry.dart';
 import 'package:bilimusic/feature/player/domain/player_lyrics_state.dart';
 import 'package:bilimusic/feature/player/domain/player_state.dart';
 import 'package:bilimusic/feature/player/logic/player_controller.dart';
@@ -16,7 +19,6 @@ part 'player_lyrics_controller.g.dart';
 @Riverpod(keepAlive: true)
 class PlayerLyricsController extends _$PlayerLyricsController {
   final AppLogger _logger = AppLogger('PlayerLyricsController');
-  final Map<String, PlayerLyricsState> _cache = <String, PlayerLyricsState>{};
 
   int _generation = 0;
 
@@ -42,11 +44,10 @@ class PlayerLyricsController extends _$PlayerLyricsController {
       return;
     }
 
-    _cache.remove(item.stableId);
-    await _loadForItem(item);
+    await _loadForItem(item, ignoreCache: true);
   }
 
-  void adjustOffset(int deltaMs) {
+  Future<void> adjustOffset(int deltaMs) async {
     final PlayableItem? item = ref.read(playerControllerProvider).currentItem;
     final String? stableId = item?.stableId;
     if (stableId == null || state.stableId != stableId) {
@@ -56,11 +57,11 @@ class PlayerLyricsController extends _$PlayerLyricsController {
     final PlayerLyricsState nextState = state.copyWith(
       lyricOffsetMs: state.lyricOffsetMs + deltaMs,
     );
-    _cache[stableId] = nextState;
     state = nextState;
+    await _saveCacheIfEligible(item: item!, nextState: nextState);
   }
 
-  void resetOffset() {
+  Future<void> resetOffset() async {
     final PlayableItem? item = ref.read(playerControllerProvider).currentItem;
     final String? stableId = item?.stableId;
     if (stableId == null || state.stableId != stableId) {
@@ -68,8 +69,8 @@ class PlayerLyricsController extends _$PlayerLyricsController {
     }
 
     final PlayerLyricsState nextState = state.copyWith(lyricOffsetMs: 0);
-    _cache[stableId] = nextState;
     state = nextState;
+    await _saveCacheIfEligible(item: item!, nextState: nextState);
   }
 
   Future<void> searchManual(String keyword) async {
@@ -85,7 +86,6 @@ class PlayerLyricsController extends _$PlayerLyricsController {
       manualSearchError: null,
       isSearching: true,
     );
-    _cache[stableId] = searchingState;
     state = searchingState;
 
     try {
@@ -103,7 +103,6 @@ class PlayerLyricsController extends _$PlayerLyricsController {
         manualSearchError: null,
         isSearching: false,
       );
-      _cache[stableId] = nextState;
       state = nextState;
     } on MetingException catch (error) {
       if (state.stableId != stableId) {
@@ -115,7 +114,6 @@ class PlayerLyricsController extends _$PlayerLyricsController {
         manualSearchError: error.message,
         isSearching: false,
       );
-      _cache[stableId] = nextState;
       state = nextState;
     } on Object catch (error) {
       if (state.stableId != stableId) {
@@ -128,7 +126,6 @@ class PlayerLyricsController extends _$PlayerLyricsController {
         manualSearchError: '搜索失败：$error',
         isSearching: false,
       );
-      _cache[stableId] = nextState;
       state = nextState;
     }
   }
@@ -146,7 +143,6 @@ class PlayerLyricsController extends _$PlayerLyricsController {
       manualSearchError: null,
       isSearching: true,
     );
-    _cache[stableId] = applyingState;
     state = applyingState;
 
     try {
@@ -163,8 +159,8 @@ class PlayerLyricsController extends _$PlayerLyricsController {
         isSearching: false,
         hasSearched: true,
       );
-      _cache[stableId] = nextState;
       state = nextState;
+      await _saveCacheIfEligible(item: currentItem, nextState: nextState);
     } on MetingException catch (error) {
       if (state.stableId != stableId) {
         return;
@@ -173,7 +169,6 @@ class PlayerLyricsController extends _$PlayerLyricsController {
         manualSearchError: error.message,
         isSearching: false,
       );
-      _cache[stableId] = nextState;
       state = nextState;
     } on Object catch (error) {
       if (state.stableId != stableId) {
@@ -184,7 +179,6 @@ class PlayerLyricsController extends _$PlayerLyricsController {
         manualSearchError: '歌词加载失败：$error',
         isSearching: false,
       );
-      _cache[stableId] = nextState;
       state = nextState;
     }
   }
@@ -194,7 +188,10 @@ class PlayerLyricsController extends _$PlayerLyricsController {
     await _loadForItem(item);
   }
 
-  Future<void> _loadForItem(PlayableItem? item) async {
+  Future<void> _loadForItem(
+    PlayableItem? item, {
+    bool ignoreCache = false,
+  }) async {
     final int requestGeneration = ++_generation;
     if (item == null) {
       state = const PlayerLyricsState();
@@ -202,13 +199,25 @@ class PlayerLyricsController extends _$PlayerLyricsController {
     }
 
     final String stableId = item.stableId;
-    final PlayerLyricsState? cached = _cache[stableId];
-    if (cached != null) {
-      state = cached;
-      return;
-    }
-
     state = PlayerLyricsState(stableId: stableId, isLoading: true);
+
+    if (!ignoreCache) {
+      final PlayerLyricsCacheEntry? cached = await ref
+          .read(playerLyricsCacheRepositoryProvider)
+          .getCachedEntry(item: item);
+      if (!_isActiveRequest(requestGeneration, stableId)) {
+        return;
+      }
+      if (cached != null) {
+        state = PlayerLyricsState(
+          stableId: stableId,
+          rawLyrics: _normalizeLyrics(cached.rawLyrics),
+          lyricOffsetMs: cached.lyricOffsetMs,
+          hasSearched: true,
+        );
+        return;
+      }
+    }
 
     try {
       final lookupResult = await _findLyricsForItem(item);
@@ -224,8 +233,8 @@ class PlayerLyricsController extends _$PlayerLyricsController {
         searchResults: lookupResult.searchResults,
         hasSearched: true,
       );
-      _cache[stableId] = nextState;
       state = nextState;
+      await _saveCacheIfEligible(item: item, nextState: nextState);
     } on MetingException catch (error) {
       if (!_isActiveRequest(requestGeneration, stableId)) {
         return;
@@ -307,5 +316,32 @@ class PlayerLyricsController extends _$PlayerLyricsController {
       }
     }
     return null;
+  }
+
+  Future<void> _saveCacheIfEligible({
+    required PlayableItem item,
+    required PlayerLyricsState nextState,
+  }) async {
+    if (!_shouldCacheLyrics(item)) {
+      return;
+    }
+
+    await ref
+        .read(playerLyricsCacheRepositoryProvider)
+        .saveEntry(
+          PlayerLyricsCacheEntry(
+            stableId: item.stableId,
+            rawLyrics: _normalizeLyrics(nextState.rawLyrics),
+            lyricOffsetMs: nextState.lyricOffsetMs,
+            updatedAtEpochMs: DateTime.now().millisecondsSinceEpoch,
+          ),
+        );
+  }
+
+  bool _shouldCacheLyrics(PlayableItem item) {
+    return ref
+        .read(favoritesControllerProvider)
+        .collectionsForItem(item)
+        .isNotEmpty;
   }
 }
