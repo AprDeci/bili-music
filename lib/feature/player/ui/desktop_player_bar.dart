@@ -1,4 +1,5 @@
 import 'package:bilimusic/common/components/cached_image.dart';
+import 'package:bilimusic/common/util/color_util.dart';
 import 'package:bilimusic/feature/comment/domain/comment_target.dart';
 import 'package:bilimusic/feature/favorites/logic/favorites_controller.dart';
 import 'package:bilimusic/feature/player/domain/audio_stream_info.dart';
@@ -44,7 +45,7 @@ class DesktopPlayerBar extends ConsumerWidget {
         (state.queueMode == PlayerQueueMode.singleRepeat || state.hasNext);
 
     return Container(
-      height: 74,
+      height: 76,
       decoration: BoxDecoration(
         color: colorScheme.surface,
         borderRadius: BorderRadius.circular(8),
@@ -56,8 +57,8 @@ class DesktopPlayerBar extends ConsumerWidget {
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         child: Row(
           children: <Widget>[
-            Expanded(
-              flex: 5,
+            SizedBox(
+              width: 220,
               child: _TrackSection(
                 item: item,
                 state: state,
@@ -84,8 +85,10 @@ class DesktopPlayerBar extends ConsumerWidget {
                       },
               ),
             ),
+            
+            const SizedBox(width: 30),
             Expanded(
-              flex: 6,
+              flex: 4,
               child: _PlaybackSection(
                 state: state,
                 progress: progress,
@@ -141,7 +144,7 @@ class _TrackSection extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
-    final String subtitle = buildMiniPlayerSubtitle(state).trim();
+    final String subtitle = item?.author.trim() ?? '';
 
     return Row(
       children: <Widget>[
@@ -149,11 +152,11 @@ class _TrackSection extends StatelessWidget {
           width: 48,
           height: 48,
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(8),
             color: colorScheme.surfaceContainerHigh,
           ),
           child: ClipRRect(
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(8),
             child: CommonCachedImage(
               imageUrl: item?.coverUrl,
               fit: BoxFit.cover,
@@ -174,35 +177,31 @@ class _TrackSection extends StatelessWidget {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: theme.textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.w700,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
               const SizedBox(height: 4),
-              Text(
-                subtitle.isEmpty ? (item?.author ?? '等待开始播放') : subtitle,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: colorScheme.onSurfaceVariant,
-                ),
+              Row(
+                children: <Widget>[
+                  _BarIconButton(
+                    onPressed: onFavoritePressed,
+                    icon: isFavorite
+                        ? Icons.favorite_rounded
+                        : Icons.favorite_border_rounded,
+                    activeColor: const Color(0xFFFF5C73),
+                    isActive: isFavorite,
+                    tooltip: '我喜欢',
+                  ),
+                  const SizedBox(width: 10),
+                  _BarIconButton(
+                    onPressed: onCommentPressed,
+                    icon: Icons.mode_comment_outlined,
+                    tooltip: '评论区',
+                  ),
+                ],
               ),
             ],
           ),
-        ),
-        const SizedBox(width: 8),
-        _BarIconButton(
-          onPressed: onFavoritePressed,
-          icon: isFavorite
-              ? Icons.favorite_rounded
-              : Icons.favorite_border_rounded,
-          activeColor: const Color(0xFFFF5C73),
-          isActive: isFavorite,
-          tooltip: '我喜欢',
-        ),
-        _BarIconButton(
-          onPressed: onCommentPressed,
-          icon: Icons.mode_comment_outlined,
-          tooltip: '评论区',
         ),
       ],
     );
@@ -243,7 +242,9 @@ class _PlaybackSection extends StatelessWidget {
 
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: <Widget>[
+        const SizedBox(height: 4),
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
@@ -279,7 +280,7 @@ class _PlaybackSection extends StatelessWidget {
             ),
           ],
         ),
-        const SizedBox(height: 2),
+        const SizedBox(height: 4),
         Row(
           children: <Widget>[
             SizedBox(
@@ -362,7 +363,7 @@ class _ActionSection extends StatelessWidget {
       children: <Widget>[
         PopupMenuButton<int?>(
           enabled: qualities.isNotEmpty,
-          tooltip: '音质',
+          tooltip: '',
           padding: EdgeInsets.zero,
           onSelected: onSelectQuality,
           itemBuilder: (BuildContext context) {
@@ -387,11 +388,10 @@ class _ActionSection extends StatelessWidget {
             child: _BarIconButton(
               onPressed: qualities.isNotEmpty ? () {} : null,
               icon: Icons.hd_outlined,
-              tooltip: '音质',
             ),
           ),
         ),
-        const SizedBox(width: 2),
+        const SizedBox(width: 10),
         _BarIconButton(
           onPressed: state.hasQueue ? onOpenQueue : null,
           icon: Icons.queue_music_rounded,
@@ -416,15 +416,20 @@ class _PlayPauseButton extends StatelessWidget {
       icon: Icon(isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded),
       iconSize: 22,
       style: IconButton.styleFrom(
-        minimumSize: const Size(34, 34),
-        maximumSize: const Size(34, 34),
+        minimumSize: const Size(40, 30), // 宽度 > 高度，呈椭圆形
+        maximumSize: const Size(40, 30),
         padding: EdgeInsets.zero,
-        backgroundColor: const Color(0xFF1ED760),
+        backgroundColor: ColorUtil.getShade(
+          Theme.of(context).colorScheme.primary,
+          400,
+        ),
         disabledBackgroundColor: Theme.of(
           context,
         ).colorScheme.surfaceContainerHighest,
         foregroundColor: Colors.black,
-        shape: const CircleBorder(),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20), // 大圆角形成椭圆
+        ),
         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
       ),
     );
@@ -455,7 +460,7 @@ class _BarIconButton extends StatelessWidget {
 
     return IconButton(
       onPressed: onPressed,
-      tooltip: tooltip,
+      tooltip: '',
       icon: Icon(icon),
       iconSize: iconSize,
       color: isActive
