@@ -1,3 +1,4 @@
+import 'package:bilimusic/common/util/platform_util.dart';
 import 'package:bilimusic/core/bili/session/bili_session_controller.dart';
 import 'package:bilimusic/core/hive/hive.dart';
 import 'package:bilimusic/feature/favorites/logic/favorites_controller.dart';
@@ -9,6 +10,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:just_audio_media_kit/just_audio_media_kit.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
+import 'package:window_manager/window_manager.dart';
 
 Future<void> bootstrap() async {
   await PlayerAudioService.initialize();
@@ -21,6 +23,21 @@ Future<void> bootstrap() async {
     android: true,
   );
   await initHive();
+
+  if (PlatformUtil.isDesktop) {
+    await windowManager.ensureInitialized();
+    WindowOptions windowOptions = WindowOptions(
+      size: Size(1050, 690),
+      center: true,
+      backgroundColor: Colors.transparent,
+      skipTaskbar: false,
+      titleBarStyle: TitleBarStyle.normal,
+    );
+    windowManager.waitUntilReadyToShow(windowOptions, () async {
+      await windowManager.show();
+      await windowManager.focus();
+    });
+  }
 }
 
 void main() async {
