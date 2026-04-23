@@ -13,7 +13,7 @@ import 'package:bilimusic/feature/setting/ui/favorites_transfer_page.dart';
 import 'package:bilimusic/feature/setting/ui/player_settings_page.dart';
 import 'package:bilimusic/feature/setting/ui/setting_page.dart';
 import 'package:bilimusic/feature/setting/ui/theme_settings_page.dart';
-import 'package:bilimusic/router/ScaffoldWithNavBar.dart';
+import 'package:bilimusic/router/app_shell.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -99,7 +99,7 @@ GoRouter router(Ref ref) => GoRouter(
     StatefulShellRoute.indexedStack(
       parentNavigatorKey: _rootNavigatorKey,
       builder: (context, state, navigationShell) {
-        return ScaffoldWithNavBar(
+        return AppShell(
           navigationShell: navigationShell,
           currentLocation: state.uri.path,
         );
