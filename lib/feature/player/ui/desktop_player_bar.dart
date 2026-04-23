@@ -1,0 +1,473 @@
+import 'package:bilimusic/common/components/cached_image.dart';
+import 'package:bilimusic/feature/comment/domain/comment_target.dart';
+import 'package:bilimusic/feature/favorites/logic/favorites_controller.dart';
+import 'package:bilimusic/feature/player/domain/audio_stream_info.dart';
+import 'package:bilimusic/feature/player/domain/playable_item.dart';
+import 'package:bilimusic/feature/player/domain/player_state.dart';
+import 'package:bilimusic/feature/player/logic/player_controller.dart';
+import 'package:bilimusic/feature/player/ui/components/mini_player_content.dart';
+import 'package:bilimusic/feature/player/ui/components/player_queue_sheet.dart';
+import 'package:bilimusic/feature/player/ui/components/player_ui_helpers.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+
+class DesktopPlayerBar extends ConsumerWidget {
+  const DesktopPlayerBar({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+    final PlayerState state = ref.watch(playerControllerProvider);
+    final PlayerController controller = ref.read(
+      playerControllerProvider.notifier,
+    );
+    final PlayableItem? item = state.currentItem;
+    final bool isFavorite = item != null
+        ? ref.watch(favoritesControllerProvider).isLiked(item)
+        : false;
+    final Duration total =
+        state.duration ?? state.audioStream?.duration ?? Duration.zero;
+    final double progress = total.inMilliseconds <= 0
+        ? 0
+        : (state.position.inMilliseconds / total.inMilliseconds).clamp(
+            0.0,
+            1.0,
+          );
+    final bool canTogglePlayback = state.hasQueue && !state.isLoading;
+    final bool canGoPrevious =
+        state.isReady &&
+        (state.hasPrevious || state.position > const Duration(seconds: 3));
+    final bool canGoNext =
+        state.isReady &&
+        (state.queueMode == PlayerQueueMode.singleRepeat || state.hasNext);
+
+    return Container(
+      height: 74,
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: colorScheme.outlineVariant.withValues(alpha: 0.5),
+        ),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        child: Row(
+          children: <Widget>[
+            Expanded(
+              flex: 5,
+              child: _TrackSection(
+                item: item,
+                state: state,
+                isFavorite: isFavorite,
+                onFavoritePressed: item == null
+                    ? null
+                    : () {
+                        ref
+                            .read(favoritesControllerProvider.notifier)
+                            .toggleLiked(item);
+                      },
+                onCommentPressed: item == null || item.aid <= 0
+                    ? null
+                    : () {
+                        context.push(
+                          '/comments',
+                          extra: CommentTarget.video(
+                            aid: item.aid,
+                            bvid: item.bvid,
+                            title: item.title,
+                            coverUrl: item.coverUrl,
+                          ),
+                        );
+                      },
+              ),
+            ),
+            Expanded(
+              flex: 6,
+              child: _PlaybackSection(
+                state: state,
+                progress: progress,
+                canGoPrevious: canGoPrevious,
+                canGoNext: canGoNext,
+                canTogglePlayback: canTogglePlayback,
+                onSeek: (double value) {
+                  final Duration target = Duration(
+                    milliseconds: (total.inMilliseconds * value).round(),
+                  );
+                  controller.seek(target);
+                },
+                onToggleQueueMode: controller.toggleQueueMode,
+                onPrevious: controller.skipToPrevious,
+                onTogglePlayback: controller.togglePlayback,
+                onNext: controller.skipToNext,
+              ),
+            ),
+            Expanded(
+              flex: 2,
+              child: _ActionSection(
+                state: state,
+                onOpenQueue: () =>
+                    showPlayerQueueSheet(context: context, state: state),
+                onSelectQuality: (int? qualityId) {
+                  controller.switchCurrentAudioQuality(qualityId);
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _TrackSection extends StatelessWidget {
+  const _TrackSection({
+    required this.item,
+    required this.state,
+    required this.isFavorite,
+    required this.onFavoritePressed,
+    required this.onCommentPressed,
+  });
+
+  final PlayableItem? item;
+  final PlayerState state;
+  final bool isFavorite;
+  final VoidCallback? onFavoritePressed;
+  final VoidCallback? onCommentPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+    final String subtitle = buildMiniPlayerSubtitle(state).trim();
+
+    return Row(
+      children: <Widget>[
+        Container(
+          width: 48,
+          height: 48,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(10),
+            color: colorScheme.surfaceContainerHigh,
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(10),
+            child: CommonCachedImage(
+              imageUrl: item?.coverUrl,
+              fit: BoxFit.cover,
+              fallbackIcon: Icons.music_note_rounded,
+              iconColor: colorScheme.onSurfaceVariant,
+              backgroundColor: colorScheme.surfaceContainerHigh,
+            ),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Text(
+                item?.title ?? '未选择播放内容',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: theme.textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                subtitle.isEmpty ? (item?.author ?? '等待开始播放') : subtitle,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(width: 8),
+        _BarIconButton(
+          onPressed: onFavoritePressed,
+          icon: isFavorite
+              ? Icons.favorite_rounded
+              : Icons.favorite_border_rounded,
+          activeColor: const Color(0xFFFF5C73),
+          isActive: isFavorite,
+          tooltip: '我喜欢',
+        ),
+        _BarIconButton(
+          onPressed: onCommentPressed,
+          icon: Icons.mode_comment_outlined,
+          tooltip: '评论区',
+        ),
+      ],
+    );
+  }
+}
+
+class _PlaybackSection extends StatelessWidget {
+  const _PlaybackSection({
+    required this.state,
+    required this.progress,
+    required this.canGoPrevious,
+    required this.canGoNext,
+    required this.canTogglePlayback,
+    required this.onSeek,
+    required this.onToggleQueueMode,
+    required this.onPrevious,
+    required this.onTogglePlayback,
+    required this.onNext,
+  });
+
+  final PlayerState state;
+  final double progress;
+  final bool canGoPrevious;
+  final bool canGoNext;
+  final bool canTogglePlayback;
+  final ValueChanged<double> onSeek;
+  final VoidCallback onToggleQueueMode;
+  final VoidCallback onPrevious;
+  final VoidCallback onTogglePlayback;
+  final VoidCallback onNext;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+    final Duration total =
+        state.duration ?? state.audioStream?.duration ?? Duration.zero;
+
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: <Widget>[
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: <Widget>[
+            _BarIconButton(
+              onPressed: state.hasQueue ? onToggleQueueMode : null,
+              icon: _queueModeIcon(state.queueMode),
+              tooltip: '循环模式',
+            ),
+            const SizedBox(width: 8),
+            _BarIconButton(
+              onPressed: canGoPrevious ? onPrevious : null,
+              icon: Icons.skip_previous_rounded,
+              iconSize: 24,
+              tooltip: '上一首',
+            ),
+            const SizedBox(width: 8),
+            _PlayPauseButton(
+              isPlaying: state.isPlaying,
+              onPressed: canTogglePlayback ? onTogglePlayback : null,
+            ),
+            const SizedBox(width: 8),
+            _BarIconButton(
+              onPressed: canGoNext ? onNext : null,
+              icon: Icons.skip_next_rounded,
+              iconSize: 24,
+              tooltip: '下一首',
+            ),
+            const SizedBox(width: 8),
+            _BarIconButton(
+              onPressed: state.hasQueue ? () {} : null,
+              icon: Icons.volume_up_outlined,
+              tooltip: '音量',
+            ),
+          ],
+        ),
+        const SizedBox(height: 2),
+        Row(
+          children: <Widget>[
+            SizedBox(
+              width: 38,
+              child: Text(
+                formatPlayerDuration(state.position),
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            Expanded(
+              child: SliderTheme(
+                data: SliderTheme.of(context).copyWith(
+                  trackHeight: 2.5,
+                  overlayShape: const RoundSliderOverlayShape(
+                    overlayRadius: 10,
+                  ),
+                  thumbShape: const RoundSliderThumbShape(
+                    enabledThumbRadius: 3,
+                  ),
+                  inactiveTrackColor: colorScheme.outlineVariant,
+                  activeTrackColor: colorScheme.onSurface,
+                  thumbColor: colorScheme.onSurface,
+                  overlayColor: colorScheme.onSurface.withValues(alpha: 0.08),
+                ),
+                child: Slider(
+                  value: progress,
+                  onChanged: total > Duration.zero && state.isReady
+                      ? onSeek
+                      : null,
+                ),
+              ),
+            ),
+            SizedBox(
+              width: 38,
+              child: Text(
+                formatPlayerDuration(total),
+                textAlign: TextAlign.right,
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  IconData _queueModeIcon(PlayerQueueMode mode) {
+    return switch (mode) {
+      PlayerQueueMode.sequence => Icons.repeat_rounded,
+      PlayerQueueMode.singleRepeat => Icons.repeat_one_rounded,
+      PlayerQueueMode.shuffle => Icons.shuffle_rounded,
+    };
+  }
+}
+
+class _ActionSection extends StatelessWidget {
+  const _ActionSection({
+    required this.state,
+    required this.onOpenQueue,
+    required this.onSelectQuality,
+  });
+
+  final PlayerState state;
+  final VoidCallback onOpenQueue;
+  final ValueChanged<int?> onSelectQuality;
+
+  @override
+  Widget build(BuildContext context) {
+    final List<AudioQualityOption> qualities =
+        state.audioStream?.availableQualities ?? const <AudioQualityOption>[];
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.end,
+      children: <Widget>[
+        PopupMenuButton<int?>(
+          enabled: qualities.isNotEmpty,
+          tooltip: '音质',
+          padding: EdgeInsets.zero,
+          onSelected: onSelectQuality,
+          itemBuilder: (BuildContext context) {
+            return qualities.map((AudioQualityOption option) {
+              return PopupMenuItem<int?>(
+                value: option.qualityId,
+                child: Row(
+                  children: <Widget>[
+                    Expanded(child: Text(option.label)),
+                    if (option.isSelected)
+                      Icon(
+                        Icons.check_rounded,
+                        size: 18,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                  ],
+                ),
+              );
+            }).toList();
+          },
+          child: IgnorePointer(
+            child: _BarIconButton(
+              onPressed: qualities.isNotEmpty ? () {} : null,
+              icon: Icons.hd_outlined,
+              tooltip: '音质',
+            ),
+          ),
+        ),
+        const SizedBox(width: 2),
+        _BarIconButton(
+          onPressed: state.hasQueue ? onOpenQueue : null,
+          icon: Icons.queue_music_rounded,
+          tooltip: '队列',
+        ),
+      ],
+    );
+  }
+}
+
+class _PlayPauseButton extends StatelessWidget {
+  const _PlayPauseButton({required this.isPlaying, required this.onPressed});
+
+  final bool isPlaying;
+  final VoidCallback? onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return IconButton(
+      onPressed: onPressed,
+      tooltip: isPlaying ? '暂停' : '播放',
+      icon: Icon(isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded),
+      iconSize: 22,
+      style: IconButton.styleFrom(
+        minimumSize: const Size(34, 34),
+        maximumSize: const Size(34, 34),
+        padding: EdgeInsets.zero,
+        backgroundColor: const Color(0xFF1ED760),
+        disabledBackgroundColor: Theme.of(
+          context,
+        ).colorScheme.surfaceContainerHighest,
+        foregroundColor: Colors.black,
+        shape: const CircleBorder(),
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      ),
+    );
+  }
+}
+
+class _BarIconButton extends StatelessWidget {
+  const _BarIconButton({
+    required this.onPressed,
+    required this.icon,
+    this.iconSize = 20,
+    this.isActive = false,
+    this.activeColor,
+    this.tooltip,
+  });
+
+  final VoidCallback? onPressed;
+  final IconData icon;
+  final double iconSize;
+  final bool isActive;
+  final Color? activeColor;
+  final String? tooltip;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+
+    return IconButton(
+      onPressed: onPressed,
+      tooltip: tooltip,
+      icon: Icon(icon),
+      iconSize: iconSize,
+      color: isActive
+          ? activeColor ?? colorScheme.primary
+          : colorScheme.onSurface,
+      disabledColor: colorScheme.onSurface.withValues(alpha: 0.28),
+      style: IconButton.styleFrom(
+        minimumSize: const Size(30, 30),
+        maximumSize: const Size(30, 30),
+        padding: EdgeInsets.zero,
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      ),
+    );
+  }
+}
