@@ -1,3 +1,4 @@
+import 'package:bilimusic/common/components/bar_icon_button.dart';
 import 'package:bilimusic/common/components/cached_image.dart';
 import 'package:bilimusic/common/util/color_util.dart';
 import 'package:bilimusic/feature/comment/domain/comment_target.dart';
@@ -6,7 +7,6 @@ import 'package:bilimusic/feature/player/domain/audio_stream_info.dart';
 import 'package:bilimusic/feature/player/domain/playable_item.dart';
 import 'package:bilimusic/feature/player/domain/player_state.dart';
 import 'package:bilimusic/feature/player/logic/player_controller.dart';
-import 'package:bilimusic/feature/player/ui/components/mini_player_content.dart';
 import 'package:bilimusic/feature/player/ui/components/player_queue_sheet.dart';
 import 'package:bilimusic/feature/player/ui/components/player_ui_helpers.dart';
 import 'package:flutter/material.dart';
@@ -85,7 +85,7 @@ class DesktopPlayerBar extends ConsumerWidget {
                       },
               ),
             ),
-            
+
             const SizedBox(width: 30),
             Expanded(
               flex: 4,
@@ -144,7 +144,6 @@ class _TrackSection extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
-    final String subtitle = item?.author.trim() ?? '';
 
     return Row(
       children: <Widget>[
@@ -183,20 +182,18 @@ class _TrackSection extends StatelessWidget {
               const SizedBox(height: 4),
               Row(
                 children: <Widget>[
-                  _BarIconButton(
+                  BarIconButton(
                     onPressed: onFavoritePressed,
                     icon: isFavorite
                         ? Icons.favorite_rounded
                         : Icons.favorite_border_rounded,
                     activeColor: const Color(0xFFFF5C73),
                     isActive: isFavorite,
-                    tooltip: '我喜欢',
                   ),
                   const SizedBox(width: 10),
-                  _BarIconButton(
+                  BarIconButton(
                     onPressed: onCommentPressed,
                     icon: Icons.mode_comment_outlined,
-                    tooltip: '评论区',
                   ),
                 ],
               ),
@@ -248,17 +245,15 @@ class _PlaybackSection extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
-            _BarIconButton(
+            BarIconButton(
               onPressed: state.hasQueue ? onToggleQueueMode : null,
               icon: _queueModeIcon(state.queueMode),
-              tooltip: '循环模式',
             ),
             const SizedBox(width: 8),
-            _BarIconButton(
+            BarIconButton(
               onPressed: canGoPrevious ? onPrevious : null,
               icon: Icons.skip_previous_rounded,
               iconSize: 24,
-              tooltip: '上一首',
             ),
             const SizedBox(width: 8),
             _PlayPauseButton(
@@ -266,17 +261,15 @@ class _PlaybackSection extends StatelessWidget {
               onPressed: canTogglePlayback ? onTogglePlayback : null,
             ),
             const SizedBox(width: 8),
-            _BarIconButton(
+            BarIconButton(
               onPressed: canGoNext ? onNext : null,
               icon: Icons.skip_next_rounded,
               iconSize: 24,
-              tooltip: '下一首',
             ),
             const SizedBox(width: 8),
-            _BarIconButton(
+            BarIconButton(
               onPressed: state.hasQueue ? () {} : null,
               icon: Icons.volume_up_outlined,
-              tooltip: '音量',
             ),
           ],
         ),
@@ -385,17 +378,16 @@ class _ActionSection extends StatelessWidget {
             }).toList();
           },
           child: IgnorePointer(
-            child: _BarIconButton(
+            child: BarIconButton(
               onPressed: qualities.isNotEmpty ? () {} : null,
               icon: Icons.hd_outlined,
             ),
           ),
         ),
         const SizedBox(width: 10),
-        _BarIconButton(
+        BarIconButton(
           onPressed: state.hasQueue ? onOpenQueue : null,
           icon: Icons.queue_music_rounded,
-          tooltip: '队列',
         ),
       ],
     );
@@ -430,47 +422,6 @@ class _PlayPauseButton extends StatelessWidget {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20), // 大圆角形成椭圆
         ),
-        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-      ),
-    );
-  }
-}
-
-class _BarIconButton extends StatelessWidget {
-  const _BarIconButton({
-    required this.onPressed,
-    required this.icon,
-    this.iconSize = 20,
-    this.isActive = false,
-    this.activeColor,
-    this.tooltip,
-  });
-
-  final VoidCallback? onPressed;
-  final IconData icon;
-  final double iconSize;
-  final bool isActive;
-  final Color? activeColor;
-  final String? tooltip;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
-
-    return IconButton(
-      onPressed: onPressed,
-      tooltip: '',
-      icon: Icon(icon),
-      iconSize: iconSize,
-      color: isActive
-          ? activeColor ?? colorScheme.primary
-          : colorScheme.onSurface,
-      disabledColor: colorScheme.onSurface.withValues(alpha: 0.28),
-      style: IconButton.styleFrom(
-        minimumSize: const Size(30, 30),
-        maximumSize: const Size(30, 30),
-        padding: EdgeInsets.zero,
         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
       ),
     );
