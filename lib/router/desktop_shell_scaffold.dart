@@ -1,7 +1,8 @@
+import 'package:bilimusic/common/components/desktop/desktop_top_bar.dart';
+import 'package:bilimusic/feature/player/ui/desktop_player_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:bilimusic/feature/player/ui/desktop_player_bar.dart';
 
 class DesktopShellScaffold extends ConsumerWidget {
   const DesktopShellScaffold({
@@ -25,11 +26,14 @@ class DesktopShellScaffold extends ConsumerWidget {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
+              // 侧边导航栏
               Container(width: 240, padding: const EdgeInsets.all(12)),
               const SizedBox(width: 16),
+              // 内容区
               Expanded(
                 child: Column(
-                  children: [
+                  children: <Widget>[
+                    const DesktopTopBar(),
                     Expanded(
                       child: DecoratedBox(
                         decoration: BoxDecoration(
