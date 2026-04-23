@@ -69,6 +69,9 @@ dependencies:
   webdav_client: ^1.2.2
   flutter_lyric: ^3.0.3
 
+  # desktop
+  window_manager: ^0.5.1
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
