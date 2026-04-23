@@ -49,6 +49,7 @@ class _DesktopTopBarState extends State<DesktopTopBar> with WindowListener {
 
   @override
   Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
     return SizedBox(
       height: 56,
       child: DragToMoveArea(
@@ -61,9 +62,19 @@ class _DesktopTopBarState extends State<DesktopTopBar> with WindowListener {
               const _LeadingSlot(),
               const SizedBox(width: 12),
               Expanded(
-                child: Expanded(
-                  flex: 1,
-                  child: const CupertinoSearchTextField(placeholder: '搜索音乐'),
+                child: Row(
+                  children: [
+                    Expanded(
+                      flex: 2,
+                      child: CupertinoSearchTextField(
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                        placeholder: '搜索音乐',
+                      ),
+                    ),
+                    Expanded(flex: 3, child: const SizedBox.shrink()),
+                  ],
                 ),
               ),
               const SizedBox(width: 12),
