@@ -111,6 +111,9 @@ flutter:
     - family: 'HarmonyOS Sans'
       fonts:
         - asset: assets/fonts/HarmonyOS_Sans_Regular.ttf
+    - family: 'MiSans'
+      fonts:
+        - asset: assets/fonts/MiSans-Regular.ttf
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

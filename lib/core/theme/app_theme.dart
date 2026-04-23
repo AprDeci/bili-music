@@ -14,6 +14,7 @@ final class AppTheme {
 
     return ThemeData(
       useMaterial3: true,
+      fontFamily: 'MiSans',
       colorScheme: colorScheme,
       scaffoldBackgroundColor: definition.scaffoldBackgroundColor,
       appBarTheme: AppBarTheme(
