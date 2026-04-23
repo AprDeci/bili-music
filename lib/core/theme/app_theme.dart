@@ -1,3 +1,4 @@
+import 'package:bilimusic/common/util/platform_util.dart';
 import 'package:bilimusic/core/theme/light_theme_catalog.dart';
 import 'package:bilimusic/core/theme/theme_ui_model.dart';
 import 'package:flutter/material.dart';
@@ -14,7 +15,7 @@ final class AppTheme {
 
     return ThemeData(
       useMaterial3: true,
-      fontFamily: 'MiSans',
+      fontFamily: _getFontFamily(),
       colorScheme: colorScheme,
       scaffoldBackgroundColor: definition.scaffoldBackgroundColor,
       appBarTheme: AppBarTheme(
@@ -69,5 +70,12 @@ final class AppTheme {
         ),
       ),
     );
+  }
+
+  static String? _getFontFamily() {
+    if (PlatformUtil.isDesktop) {
+      return 'MiSans';
+    }
+    return null;
   }
 }
