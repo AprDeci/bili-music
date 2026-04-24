@@ -31,45 +31,56 @@ dependencies:
   flutter:
     sdk: flutter
 
-  # The following adds the Cupertino Icons font to your application.
-  # Use with the CupertinoIcons class for iOS style icons.
+  # Flutter 基础
   cupertino_icons: ^1.0.8
-  riverpod_annotation: ^4.0.2
+
+  # 状态管理与导航
   flutter_riverpod: ^3.3.1
-  dio: ^5.9.2
-  crypto: ^3.0.6
+  riverpod_annotation: ^4.0.2
   go_router: ^17.2.2
   freezed_annotation: ^3.1.0
+
+  # 网络与数据处理
+  dio: ^5.9.2
+  crypto: ^3.0.6
+  logger: ^2.7.0
+  webdav_client: ^1.2.2
+
+  # 本地存储与文件
   hive_ce: 2.19.3
   hive_ce_flutter: 2.3.4
   path_provider: ^2.1.5
-  qr_flutter: ^4.1.0
-  saver_gallery: ^4.1.0
-  flutter_floating_bottom_bar: ^1.4.0
+  file_picker: ^11.0.2
+  flutter_cache_manager: ^3.4.1
+  cached_network_image: ^3.4.1
+
+  # 音频播放
   just_audio: ^0.10.5
   just_audio_media_kit: ^2.1.0
-  media_kit_libs_windows_audio: ^1.0.9
-  package_info_plus: ^8.3.1
-  url_launcher: ^6.3.2
-  logger: ^2.7.0
   audio_service: ^0.18.18
   audio_session: ^0.2.3
-  cached_network_image: ^3.4.1
-  flutter_cache_manager: ^3.4.1
+  media_kit_libs_android_audio: ^1.3.8
   media_kit_libs_ios_audio: ^1.1.4
   media_kit_libs_macos_audio: ^1.1.4
+  media_kit_libs_windows_audio: ^1.0.9
   media_kit_libs_linux: ^1.2.1
-  media_kit_libs_android_audio: ^1.3.8
+
+  # UI
+  qr_flutter: ^4.1.0
+  flutter_floating_bottom_bar: ^1.4.0
   fl_chart: ^1.2.0
   color_palette_plus: ^2.0.0
   lottie: ^3.3.2
-  file_picker: ^11.0.2
   liquid_glass_widgets: ^0.8.3
   flutter_smart_dialog: ^5.1.0
-  webdav_client: ^1.2.2
   flutter_lyric: ^3.0.3
 
-  # desktop
+  # 系统
+  saver_gallery: ^4.1.0
+  package_info_plus: ^8.3.1
+  url_launcher: ^6.3.2
+
+  # 桌面端
   window_manager: ^0.5.1
 
 dev_dependencies:
