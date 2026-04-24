@@ -1,4 +1,5 @@
 import 'package:bilimusic/common/components/desktop/desktop_top_bar.dart';
+import 'package:bilimusic/feature/profile/ui/desktop_profile_sidebar.dart';
 import 'package:bilimusic/feature/player/ui/desktop_player_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -26,23 +27,33 @@ class DesktopShellScaffold extends ConsumerWidget {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
-              // 侧边导航栏
-              Container(width: 240, padding: const EdgeInsets.all(12)),
+              DesktopProfileSidebar(currentLocation: currentLocation),
               const SizedBox(width: 16),
               // 内容区
               Expanded(
                 child: Column(
                   children: <Widget>[
-                    const DesktopTopBar(),
                     Expanded(
-                      child: DecoratedBox(
+                      child: Container(
                         decoration: BoxDecoration(
-                          color: colorScheme.surfaceContainerLowest,
-                          borderRadius: BorderRadius.circular(24),
+                          color: colorScheme.surfaceContainer.withValues(
+                            alpha: 0.52,
+                          ),
+                          borderRadius: BorderRadius.circular(8),
                         ),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(24),
-                          child: navigationShell,
+                        child: Column(
+                          children: [
+                            const DesktopTopBar(),
+                            Expanded(
+                              child: DecoratedBox(
+                                decoration: BoxDecoration(
+                                  color: colorScheme.surfaceContainerLowest,
+                                  borderRadius: BorderRadius.circular(24),
+                                ),
+                                child: Container(child: navigationShell),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ),
