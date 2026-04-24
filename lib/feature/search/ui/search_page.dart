@@ -1,5 +1,6 @@
 import 'package:bilimusic/common/bottom_height_helper.dart';
 import 'package:bilimusic/common/components/cached_image.dart';
+import 'package:bilimusic/common/util/screen_util.dart';
 import 'package:bilimusic/common/util/player_util.dart';
 import 'package:bilimusic/common/util/toast_util.dart';
 import 'package:bilimusic/feature/favorites/logic/favorites_controller.dart';
@@ -96,10 +97,13 @@ class _SearchPageState extends ConsumerState<SearchPage> {
     final double bottomSpacing = BottomHeightHelper.overlayPageBottomSpacing(
       context,
     );
+    final bool isDesktop = ScreenUtil.shouldUseDesktopShell(context);
     final String trimmedQuery = state.query.trim();
     final String trimmedSubmittedQuery = state.submittedQuery?.trim() ?? '';
     final bool isShowingSuggestions =
-        trimmedQuery.isNotEmpty && trimmedQuery != trimmedSubmittedQuery;
+        !isDesktop &&
+        trimmedQuery.isNotEmpty &&
+        trimmedQuery != trimmedSubmittedQuery;
 
     if (_controller.text != state.query) {
       _controller.value = TextEditingValue(
@@ -112,74 +116,76 @@ class _SearchPageState extends ConsumerState<SearchPage> {
       body: SafeArea(
         child: Column(
           children: <Widget>[
-            Padding(
-              padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
-              child: Row(
-                children: <Widget>[
-                  IconButton(
-                    onPressed: () => context.go(from),
-                    icon: const Icon(Icons.arrow_back_rounded),
-                  ),
-                  Expanded(
-                    child: Container(
-                      height: 40,
-                      decoration: BoxDecoration(
-                        color: colorScheme.surfaceContainerLowest,
-                        borderRadius: BorderRadius.circular(999),
-                        border: Border.all(color: colorScheme.outlineVariant),
-                        boxShadow: <BoxShadow>[
-                          BoxShadow(
-                            color: colorScheme.shadow.withValues(alpha: 0.08),
-                            blurRadius: 20,
-                            offset: Offset(0, 8),
-                          ),
-                        ],
-                      ),
-                      child: TextField(
-                        controller: _controller,
-                        focusNode: _focusNode,
-                        textInputAction: TextInputAction.search,
-                        onChanged: controller.updateQuery,
-                        onSubmitted: (_) => _submitSearch(controller),
-                        decoration: InputDecoration(
-                          hintText: '搜索歌曲、歌手或视频',
-                          hintStyle: theme.textTheme.bodyMedium?.copyWith(
-                            color: colorScheme.onSurfaceVariant,
-                          ),
-                          prefixIcon: Icon(
-                            Icons.search_rounded,
-                            color: colorScheme.onSurfaceVariant,
-                            size: 20,
-                          ),
-                          suffixIcon: state.query.isEmpty
-                              ? null
-                              : IconButton(
-                                  onPressed: () {
-                                    _controller.clear();
-                                    controller.clearQuery();
-                                  },
-                                  icon: const Icon(Icons.close_rounded),
-                                ),
-                          border: InputBorder.none,
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 4,
-                            vertical: 2,
+            if (!isDesktop)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
+                child: Row(
+                  children: <Widget>[
+                    IconButton(
+                      onPressed: () => context.go(from),
+                      icon: const Icon(Icons.arrow_back_rounded),
+                    ),
+                    Expanded(
+                      child: Container(
+                        height: 40,
+                        decoration: BoxDecoration(
+                          color: colorScheme.surfaceContainerLowest,
+                          borderRadius: BorderRadius.circular(999),
+                          border: Border.all(color: colorScheme.outlineVariant),
+                          boxShadow: <BoxShadow>[
+                            BoxShadow(
+                              color: colorScheme.shadow.withValues(alpha: 0.08),
+                              blurRadius: 20,
+                              offset: Offset(0, 8),
+                            ),
+                          ],
+                        ),
+                        child: TextField(
+                          controller: _controller,
+                          focusNode: _focusNode,
+                          textInputAction: TextInputAction.search,
+                          onChanged: controller.updateQuery,
+                          onSubmitted: (_) => _submitSearch(controller),
+                          decoration: InputDecoration(
+                            hintText: '搜索歌曲、歌手或视频',
+                            hintStyle: theme.textTheme.bodyMedium?.copyWith(
+                              color: colorScheme.onSurfaceVariant,
+                            ),
+                            prefixIcon: Icon(
+                              Icons.search_rounded,
+                              color: colorScheme.onSurfaceVariant,
+                              size: 20,
+                            ),
+                            suffixIcon: state.query.isEmpty
+                                ? null
+                                : IconButton(
+                                    onPressed: () {
+                                      _controller.clear();
+                                      controller.clearQuery();
+                                    },
+                                    icon: const Icon(Icons.close_rounded),
+                                  ),
+                            border: InputBorder.none,
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 4,
+                              vertical: 2,
+                            ),
                           ),
                         ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
             Expanded(
               child: Stack(
                 children: <Widget>[
                   ListView(
                     controller: _scrollController,
-                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
+                    padding: EdgeInsets.fromLTRB(16, isDesktop ? 16 : 0, 16, 0),
                     children: <Widget>[
-                      if (!isShowingSuggestions &&
+                      if (!isDesktop &&
+                          !isShowingSuggestions &&
                           state.recentKeywords.isNotEmpty &&
                           state.submittedQuery == null) ...<Widget>[
                         Row(
