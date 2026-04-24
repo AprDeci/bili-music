@@ -115,7 +115,7 @@ class _DesktopTopBarState extends ConsumerState<DesktopTopBar>
     _searchFocusNode.unfocus();
     _removeDropdown();
     if (GoRouterState.of(context).uri.path != '/search') {
-      context.go('/search');
+      context.push('/search');
     }
   }
 
@@ -167,8 +167,8 @@ class _DesktopTopBarState extends ConsumerState<DesktopTopBar>
           child: Row(
             children: <Widget>[
               const SizedBox(width: 16),
-              const _LeadingSlot(),
-              const SizedBox(width: 12),
+              // const _LeadingSlot(),
+              // const SizedBox(width: 12),
               Expanded(
                 child: Row(
                   children: <Widget>[
@@ -647,37 +647,23 @@ class _DesktopHistoryPane extends StatelessWidget {
   }
 }
 
-class _LeadingSlot extends StatelessWidget {
+class _LeadingSlot extends ConsumerWidget {
   const _LeadingSlot();
 
   @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final Color iconColor = theme.colorScheme.onSurfaceVariant;
+  Widget build(BuildContext context, WidgetRef ref) {
+    final bool canPop = GoRouter.of(context).canPop();
 
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: <Widget>[
-        _GhostAction(icon: Icons.chevron_left_rounded, color: iconColor),
+        BarIconButton(
+          icon: Icons.chevron_left_rounded,
+          onPressed: canPop ? () => context.pop() : null,
+        ),
         const SizedBox(width: 4),
-        _GhostAction(icon: Icons.chevron_right_rounded, color: iconColor),
+        BarIconButton(icon: Icons.chevron_right_rounded, onPressed: null),
       ],
-    );
-  }
-}
-
-class _GhostAction extends StatelessWidget {
-  const _GhostAction({required this.icon, required this.color});
-
-  final IconData icon;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: 32,
-      height: 32,
-      child: Icon(icon, size: 18, color: color),
     );
   }
 }
