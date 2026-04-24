@@ -2,6 +2,7 @@ import 'package:bilimusic/common/util/platform_util.dart';
 import 'package:bilimusic/feature/comment/domain/comment_target.dart';
 import 'package:bilimusic/feature/comment/ui/comment_page.dart';
 import 'package:bilimusic/feature/auth/ui/auth_page.dart';
+import 'package:bilimusic/feature/favorites/ui/desktop/desktop_favorite_collection_page.dart';
 import 'package:bilimusic/feature/favorites/ui/favorite_collection_page.dart';
 import 'package:bilimusic/feature/home/ui/home_page.dart';
 import 'package:bilimusic/feature/player/domain/playable_item.dart';
@@ -48,7 +49,9 @@ final List<Map<String, dynamic>> tabs = [
         path: 'favorites/:collectionId',
         builder: (context, state) {
           final String collectionId = state.pathParameters['collectionId']!;
-          return FavoriteCollectionPage(collectionId: collectionId);
+          return PlatformUtil.isDesktop
+              ? DesktopFavoriteCollectionPage(collectionId: collectionId)
+              : FavoriteCollectionPage(collectionId: collectionId);
         },
       ),
     ],
@@ -156,4 +159,94 @@ final List<RouteBase> mobileRoutes = [
   ),
 ];
 
-final List<RouteBase> desktopRoutes = [...mobileRoutes];
+final List<RouteBase> desktopRoutes = [
+  GoRoute(path: '/auth', builder: (context, state) => const AuthPage()),
+  GoRoute(
+    path: '/comments',
+    parentNavigatorKey: _rootNavigatorKey,
+    builder: (context, state) {
+      final CommentTarget target = state.extra! as CommentTarget;
+      return CommentPage(target: target);
+    },
+  ),
+  GoRoute(
+    path: '/player',
+    parentNavigatorKey: _rootNavigatorKey,
+    pageBuilder: (context, state) {
+      final PlayableItem? item = state.extra as PlayableItem?;
+      return CustomTransitionPage<void>(
+        key: state.pageKey,
+        child: PlayerPage(initialItem: item),
+        transitionDuration: const Duration(milliseconds: 450),
+        reverseTransitionDuration: const Duration(milliseconds: 400),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          final Animation<Offset> offsetAnimation =
+              Tween<Offset>(
+                begin: const Offset(0, 1),
+                end: Offset.zero,
+              ).animate(
+                CurvedAnimation(
+                  parent: animation,
+                  curve: Curves.easeOutCubic,
+                  reverseCurve: Curves.easeInCubic,
+                ),
+              );
+
+          return SlideTransition(position: offsetAnimation, child: child);
+        },
+      );
+    },
+  ),
+  GoRoute(
+    path: '/settings',
+    parentNavigatorKey: _rootNavigatorKey,
+    builder: (context, state) => const SettingPage(),
+  ),
+  GoRoute(
+    path: '/settings/theme',
+    parentNavigatorKey: _rootNavigatorKey,
+    builder: (context, state) => const ThemeSettingsPage(),
+  ),
+  GoRoute(
+    path: '/settings/cache',
+    parentNavigatorKey: _rootNavigatorKey,
+    builder: (context, state) => const CacheSettingsPage(),
+  ),
+  GoRoute(
+    path: '/settings/player',
+    parentNavigatorKey: _rootNavigatorKey,
+    builder: (context, state) => const PlayerSettingsPage(),
+  ),
+  GoRoute(
+    path: '/settings/favorites-transfer',
+    parentNavigatorKey: _rootNavigatorKey,
+    builder: (context, state) => const FavoritesTransferPage(),
+  ),
+  GoRoute(
+    path: '/settings/about',
+    parentNavigatorKey: _rootNavigatorKey,
+    builder: (context, state) => const AboutSettingsPage(),
+  ),
+  StatefulShellRoute.indexedStack(
+    parentNavigatorKey: _rootNavigatorKey,
+    builder: (context, state, navigationShell) {
+      return AppShell(
+        navigationShell: navigationShell,
+        currentLocation: state.uri.path,
+      );
+    },
+    branches: [
+      ...tabs.map(
+        (tab) => StatefulShellBranch(
+          routes: [
+            GoRoute(
+              path: tab['path'] as String,
+              builder: tab['builder'] as GoRouterWidgetBuilder,
+              routes: tab['routes'] as List<RouteBase>? ?? const <RouteBase>[],
+            ),
+          ],
+        ),
+      ),
+    ],
+  ),
+];
