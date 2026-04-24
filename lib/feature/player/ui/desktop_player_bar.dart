@@ -9,6 +9,7 @@ import 'package:bilimusic/feature/player/domain/player_state.dart';
 import 'package:bilimusic/feature/player/logic/player_controller.dart';
 import 'package:bilimusic/feature/player/ui/components/player_queue_sheet.dart';
 import 'package:bilimusic/feature/player/ui/components/player_ui_helpers.dart';
+import 'package:bilimusic/router/player_navigation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -143,28 +144,10 @@ class _TrackSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
 
     return Row(
       children: <Widget>[
-        Container(
-          width: 48,
-          height: 48,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(8),
-            color: colorScheme.surfaceContainerHigh,
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(8),
-            child: CommonCachedImage(
-              imageUrl: item?.coverUrl,
-              fit: BoxFit.cover,
-              fallbackIcon: Icons.music_note_rounded,
-              iconColor: colorScheme.onSurfaceVariant,
-              backgroundColor: colorScheme.surfaceContainerHigh,
-            ),
-          ),
-        ),
+        _ArtworkHoverButton(item: item),
         const SizedBox(width: 12),
         Expanded(
           child: Column(
@@ -201,6 +184,83 @@ class _TrackSection extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _ArtworkHoverButton extends StatefulWidget {
+  const _ArtworkHoverButton({required this.item});
+
+  final PlayableItem? item;
+
+  @override
+  State<_ArtworkHoverButton> createState() => _ArtworkHoverButtonState();
+}
+
+class _ArtworkHoverButtonState extends State<_ArtworkHoverButton> {
+  bool _isHovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+    final bool isEnabled = widget.item != null;
+
+    return MouseRegion(
+      cursor: isEnabled ? SystemMouseCursors.click : MouseCursor.defer,
+      onEnter: isEnabled ? (_) => setState(() => _isHovered = true) : null,
+      onExit: isEnabled ? (_) => setState(() => _isHovered = false) : null,
+      child: GestureDetector(
+        onTap: isEnabled
+            ? () => openPlayerPage(context, item: widget.item)
+            : null,
+        behavior: HitTestBehavior.opaque,
+        child: Container(
+          width: 48,
+          height: 48,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(8),
+            color: colorScheme.surfaceContainerHigh,
+          ),
+          child: Stack(
+            children: <Widget>[
+              Positioned.fill(
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: CommonCachedImage(
+                    imageUrl: widget.item?.coverUrl,
+                    fit: BoxFit.cover,
+                    fallbackIcon: Icons.music_note_rounded,
+                    iconColor: colorScheme.onSurfaceVariant,
+                    backgroundColor: colorScheme.surfaceContainerHigh,
+                  ),
+                ),
+              ),
+              Positioned.fill(
+                child: IgnorePointer(
+                  child: AnimatedOpacity(
+                    duration: const Duration(milliseconds: 200),
+                    opacity: _isHovered ? 1 : 0,
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(alpha: 0.4),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Center(
+                        child: Icon(
+                          Icons.open_in_full_rounded,
+                          color: Colors.white,
+                          size: 20,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
