@@ -1,4 +1,4 @@
-import 'package:bilimusic/common/bottom_height_helper.dart';
+import 'package:bilimusic/common/components/bottom_page_spacer.dart';
 import 'package:bilimusic/common/components/cached_image.dart';
 import 'package:bilimusic/common/components/searchBar.dart';
 import 'package:bilimusic/common/util/toast_util.dart';
@@ -30,9 +30,6 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
     ref.watch(biliSessionControllerProvider);
     final FavoritesState favoritesState = ref.watch(
       favoritesControllerProvider,
-    );
-    final double bottomSpacing = BottomHeightHelper.tabPageBottomSpacing(
-      context,
     );
     final int likedCount = favoritesState.itemCountForCollection(
       FavoriteCollection.likedCollectionId,
@@ -127,7 +124,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                 ),
               ),
             ),
-          SizedBox(height: bottomSpacing),
+          const BottomPageSpacer.tab(),
         ],
       ),
     );

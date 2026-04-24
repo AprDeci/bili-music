@@ -1,5 +1,6 @@
-import 'package:bilimusic/common/bottom_height_helper.dart';
+import 'package:bilimusic/common/components/bottom_page_spacer.dart';
 import 'package:bilimusic/common/components/searchBar.dart';
+import 'package:bilimusic/common/util/platform_util.dart';
 import 'package:bilimusic/feature/home/logic/music_ranking_controller.dart';
 import 'package:bilimusic/feature/home/ui/components/music_ranking_section.dart';
 import 'package:bilimusic/feature/recent/ui/components/recent_playback_section.dart';
@@ -12,15 +13,15 @@ class HomePage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final double bottomSpacing = BottomHeightHelper.tabPageBottomSpacing(
-      context,
-    );
-
     return Scaffold(
-      appBar: AppBar(
-        toolbarHeight: 48,
-        title: CommonSearchBar(onTap: () => context.push('/search?from=/home')),
-      ),
+      appBar: PlatformUtil.isDesktop
+          ? null
+          : AppBar(
+              toolbarHeight: 48,
+              title: CommonSearchBar(
+                onTap: () => context.push('/search?from=/home'),
+              ),
+            ),
       body: RefreshIndicator(
         onRefresh: () =>
             ref.read(musicRankingControllerProvider.notifier).refresh(),
@@ -31,7 +32,7 @@ class HomePage extends ConsumerWidget {
             const RecentPlaybackSection(),
             const SizedBox(height: 30),
             const MusicRankingSection(),
-            SizedBox(height: bottomSpacing),
+            const BottomPageSpacer.tab(),
           ],
         ),
       ),

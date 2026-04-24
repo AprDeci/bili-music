@@ -1,4 +1,4 @@
-import 'package:bilimusic/common/bottom_height_helper.dart';
+import 'package:bilimusic/common/components/bottom_page_spacer.dart';
 import 'package:bilimusic/common/components/cached_image.dart';
 import 'package:bilimusic/common/util/screen_util.dart';
 import 'package:bilimusic/common/util/player_util.dart';
@@ -94,9 +94,6 @@ class _SearchPageState extends ConsumerState<SearchPage> {
     );
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
-    final double bottomSpacing = BottomHeightHelper.overlayPageBottomSpacing(
-      context,
-    );
     final bool isDesktop = ScreenUtil.shouldUseDesktopShell(context);
     final String trimmedQuery = state.query.trim();
     final String trimmedSubmittedQuery = state.submittedQuery?.trim() ?? '';
@@ -327,7 +324,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
                               .enqueue(<PlayableItem>[resolvedItem]);
                         },
                       ),
-                      SizedBox(height: bottomSpacing),
+                      const BottomPageSpacer.overlay(),
                     ],
                   ),
                   if (isShowingSuggestions)

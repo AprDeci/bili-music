@@ -1,4 +1,4 @@
-import 'package:bilimusic/common/bottom_height_helper.dart';
+import 'package:bilimusic/common/components/bottom_page_spacer.dart';
 import 'package:bilimusic/common/components/cached_image.dart';
 import 'package:bilimusic/common/logger.dart';
 import 'package:bilimusic/common/util/color_util.dart';
@@ -27,9 +27,6 @@ class DesktopFavoriteCollectionPage extends ConsumerWidget {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
     final Color primary = colorScheme.primary;
-    final double bottomSpacing = BottomHeightHelper.overlayPageBottomSpacing(
-      context,
-    );
     FavoriteCollection? collection;
     for (final FavoriteCollection item in state.collections) {
       if (item.id == collectionId) {
@@ -109,7 +106,12 @@ class DesktopFavoriteCollectionPage extends ConsumerWidget {
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(4),
                         ),
-                        tileColor: isEvenRow ? Colors.transparent : ColorUtil.getShade(primary,800).withValues(alpha: 0.1),
+                        tileColor: isEvenRow
+                            ? Colors.transparent
+                            : ColorUtil.getShade(
+                                primary,
+                                800,
+                              ).withValues(alpha: 0.1),
                         contentPadding: const EdgeInsets.symmetric(
                           horizontal: 14,
                           vertical: 0,
@@ -180,7 +182,7 @@ class DesktopFavoriteCollectionPage extends ConsumerWidget {
                     ),
                   );
                 }),
-                SizedBox(height: bottomSpacing),
+                const BottomPageSpacer.overlay(),
               ],
             ),
     );
