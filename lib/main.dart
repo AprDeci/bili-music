@@ -27,7 +27,8 @@ Future<void> bootstrap() async {
   if (PlatformUtil.isDesktop) {
     await windowManager.ensureInitialized();
     WindowOptions windowOptions = WindowOptions(
-      size: Size(1050, 690),
+      size: Size(1050, 700),
+      minimumSize: Size(1050, 700),
       center: true,
       backgroundColor: Colors.transparent,
       skipTaskbar: false,
