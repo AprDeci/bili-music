@@ -82,6 +82,7 @@ dependencies:
 
   # 桌面端
   window_manager: ^0.5.1
+  hugeicons: ^1.1.6
 
 dev_dependencies:
   flutter_test:
