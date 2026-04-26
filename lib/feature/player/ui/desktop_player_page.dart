@@ -1,6 +1,7 @@
 import 'package:bilimusic/common/components/bar_icon_button.dart';
 import 'package:bilimusic/common/components/cached_image.dart';
 import 'package:bilimusic/common/components/desktop/volumn_attach.dart';
+import 'package:bilimusic/common/components/queue_mode_icon.dart';
 import 'package:bilimusic/common/util/toast_util.dart';
 import 'package:bilimusic/feature/comment/domain/comment_target.dart';
 import 'package:bilimusic/feature/favorites/logic/favorites_controller.dart';
@@ -606,13 +607,13 @@ class _DesktopPlayerControlDeck extends StatelessWidget {
                     width: 190,
                     child: Row(
                       children: <Widget>[
-                        _DesktopIconButton(
+                        BarIconButton(
                           icon: Icons.fullscreen_exit_rounded,
                           tooltip: '收起播放页',
                           onPressed: null,
                         ),
                         const SizedBox(width: 8),
-                        _DesktopIconButton(
+                        BarIconButton(
                           icon: isFavorite
                               ? Icons.favorite_rounded
                               : Icons.favorite_border,
@@ -622,13 +623,13 @@ class _DesktopPlayerControlDeck extends StatelessWidget {
                           onPressed: onFavoriteToggle,
                         ),
                         const SizedBox(width: 8),
-                        _DesktopIconButton(
+                        BarIconButton(
                           icon: Icons.mode_comment_outlined,
                           tooltip: '评论',
                           onPressed: onOpenComments,
                         ),
                         const SizedBox(width: 8),
-                        _DesktopIconButton(
+                        BarIconButton(
                           icon: Icons.more_horiz_rounded,
                           tooltip: '更多',
                           onPressed: item == null ? null : () {},
@@ -643,8 +644,8 @@ class _DesktopPlayerControlDeck extends StatelessWidget {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: <Widget>[
-                            _DesktopIconButton(
-                              icon: _queueModeIcon(state.queueMode),
+                            BarIconButton(
+                              icon: queueModeIcon(state.queueMode),
                               tooltip: '播放模式',
                               isActive: state.isReady,
                               onPressed: state.hasQueue
@@ -652,7 +653,7 @@ class _DesktopPlayerControlDeck extends StatelessWidget {
                                   : null,
                             ),
                             const SizedBox(width: 14),
-                            _DesktopIconButton(
+                            BarIconButton(
                               icon: Icons.skip_previous_rounded,
                               tooltip: '上一首',
                               iconSize: 26,
@@ -666,7 +667,7 @@ class _DesktopPlayerControlDeck extends StatelessWidget {
                                   : null,
                             ),
                             const SizedBox(width: 14),
-                            _DesktopIconButton(
+                            BarIconButton(
                               icon: Icons.skip_next_rounded,
                               tooltip: '下一首',
                               iconSize: 26,
@@ -747,13 +748,13 @@ class _DesktopPlayerControlDeck extends StatelessWidget {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: <Widget>[
-                        _DesktopIconButton(
+                        BarIconButton(
                           icon: Icons.checkroom_outlined,
                           tooltip: '收藏到歌单',
                           onPressed: onOpenCollectionSheet,
                         ),
                         const SizedBox(width: 8),
-                        _DesktopIconButton(
+                        BarIconButton(
                           icon: Icons.lyrics_outlined,
                           tooltip: '选择分 P',
                           onPressed: onPartTap,
@@ -764,7 +765,7 @@ class _DesktopPlayerControlDeck extends StatelessWidget {
                           onSelected: onSelectQuality,
                         ),
                         const SizedBox(width: 8),
-                        _DesktopIconButton(
+                        BarIconButton(
                           icon: Icons.playlist_play_rounded,
                           tooltip: '播放队列',
                           onPressed: state.hasQueue ? onOpenQueue : null,
@@ -779,14 +780,6 @@ class _DesktopPlayerControlDeck extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  IconData _queueModeIcon(PlayerQueueMode mode) {
-    return switch (mode) {
-      PlayerQueueMode.sequence => Icons.repeat_rounded,
-      PlayerQueueMode.singleRepeat => Icons.repeat_one_rounded,
-      PlayerQueueMode.shuffle => Icons.shuffle_rounded,
-    };
   }
 }
 
@@ -869,39 +862,6 @@ class _DesktopQualityBadge extends StatelessWidget {
             ),
           ),
         ),
-      ),
-    );
-  }
-}
-
-class _DesktopIconButton extends StatelessWidget {
-  const _DesktopIconButton({
-    required this.icon,
-    required this.tooltip,
-    required this.onPressed,
-    this.iconSize = 22,
-    this.isActive = false,
-    this.activeColor,
-  });
-
-  final IconData icon;
-  final String tooltip;
-  final VoidCallback? onPressed;
-  final double iconSize;
-  final bool isActive;
-  final Color? activeColor;
-
-  @override
-  Widget build(BuildContext context) {
-    return Tooltip(
-      waitDuration: const Duration(milliseconds: 600),
-      message: tooltip,
-      child: BarIconButton(
-        onPressed: onPressed,
-        icon: icon,
-        iconSize: iconSize,
-        isActive: isActive,
-        activeColor: activeColor,
       ),
     );
   }

@@ -1,6 +1,7 @@
 import 'package:bilimusic/common/components/bar_icon_button.dart';
 import 'package:bilimusic/common/components/cached_image.dart';
 import 'package:bilimusic/common/components/desktop/volumn_attach.dart';
+import 'package:bilimusic/common/components/queue_mode_icon.dart';
 import 'package:bilimusic/common/util/color_util.dart';
 import 'package:bilimusic/feature/comment/domain/comment_target.dart';
 import 'package:bilimusic/feature/favorites/logic/favorites_controller.dart';
@@ -314,7 +315,7 @@ class _PlaybackSection extends StatelessWidget {
           children: <Widget>[
             BarIconButton(
               onPressed: state.hasQueue ? onToggleQueueMode : null,
-              icon: _queueModeIcon(state.queueMode),
+              icon: queueModeIcon(state.queueMode),
             ),
             const SizedBox(width: 8),
             BarIconButton(
@@ -393,14 +394,6 @@ class _PlaybackSection extends StatelessWidget {
         ),
       ],
     );
-  }
-
-  IconData _queueModeIcon(PlayerQueueMode mode) {
-    return switch (mode) {
-      PlayerQueueMode.sequence => Icons.repeat_rounded,
-      PlayerQueueMode.singleRepeat => Icons.repeat_one_rounded,
-      PlayerQueueMode.shuffle => Icons.shuffle_rounded,
-    };
   }
 }
 
