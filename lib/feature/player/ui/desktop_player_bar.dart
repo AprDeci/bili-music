@@ -15,6 +15,7 @@ import 'package:bilimusic/router/player_navigation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:hugeicons/hugeicons.dart';
 
 class DesktopPlayerBar extends ConsumerWidget {
   const DesktopPlayerBar({super.key});
@@ -449,7 +450,7 @@ class _ActionSection extends StatelessWidget {
         const SizedBox(width: 10),
         BarIconButton(
           onPressed: state.hasQueue ? onOpenQueue : null,
-          icon: Icons.queue_music_rounded,
+          icon: HugeIcon(icon: HugeIcons.strokeRoundedListMusic, size: 22),
         ),
       ],
     );
