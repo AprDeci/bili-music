@@ -34,6 +34,7 @@ class PlayerAudioEngine {
       _audioPlayer.bufferedPositionStream;
   Stream<Duration?> get durationStream => _audioPlayer.durationStream;
   Stream<audio.PlayerException> get errorStream => _audioPlayer.errorStream;
+  Stream<double> get volumeStream => _audioPlayer.volumeStream;
   Stream<audio.PlayerState> get playerStateStream =>
       _audioPlayer.playerStateStream;
 

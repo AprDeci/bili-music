@@ -64,6 +64,7 @@ class PlayerController extends Notifier<PlayerState>
   bool _isBound = false;
   bool _isDisposed = false;
   bool _isAdvancingQueue = false;
+  double _lastAudibleVolume = 1.0;
   int _operationGeneration = 0;
 
   @override
@@ -233,6 +234,27 @@ class PlayerController extends Notifier<PlayerState>
   @override
   Future<void> seek(Duration position) {
     return _audioEngine.seek(position);
+  }
+
+  Future<void> setVolume(double volume) async {
+    final double nextVolume = volume.clamp(0.0, 1.0).toDouble();
+    if (nextVolume > 0) {
+      _lastAudibleVolume = nextVolume;
+    }
+    state = state.copyWith(volume: nextVolume);
+    await _audioEngine.setVolume(nextVolume);
+  }
+
+  Future<double> toggleMute() async {
+    if (state.volume > 0) {
+      _lastAudibleVolume = state.volume;
+      await setVolume(0);
+      return 0;
+    }
+
+    final double nextVolume = _lastAudibleVolume <= 0 ? 1 : _lastAudibleVolume;
+    await setVolume(nextVolume);
+    return nextVolume;
   }
 
   Future<void> seekBy(Duration offset) async {
@@ -789,6 +811,15 @@ class PlayerController extends Notifier<PlayerState>
         }
         state = state.copyWith(duration: duration);
         _publishMediaSession();
+      }),
+    );
+    _subscriptions.add(
+      _audioEngine.volumeStream.listen((double volume) {
+        final double nextVolume = volume.clamp(0.0, 1.0).toDouble();
+        if (nextVolume > 0) {
+          _lastAudibleVolume = nextVolume;
+        }
+        state = state.copyWith(volume: nextVolume);
       }),
     );
     _subscriptions.add(

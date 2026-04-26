@@ -28,6 +28,7 @@ abstract class PlayerState with _$PlayerState {
     @Default(false) bool isReady,
     @Default(false) bool isPlaying,
     @Default(false) bool isBuffering,
+    @Default(1.0) double volume,
     @Default(Duration.zero) Duration position,
     @Default(Duration.zero) Duration bufferedPosition,
     Duration? duration,
