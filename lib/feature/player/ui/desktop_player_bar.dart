@@ -1,5 +1,6 @@
 import 'package:bilimusic/common/components/bar_icon_button.dart';
 import 'package:bilimusic/common/components/cached_image.dart';
+import 'package:bilimusic/common/components/desktop/volumn_attach.dart';
 import 'package:bilimusic/common/util/color_util.dart';
 import 'package:bilimusic/feature/comment/domain/comment_target.dart';
 import 'package:bilimusic/feature/favorites/logic/favorites_controller.dart';
@@ -106,6 +107,8 @@ class DesktopPlayerBar extends ConsumerWidget {
                 onPrevious: controller.skipToPrevious,
                 onTogglePlayback: controller.togglePlayback,
                 onNext: controller.skipToNext,
+                onVolumeChanged: controller.setVolume,
+                onToggleMute: controller.toggleMute,
               ),
             ),
             Expanded(
@@ -277,6 +280,8 @@ class _PlaybackSection extends StatelessWidget {
     required this.onPrevious,
     required this.onTogglePlayback,
     required this.onNext,
+    required this.onVolumeChanged,
+    required this.onToggleMute,
   });
 
   final PlayerState state;
@@ -289,6 +294,8 @@ class _PlaybackSection extends StatelessWidget {
   final VoidCallback onPrevious;
   final VoidCallback onTogglePlayback;
   final VoidCallback onNext;
+  final ValueChanged<double> onVolumeChanged;
+  final Future<double> Function() onToggleMute;
 
   @override
   Widget build(BuildContext context) {
@@ -327,9 +334,11 @@ class _PlaybackSection extends StatelessWidget {
               iconSize: 24,
             ),
             const SizedBox(width: 8),
-            BarIconButton(
-              onPressed: state.hasQueue ? () {} : null,
-              icon: Icons.volume_up_outlined,
+            DesktopVolumnAttach(
+              enabled: state.hasQueue,
+              volume: state.volume,
+              onVolumeChanged: onVolumeChanged,
+              onToggleMute: onToggleMute,
             ),
           ],
         ),

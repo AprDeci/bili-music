@@ -1,5 +1,6 @@
 import 'package:bilimusic/common/components/bar_icon_button.dart';
 import 'package:bilimusic/common/components/cached_image.dart';
+import 'package:bilimusic/common/components/desktop/volumn_attach.dart';
 import 'package:bilimusic/common/util/toast_util.dart';
 import 'package:bilimusic/feature/comment/domain/comment_target.dart';
 import 'package:bilimusic/feature/favorites/logic/favorites_controller.dart';
@@ -159,6 +160,8 @@ class _DesktopPlayerPageState extends ConsumerState<DesktopPlayerPage> {
                     onPrevious: controller.skipToPrevious,
                     onTogglePlayback: controller.togglePlayback,
                     onNext: controller.skipToNext,
+                    onVolumeChanged: controller.setVolume,
+                    onToggleMute: controller.toggleMute,
                     onSeek: (double value) {
                       final Duration total = _resolveTotalDuration(state);
                       controller.seek(
@@ -547,6 +550,8 @@ class _DesktopPlayerControlDeck extends StatelessWidget {
     required this.onPrevious,
     required this.onTogglePlayback,
     required this.onNext,
+    required this.onVolumeChanged,
+    required this.onToggleMute,
     required this.onSeek,
   });
 
@@ -563,6 +568,8 @@ class _DesktopPlayerControlDeck extends StatelessWidget {
   final VoidCallback onPrevious;
   final VoidCallback onTogglePlayback;
   final VoidCallback onNext;
+  final ValueChanged<double> onVolumeChanged;
+  final Future<double> Function() onToggleMute;
   final ValueChanged<double> onSeek;
 
   @override
@@ -666,10 +673,12 @@ class _DesktopPlayerControlDeck extends StatelessWidget {
                               onPressed: canGoNext ? onNext : null,
                             ),
                             const SizedBox(width: 14),
-                            _DesktopIconButton(
-                              icon: Icons.volume_up_outlined,
-                              tooltip: '音量',
-                              onPressed: state.hasQueue ? () {} : null,
+                            DesktopVolumnAttach(
+                              enabled: state.hasQueue,
+                              volume: state.volume,
+                              onVolumeChanged: onVolumeChanged,
+                              onToggleMute: onToggleMute,
+                              iconSize: 22,
                             ),
                           ],
                         ),

@@ -8,6 +8,7 @@ import 'package:bilimusic/feature/player/logic/player_lyrics_controller.dart';
 import 'package:bilimusic/myApp.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_smart_dialog/flutter_smart_dialog.dart';
 import 'package:just_audio_media_kit/just_audio_media_kit.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 import 'package:window_manager/window_manager.dart';
@@ -23,6 +24,10 @@ Future<void> bootstrap() async {
     android: true,
   );
   await initHive();
+  SmartDialog.config.attach = SmartConfigAttach(
+    useAnimation: false,
+    usePenetrate: false,
+  );
 
   if (PlatformUtil.isDesktop) {
     await windowManager.ensureInitialized();
