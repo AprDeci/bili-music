@@ -866,7 +866,7 @@ class PlayerController extends Notifier<PlayerState>
           ),
         );
 
-        if (completed) {
+        if (completed && playerState.playing) {
           unawaited(_handlePlaybackCompleted());
         }
       }),
@@ -875,6 +875,9 @@ class PlayerController extends Notifier<PlayerState>
 
   Future<void> _handlePlaybackCompleted() async {
     if (_isAdvancingQueue) {
+      return;
+    }
+    if (!state.isPlaying) {
       return;
     }
 
