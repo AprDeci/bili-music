@@ -1,3 +1,4 @@
+import 'package:bilimusic/common/components/icon_and_widget.dart';
 import 'package:flutter/material.dart';
 
 class BarIconButton extends StatefulWidget {
@@ -5,6 +6,7 @@ class BarIconButton extends StatefulWidget {
     super.key,
     required this.onPressed,
     required this.icon,
+    this.tooltip,
     this.iconSize = 20,
     this.isActive = false,
     this.activeColor,
@@ -12,6 +14,7 @@ class BarIconButton extends StatefulWidget {
 
   final VoidCallback? onPressed;
   final Object icon;
+  final String? tooltip;
   final double iconSize;
   final bool isActive;
   final Color? activeColor;
@@ -37,7 +40,7 @@ class _BarIconButtonState extends State<BarIconButton> {
         ? colorScheme.primary
         : colorScheme.onSurfaceVariant;
 
-    return MouseRegion(
+    final Widget button = MouseRegion(
       cursor: isEnabled ? SystemMouseCursors.click : MouseCursor.defer,
       onEnter: isEnabled ? (_) => setState(() => _isHovered = true) : null,
       onExit: isEnabled ? (_) => setState(() => _isHovered = false) : null,
@@ -47,26 +50,26 @@ class _BarIconButtonState extends State<BarIconButton> {
         child: SizedBox(
           width: 30,
           height: 30,
-          child: Center(child: _buildIcon(iconColor)),
+          child: Center(
+            child: IconAndWidget(
+              icon: widget.icon,
+              size: widget.iconSize,
+              color: iconColor,
+            ),
+          ),
         ),
       ),
     );
-  }
 
-  Widget _buildIcon(Color iconColor) {
-    final Object icon = widget.icon;
-
-    if (icon is IconData) {
-      return Icon(icon, size: widget.iconSize, color: iconColor);
+    final String? tooltip = widget.tooltip;
+    if (tooltip == null) {
+      return button;
     }
 
-    if (icon is Widget) {
-      return IconTheme.merge(
-        data: IconThemeData(size: widget.iconSize, color: iconColor),
-        child: icon,
-      );
-    }
-
-    throw ArgumentError.value(icon, 'icon', 'must be IconData or Widget');
+    return Tooltip(
+      waitDuration: const Duration(milliseconds: 600),
+      message: tooltip,
+      child: button,
+    );
   }
 }
