@@ -11,7 +11,7 @@ class BarIconButton extends StatefulWidget {
   });
 
   final VoidCallback? onPressed;
-  final IconData icon;
+  final Object icon;
   final double iconSize;
   final bool isActive;
   final Color? activeColor;
@@ -47,11 +47,26 @@ class _BarIconButtonState extends State<BarIconButton> {
         child: SizedBox(
           width: 30,
           height: 30,
-          child: Center(
-            child: Icon(widget.icon, size: widget.iconSize, color: iconColor),
-          ),
+          child: Center(child: _buildIcon(iconColor)),
         ),
       ),
     );
+  }
+
+  Widget _buildIcon(Color iconColor) {
+    final Object icon = widget.icon;
+
+    if (icon is IconData) {
+      return Icon(icon, size: widget.iconSize, color: iconColor);
+    }
+
+    if (icon is Widget) {
+      return IconTheme.merge(
+        data: IconThemeData(size: widget.iconSize, color: iconColor),
+        child: icon,
+      );
+    }
+
+    throw ArgumentError.value(icon, 'icon', 'must be IconData or Widget');
   }
 }
