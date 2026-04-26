@@ -8,27 +8,33 @@ import 'package:flutter/material.dart';
 import 'package:flutter_lyric/flutter_lyric.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class DesktopLyricPanel extends ConsumerStatefulWidget {
-  const DesktopLyricPanel({
+enum PlayerLyricPanelVariant { mobile, desktop }
+
+class PlayerLyricPanel extends ConsumerStatefulWidget {
+  const PlayerLyricPanel({
     super.key,
     required this.state,
     required this.item,
     required this.onSeek,
+    this.variant = PlayerLyricPanelVariant.mobile,
   });
 
   final PlayerState state;
   final PlayableItem? item;
   final ValueChanged<Duration> onSeek;
+  final PlayerLyricPanelVariant variant;
 
   @override
-  ConsumerState<DesktopLyricPanel> createState() => _DesktopLyricPanelState();
+  ConsumerState<PlayerLyricPanel> createState() => _PlayerLyricPanelState();
 }
 
-class _DesktopLyricPanelState extends ConsumerState<DesktopLyricPanel> {
+class _PlayerLyricPanelState extends ConsumerState<PlayerLyricPanel> {
   late final LyricController _lyricController;
 
   String? _loadedStableId;
   String? _loadedRenderableLyrics;
+
+  bool get _isDesktop => widget.variant == PlayerLyricPanelVariant.desktop;
 
   @override
   void initState() {
@@ -43,7 +49,7 @@ class _DesktopLyricPanelState extends ConsumerState<DesktopLyricPanel> {
   }
 
   @override
-  void didUpdateWidget(covariant DesktopLyricPanel oldWidget) {
+  void didUpdateWidget(covariant PlayerLyricPanel oldWidget) {
     super.didUpdateWidget(oldWidget);
     _syncProgress();
   }
@@ -61,37 +67,47 @@ class _DesktopLyricPanelState extends ConsumerState<DesktopLyricPanel> {
     );
     _syncLyrics(lyricsState);
 
+    final Widget content = _buildContent(context, lyricsState);
+    if (!_isDesktop) {
+      return content;
+    }
+
     return AnimatedSwitcher(
       duration: const Duration(milliseconds: 240),
-      child: _buildContent(context, lyricsState),
+      child: content,
     );
   }
 
   Widget _buildContent(BuildContext context, PlayerLyricsState lyricsState) {
     final PlayableItem? item = widget.item;
     if (item == null) {
-      return const _DesktopLyricStatus(
-        key: ValueKey<String>('empty'),
-        title: '还没有播放内容',
-        message: '从搜索或收藏中选择一首音乐后，这里会显示歌词。',
-        icon: Icons.lyrics_outlined,
+      return _PlayerLyricPanelStatus(
+        key: const ValueKey<String>('empty'),
+        variant: widget.variant,
+        title: _isDesktop ? '还没有播放内容' : '还没有选择播放内容',
+        message: _isDesktop
+            ? '从搜索或收藏中选择一首音乐后，这里会显示歌词。'
+            : '从搜索页选一条视频或音频后，这里会显示歌词。',
+        icon: _isDesktop ? Icons.lyrics_outlined : Icons.music_note_outlined,
       );
     }
 
     if (lyricsState.stableId != item.stableId) {
-      return const _DesktopLyricStatus(
-        key: ValueKey<String>('preparing'),
+      return _PlayerLyricPanelStatus(
+        key: const ValueKey<String>('preparing'),
+        variant: widget.variant,
         title: '正在准备歌词',
-        message: '歌词会在当前歌曲匹配完成后显示。',
-        icon: Icons.graphic_eq_rounded,
+        message: _isDesktop ? '歌词会在当前歌曲匹配完成后显示。' : '歌词会在当前分 P 匹配完成后显示。',
+        icon: _isDesktop ? Icons.graphic_eq_rounded : Icons.lyrics_outlined,
       );
     }
 
     if (lyricsState.isLoading) {
-      return const _DesktopLyricStatus(
-        key: ValueKey<String>('loading'),
+      return _PlayerLyricPanelStatus(
+        key: const ValueKey<String>('loading'),
+        variant: widget.variant,
         title: '正在查找歌词',
-        message: '正在从 Meting 匹配当前歌曲。',
+        message: _isDesktop ? '正在从 Meting 匹配当前歌曲。' : '已开始从 Meting 查询当前分 P 的歌词。',
         icon: Icons.lyrics_outlined,
         isLoading: true,
       );
@@ -112,8 +128,9 @@ class _DesktopLyricPanelState extends ConsumerState<DesktopLyricPanel> {
     }
 
     if (lyricsState.hasError) {
-      return _DesktopLyricStatus(
+      return _PlayerLyricPanelStatus(
         key: const ValueKey<String>('error'),
+        variant: widget.variant,
         title: '歌词查询失败',
         message: lyricsState.errorMessage!,
         icon: Icons.error_outline_rounded,
@@ -123,10 +140,11 @@ class _DesktopLyricPanelState extends ConsumerState<DesktopLyricPanel> {
       );
     }
 
-    return const _DesktopLyricStatus(
-      key: ValueKey<String>('no-lyrics'),
+    return _PlayerLyricPanelStatus(
+      key: const ValueKey<String>('no-lyrics'),
+      variant: widget.variant,
       title: '暂无歌词',
-      message: '没有匹配到当前歌曲的歌词。',
+      message: _isDesktop ? '没有匹配到当前歌曲的歌词。' : '没有匹配到当前分 P 的歌词。',
       icon: Icons.lyrics_outlined,
     );
   }
@@ -209,9 +227,10 @@ class _DesktopLyricPanelState extends ConsumerState<DesktopLyricPanel> {
   }
 }
 
-class _DesktopLyricStatus extends StatelessWidget {
-  const _DesktopLyricStatus({
+class _PlayerLyricPanelStatus extends StatelessWidget {
+  const _PlayerLyricPanelStatus({
     super.key,
+    required this.variant,
     required this.title,
     required this.message,
     required this.icon,
@@ -220,6 +239,7 @@ class _DesktopLyricStatus extends StatelessWidget {
     this.onAction,
   });
 
+  final PlayerLyricPanelVariant variant;
   final String title;
   final String message;
   final IconData icon;
@@ -227,57 +247,74 @@ class _DesktopLyricStatus extends StatelessWidget {
   final String? actionLabel;
   final VoidCallback? onAction;
 
+  bool get _isDesktop => variant == PlayerLyricPanelVariant.desktop;
+
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
 
-    return Center(
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 320),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: <Widget>[
-            if (isLoading)
-              SizedBox(
-                width: 28,
-                height: 28,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2.4,
-                  color: colorScheme.primary,
-                ),
-              )
-            else
-              Icon(
-                icon,
-                size: 38,
-                color: colorScheme.primary.withValues(alpha: 0.62),
-              ),
-            const SizedBox(height: 18),
-            Text(
-              title,
-              textAlign: TextAlign.center,
-              style: theme.textTheme.titleMedium?.copyWith(
-                color: colorScheme.onSurface,
-                fontWeight: FontWeight.w800,
-              ),
+    final Widget content = Column(
+      mainAxisSize: MainAxisSize.min,
+      children: <Widget>[
+        if (isLoading)
+          SizedBox(
+            width: 28,
+            height: 28,
+            child: CircularProgressIndicator(
+              strokeWidth: _isDesktop ? 2.4 : 2.5,
+              color: colorScheme.primary,
             ),
-            const SizedBox(height: 8),
-            Text(
-              message,
-              textAlign: TextAlign.center,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: colorScheme.onSurface.withValues(alpha: 0.58),
-                height: 1.45,
-              ),
-            ),
-            if (actionLabel != null && onAction != null) ...<Widget>[
-              const SizedBox(height: 18),
-              TextButton(onPressed: onAction, child: Text(actionLabel!)),
-            ],
-          ],
+          )
+        else
+          Icon(
+            icon,
+            size: _isDesktop ? 38 : 34,
+            color: _isDesktop
+                ? colorScheme.primary.withValues(alpha: 0.62)
+                : colorScheme.primary,
+          ),
+        const SizedBox(height: 18),
+        Text(
+          title,
+          textAlign: TextAlign.center,
+          style: theme.textTheme.titleMedium?.copyWith(
+            color: colorScheme.onSurface,
+            fontWeight: FontWeight.w800,
+          ),
         ),
-      ),
+        const SizedBox(height: 8),
+        Text(
+          message,
+          textAlign: TextAlign.center,
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: _isDesktop
+                ? colorScheme.onSurface.withValues(alpha: 0.58)
+                : colorScheme.onSurfaceVariant,
+            height: _isDesktop ? 1.45 : 1.35,
+          ),
+        ),
+        if (actionLabel != null && onAction != null) ...<Widget>[
+          SizedBox(height: _isDesktop ? 18 : 20),
+          if (_isDesktop)
+            TextButton(onPressed: onAction, child: Text(actionLabel!))
+          else
+            FilledButton.tonal(onPressed: onAction, child: Text(actionLabel!)),
+        ],
+      ],
+    );
+
+    return Center(
+      child: _isDesktop
+          ? ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 320),
+              child: content,
+            )
+          : Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 30),
+              child: content,
+            ),
     );
   }
 }

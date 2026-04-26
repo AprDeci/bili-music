@@ -5,10 +5,13 @@ import 'package:bilimusic/feature/comment/domain/comment_target.dart';
 import 'package:bilimusic/feature/favorites/logic/favorites_controller.dart';
 import 'package:bilimusic/feature/player/domain/audio_stream_info.dart';
 import 'package:bilimusic/feature/player/domain/playable_item.dart';
+import 'package:bilimusic/feature/player/domain/player_lyrics_state.dart';
 import 'package:bilimusic/feature/player/domain/player_state.dart';
 import 'package:bilimusic/feature/player/logic/player_controller.dart';
-import 'package:bilimusic/feature/player/ui/components/desktop/desktop_lyric_panel.dart';
+import 'package:bilimusic/feature/player/logic/player_lyrics_controller.dart';
 import 'package:bilimusic/feature/player/ui/components/player_collection_sheet.dart';
+import 'package:bilimusic/feature/player/ui/components/player_lyric_panel.dart';
+import 'package:bilimusic/feature/player/ui/components/player_lyric_tools.dart';
 import 'package:bilimusic/feature/player/ui/components/player_part_selector.dart';
 import 'package:bilimusic/feature/player/ui/components/player_queue_sheet.dart';
 import 'package:bilimusic/feature/player/ui/components/player_ui_helpers.dart';
@@ -314,7 +317,7 @@ class _DesktopPlayerTopBarState extends State<_DesktopPlayerTopBar>
   }
 }
 
-class _DesktopPlayerHeroSection extends StatelessWidget {
+class _DesktopPlayerHeroSection extends ConsumerWidget {
   const _DesktopPlayerHeroSection({
     required this.state,
     required this.item,
@@ -326,7 +329,7 @@ class _DesktopPlayerHeroSection extends StatelessWidget {
   final ValueChanged<Duration> onSeek;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
         final bool compact = constraints.maxWidth < 820;
@@ -355,10 +358,37 @@ class _DesktopPlayerHeroSection extends StatelessWidget {
                   ),
                   SizedBox(width: compact ? 34 : 86),
                   Expanded(
-                    child: DesktopLyricPanel(
-                      state: state,
-                      item: item,
-                      onSeek: onSeek,
+                    child: Row(
+                      children: <Widget>[
+                        Expanded(
+                          child: PlayerLyricPanel(
+                            state: state,
+                            item: item,
+                            onSeek: onSeek,
+                            variant: PlayerLyricPanelVariant.desktop,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        _DesktopLyricToolRail(
+                          enabled: item != null,
+                          onSearch: item == null
+                              ? null
+                              : () {
+                                  final PlayerLyricsState lyricsState = ref
+                                      .read(playerLyricsControllerProvider);
+                                  showManualLyricSearchSheet(
+                                    context: context,
+                                    initialKeyword: resolveLyricSearchKeyword(
+                                      lyricsState: lyricsState,
+                                      item: item,
+                                    ),
+                                  );
+                                },
+                          onOffset: item == null
+                              ? null
+                              : () => showLyricOffsetSheet(context),
+                        ),
+                      ],
                     ),
                   ),
                 ],
@@ -367,6 +397,94 @@ class _DesktopPlayerHeroSection extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+}
+
+class _DesktopLyricToolRail extends StatelessWidget {
+  const _DesktopLyricToolRail({
+    required this.enabled,
+    required this.onSearch,
+    required this.onOffset,
+  });
+
+  final bool enabled;
+  final VoidCallback? onSearch;
+  final VoidCallback? onOffset;
+
+  @override
+  Widget build(BuildContext context) {
+    final ColorScheme colorScheme = Theme.of(context).colorScheme;
+
+    return Align(
+      alignment: Alignment.bottomCenter,
+      child: Padding(
+        padding: const EdgeInsets.only(bottom: 46),
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            color: colorScheme.surface.withValues(alpha: 0.56),
+            borderRadius: BorderRadius.circular(22),
+            border: Border.all(
+              color: colorScheme.outlineVariant.withValues(alpha: 0.32),
+            ),
+            boxShadow: <BoxShadow>[
+              BoxShadow(
+                color: colorScheme.shadow.withValues(alpha: 0.08),
+                blurRadius: 18,
+                offset: const Offset(0, 8),
+              ),
+            ],
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 6),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                _DesktopLyricToolButton(
+                  icon: Icons.search_rounded,
+                  tooltip: '手动匹配歌词',
+                  onPressed: enabled ? onSearch : null,
+                ),
+                const SizedBox(height: 4),
+                _DesktopLyricToolButton(
+                  icon: Icons.hourglass_empty_rounded,
+                  tooltip: '歌词偏移',
+                  onPressed: enabled ? onOffset : null,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _DesktopLyricToolButton extends StatelessWidget {
+  const _DesktopLyricToolButton({
+    required this.icon,
+    required this.tooltip,
+    required this.onPressed,
+  });
+
+  final IconData icon;
+  final String tooltip;
+  final VoidCallback? onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final ColorScheme colorScheme = Theme.of(context).colorScheme;
+    final bool enabled = onPressed != null;
+
+    return IconButton(
+      tooltip: tooltip,
+      onPressed: onPressed,
+      visualDensity: VisualDensity.compact,
+      color: enabled
+          ? colorScheme.primary
+          : colorScheme.onSurface.withValues(alpha: 0.26),
+      iconSize: 22,
+      icon: Icon(icon),
     );
   }
 }
