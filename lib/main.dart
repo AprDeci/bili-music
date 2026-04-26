@@ -1,6 +1,9 @@
 import 'package:bilimusic/common/util/platform_util.dart';
 import 'package:bilimusic/core/bili/session/bili_session_controller.dart';
 import 'package:bilimusic/core/hive/hive.dart';
+import 'package:bilimusic/core/hive/hive_keys.dart';
+import 'package:bilimusic/core/window/desktop_window_state_controller.dart';
+import 'package:bilimusic/core/window/desktop_window_state_store.dart';
 import 'package:bilimusic/feature/favorites/logic/favorites_controller.dart';
 import 'package:bilimusic/feature/player/logic/app_audio_handler.dart';
 import 'package:bilimusic/feature/player/logic/player_controller.dart';
@@ -9,6 +12,7 @@ import 'package:bilimusic/myApp.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_smart_dialog/flutter_smart_dialog.dart';
+import 'package:hive_ce/hive.dart';
 import 'package:just_audio_media_kit/just_audio_media_kit.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 import 'package:window_manager/window_manager.dart';
@@ -31,18 +35,30 @@ Future<void> bootstrap() async {
 
   if (PlatformUtil.isDesktop) {
     await windowManager.ensureInitialized();
-    WindowOptions windowOptions = WindowOptions(
-      size: Size(1050, 700),
-      minimumSize: Size(1050, 700),
-      center: true,
+
+    final DesktopWindowStateStore windowStateStore = DesktopWindowStateStore(
+      Hive.box<String>(HiveBoxNames.prefs),
+    );
+    final DesktopWindowState? savedWindowState = windowStateStore.read();
+    final WindowOptions windowOptions = WindowOptions(
+      size: savedWindowState?.size ?? defaultDesktopWindowSize,
+      minimumSize: defaultDesktopWindowSize,
+      center: savedWindowState == null,
       backgroundColor: Colors.transparent,
       skipTaskbar: false,
       titleBarStyle: TitleBarStyle.hidden,
     );
     windowManager.waitUntilReadyToShow(windowOptions, () async {
+      if (savedWindowState != null) {
+        await windowManager.setPosition(savedWindowState.position);
+      }
       await windowManager.show();
+      if (savedWindowState?.isMaximized == true) {
+        await windowManager.maximize();
+      }
       await windowManager.focus();
     });
+    DesktopWindowStateController(windowStateStore).attach();
   }
 }
 

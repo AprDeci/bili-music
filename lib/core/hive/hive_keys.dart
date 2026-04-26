@@ -31,4 +31,6 @@ class HiveKeys {
   static const String biliImgKey = 'bili.img_key';
   static const String biliSubKey = 'bili.sub_key';
   static const String biliBuvid3 = 'bili.buvid3';
+
+  static const String desktopWindowState = 'desktop.window_state';
 }
