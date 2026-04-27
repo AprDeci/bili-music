@@ -27,20 +27,19 @@ class _MyAppState extends ConsumerState<MyApp> {
     return MaterialApp.router(
       routerConfig: router,
       themeMode: currentTheme.themeMode,
-      theme: AppTheme.lightTheme(currentTheme.lightThemeVariant),
-      darkTheme: AppTheme.darkTheme(),
+      theme: AppTheme.lightTheme(currentTheme.themeVariant),
+      darkTheme: AppTheme.darkTheme(currentTheme.themeVariant),
       scrollBehavior: MyBehavior(),
       builder: FlutterSmartDialog.init(
         builder: (BuildContext context, Widget? child) {
-        return Stack(
-          children: <Widget>[
-            child ?? const SizedBox.shrink(),
-            if (kDebugMode) const DevOverlay(),
-          ],
-        );
-      },
+          return Stack(
+            children: <Widget>[
+              child ?? const SizedBox.shrink(),
+              if (kDebugMode) const DevOverlay(),
+            ],
+          );
+        },
       ),
-
     );
   }
 }

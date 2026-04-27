@@ -35,23 +35,23 @@ void main() {
     final ThemeUiModel state = container.read(themeLogicProvider);
 
     expect(state.themeMode, ThemeMode.dark);
-    expect(state.lightThemeVariant, LightThemeVariant.classicGreen);
+    expect(state.themeVariant, ThemeVariant.classicGreen);
   });
 
-  test('updates theme mode and light variant', () async {
+  test('updates theme mode and variant', () async {
     final ProviderContainer container = ProviderContainer();
     addTearDown(container.dispose);
 
     final ThemeLogic notifier = container.read(themeLogicProvider.notifier);
     notifier.setThemeMode(ThemeMode.light);
-    notifier.setLightThemeVariant(LightThemeVariant.classicGreen);
+    notifier.setThemeVariant(ThemeVariant.classicGreen);
 
     final ThemeUiModel state = container.read(themeLogicProvider);
     final Box<String> prefsBox = Hive.box<String>(HiveBoxNames.prefs);
 
     expect(state.themeMode, ThemeMode.light);
-    expect(state.lightThemeVariant, LightThemeVariant.classicGreen);
+    expect(state.themeVariant, ThemeVariant.classicGreen);
     expect(prefsBox.get(HiveKeys.themeMode), 'light');
-    expect(prefsBox.get(HiveKeys.lightThemeVariant), 'classicGreen');
+    expect(prefsBox.get(HiveKeys.themeVariant), 'classicGreen');
   });
 }
