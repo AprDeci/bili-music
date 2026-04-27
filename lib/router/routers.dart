@@ -34,7 +34,7 @@ GoRouter router(Ref ref) => GoRouter(
   routes: PlatformUtil.isDesktop ? desktopRoutes : mobileRoutes,
 );
 
-final List<Map<String, dynamic>> tabs = [
+final List<Map<String, dynamic>> mobileTabs = [
   {
     'path': '/home',
     'builder': (context, state) => const HomePage(),
@@ -65,6 +65,38 @@ final List<Map<String, dynamic>> tabs = [
     'routes': const <RouteBase>[],
     'icon': Icons.search,
     'label': '搜索',
+  },
+];
+
+final List<Map<String, dynamic>> desktopTabs = [
+  ...mobileTabs,
+  {
+    'path': '/settings',
+    'builder': (context, state) => const SettingPage(),
+    'routes': <RouteBase>[
+      GoRoute(
+        path: 'theme',
+        builder: (context, state) => const ThemeSettingsPage(),
+      ),
+      GoRoute(
+        path: 'cache',
+        builder: (context, state) => const CacheSettingsPage(),
+      ),
+      GoRoute(
+        path: 'player',
+        builder: (context, state) => const PlayerSettingsPage(),
+      ),
+      GoRoute(
+        path: 'favorites-transfer',
+        builder: (context, state) => const FavoritesTransferPage(),
+      ),
+      GoRoute(
+        path: 'about',
+        builder: (context, state) => const AboutSettingsPage(),
+      ),
+    ],
+    'icon': Icons.settings,
+    'label': '设置',
   },
 ];
 
@@ -145,7 +177,7 @@ final List<RouteBase> mobileRoutes = [
       );
     },
     branches: [
-      ...tabs.map(
+      ...mobileTabs.map(
         (tab) => StatefulShellBranch(
           routes: [
             GoRoute(
@@ -198,36 +230,6 @@ final List<RouteBase> desktopRoutes = [
       );
     },
   ),
-  GoRoute(
-    path: '/settings',
-    parentNavigatorKey: _rootNavigatorKey,
-    builder: (context, state) => const SettingPage(),
-  ),
-  GoRoute(
-    path: '/settings/theme',
-    parentNavigatorKey: _rootNavigatorKey,
-    builder: (context, state) => const ThemeSettingsPage(),
-  ),
-  GoRoute(
-    path: '/settings/cache',
-    parentNavigatorKey: _rootNavigatorKey,
-    builder: (context, state) => const CacheSettingsPage(),
-  ),
-  GoRoute(
-    path: '/settings/player',
-    parentNavigatorKey: _rootNavigatorKey,
-    builder: (context, state) => const PlayerSettingsPage(),
-  ),
-  GoRoute(
-    path: '/settings/favorites-transfer',
-    parentNavigatorKey: _rootNavigatorKey,
-    builder: (context, state) => const FavoritesTransferPage(),
-  ),
-  GoRoute(
-    path: '/settings/about',
-    parentNavigatorKey: _rootNavigatorKey,
-    builder: (context, state) => const AboutSettingsPage(),
-  ),
   StatefulShellRoute.indexedStack(
     parentNavigatorKey: _rootNavigatorKey,
     builder: (context, state, navigationShell) {
@@ -237,7 +239,7 @@ final List<RouteBase> desktopRoutes = [
       );
     },
     branches: [
-      ...tabs.map(
+      ...desktopTabs.map(
         (tab) => StatefulShellBranch(
           routes: [
             GoRoute(

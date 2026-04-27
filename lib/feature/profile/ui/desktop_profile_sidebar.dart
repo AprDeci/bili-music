@@ -115,7 +115,7 @@ class DesktopProfileSidebar extends ConsumerWidget {
               icon: Icons.settings_outlined,
               iconSize: 20,
               isActive: currentLocation.startsWith('/settings'),
-              onPressed: () => context.push('/settings'),
+              onPressed: () => context.go('/settings'),
             ),
           ),
         ],
