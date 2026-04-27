@@ -1,4 +1,5 @@
 import 'package:bilimusic/common/util/color_util.dart';
+import 'package:bilimusic/common/util/platform_util.dart';
 import 'package:bilimusic/common/util/player_util.dart';
 import 'package:bilimusic/feature/player/domain/playable_item.dart';
 import 'package:bilimusic/feature/player/domain/player_lyrics_state.dart';
@@ -192,16 +193,17 @@ class _PlayerLyricPanelState extends ConsumerState<PlayerLyricPanel> {
     final TextTheme textTheme = theme.textTheme;
     final Color activeColor = ColorUtil.getAllShades(colorScheme.primary)[700]!;
     final Color normalColor = colorScheme.onSurface;
+    final bool isDesktop = PlatformUtil.isDesktop;
     return LyricStyles.default1.copyWith(
       textStyle: (textTheme.bodyLarge ?? const TextStyle()).copyWith(
         color: normalColor.withValues(alpha: 0.8),
-        fontSize: 22,
+        fontSize: isDesktop ? 20 : 24,
         height: 1.25,
         fontWeight: FontWeight.w500,
       ),
       activeStyle: (textTheme.titleLarge ?? const TextStyle()).copyWith(
         color: const Color.fromARGB(255, 168, 168, 168),
-        fontSize: 30,
+        fontSize: isDesktop ? 20 : 30,
         height: 1.2,
         fontWeight: FontWeight.w800,
       ),
@@ -210,10 +212,12 @@ class _PlayerLyricPanelState extends ConsumerState<PlayerLyricPanel> {
         fontSize: 14,
         height: 1.2,
       ),
-      textAlign: TextAlign.left,
-      contentAlignment: CrossAxisAlignment.start,
+      textAlign: isDesktop ? TextAlign.center : TextAlign.left,
+      contentAlignment: isDesktop
+          ? CrossAxisAlignment.center
+          : CrossAxisAlignment.start,
       contentPadding: const EdgeInsets.fromLTRB(8, 24, 8, 36),
-      lineGap: 36,
+      lineGap: isDesktop ? 20 : 36,
       translationLineGap: 8,
       activeHighlightColor: activeColor,
       selectedColor: colorScheme.primary,
