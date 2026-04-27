@@ -1,5 +1,6 @@
 import 'package:bilimusic/common/components/bar_icon_button.dart';
 import 'package:bilimusic/common/components/cached_avatar.dart';
+import 'package:bilimusic/common/components/cached_image.dart';
 import 'package:bilimusic/common/util/toast_util.dart';
 import 'package:bilimusic/core/bili/session/bili_session.dart';
 import 'package:bilimusic/core/bili/session/bili_session_controller.dart';
@@ -26,6 +27,9 @@ class DesktopProfileSidebar extends ConsumerWidget {
     final int likedCount = favoritesState.itemCountForCollection(
       FavoriteCollection.likedCollectionId,
     );
+    final bool isLikedSelected =
+        currentLocation ==
+        '/profile/favorites/${FavoriteCollection.likedCollectionId}';
     final List<FavoriteCollection> customCollections = favoritesState
         .collections
         .where((FavoriteCollection collection) => !collection.isSystem)
@@ -67,14 +71,17 @@ class DesktopProfileSidebar extends ConsumerWidget {
             onTap: () => _showCreateCollectionDialog(context, ref),
           ),
           const SizedBox(height: 24),
-          _SidebarMenuItem(
-            icon: Icons.favorite_rounded,
+          _SidebarListItem(
+            leading: Icon(
+              Icons.favorite_rounded,
+              size: 22,
+              color: isLikedSelected
+                  ? Colors.black
+                  : colorScheme.onSurfaceVariant,
+            ),
             title: '喜欢',
             count: likedCount,
-            isSelected:
-                currentLocation ==
-                '/profile/favorites/${FavoriteCollection.likedCollectionId}',
-            selectedIconColor: Colors.black,
+            isSelected: isLikedSelected,
             onTap: () => context.go(
               '/profile/favorites/${FavoriteCollection.likedCollectionId}',
             ),
@@ -97,12 +104,24 @@ class DesktopProfileSidebar extends ConsumerWidget {
                           customCollections[index];
                       final List<FavoriteEntry> items = favoritesState
                           .itemsForCollection(collection.id);
-                      return _SidebarPlaylistTile(
+                      final FavoriteEntry? latestItem = items.isEmpty
+                          ? null
+                          : items.first;
+
+                      return _SidebarListItem(
+                        leading: _SidebarPlaylistCover(
+                          coverUrl: latestItem?.coverUrl,
+                        ),
                         title: collection.name,
                         count: items.length,
                         isSelected:
                             currentLocation ==
                             '/profile/favorites/${collection.id}',
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 7,
+                        ),
+                        showZeroCount: false,
                         onTap: () =>
                             context.go('/profile/favorites/${collection.id}'),
                       );
@@ -282,22 +301,24 @@ class _CreateCollectionButton extends StatelessWidget {
   }
 }
 
-class _SidebarMenuItem extends StatelessWidget {
-  const _SidebarMenuItem({
-    required this.icon,
+class _SidebarListItem extends StatelessWidget {
+  const _SidebarListItem({
+    required this.leading,
     required this.title,
     required this.count,
     required this.isSelected,
     required this.onTap,
-    this.selectedIconColor,
+    this.padding = const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
+    this.showZeroCount = true,
   });
 
-  final IconData icon;
+  final Widget leading;
   final String title;
   final int count;
   final bool isSelected;
   final VoidCallback onTap;
-  final Color? selectedIconColor;
+  final EdgeInsetsGeometry padding;
+  final bool showZeroCount;
 
   @override
   Widget build(BuildContext context) {
@@ -306,6 +327,7 @@ class _SidebarMenuItem extends StatelessWidget {
     final Color foregroundColor = isSelected
         ? colorScheme.onSurface
         : colorScheme.onSurfaceVariant;
+    final String label = showZeroCount || count > 0 ? '$title:$count' : title;
 
     return Material(
       color: isSelected
@@ -316,20 +338,14 @@ class _SidebarMenuItem extends StatelessWidget {
         borderRadius: BorderRadius.circular(10),
         onTap: onTap,
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
+          padding: padding,
           child: Row(
             children: <Widget>[
-              Icon(
-                icon,
-                size: 22,
-                color: isSelected
-                    ? selectedIconColor ?? foregroundColor
-                    : foregroundColor,
-              ),
+              leading,
               const SizedBox(width: 14),
               Expanded(
                 child: Text(
-                  '$title:$count',
+                  label,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: theme.textTheme.bodyMedium?.copyWith(
@@ -385,70 +401,46 @@ class _CollectionHeader extends StatelessWidget {
   }
 }
 
-class _SidebarPlaylistTile extends StatelessWidget {
-  const _SidebarPlaylistTile({
-    required this.title,
-    required this.count,
-    required this.isSelected,
-    required this.onTap,
-  });
+class _SidebarPlaylistCover extends StatelessWidget {
+  const _SidebarPlaylistCover({required this.coverUrl});
 
-  final String title;
-  final int count;
-  final bool isSelected;
-  final VoidCallback onTap;
+  final String? coverUrl;
 
   @override
   Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
-    final Color foregroundColor = isSelected
-        ? colorScheme.onSurface
-        : colorScheme.onSurfaceVariant;
+    final Color primary = Theme.of(context).colorScheme.primary;
 
-    return Material(
-      color: isSelected
-          ? colorScheme.surfaceContainerHighest
-          : Colors.transparent,
-      borderRadius: BorderRadius.circular(10),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(10),
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
-          child: Row(
-            children: <Widget>[
-              Container(
-                width: 28,
-                height: 28,
-                decoration: BoxDecoration(
-                  color: colorScheme.surfaceContainerHighest.withValues(
-                    alpha: isSelected ? 1 : 0.62,
-                  ),
-                  borderRadius: BorderRadius.circular(5),
-                ),
-                child: Icon(
-                  Icons.music_note_rounded,
-                  color: colorScheme.onSurfaceVariant.withValues(alpha: 0.44),
-                  size: 17,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  count > 0 ? '$title:$count' : title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: foregroundColor,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-            ],
-          ),
+    return CommonCachedImage(
+      imageUrl: coverUrl,
+      width: 28,
+      height: 28,
+      fit: BoxFit.cover,
+      borderRadius: BorderRadius.circular(5),
+      placeholder: _SidebarPlaylistPlaceholder(primary: primary),
+      errorWidget: _SidebarPlaylistPlaceholder(primary: primary),
+    );
+  }
+}
+
+class _SidebarPlaylistPlaceholder extends StatelessWidget {
+  const _SidebarPlaylistPlaceholder({required this.primary});
+
+  final Color primary;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: <Color>[
+            primary.withValues(alpha: 0.18),
+            primary.withValues(alpha: 0.08),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
         ),
       ),
+      child: Icon(Icons.queue_music_rounded, color: primary, size: 15),
     );
   }
 }
