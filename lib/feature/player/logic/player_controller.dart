@@ -579,11 +579,18 @@ class PlayerController extends Notifier<PlayerState>
       PlayerQueueMode.singleRepeat => PlayerQueueMode.shuffle,
       PlayerQueueMode.shuffle => PlayerQueueMode.sequence,
     };
+    setQueueMode(nextMode);
+  }
+
+  void setQueueMode(PlayerQueueMode mode) {
+    if (state.queueMode == mode) {
+      return;
+    }
     _queueManager.resetForMode(
-      mode: nextMode,
+      mode: mode,
       currentIndex: state.currentQueueIndex,
     );
-    state = state.copyWith(queueMode: nextMode);
+    state = state.copyWith(queueMode: mode);
     _publishMediaSession();
     unawaited(_persistQueueSnapshot());
   }
