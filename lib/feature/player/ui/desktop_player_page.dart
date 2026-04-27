@@ -22,6 +22,7 @@ import 'package:bilimusic/router/player_navigation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:hugeicons/hugeicons.dart';
 import 'package:window_manager/window_manager.dart';
 
 class DesktopPlayerPage extends ConsumerStatefulWidget {
@@ -258,7 +259,7 @@ class _DesktopPlayerTopBarState extends State<_DesktopPlayerTopBar>
                   message: '收起播放页',
                   child: BarIconButton(
                     icon: Icons.keyboard_arrow_down_rounded,
-                    iconSize: 24,
+                    iconSize: 30,
                     onPressed: widget.onBack,
                   ),
                 ),
@@ -609,9 +610,13 @@ class _DesktopPlayerControlDeck extends StatelessWidget {
                     child: Row(
                       children: <Widget>[
                         BarIconButton(
-                          icon: Icons.fullscreen_exit_rounded,
+                          icon: HugeIcon(
+                            icon: HugeIcons.strokeRoundedArrowShrink02,
+                            size: 20,
+                            strokeWidth: 2,
+                          ),
                           tooltip: '收起播放页',
-                          onPressed: null,
+                          onPressed: () => Navigator.of(context).maybePop(),
                         ),
                         const SizedBox(width: 8),
                         BarIconButton(
@@ -625,16 +630,15 @@ class _DesktopPlayerControlDeck extends StatelessWidget {
                         ),
                         const SizedBox(width: 8),
                         BarIconButton(
-                          icon: Icons.mode_comment_outlined,
+                          icon: HugeIcon(
+                            icon: HugeIcons.strokeRoundedComment01,
+                            size: 20,
+                            strokeWidth: 2,
+                          ),
                           tooltip: '评论',
                           onPressed: onOpenComments,
                         ),
                         const SizedBox(width: 8),
-                        BarIconButton(
-                          icon: Icons.more_horiz_rounded,
-                          tooltip: '更多',
-                          onPressed: item == null ? null : () {},
-                        ),
                       ],
                     ),
                   ),
