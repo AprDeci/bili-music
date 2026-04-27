@@ -18,9 +18,9 @@ class ThemeUiModelAdapter extends TypeAdapter<ThemeUiModel> {
     };
     return ThemeUiModel(
       themeMode: fields[0] == null ? ThemeMode.system : fields[0] as ThemeMode,
-      lightThemeVariant: fields[1] == null
-          ? LightThemeVariant.classicGreen
-          : fields[1] as LightThemeVariant,
+      themeVariant: fields[2] == null
+          ? ThemeVariant.classicGreen
+          : fields[2] as ThemeVariant,
     );
   }
 
@@ -30,8 +30,8 @@ class ThemeUiModelAdapter extends TypeAdapter<ThemeUiModel> {
       ..writeByte(2)
       ..writeByte(0)
       ..write(obj.themeMode)
-      ..writeByte(1)
-      ..write(obj.lightThemeVariant);
+      ..writeByte(2)
+      ..write(obj.themeVariant);
   }
 
   @override

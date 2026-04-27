@@ -19,8 +19,14 @@ class ThemeLogic extends _$ThemeLogic {
       themeMode: _readThemeMode(
         settingsStore.readString(HiveKeys.themeMode, defaultValue: ''),
       ),
-      lightThemeVariant: _readLightThemeVariant(
-        settingsStore.readString(HiveKeys.lightThemeVariant, defaultValue: ''),
+      themeVariant: _readThemeVariant(
+        settingsStore.readString(
+          HiveKeys.themeVariant,
+          defaultValue: settingsStore.readString(
+            HiveKeys.lightThemeVariant,
+            defaultValue: '',
+          ),
+        ),
       ),
     );
   }
@@ -32,14 +38,11 @@ class ThemeLogic extends _$ThemeLogic {
     state = state.copyWith(themeMode: mode);
   }
 
-  void setLightThemeVariant(LightThemeVariant variant) {
+  void setThemeVariant(ThemeVariant variant) {
     ref
         .read(appSettingsStoreProvider)
-        .writeString(
-          HiveKeys.lightThemeVariant,
-          _lightThemeVariantValue(variant),
-        );
-    state = state.copyWith(lightThemeVariant: variant);
+        .writeString(HiveKeys.themeVariant, _themeVariantValue(variant));
+    state = state.copyWith(themeVariant: variant);
   }
 
   void toggleTheme() {
@@ -68,23 +71,23 @@ class ThemeLogic extends _$ThemeLogic {
     return ThemeMode.system;
   }
 
-  LightThemeVariant _readLightThemeVariant(String? rawValue) {
+  ThemeVariant _readThemeVariant(String? rawValue) {
     switch (rawValue) {
       case 'classicGreen':
-        return LightThemeVariant.classicGreen;
+        return ThemeVariant.classicGreen;
       case 'skyBlue':
-        return LightThemeVariant.skyBlue;
+        return ThemeVariant.skyBlue;
       case 'irisPurple':
-        return LightThemeVariant.irisPurple;
+        return ThemeVariant.irisPurple;
       case 'blossomPink':
-        return LightThemeVariant.blossomPink;
+        return ThemeVariant.blossomPink;
       case 'sunsetOrange':
-        return LightThemeVariant.sunsetOrange;
+        return ThemeVariant.sunsetOrange;
       case null:
-        return LightThemeVariant.classicGreen;
+        return ThemeVariant.classicGreen;
     }
 
-    return LightThemeVariant.classicGreen;
+    return ThemeVariant.classicGreen;
   }
 
   String _themeModeValue(ThemeMode mode) {
@@ -98,17 +101,17 @@ class ThemeLogic extends _$ThemeLogic {
     }
   }
 
-  String _lightThemeVariantValue(LightThemeVariant variant) {
+  String _themeVariantValue(ThemeVariant variant) {
     switch (variant) {
-      case LightThemeVariant.classicGreen:
+      case ThemeVariant.classicGreen:
         return 'classicGreen';
-      case LightThemeVariant.skyBlue:
+      case ThemeVariant.skyBlue:
         return 'skyBlue';
-      case LightThemeVariant.irisPurple:
+      case ThemeVariant.irisPurple:
         return 'irisPurple';
-      case LightThemeVariant.blossomPink:
+      case ThemeVariant.blossomPink:
         return 'blossomPink';
-      case LightThemeVariant.sunsetOrange:
+      case ThemeVariant.sunsetOrange:
         return 'sunsetOrange';
     }
   }

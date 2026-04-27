@@ -11,20 +11,16 @@ _ThemeUiModel _$ThemeUiModelFromJson(Map<String, dynamic> json) =>
       themeMode:
           $enumDecodeNullable(_$ThemeModeEnumMap, json['themeMode']) ??
           ThemeMode.system,
-      lightThemeVariant:
-          $enumDecodeNullable(
-            _$LightThemeVariantEnumMap,
-            json['lightThemeVariant'],
-          ) ??
-          LightThemeVariant.classicGreen,
+      themeVariant:
+          $enumDecodeNullable(_$ThemeVariantEnumMap, json['themeVariant']) ??
+          ThemeVariant.classicGreen,
     );
 
-Map<String, dynamic> _$ThemeUiModelToJson(
-  _ThemeUiModel instance,
-) => <String, dynamic>{
-  'themeMode': _$ThemeModeEnumMap[instance.themeMode]!,
-  'lightThemeVariant': _$LightThemeVariantEnumMap[instance.lightThemeVariant]!,
-};
+Map<String, dynamic> _$ThemeUiModelToJson(_ThemeUiModel instance) =>
+    <String, dynamic>{
+      'themeMode': _$ThemeModeEnumMap[instance.themeMode]!,
+      'themeVariant': _$ThemeVariantEnumMap[instance.themeVariant]!,
+    };
 
 const _$ThemeModeEnumMap = {
   ThemeMode.system: 'system',
@@ -32,10 +28,10 @@ const _$ThemeModeEnumMap = {
   ThemeMode.dark: 'dark',
 };
 
-const _$LightThemeVariantEnumMap = {
-  LightThemeVariant.classicGreen: 'classicGreen',
-  LightThemeVariant.skyBlue: 'skyBlue',
-  LightThemeVariant.irisPurple: 'irisPurple',
-  LightThemeVariant.blossomPink: 'blossomPink',
-  LightThemeVariant.sunsetOrange: 'sunsetOrange',
+const _$ThemeVariantEnumMap = {
+  ThemeVariant.classicGreen: 'classicGreen',
+  ThemeVariant.skyBlue: 'skyBlue',
+  ThemeVariant.irisPurple: 'irisPurple',
+  ThemeVariant.blossomPink: 'blossomPink',
+  ThemeVariant.sunsetOrange: 'sunsetOrange',
 };

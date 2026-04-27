@@ -1,4 +1,5 @@
 import 'package:bilimusic/common/util/platform_util.dart';
+import 'package:bilimusic/core/theme/dark_theme_catalog.dart';
 import 'package:bilimusic/core/theme/light_theme_catalog.dart';
 import 'package:bilimusic/core/theme/theme_ui_model.dart';
 import 'package:chinese_font_library/chinese_font_library.dart';
@@ -7,7 +8,7 @@ import 'package:flutter/material.dart';
 final class AppTheme {
   const AppTheme._();
 
-  static ThemeData lightTheme(LightThemeVariant variant) {
+  static ThemeData lightTheme(ThemeVariant variant) {
     final LightThemeDefinition definition = lightThemeDefinitionOf(variant);
     final ColorScheme colorScheme = ColorScheme.fromSeed(
       seedColor: definition.seedColor,
@@ -42,9 +43,10 @@ final class AppTheme {
     );
   }
 
-  static ThemeData darkTheme() {
+  static ThemeData darkTheme(ThemeVariant variant) {
+    final DarkThemeDefinition definition = darkThemeDefinitionOf(variant);
     final ColorScheme colorScheme = ColorScheme.fromSeed(
-      seedColor: const Color(0xFF31C27C),
+      seedColor: definition.seedColor,
       brightness: Brightness.dark,
     );
 
@@ -53,7 +55,7 @@ final class AppTheme {
       // fontFamily: _getFontFamily(),
       textTheme: TextTheme().useSystemChineseFont(Brightness.dark),
       colorScheme: colorScheme,
-      scaffoldBackgroundColor: const Color(0xFF09120F),
+      scaffoldBackgroundColor: definition.scaffoldBackgroundColor,
       appBarTheme: AppBarTheme(
         backgroundColor: Colors.transparent,
         foregroundColor: colorScheme.onSurface,
@@ -63,13 +65,13 @@ final class AppTheme {
       ),
       cardTheme: CardThemeData(
         elevation: 0,
-        color: const Color(0xFF13211D),
+        color: definition.surfaceColor,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
       ),
-      bottomSheetTheme: const BottomSheetThemeData(
-        backgroundColor: Color(0xFF13211D),
+      bottomSheetTheme: BottomSheetThemeData(
+        backgroundColor: definition.surfaceColor,
         surfaceTintColor: Colors.transparent,
-        shape: RoundedRectangleBorder(
+        shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
         ),
       ),

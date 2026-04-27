@@ -8,6 +8,7 @@ class HiveKeys {
   HiveKeys._();
 
   static const String themeMode = 'themeMode';
+  static const String themeVariant = 'themeVariant';
   static const String lightThemeVariant = 'lightThemeVariant';
   static const String playerAllowMixWithOthers = 'player.allow_mix_with_others';
   static const String playerAudioQualityPreference =

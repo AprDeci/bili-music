@@ -11,7 +11,7 @@ class LightThemeDefinition {
     required this.surfaceColor,
   });
 
-  final LightThemeVariant variant;
+  final ThemeVariant variant;
   final String label;
   final String description;
   final Color seedColor;
@@ -19,42 +19,42 @@ class LightThemeDefinition {
   final Color surfaceColor;
 }
 
-const Map<LightThemeVariant, LightThemeDefinition> lightThemeCatalog =
-    <LightThemeVariant, LightThemeDefinition>{
-      LightThemeVariant.classicGreen: LightThemeDefinition(
-        variant: LightThemeVariant.classicGreen,
+const Map<ThemeVariant, LightThemeDefinition> lightThemeCatalog =
+    <ThemeVariant, LightThemeDefinition>{
+      ThemeVariant.classicGreen: LightThemeDefinition(
+        variant: ThemeVariant.classicGreen,
         label: '经典绿',
         description: '默认',
         seedColor: Color(0xFF31C27C),
         scaffoldBackgroundColor: Color(0xFFF4F7FB),
         surfaceColor: Colors.white,
       ),
-      LightThemeVariant.skyBlue: LightThemeDefinition(
-        variant: LightThemeVariant.skyBlue,
+      ThemeVariant.skyBlue: LightThemeDefinition(
+        variant: ThemeVariant.skyBlue,
         label: '海盐蓝',
         description: '更清爽通透的浅色蓝调',
         seedColor: Color(0xFF3B82F6),
         scaffoldBackgroundColor: Color(0xFFF3F7FE),
         surfaceColor: Color(0xFFFCFDFF),
       ),
-      LightThemeVariant.irisPurple: LightThemeDefinition(
-        variant: LightThemeVariant.irisPurple,
+      ThemeVariant.irisPurple: LightThemeDefinition(
+        variant: ThemeVariant.irisPurple,
         label: '鸢尾紫',
         description: '柔和克制的浅色紫调',
         seedColor: Color(0xFF7C6CF2),
         scaffoldBackgroundColor: Color(0xFFF7F5FE),
         surfaceColor: Color(0xFFFFFCFF),
       ),
-      LightThemeVariant.blossomPink: LightThemeDefinition(
-        variant: LightThemeVariant.blossomPink,
+      ThemeVariant.blossomPink: LightThemeDefinition(
+        variant: ThemeVariant.blossomPink,
         label: '花雾粉',
         description: '轻盈明快的浅色粉调',
         seedColor: Color(0xFFF1CADC),
         scaffoldBackgroundColor: Color(0xFFFFF5F9),
         surfaceColor: Colors.white,
       ),
-      LightThemeVariant.sunsetOrange: LightThemeDefinition(
-        variant: LightThemeVariant.sunsetOrange,
+      ThemeVariant.sunsetOrange: LightThemeDefinition(
+        variant: ThemeVariant.sunsetOrange,
         label: '日落橙',
         description: '更有活力的暖色浅色主题',
         seedColor: Color(0xFFFF8A3D),
@@ -63,7 +63,7 @@ const Map<LightThemeVariant, LightThemeDefinition> lightThemeCatalog =
       ),
     };
 
-LightThemeDefinition lightThemeDefinitionOf(LightThemeVariant variant) {
+LightThemeDefinition lightThemeDefinitionOf(ThemeVariant variant) {
   return lightThemeCatalog[variant] ??
-      lightThemeCatalog[LightThemeVariant.classicGreen]!;
+      lightThemeCatalog[ThemeVariant.classicGreen]!;
 }
