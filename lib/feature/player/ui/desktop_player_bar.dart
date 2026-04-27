@@ -1,7 +1,6 @@
 import 'package:bilimusic/common/components/bar_icon_button.dart';
 import 'package:bilimusic/common/components/cached_image.dart';
 import 'package:bilimusic/common/components/desktop/volumn_attach.dart';
-import 'package:bilimusic/common/components/queue_mode_icon.dart';
 import 'package:bilimusic/common/util/color_util.dart';
 import 'package:bilimusic/feature/comment/domain/comment_target.dart';
 import 'package:bilimusic/feature/favorites/logic/favorites_controller.dart';
@@ -9,6 +8,8 @@ import 'package:bilimusic/feature/player/domain/audio_stream_info.dart';
 import 'package:bilimusic/feature/player/domain/playable_item.dart';
 import 'package:bilimusic/feature/player/domain/player_state.dart';
 import 'package:bilimusic/feature/player/logic/player_controller.dart';
+import 'package:bilimusic/feature/player/ui/components/desktop/quality_attach.dart';
+import 'package:bilimusic/feature/player/ui/components/desktop/queue_mode_attach.dart';
 import 'package:bilimusic/feature/player/ui/components/player_queue_sheet.dart';
 import 'package:bilimusic/feature/player/ui/components/player_ui_helpers.dart';
 import 'package:bilimusic/router/player_navigation.dart';
@@ -105,7 +106,7 @@ class DesktopPlayerBar extends ConsumerWidget {
                   );
                   controller.seek(target);
                 },
-                onToggleQueueMode: controller.toggleQueueMode,
+                onSelectQueueMode: controller.setQueueMode,
                 onPrevious: controller.skipToPrevious,
                 onTogglePlayback: controller.togglePlayback,
                 onNext: controller.skipToNext,
@@ -181,7 +182,11 @@ class _TrackSection extends StatelessWidget {
                   const SizedBox(width: 10),
                   BarIconButton(
                     onPressed: onCommentPressed,
-                    icon: Icons.mode_comment_outlined,
+                    icon: HugeIcon(
+                      icon: HugeIcons.strokeRoundedComment01,
+                      size: 20,
+                      strokeWidth: 2,
+                    ),
                   ),
                 ],
               ),
@@ -278,7 +283,7 @@ class _PlaybackSection extends StatelessWidget {
     required this.canGoNext,
     required this.canTogglePlayback,
     required this.onSeek,
-    required this.onToggleQueueMode,
+    required this.onSelectQueueMode,
     required this.onPrevious,
     required this.onTogglePlayback,
     required this.onNext,
@@ -292,7 +297,7 @@ class _PlaybackSection extends StatelessWidget {
   final bool canGoNext;
   final bool canTogglePlayback;
   final ValueChanged<double> onSeek;
-  final VoidCallback onToggleQueueMode;
+  final ValueChanged<PlayerQueueMode> onSelectQueueMode;
   final VoidCallback onPrevious;
   final VoidCallback onTogglePlayback;
   final VoidCallback onNext;
@@ -314,9 +319,10 @@ class _PlaybackSection extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
-            BarIconButton(
-              onPressed: state.hasQueue ? onToggleQueueMode : null,
-              icon: queueModeIcon(state.queueMode),
+            DesktopQueueModeAttach(
+              enabled: state.hasQueue,
+              mode: state.queueMode,
+              onSelected: onSelectQueueMode,
             ),
             const SizedBox(width: 8),
             BarIconButton(
@@ -417,36 +423,7 @@ class _ActionSection extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.end,
       children: <Widget>[
-        PopupMenuButton<int?>(
-          enabled: qualities.isNotEmpty,
-          tooltip: '',
-          padding: EdgeInsets.zero,
-          onSelected: onSelectQuality,
-          itemBuilder: (BuildContext context) {
-            return qualities.map((AudioQualityOption option) {
-              return PopupMenuItem<int?>(
-                value: option.qualityId,
-                child: Row(
-                  children: <Widget>[
-                    Expanded(child: Text(option.label)),
-                    if (option.isSelected)
-                      Icon(
-                        Icons.check_rounded,
-                        size: 18,
-                        color: Theme.of(context).colorScheme.primary,
-                      ),
-                  ],
-                ),
-              );
-            }).toList();
-          },
-          child: IgnorePointer(
-            child: BarIconButton(
-              onPressed: qualities.isNotEmpty ? () {} : null,
-              icon: Icons.hd_outlined,
-            ),
-          ),
-        ),
+        DesktopQualityAttach(qualities: qualities, onSelected: onSelectQuality),
         const SizedBox(width: 10),
         BarIconButton(
           onPressed: state.hasQueue ? onOpenQueue : null,

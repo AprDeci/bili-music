@@ -1,7 +1,6 @@
 import 'package:bilimusic/common/components/bar_icon_button.dart';
 import 'package:bilimusic/common/components/cached_image.dart';
 import 'package:bilimusic/common/components/desktop/volumn_attach.dart';
-import 'package:bilimusic/common/components/queue_mode_icon.dart';
 import 'package:bilimusic/common/util/toast_util.dart';
 import 'package:bilimusic/feature/comment/domain/comment_target.dart';
 import 'package:bilimusic/feature/favorites/logic/favorites_controller.dart';
@@ -11,6 +10,8 @@ import 'package:bilimusic/feature/player/domain/player_lyrics_state.dart';
 import 'package:bilimusic/feature/player/domain/player_state.dart';
 import 'package:bilimusic/feature/player/logic/player_controller.dart';
 import 'package:bilimusic/feature/player/logic/player_lyrics_controller.dart';
+import 'package:bilimusic/feature/player/ui/components/desktop/quality_attach.dart';
+import 'package:bilimusic/feature/player/ui/components/desktop/queue_mode_attach.dart';
 import 'package:bilimusic/feature/player/ui/components/player_collection_sheet.dart';
 import 'package:bilimusic/feature/player/ui/components/player_lyric_panel.dart';
 import 'package:bilimusic/feature/player/ui/components/player_lyric_tools.dart';
@@ -157,7 +158,7 @@ class _DesktopPlayerPageState extends ConsumerState<DesktopPlayerPage> {
                     onOpenQueue: () =>
                         showPlayerQueueSheet(context: context, state: state),
                     onSelectQuality: controller.switchCurrentAudioQuality,
-                    onToggleQueueMode: controller.toggleQueueMode,
+                    onSelectQueueMode: controller.setQueueMode,
                     onPrevious: controller.skipToPrevious,
                     onTogglePlayback: controller.togglePlayback,
                     onNext: controller.skipToNext,
@@ -547,7 +548,7 @@ class _DesktopPlayerControlDeck extends StatelessWidget {
     required this.onPartTap,
     required this.onOpenQueue,
     required this.onSelectQuality,
-    required this.onToggleQueueMode,
+    required this.onSelectQueueMode,
     required this.onPrevious,
     required this.onTogglePlayback,
     required this.onNext,
@@ -565,7 +566,7 @@ class _DesktopPlayerControlDeck extends StatelessWidget {
   final VoidCallback? onPartTap;
   final VoidCallback onOpenQueue;
   final ValueChanged<int?> onSelectQuality;
-  final VoidCallback onToggleQueueMode;
+  final ValueChanged<PlayerQueueMode> onSelectQueueMode;
   final VoidCallback onPrevious;
   final VoidCallback onTogglePlayback;
   final VoidCallback onNext;
@@ -644,13 +645,11 @@ class _DesktopPlayerControlDeck extends StatelessWidget {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: <Widget>[
-                            BarIconButton(
-                              icon: queueModeIcon(state.queueMode),
-                              tooltip: '播放模式',
-                              isActive: state.isReady,
-                              onPressed: state.hasQueue
-                                  ? onToggleQueueMode
-                                  : null,
+                            DesktopQueueModeAttach(
+                              mode: state.queueMode,
+                              enabled: state.hasQueue,
+                              onSelected: onSelectQueueMode,
+                              iconSize: 22,
                             ),
                             const SizedBox(width: 14),
                             BarIconButton(
@@ -760,7 +759,7 @@ class _DesktopPlayerControlDeck extends StatelessWidget {
                           onPressed: onPartTap,
                         ),
                         const SizedBox(width: 8),
-                        _DesktopQualityButton(
+                        DesktopQualityAttach(
                           qualities: qualities,
                           onSelected: onSelectQuality,
                         ),
@@ -777,90 +776,6 @@ class _DesktopPlayerControlDeck extends StatelessWidget {
               ),
             ),
           ],
-        ),
-      ),
-    );
-  }
-}
-
-class _DesktopQualityButton extends StatelessWidget {
-  const _DesktopQualityButton({
-    required this.qualities,
-    required this.onSelected,
-  });
-
-  final List<AudioQualityOption> qualities;
-  final ValueChanged<int?> onSelected;
-
-  @override
-  Widget build(BuildContext context) {
-    return PopupMenuButton<int?>(
-      enabled: qualities.isNotEmpty,
-      tooltip: '音质',
-      padding: EdgeInsets.zero,
-      splashRadius: 16,
-      constraints: const BoxConstraints(minWidth: 0, minHeight: 0),
-      onSelected: onSelected,
-      itemBuilder: (BuildContext context) {
-        return qualities.map((AudioQualityOption option) {
-          return PopupMenuItem<int?>(
-            value: option.qualityId,
-            child: Row(
-              children: <Widget>[
-                Expanded(child: Text(option.label)),
-                if (option.isSelected)
-                  Icon(
-                    Icons.check_rounded,
-                    size: 18,
-                    color: Theme.of(context).colorScheme.primary,
-                  ),
-              ],
-            ),
-          );
-        }).toList();
-      },
-      child: IgnorePointer(
-        child: Tooltip(
-          waitDuration: const Duration(milliseconds: 600),
-          message: '音质',
-          child: _DesktopQualityBadge(isEnabled: qualities.isNotEmpty),
-        ),
-      ),
-    );
-  }
-}
-
-class _DesktopQualityBadge extends StatelessWidget {
-  const _DesktopQualityBadge({required this.isEnabled});
-
-  final bool isEnabled;
-
-  @override
-  Widget build(BuildContext context) {
-    final ColorScheme colorScheme = Theme.of(context).colorScheme;
-    final Color color = isEnabled
-        ? colorScheme.primary
-        : colorScheme.onSurface.withValues(alpha: 0.28);
-
-    return SizedBox(
-      width: 30,
-      height: 30,
-      child: Center(
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-          decoration: BoxDecoration(
-            border: Border.all(color: color, width: 1.4),
-            borderRadius: BorderRadius.circular(4),
-          ),
-          child: Text(
-            'SQ',
-            style: TextStyle(
-              color: color,
-              fontSize: 10,
-              fontWeight: FontWeight.w900,
-              height: 1,
-            ),
-          ),
         ),
       ),
     );
