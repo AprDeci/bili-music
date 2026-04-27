@@ -55,37 +55,30 @@ class ThemeSettingsPage extends ConsumerWidget {
             ),
           ),
           const SizedBox(height: 24),
-          Text('浅色主题选择', style: theme.textTheme.titleMedium),
-          const SizedBox(height: 6),
-          Text(
-            themeState.themeMode == ThemeMode.light
-                ? '当前选择会立即应用。'
-                : '当前选择会在切换到浅色模式后生效。',
-            style: theme.textTheme.bodySmall,
-          ),
+          Text('主题颜色', style: theme.textTheme.titleMedium),
           const SizedBox(height: 8),
           Card(
             margin: EdgeInsets.zero,
             clipBehavior: Clip.antiAlias,
             child: Column(
-              children: LightThemeVariant.values
-                  .map((LightThemeVariant variant) {
+              children: ThemeVariant.values
+                  .map((ThemeVariant variant) {
                     final LightThemeDefinition definition =
                         lightThemeDefinitionOf(variant);
 
-                    return RadioListTile<LightThemeVariant>(
+                    return RadioListTile<ThemeVariant>(
                       value: variant,
-                      groupValue: themeState.lightThemeVariant,
+                      groupValue: themeState.themeVariant,
                       title: Text(definition.label),
                       subtitle: Text(definition.description),
                       secondary: _ThemePreviewDot(color: definition.seedColor),
-                      onChanged: (LightThemeVariant? value) {
+                      onChanged: (ThemeVariant? value) {
                         if (value == null) {
                           return;
                         }
                         ref
                             .read(themeLogicProvider.notifier)
-                            .setLightThemeVariant(value);
+                            .setThemeVariant(value);
                       },
                     );
                   })
