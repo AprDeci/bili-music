@@ -338,44 +338,48 @@ class _DesktopPlayerHeroSection extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
-        final bool compact = constraints.maxWidth < 820;
-        final double artworkSize = (constraints.maxHeight * 0.58).clamp(
-          compact ? 188.0 : 250.0,
-          compact ? 260.0 : 360.0,
+        final double artworkSize = (constraints.maxHeight * 0.4).clamp(
+          250.0,
+          360.0,
+        );
+        final double contentGap = (constraints.maxWidth * 0.11).clamp(100, 190);
+        final double lyricWidth = (constraints.maxWidth * 0.36).clamp(
+          300.0,
+          560.0,
         );
 
         return Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 980),
-            child: Padding(
-              padding: EdgeInsets.fromLTRB(
-                compact ? 24 : 54,
-                8,
-                compact ? 24 : 54,
-                12,
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: <Widget>[
-                  SizedBox(
-                    width: artworkSize,
-                    height: artworkSize,
-                    child: _DesktopArtwork(coverUrl: item?.coverUrl),
-                  ),
-                  SizedBox(width: compact ? 34 : 86),
-                  Expanded(
-                    child: Row(
-                      children: <Widget>[
-                        Expanded(
-                          child: PlayerLyricPanel(
-                            state: state,
-                            item: item,
-                            onSeek: onSeek,
-                            variant: PlayerLyricPanelVariant.desktop,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(80, 8, 0, 12),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: <Widget>[
+                SizedBox(
+                  width: artworkSize,
+                  height: artworkSize,
+                  child: _DesktopArtwork(coverUrl: item?.coverUrl),
+                ),
+                SizedBox(width: contentGap),
+                SizedBox(
+                  width: lyricWidth,
+                  child: Row(
+                    children: <Widget>[
+                      Expanded(
+                        child: Align(
+                          alignment: Alignment.center,
+                          child: SizedBox(
+                            height: 360,
+                            child: PlayerLyricPanel(
+                              state: state,
+                              item: item,
+                              onSeek: onSeek,
+                              variant: PlayerLyricPanelVariant.desktop,
+                            ),
                           ),
                         ),
-                        const SizedBox(width: 12),
-                        _DesktopLyricToolRail(
+                      ),
+                      _DesktopLyricToolRail(
                           enabled: item != null,
                           onSearch: item == null
                               ? null
@@ -394,11 +398,10 @@ class _DesktopPlayerHeroSection extends ConsumerWidget {
                               ? null
                               : () => showLyricOffsetSheet(context),
                         ),
-                      ],
-                    ),
+                    ],
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         );
