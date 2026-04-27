@@ -119,6 +119,30 @@ class _DesktopPlayerPageState extends ConsumerState<DesktopPlayerPage> {
                   color: colorScheme.secondary.withValues(alpha: 0.13),
                 ),
               ),
+              Positioned(
+                bottom: 80,
+                right: 20,
+                child: _DesktopLyricToolRail(
+                  enabled: item != null,
+                  onSearch: item == null
+                      ? null
+                      : () {
+                          final PlayerLyricsState lyricsState = ref.read(
+                            playerLyricsControllerProvider,
+                          );
+                          showManualLyricSearchSheet(
+                            context: context,
+                            initialKeyword: resolveLyricSearchKeyword(
+                              lyricsState: lyricsState,
+                              item: item,
+                            ),
+                          );
+                        },
+                  onOffset: item == null
+                      ? null
+                      : () => showLyricOffsetSheet(context),
+                ),
+              ),
               Column(
                 children: <Widget>[
                   _DesktopPlayerTopBar(
@@ -379,25 +403,6 @@ class _DesktopPlayerHeroSection extends ConsumerWidget {
                           ),
                         ),
                       ),
-                      _DesktopLyricToolRail(
-                          enabled: item != null,
-                          onSearch: item == null
-                              ? null
-                              : () {
-                                  final PlayerLyricsState lyricsState = ref
-                                      .read(playerLyricsControllerProvider);
-                                  showManualLyricSearchSheet(
-                                    context: context,
-                                    initialKeyword: resolveLyricSearchKeyword(
-                                      lyricsState: lyricsState,
-                                      item: item,
-                                    ),
-                                  );
-                                },
-                          onOffset: item == null
-                              ? null
-                              : () => showLyricOffsetSheet(context),
-                        ),
                     ],
                   ),
                 ),
@@ -423,77 +428,31 @@ class _DesktopLyricToolRail extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ColorScheme colorScheme = Theme.of(context).colorScheme;
 
     return Align(
       alignment: Alignment.bottomCenter,
       child: Padding(
         padding: const EdgeInsets.only(bottom: 46),
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            color: colorScheme.surface.withValues(alpha: 0.56),
-            borderRadius: BorderRadius.circular(22),
-            border: Border.all(
-              color: colorScheme.outlineVariant.withValues(alpha: 0.32),
-            ),
-            boxShadow: <BoxShadow>[
-              BoxShadow(
-                color: colorScheme.shadow.withValues(alpha: 0.08),
-                blurRadius: 18,
-                offset: const Offset(0, 8),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 6),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              BarIconButton(
+                icon: Icons.search_rounded,
+                tooltip: '手动匹配歌词',
+                onPressed: enabled ? onSearch : null,
+              ),
+              const SizedBox(height: 4),
+              BarIconButton(
+                icon: Icons.hourglass_empty_rounded,
+                tooltip: '歌词偏移',
+                onPressed: enabled ? onOffset : null,
               ),
             ],
           ),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 6),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: <Widget>[
-                _DesktopLyricToolButton(
-                  icon: Icons.search_rounded,
-                  tooltip: '手动匹配歌词',
-                  onPressed: enabled ? onSearch : null,
-                ),
-                const SizedBox(height: 4),
-                _DesktopLyricToolButton(
-                  icon: Icons.hourglass_empty_rounded,
-                  tooltip: '歌词偏移',
-                  onPressed: enabled ? onOffset : null,
-                ),
-              ],
-            ),
-          ),
         ),
       ),
-    );
-  }
-}
-
-class _DesktopLyricToolButton extends StatelessWidget {
-  const _DesktopLyricToolButton({
-    required this.icon,
-    required this.tooltip,
-    required this.onPressed,
-  });
-
-  final IconData icon;
-  final String tooltip;
-  final VoidCallback? onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    final ColorScheme colorScheme = Theme.of(context).colorScheme;
-    final bool enabled = onPressed != null;
-
-    return IconButton(
-      tooltip: tooltip,
-      onPressed: onPressed,
-      visualDensity: VisualDensity.compact,
-      color: enabled
-          ? colorScheme.primary
-          : colorScheme.onSurface.withValues(alpha: 0.26),
-      iconSize: 22,
-      icon: Icon(icon),
     );
   }
 }
@@ -755,13 +714,10 @@ class _DesktopPlayerControlDeck extends StatelessWidget {
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: <Widget>[
                         BarIconButton(
-                          icon: Icons.checkroom_outlined,
-                          tooltip: '收藏到歌单',
-                          onPressed: onOpenCollectionSheet,
-                        ),
-                        const SizedBox(width: 8),
-                        BarIconButton(
-                          icon: Icons.lyrics_outlined,
+                          icon: HugeIcon(
+                            icon: HugeIcons.strokeRoundedListVideo,
+                            size: 22,
+                          ),
                           tooltip: '选择分 P',
                           onPressed: onPartTap,
                         ),
@@ -772,7 +728,10 @@ class _DesktopPlayerControlDeck extends StatelessWidget {
                         ),
                         const SizedBox(width: 8),
                         BarIconButton(
-                          icon: Icons.playlist_play_rounded,
+                          icon: HugeIcon(
+                            icon: HugeIcons.strokeRoundedListMusic,
+                            size: 22,
+                          ),
                           tooltip: '播放队列',
                           onPressed: state.hasQueue ? onOpenQueue : null,
                         ),
