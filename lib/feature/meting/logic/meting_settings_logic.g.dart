@@ -42,7 +42,7 @@ final class MetingSettingsLogicProvider
 }
 
 String _$metingSettingsLogicHash() =>
-    r'0953a9cfca25e1a6f1ae36e136637cd9518fa397';
+    r'09fe8301f48994720c06d82cc537ac3daf939750';
 
 abstract class _$MetingSettingsLogic extends $Notifier<String> {
   String build();
