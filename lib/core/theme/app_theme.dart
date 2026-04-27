@@ -1,6 +1,7 @@
 import 'package:bilimusic/common/util/platform_util.dart';
 import 'package:bilimusic/core/theme/light_theme_catalog.dart';
 import 'package:bilimusic/core/theme/theme_ui_model.dart';
+import 'package:chinese_font_library/chinese_font_library.dart';
 import 'package:flutter/material.dart';
 
 final class AppTheme {
@@ -15,7 +16,8 @@ final class AppTheme {
 
     return ThemeData(
       useMaterial3: true,
-      fontFamily: _getFontFamily(),
+      // fontFamily: _getFontFamily(),
+      textTheme: TextTheme().useSystemChineseFont(Brightness.light),
       colorScheme: colorScheme,
       scaffoldBackgroundColor: definition.scaffoldBackgroundColor,
       appBarTheme: AppBarTheme(
@@ -48,6 +50,8 @@ final class AppTheme {
 
     return ThemeData(
       useMaterial3: true,
+      // fontFamily: _getFontFamily(),
+      textTheme: TextTheme().useSystemChineseFont(Brightness.dark),
       colorScheme: colorScheme,
       scaffoldBackgroundColor: const Color(0xFF09120F),
       appBarTheme: AppBarTheme(

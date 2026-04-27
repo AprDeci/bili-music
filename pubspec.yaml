@@ -83,6 +83,7 @@ dependencies:
   # 桌面端
   window_manager: ^0.5.1
   hugeicons: ^1.1.6
+  chinese_font_library: ^1.2.0
 
 dev_dependencies:
   flutter_test:
@@ -120,9 +121,6 @@ flutter:
     - assets/lottie/
 
   fonts:
-    - family: 'HarmonyOS Sans'
-      fonts:
-        - asset: assets/fonts/HarmonyOS_Sans_Regular.ttf
     - family: 'MiSans'
       fonts:
         - asset: assets/fonts/MiSans-Regular.ttf
