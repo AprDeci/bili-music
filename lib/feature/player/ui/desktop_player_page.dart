@@ -606,7 +606,7 @@ class _DesktopPlayerControlDeck extends StatelessWidget {
                   ),
                   Expanded(
                     child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
+                      mainAxisAlignment: MainAxisAlignment.end,
                       children: <Widget>[
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,
@@ -648,7 +648,7 @@ class _DesktopPlayerControlDeck extends StatelessWidget {
                             ),
                           ],
                         ),
-                        const SizedBox(height: 2),
+                        const SizedBox(height: 4),
                         Row(
                           children: <Widget>[
                             SizedBox(
@@ -664,6 +664,7 @@ class _DesktopPlayerControlDeck extends StatelessWidget {
                               ),
                             ),
                             Expanded(
+                              
                               child: SliderTheme(
                                 data: SliderTheme.of(context).copyWith(
                                   trackHeight: 3,
@@ -721,12 +722,12 @@ class _DesktopPlayerControlDeck extends StatelessWidget {
                           tooltip: '选择分 P',
                           onPressed: onPartTap,
                         ),
-                        const SizedBox(width: 8),
+                        const SizedBox(width: 16),
                         DesktopQualityAttach(
                           qualities: qualities,
                           onSelected: onSelectQuality,
                         ),
-                        const SizedBox(width: 8),
+                        const SizedBox(width: 16),
                         BarIconButton(
                           icon: HugeIcon(
                             icon: HugeIcons.strokeRoundedListMusic,
