@@ -180,8 +180,10 @@ class _DesktopPlayerPageState extends ConsumerState<DesktopPlayerPage> {
                             state: state,
                             controller: controller,
                           ),
-                    onOpenQueue: () =>
-                        showPlayerQueueSheet(context: context, state: state),
+                    onOpenQueue: () => showDesktopPlayerQueuePanel(
+                      context: context,
+                      state: state,
+                    ),
                     onSelectQuality: controller.switchCurrentAudioQuality,
                     onSelectQueueMode: controller.setQueueMode,
                     onPrevious: controller.skipToPrevious,
@@ -428,7 +430,6 @@ class _DesktopLyricToolRail extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-
     return Align(
       alignment: Alignment.bottomCenter,
       child: Padding(
@@ -664,7 +665,6 @@ class _DesktopPlayerControlDeck extends StatelessWidget {
                               ),
                             ),
                             Expanded(
-                              
                               child: SliderTheme(
                                 data: SliderTheme.of(context).copyWith(
                                   trackHeight: 3,

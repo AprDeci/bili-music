@@ -119,7 +119,7 @@ class DesktopPlayerBar extends ConsumerWidget {
               child: _ActionSection(
                 state: state,
                 onOpenQueue: () =>
-                    showPlayerQueueSheet(context: context, state: state),
+                    showDesktopPlayerQueuePanel(context: context, state: state),
                 onSelectQuality: (int? qualityId) {
                   controller.switchCurrentAudioQuality(qualityId);
                 },
