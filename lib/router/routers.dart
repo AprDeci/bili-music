@@ -98,6 +98,13 @@ final List<Map<String, dynamic>> desktopTabs = [
     'icon': Icons.settings,
     'label': '设置',
   },
+  {
+    'path': '/comments',
+    'builder': (context, state) {
+      final CommentTarget target = state.extra! as CommentTarget;
+      return CommentPage(target: target);
+    },
+  }
 ];
 
 final List<RouteBase> mobileRoutes = [
@@ -194,14 +201,6 @@ final List<RouteBase> mobileRoutes = [
 
 final List<RouteBase> desktopRoutes = [
   GoRoute(path: '/auth', builder: (context, state) => const AuthPage()),
-  GoRoute(
-    path: '/comments',
-    parentNavigatorKey: _rootNavigatorKey,
-    builder: (context, state) {
-      final CommentTarget target = state.extra! as CommentTarget;
-      return CommentPage(target: target);
-    },
-  ),
   GoRoute(
     path: '/player',
     parentNavigatorKey: _rootNavigatorKey,
