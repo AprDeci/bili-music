@@ -66,14 +66,58 @@ class _PlayerQueueSheet extends ConsumerWidget {
   }
 }
 
-class _PlayerQueueContent extends ConsumerWidget {
+class _PlayerQueueContent extends ConsumerStatefulWidget {
   const _PlayerQueueContent({required this.closeTarget, this.scrollController});
 
   final _QueueCloseTarget closeTarget;
   final ScrollController? scrollController;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_PlayerQueueContent> createState() =>
+      _PlayerQueueContentState();
+}
+
+class _PlayerQueueContentState extends ConsumerState<_PlayerQueueContent> {
+  static const double _estimatedQueueItemExtent = 66;
+
+  late ScrollController _scrollController;
+  bool _ownsScrollController = false;
+  bool _didFocusInitialItem = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _syncScrollController();
+  }
+
+  @override
+  void didUpdateWidget(covariant _PlayerQueueContent oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.scrollController != widget.scrollController) {
+      if (_ownsScrollController) {
+        _scrollController.dispose();
+      }
+      _syncScrollController();
+      _didFocusInitialItem = false;
+    }
+  }
+
+  @override
+  void dispose() {
+    if (_ownsScrollController) {
+      _scrollController.dispose();
+    }
+    super.dispose();
+  }
+
+  void _syncScrollController() {
+    final ScrollController? providedController = widget.scrollController;
+    _ownsScrollController = providedController == null;
+    _scrollController = providedController ?? ScrollController();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final PlayerState liveState = ref.watch(playerControllerProvider);
     final PlayerController liveController = ref.read(
       playerControllerProvider.notifier,
@@ -85,6 +129,7 @@ class _PlayerQueueContent extends ConsumerWidget {
       PlayerQueueMode.singleRepeat => '单曲循环',
       PlayerQueueMode.shuffle => '随机播放',
     };
+    _focusInitialItem(liveState.currentQueueIndex);
 
     return Column(
       children: <Widget>[
@@ -138,7 +183,7 @@ class _PlayerQueueContent extends ConsumerWidget {
         ),
         Expanded(
           child: ListView.builder(
-            controller: scrollController,
+            controller: _scrollController,
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
             itemCount: liveState.queue.length,
             itemBuilder: (BuildContext context, int index) {
@@ -245,8 +290,31 @@ class _PlayerQueueContent extends ConsumerWidget {
     );
   }
 
+  void _focusInitialItem(int? currentQueueIndex) {
+    if (_didFocusInitialItem || currentQueueIndex == null) {
+      return;
+    }
+
+    _didFocusInitialItem = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_scrollController.hasClients) {
+        return;
+      }
+
+      final ScrollPosition position = _scrollController.position;
+      final double targetOffset =
+          currentQueueIndex * _estimatedQueueItemExtent -
+          position.viewportDimension * 0.35;
+      final double clampedOffset = targetOffset.clamp(
+        position.minScrollExtent,
+        position.maxScrollExtent,
+      );
+      _scrollController.jumpTo(clampedOffset);
+    });
+  }
+
   Future<void> _close(BuildContext context) async {
-    switch (closeTarget) {
+    switch (widget.closeTarget) {
       case _QueueCloseTarget.navigator:
         Navigator.of(context).pop();
       case _QueueCloseTarget.sidePanel:
