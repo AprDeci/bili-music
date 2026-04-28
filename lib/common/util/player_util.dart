@@ -1,3 +1,4 @@
+import 'package:bilimusic/common/util/platform_util.dart';
 import 'package:bilimusic/feature/player/domain/playable_item.dart';
 import 'package:bilimusic/feature/player/logic/player_controller.dart';
 import 'package:bilimusic/router/player_navigation.dart';
@@ -23,7 +24,7 @@ class PlayerUtil {
         .read(playerControllerProvider.notifier)
         .setQueue(items, startIndex: startIndex, sourceLabel: sourceLabel);
 
-    if (context.mounted) {
+    if (context.mounted && PlatformUtil.isMobile) {
       await openPlayerPage(context);
     }
 
