@@ -40,7 +40,7 @@ class BiliApiClient {
       throw const BiliApiException('Bilibili session is required.');
     }
 
-    final Map<String, dynamic>? params = _buildQueryParameters(
+    final Map<String, dynamic> params = _buildQueryParameters(
       session: session,
       queryParameters: queryParameters,
       requiresWbi: requiresWbi,
@@ -62,14 +62,14 @@ class BiliApiClient {
     required Map<String, dynamic>? queryParameters,
     required bool requiresWbi,
   }) {
-    final Map<String, dynamic> params = <String, dynamic>{
-      ...?queryParameters,
-    };
+    final Map<String, dynamic> params = <String, dynamic>{...?queryParameters};
     if (!requiresWbi) {
       return params;
     }
     if (session == null) {
-      throw const BiliApiException('Bilibili session is required for WBI APIs.');
+      throw const BiliApiException(
+        'Bilibili session is required for WBI APIs.',
+      );
     }
     return signer.sign(queryParameters: params, session: session);
   }
@@ -85,15 +85,19 @@ class BiliApiClient {
   void _ensureSuccess(Map<String, dynamic> json) {
     final int code = (json['code'] as num? ?? -1).toInt();
     if (code != 0) {
-      throw BiliApiException(json['message'] as String? ?? 'Request failed.');
+      throw BiliApiException(
+        json['message'] as String? ?? 'Request failed.',
+        code: code,
+      );
     }
   }
 }
 
 class BiliApiException implements Exception {
-  const BiliApiException(this.message);
+  const BiliApiException(this.message, {this.code});
 
   final String message;
+  final int? code;
 
   @override
   String toString() => message;

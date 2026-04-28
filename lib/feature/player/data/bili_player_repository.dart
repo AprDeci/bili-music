@@ -86,25 +86,31 @@ class BiliPlayerRepository {
     final _VideoViewInfo viewInfo = await _fetchVideoView(item);
     final _VideoPageInfo pageInfo = viewInfo.resolvePage(item);
 
-    final Map<String, dynamic> json = await _apiClient.getJson(
-      '/x/player/wbi/playurl',
-      queryParameters: <String, dynamic>{
-        if (item.bvid.isNotEmpty) 'bvid': item.bvid,
-        if (item.aid > 0) 'avid': item.aid,
-        'cid': pageInfo.cid,
-        'fnval': 4048,
-        'fnver': 0,
-        'qn': 80,
-        'fourk': 1,
-      },
-      requiresWbi: true,
-      options: Options(headers: _buildPlayurlRequestHeaders(session)),
-    );
+    final Map<String, dynamic> json = await _apiClient
+        .getJson(
+          '/x/player/wbi/playurl',
+          queryParameters: <String, dynamic>{
+            if (item.bvid.isNotEmpty) 'bvid': item.bvid,
+            if (item.aid > 0) 'avid': item.aid,
+            'cid': pageInfo.cid,
+            'fnval': 4048,
+            'fnver': 0,
+            'qn': 80,
+            'fourk': 1,
+          },
+          requiresWbi: true,
+          options: Options(headers: _buildPlayurlRequestHeaders(session)),
+        )
+        .onError<BiliApiException>((
+          BiliApiException error,
+          StackTrace stackTrace,
+        ) {
+          throw BiliPlayerException(error.message, code: error.code);
+        });
 
     final Map<String, dynamic> data = _asMap(json['data']);
     final Map<String, dynamic> dash = _asMap(data['dash']);
     final Map<String, dynamic> flac = _asMapOrEmpty(dash['flac']);
-    final Map<String, dynamic> dolby = _asMapOrEmpty(dash['dolby']);
     final List<_AudioStreamCandidate> audioCandidates = <_AudioStreamCandidate>[
       ..._asListOfMaps(
         dash['audio'],
@@ -166,13 +172,20 @@ class BiliPlayerRepository {
   }
 
   Future<_VideoViewInfo> _fetchVideoView(PlayableItem item) async {
-    final Map<String, dynamic> json = await _apiClient.getJson(
-      '/x/web-interface/view',
-      queryParameters: <String, dynamic>{
-        if (item.bvid.isNotEmpty) 'bvid': item.bvid,
-        if (item.aid > 0) 'aid': item.aid,
-      },
-    );
+    final Map<String, dynamic> json = await _apiClient
+        .getJson(
+          '/x/web-interface/view',
+          queryParameters: <String, dynamic>{
+            if (item.bvid.isNotEmpty) 'bvid': item.bvid,
+            if (item.aid > 0) 'aid': item.aid,
+          },
+        )
+        .onError<BiliApiException>((
+          BiliApiException error,
+          StackTrace stackTrace,
+        ) {
+          throw BiliPlayerException(error.message, code: error.code);
+        });
 
     final Map<String, dynamic> data = _asMap(json['data']);
     final List<_VideoPageInfo> pages = _asListOfMaps(
@@ -434,9 +447,12 @@ class _AudioStreamCandidate {
 }
 
 class BiliPlayerException implements Exception {
-  const BiliPlayerException(this.message);
+  const BiliPlayerException(this.message, {this.code});
 
   final String message;
+  final int? code;
+
+  bool get shouldSkipQueueItem => code != null && code != 0;
 
   @override
   String toString() => message;

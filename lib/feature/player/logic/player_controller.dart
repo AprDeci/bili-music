@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:audio_service/audio_service.dart';
 import 'package:bilimusic/common/logger.dart';
+import 'package:bilimusic/common/util/toast_util.dart';
 import 'package:bilimusic/core/bili/session/bili_session_controller.dart';
 import 'package:bilimusic/feature/player/data/audio_cache_repository.dart';
 import 'package:bilimusic/feature/player/data/bili_player_repository.dart';
@@ -662,6 +663,8 @@ class PlayerController extends Notifier<PlayerState>
     required Duration initialPosition,
     int? generation,
     bool persistAfterLoad = true,
+    Set<String> skippedUnavailableStableIds = const <String>{},
+    bool hasShownUnavailableToast = false,
   }) async {
     if (queueIndex < 0 || queueIndex >= state.queue.length) {
       return false;
@@ -750,28 +753,111 @@ class PlayerController extends Notifier<PlayerState>
       }
       _publishMediaSession();
       return true;
+    } on BiliPlayerException catch (error) {
+      if (!_isCurrentGeneration(effectiveGeneration)) {
+        return false;
+      }
+
+      if (error.shouldSkipQueueItem) {
+        return _skipUnavailableQueueItem(
+          failedIndex: queueIndex,
+          failedStableId: targetItem.stableId,
+          autoplay: autoplay,
+          generation: effectiveGeneration,
+          persistAfterLoad: persistAfterLoad,
+          error: error,
+          skippedUnavailableStableIds: skippedUnavailableStableIds,
+          hasShownUnavailableToast: hasShownUnavailableToast,
+        );
+      }
+
+      return _failCurrentLoad(error, persistAfterLoad: persistAfterLoad);
     } on Object catch (error) {
       if (!_isCurrentGeneration(effectiveGeneration)) {
         return false;
       }
 
-      state = state.copyWith(
-        isLoading: false,
-        isReady: false,
-        isPlaying: false,
-        isBuffering: false,
-        statusHint: PlayerStatusHint.error,
-        availableParts: const <PlayableItem>[],
-        audioStream: null,
-        duration: null,
-        errorMessage: error.toString(),
-      );
-      _publishMediaSession();
-      if (persistAfterLoad) {
-        await _persistQueueSnapshot();
-      }
-      return false;
+      return _failCurrentLoad(error, persistAfterLoad: persistAfterLoad);
     }
+  }
+
+  Future<bool> _skipUnavailableQueueItem({
+    required int failedIndex,
+    required String failedStableId,
+    required bool autoplay,
+    required int generation,
+    required bool persistAfterLoad,
+    required BiliPlayerException error,
+    required Set<String> skippedUnavailableStableIds,
+    required bool hasShownUnavailableToast,
+  }) async {
+    if (!hasShownUnavailableToast) {
+      ToastUtil.show(error.message);
+    }
+
+    final Set<String> nextSkippedUnavailableStableIds = <String>{
+      ...skippedUnavailableStableIds,
+      failedStableId,
+    };
+    final int? nextIndex = _resolveNextAvailableQueueIndex(
+      failedIndex: failedIndex,
+      skippedStableIds: nextSkippedUnavailableStableIds,
+    );
+
+    if (nextIndex == null) {
+      return _failCurrentLoad(error, persistAfterLoad: persistAfterLoad);
+    }
+
+    return _loadQueueIndex(
+      nextIndex,
+      autoplay: autoplay,
+      initialPosition: Duration.zero,
+      generation: generation,
+      persistAfterLoad: persistAfterLoad,
+      skippedUnavailableStableIds: nextSkippedUnavailableStableIds,
+      hasShownUnavailableToast: true,
+    );
+  }
+
+  int? _resolveNextAvailableQueueIndex({
+    required int failedIndex,
+    required Set<String> skippedStableIds,
+  }) {
+    final List<PlayableItem> queue = state.queue;
+    if (queue.isEmpty) {
+      return null;
+    }
+
+    for (int offset = 1; offset <= queue.length; offset += 1) {
+      final int candidateIndex = (failedIndex + offset) % queue.length;
+      if (!skippedStableIds.contains(queue[candidateIndex].stableId)) {
+        return candidateIndex;
+      }
+    }
+
+    return null;
+  }
+
+  Future<bool> _failCurrentLoad(
+    Object error, {
+    required bool persistAfterLoad,
+  }) async {
+    state = state.copyWith(
+      isLoading: false,
+      isReady: false,
+      isPlaying: false,
+      isBuffering: false,
+      statusHint: PlayerStatusHint.error,
+      availableParts: const <PlayableItem>[],
+      audioStream: null,
+      duration: null,
+      errorMessage: error.toString(),
+    );
+    _publishMediaSession();
+    if (persistAfterLoad) {
+      await _persistQueueSnapshot();
+    }
+    return false;
   }
 
   void _applyResolvedCurrentEntry({
