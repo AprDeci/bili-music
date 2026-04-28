@@ -1,4 +1,5 @@
 import 'package:bilimusic/common/components/desktop/desktop_top_bar.dart';
+import 'package:bilimusic/common/components/desktop/desktop_side_panel.dart';
 import 'package:bilimusic/feature/profile/ui/desktop_profile_sidebar.dart';
 import 'package:bilimusic/feature/player/ui/desktop_player_bar.dart';
 import 'package:flutter/material.dart';
@@ -35,6 +36,7 @@ class DesktopShellScaffold extends ConsumerWidget {
                   children: <Widget>[
                     Expanded(
                       child: Container(
+                        key: desktopSidePanelHostKey,
                         decoration: BoxDecoration(
                           color: colorScheme.surfaceContainer.withValues(
                             alpha: 0.52,
