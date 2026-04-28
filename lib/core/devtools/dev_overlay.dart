@@ -1,4 +1,5 @@
 import 'package:bilimusic/common/util/toast_util.dart';
+import 'package:bilimusic/common/components/desktop/desktop_side_panel.dart';
 import 'package:bilimusic/core/bili/session/bili_session.dart';
 import 'package:bilimusic/core/bili/session/bili_session_controller.dart';
 import 'package:bilimusic/core/devtools/route_dev_page.dart';
@@ -96,7 +97,9 @@ class _DevOverlayPanelState extends ConsumerState<_DevOverlayPanel> {
                 const Spacer(),
                 IconButton(
                   tooltip: _currentPageIndex == 0 ? '复制摘要' : '复制路由',
-                  onPressed: () => _copySummary(context, session),
+                  onPressed: _currentPageIndex == 2
+                      ? null
+                      : () => _copySummary(context, session),
                   icon: const Icon(Icons.content_copy_rounded),
                 ),
               ],
@@ -113,6 +116,7 @@ class _DevOverlayPanelState extends ConsumerState<_DevOverlayPanel> {
                 children: <Widget>[
                   _SessionDevPage(session: session),
                   const RouteDevPage(),
+                  const _FeatureDevPage(),
                 ],
               ),
             ),
@@ -176,6 +180,7 @@ class _PanelTabSwitcher extends StatelessWidget {
       segments: const <ButtonSegment<int>>[
         ButtonSegment<int>(value: 0, label: Text('Session')),
         ButtonSegment<int>(value: 1, label: Text('Route')),
+        ButtonSegment<int>(value: 2, label: Text('功能')),
       ],
       selected: <int>{currentPageIndex},
       onSelectionChanged: (Set<int> selection) {
@@ -245,6 +250,53 @@ class _SessionDevPage extends StatelessWidget {
             multiline: true,
           ),
         ],
+      ],
+    );
+  }
+}
+
+class _FeatureDevPage extends StatelessWidget {
+  const _FeatureDevPage();
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+
+    return ListView(
+      children: <Widget>[
+        _SectionTitle(title: '功能调试'),
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: colorScheme.surfaceContainerLow,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: colorScheme.outlineVariant),
+          ),
+          child: Wrap(
+            spacing: 12,
+            runSpacing: 12,
+            children: <Widget>[
+              FilledButton.tonal(
+                onPressed: () => ToastUtil.show('这是一条调试 Toast'),
+                child: const Text('显示 Toast'),
+              ),
+              FilledButton.tonal(
+                onPressed: () => showDesktopSidePanel(
+                  height: 600,
+                  context: context,
+                  builder: (BuildContext context) {
+                    return const ColoredBox(
+                      color: Colors.transparent,
+                      child: SizedBox.expand(),
+                    );
+                  },
+                ),
+                child: const Text('显示 SidePanel'),
+              ),
+            ],
+          ),
+        ),
       ],
     );
   }
