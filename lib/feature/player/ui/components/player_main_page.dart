@@ -109,7 +109,9 @@ class PlayerMainPage extends ConsumerWidget {
               onOpenComments: onOpenComments,
             ),
             const SizedBox(height: 10),
-            PlayerProgressSection(state: state, onChanged: onSeek),
+            RepaintBoundary(
+              child: PlayerProgressSection(state: state, onChanged: onSeek),
+            ),
             const SizedBox(height: 10),
             PlayerTransportControls(
               state: state,
