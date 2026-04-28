@@ -93,9 +93,11 @@ class _PlayerLyricPanelState extends ConsumerState<PlayerLyricPanel> {
       );
     }
 
+    final String itemKey = item.stableId;
+
     if (lyricsState.stableId != item.stableId) {
       return _PlayerLyricPanelStatus(
-        key: const ValueKey<String>('preparing'),
+        key: ValueKey<String>('preparing-$itemKey'),
         variant: widget.variant,
         title: '正在准备歌词',
         message: _isDesktop ? '歌词会在当前歌曲匹配完成后显示。' : '歌词会在当前分 P 匹配完成后显示。',
@@ -105,7 +107,7 @@ class _PlayerLyricPanelState extends ConsumerState<PlayerLyricPanel> {
 
     if (lyricsState.isLoading) {
       return _PlayerLyricPanelStatus(
-        key: const ValueKey<String>('loading'),
+        key: ValueKey<String>('loading-$itemKey'),
         variant: widget.variant,
         title: '正在查找歌词',
         message: _isDesktop ? '正在从 Meting 匹配当前歌曲。' : '已开始从 Meting 查询当前分 P 的歌词。',
@@ -116,7 +118,7 @@ class _PlayerLyricPanelState extends ConsumerState<PlayerLyricPanel> {
 
     if (lyricsState.hasLyrics) {
       return LayoutBuilder(
-        key: const ValueKey<String>('lyrics'),
+        key: ValueKey<String>('lyrics-$itemKey'),
         builder: (BuildContext context, BoxConstraints constraints) {
           return LyricView(
             controller: _lyricController,
@@ -130,7 +132,7 @@ class _PlayerLyricPanelState extends ConsumerState<PlayerLyricPanel> {
 
     if (lyricsState.hasError) {
       return _PlayerLyricPanelStatus(
-        key: const ValueKey<String>('error'),
+        key: ValueKey<String>('error-$itemKey'),
         variant: widget.variant,
         title: '歌词查询失败',
         message: lyricsState.errorMessage!,
@@ -142,7 +144,7 @@ class _PlayerLyricPanelState extends ConsumerState<PlayerLyricPanel> {
     }
 
     return _PlayerLyricPanelStatus(
-      key: const ValueKey<String>('no-lyrics'),
+      key: ValueKey<String>('no-lyrics-$itemKey'),
       variant: widget.variant,
       title: '暂无歌词',
       message: _isDesktop ? '没有匹配到当前歌曲的歌词。' : '没有匹配到当前分 P 的歌词。',
