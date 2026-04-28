@@ -2,7 +2,6 @@ import 'package:bilimusic/common/util/platform_util.dart';
 import 'package:bilimusic/core/bili/session/bili_session_controller.dart';
 import 'package:bilimusic/core/hive/hive.dart';
 import 'package:bilimusic/core/hive/hive_keys.dart';
-import 'package:bilimusic/core/notification/app_notification_host.dart';
 import 'package:bilimusic/core/window/desktop_window_state_controller.dart';
 import 'package:bilimusic/core/window/desktop_window_state_store.dart';
 import 'package:bilimusic/feature/favorites/logic/favorites_controller.dart';
@@ -68,9 +67,7 @@ void main() async {
   await bootstrap();
   runApp(
     LiquidGlassWidgets.wrap(
-      const ProviderScope(
-        child: AppNotificationHost(child: _AppBootstrap(child: MyApp())),
-      ),
+      const ProviderScope(child: _AppBootstrap(child: MyApp())),
     ),
   );
 }
