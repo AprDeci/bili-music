@@ -4,6 +4,8 @@ import 'package:bilimusic/common/components/cached_image.dart';
 import 'package:bilimusic/common/util/toast_util.dart';
 import 'package:bilimusic/core/bili/session/bili_session.dart';
 import 'package:bilimusic/core/bili/session/bili_session_controller.dart';
+import 'package:bilimusic/feature/auth/data/bili_auth_repository.dart';
+import 'package:bilimusic/feature/auth/logic/bili_auth_controller.dart';
 import 'package:bilimusic/feature/favorites/domain/favorite_collection.dart';
 import 'package:bilimusic/feature/favorites/domain/favorite_entry.dart';
 import 'package:bilimusic/feature/favorites/domain/favorites_state.dart';
@@ -66,10 +68,10 @@ class DesktopProfileSidebar extends ConsumerWidget {
               ),
             ],
           ),
-          const SizedBox(height: 10),
-          _CreateCollectionButton(
-            onTap: () => _showCreateCollectionDialog(context, ref),
-          ),
+          // const SizedBox(height: 10),
+          // _CreateCollectionButton(
+          //   onTap: () => _showCreateCollectionDialog(context, ref),
+          // ),
           const SizedBox(height: 24),
           _SidebarListItem(
             leading: Icon(
@@ -217,16 +219,66 @@ class _SidebarAccountHeader extends ConsumerWidget {
                   ),
                 ),
               ),
-              Icon(
-                Icons.keyboard_arrow_down_rounded,
-                color: colorScheme.onSurfaceVariant,
-                size: 22,
-              ),
+              if (isLoggedIn)
+                SizedBox(
+                  width: 32,
+                  height: 32,
+                  child: IconButton(
+                    padding: EdgeInsets.zero,
+                    tooltip: '退出登录',
+                    onPressed: () => _handleLogoutPressed(context, ref),
+                    icon: Icon(
+                      Icons.logout_rounded,
+                      color: colorScheme.onSurfaceVariant,
+                      size: 19,
+                    ),
+                  ),
+                )
             ],
           ),
         ),
       ),
     );
+  }
+
+  Future<void> _handleLogoutPressed(BuildContext context, WidgetRef ref) async {
+    final bool? confirmed = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('退出登录'),
+          content: const Text('确认退出当前 B 站账号吗？'),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('取消'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text('退出'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmed != true || !context.mounted) {
+      return;
+    }
+
+    final LogoutResult result = await ref
+        .read(biliAuthControllerProvider.notifier)
+        .logout();
+    if (!context.mounted) {
+      return;
+    }
+
+    final String message = result.remoteLoggedOut
+        ? '已退出登录'
+        : (result.message?.isNotEmpty == true
+              ? '服务端退出失败，已清除本地登录状态'
+              : '已清除本地登录状态');
+    ToastUtil.show(message);
   }
 }
 
