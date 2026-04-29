@@ -3,14 +3,6 @@
 # Check in to version control
 nextTypeId: 8
 types:
-  ThemeUiModel:
-    typeId: 0
-    nextIndex: 3
-    fields:
-      themeMode:
-        index: 0
-      themeVariant:
-        index: 2
   FavoriteCollection:
     typeId: 1
     nextIndex: 5

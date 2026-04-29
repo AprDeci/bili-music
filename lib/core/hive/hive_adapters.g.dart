@@ -6,45 +6,6 @@ part of 'hive_adapters.dart';
 // AdaptersGenerator
 // **************************************************************************
 
-class ThemeUiModelAdapter extends TypeAdapter<ThemeUiModel> {
-  @override
-  final typeId = 0;
-
-  @override
-  ThemeUiModel read(BinaryReader reader) {
-    final numOfFields = reader.readByte();
-    final fields = <int, dynamic>{
-      for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
-    };
-    return ThemeUiModel(
-      themeMode: fields[0] == null ? ThemeMode.system : fields[0] as ThemeMode,
-      themeVariant: fields[2] == null
-          ? ThemeVariant.classicGreen
-          : fields[2] as ThemeVariant,
-    );
-  }
-
-  @override
-  void write(BinaryWriter writer, ThemeUiModel obj) {
-    writer
-      ..writeByte(2)
-      ..writeByte(0)
-      ..write(obj.themeMode)
-      ..writeByte(2)
-      ..write(obj.themeVariant);
-  }
-
-  @override
-  int get hashCode => typeId.hashCode;
-
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is ThemeUiModelAdapter &&
-          runtimeType == other.runtimeType &&
-          typeId == other.typeId;
-}
-
 class FavoriteCollectionAdapter extends TypeAdapter<FavoriteCollection> {
   @override
   final typeId = 1;

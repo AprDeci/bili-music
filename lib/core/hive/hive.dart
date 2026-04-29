@@ -19,7 +19,6 @@ Future<void> initHive() async {
     final Directory directory = await getApplicationDocumentsDirectory();
     Hive
       ..init(directory.path)
-      ..registerAdapter(ThemeUiModelAdapter())
       ..registerAdapter(FavoriteCollectionAdapter())
       ..registerAdapter(FavoriteEntryAdapter())
       ..registerAdapter(FavoriteMembershipAdapter())

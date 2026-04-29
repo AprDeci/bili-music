@@ -14,7 +14,6 @@ extension HiveRegistrar on HiveInterface {
     registerAdapter(PersistedPlaybackQueueAdapter());
     registerAdapter(PlayerQueueModeAdapter());
     registerAdapter(RecentPlaybackEntryAdapter());
-    registerAdapter(ThemeUiModelAdapter());
   }
 }
 
@@ -27,6 +26,5 @@ extension IsolatedHiveRegistrar on IsolatedHiveInterface {
     registerAdapter(PersistedPlaybackQueueAdapter());
     registerAdapter(PlayerQueueModeAdapter());
     registerAdapter(RecentPlaybackEntryAdapter());
-    registerAdapter(ThemeUiModelAdapter());
   }
 }
