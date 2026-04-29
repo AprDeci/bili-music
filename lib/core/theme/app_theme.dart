@@ -10,11 +10,10 @@ final class AppTheme {
     final ColorScheme colorScheme = ColorScheme.fromSeed(
       seedColor: definition.seedColor,
       brightness: Brightness.light,
-    );
+    ).copyWith(primary: definition.primaryColor);
 
     return ThemeData(
       useMaterial3: true,
-      // fontFamily: _getFontFamily(),
       textTheme: TextTheme().useSystemChineseFont(Brightness.light),
       colorScheme: colorScheme,
       scaffoldBackgroundColor: definition.lightScaffoldBackgroundColor,
@@ -45,7 +44,7 @@ final class AppTheme {
     final ColorScheme colorScheme = ColorScheme.fromSeed(
       seedColor: definition.seedColor,
       brightness: Brightness.dark,
-    );
+    ).copyWith(primary: definition.primaryColor);
 
     return ThemeData(
       useMaterial3: true,

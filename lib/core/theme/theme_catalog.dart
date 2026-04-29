@@ -8,6 +8,7 @@ class ThemeDefinition {
     required this.label,
     required this.description,
     required this.seedColor,
+    this.primaryColor,
     this.lightScaffoldBackgroundColor = Colors.white,
     this.lightSurfaceColor = Colors.white,
     this.darkScaffoldBackgroundColor = const Color(0xFF101010),
@@ -18,6 +19,7 @@ class ThemeDefinition {
   final String label;
   final String description;
   final Color seedColor;
+  final Color? primaryColor;
   final Color lightScaffoldBackgroundColor;
   final Color lightSurfaceColor;
   final Color darkScaffoldBackgroundColor;
@@ -39,6 +41,7 @@ const List<ThemeDefinition> themeCatalog = <ThemeDefinition>[
     label: '霜茶白',
     description: '白色打底的低饱和浅色主题',
     seedColor: Color(0xFFF6F6F6),
+    primaryColor: Color(0xFF00B364),
   ),
   ThemeDefinition(
     id: 'skyBlue',
