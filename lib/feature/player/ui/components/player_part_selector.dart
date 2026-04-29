@@ -81,7 +81,7 @@ class _PlayerPartSelectorSheet extends StatelessWidget {
   }
 }
 
-class _PlayerPartSelectorContent extends StatelessWidget {
+class _PlayerPartSelectorContent extends StatefulWidget {
   const _PlayerPartSelectorContent({
     required this.parts,
     required this.currentItem,
@@ -97,20 +97,55 @@ class _PlayerPartSelectorContent extends StatelessWidget {
   final _PartSelectorCloseTarget closeTarget;
 
   @override
+  State<_PlayerPartSelectorContent> createState() =>
+      _PlayerPartSelectorContentState();
+}
+
+class _PlayerPartSelectorContentState
+    extends State<_PlayerPartSelectorContent> {
+  static const double _estimatedPartItemExtent = 66;
+
+  late final ScrollController _scrollController;
+  bool _didFocusInitialItem = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController = ScrollController();
+  }
+
+  @override
+  void didUpdateWidget(covariant _PlayerPartSelectorContent oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.currentItem.stableId != widget.currentItem.stableId ||
+        oldWidget.parts != widget.parts) {
+      _didFocusInitialItem = false;
+    }
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
-    final Set<String> queuedIds = state.queue
+    final Set<String> queuedIds = widget.state.queue
         .map((PlayableItem item) => item.stableId)
         .toSet();
-    final List<PlayableItem> partsToEnqueue = parts
-        .where((PlayableItem part) => part != currentItem)
+    final List<PlayableItem> partsToEnqueue = widget.parts
+        .where((PlayableItem part) => part != widget.currentItem)
         .where((PlayableItem part) => !queuedIds.contains(part.stableId))
         .toList();
+    _focusInitialItem();
 
     return ListView.separated(
+      controller: _scrollController,
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-      itemCount: parts.length + 1,
+      itemCount: widget.parts.length + 1,
       itemBuilder: (BuildContext context, int index) {
         if (index == 0) {
           return ListTile(
@@ -146,7 +181,7 @@ class _PlayerPartSelectorContent extends StatelessWidget {
                 ? null
                 : () async {
                     await _close(context);
-                    await controller.enqueue(partsToEnqueue);
+                    await widget.controller.enqueue(partsToEnqueue);
                     if (!context.mounted) {
                       return;
                     }
@@ -155,8 +190,8 @@ class _PlayerPartSelectorContent extends StatelessWidget {
           );
         }
 
-        final PlayableItem part = parts[index - 1];
-        final bool isSelected = part == currentItem;
+        final PlayableItem part = widget.parts[index - 1];
+        final bool isSelected = part == widget.currentItem;
         final String title = part.pageTitle?.trim() ?? '';
         final int page = part.page ?? index;
         final String label = title.isEmpty ? 'P$page' : 'P$page · $title';
@@ -194,8 +229,8 @@ class _PlayerPartSelectorContent extends StatelessWidget {
               : const Icon(Icons.play_arrow_rounded),
           onTap: () async {
             await _close(context);
-            if (part != currentItem) {
-              controller.replaceCurrentQueueItem(part);
+            if (part != widget.currentItem) {
+              widget.controller.replaceCurrentQueueItem(part);
             }
           },
         );
@@ -204,8 +239,38 @@ class _PlayerPartSelectorContent extends StatelessWidget {
     );
   }
 
+  void _focusInitialItem() {
+    if (_didFocusInitialItem) {
+      return;
+    }
+
+    final int selectedIndex = widget.parts.indexWhere(
+      (PlayableItem part) => part.stableId == widget.currentItem.stableId,
+    );
+    if (selectedIndex < 0) {
+      return;
+    }
+
+    _didFocusInitialItem = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_scrollController.hasClients) {
+        return;
+      }
+
+      final ScrollPosition position = _scrollController.position;
+      final double targetOffset =
+          (selectedIndex + 1) * _estimatedPartItemExtent -
+          position.viewportDimension * 0.35;
+      final double clampedOffset = targetOffset.clamp(
+        position.minScrollExtent,
+        position.maxScrollExtent,
+      );
+      _scrollController.jumpTo(clampedOffset);
+    });
+  }
+
   Future<void> _close(BuildContext context) async {
-    switch (closeTarget) {
+    switch (widget.closeTarget) {
       case _PartSelectorCloseTarget.navigator:
         Navigator.of(context).pop();
       case _PartSelectorCloseTarget.sidePanel:
