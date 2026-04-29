@@ -1,15 +1,12 @@
-
-import 'package:bilimusic/core/theme/dark_theme_catalog.dart';
-import 'package:bilimusic/core/theme/light_theme_catalog.dart';
-import 'package:bilimusic/core/theme/theme_ui_model.dart';
+import 'package:bilimusic/core/theme/theme_catalog.dart';
 import 'package:chinese_font_library/chinese_font_library.dart';
 import 'package:flutter/material.dart';
 
 final class AppTheme {
   const AppTheme._();
 
-  static ThemeData lightTheme(ThemeVariant variant) {
-    final LightThemeDefinition definition = lightThemeDefinitionOf(variant);
+  static ThemeData lightTheme(String variantId) {
+    final ThemeDefinition definition = themeDefinitionOf(variantId);
     final ColorScheme colorScheme = ColorScheme.fromSeed(
       seedColor: definition.seedColor,
       brightness: Brightness.light,
@@ -20,7 +17,7 @@ final class AppTheme {
       // fontFamily: _getFontFamily(),
       textTheme: TextTheme().useSystemChineseFont(Brightness.light),
       colorScheme: colorScheme,
-      scaffoldBackgroundColor: definition.scaffoldBackgroundColor,
+      scaffoldBackgroundColor: definition.lightScaffoldBackgroundColor,
       appBarTheme: AppBarTheme(
         backgroundColor: Colors.transparent,
         foregroundColor: colorScheme.onSurface,
@@ -30,11 +27,11 @@ final class AppTheme {
       ),
       cardTheme: CardThemeData(
         elevation: 0,
-        color: definition.surfaceColor,
+        color: definition.lightSurfaceColor,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
       ),
       bottomSheetTheme: BottomSheetThemeData(
-        backgroundColor: definition.surfaceColor,
+        backgroundColor: definition.lightSurfaceColor,
         surfaceTintColor: Colors.transparent,
         shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
@@ -43,8 +40,8 @@ final class AppTheme {
     );
   }
 
-  static ThemeData darkTheme(ThemeVariant variant) {
-    final DarkThemeDefinition definition = darkThemeDefinitionOf(variant);
+  static ThemeData darkTheme(String variantId) {
+    final ThemeDefinition definition = themeDefinitionOf(variantId);
     final ColorScheme colorScheme = ColorScheme.fromSeed(
       seedColor: definition.seedColor,
       brightness: Brightness.dark,
@@ -55,7 +52,7 @@ final class AppTheme {
       // fontFamily: _getFontFamily(),
       textTheme: TextTheme().useSystemChineseFont(Brightness.dark),
       colorScheme: colorScheme,
-      scaffoldBackgroundColor: definition.scaffoldBackgroundColor,
+      scaffoldBackgroundColor: definition.darkScaffoldBackgroundColor,
       appBarTheme: AppBarTheme(
         backgroundColor: Colors.transparent,
         foregroundColor: colorScheme.onSurface,
@@ -65,11 +62,11 @@ final class AppTheme {
       ),
       cardTheme: CardThemeData(
         elevation: 0,
-        color: definition.surfaceColor,
+        color: definition.darkSurfaceColor,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
       ),
       bottomSheetTheme: BottomSheetThemeData(
-        backgroundColor: definition.surfaceColor,
+        backgroundColor: definition.darkSurfaceColor,
         surfaceTintColor: Colors.transparent,
         shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
@@ -77,5 +74,4 @@ final class AppTheme {
       ),
     );
   }
-
 }

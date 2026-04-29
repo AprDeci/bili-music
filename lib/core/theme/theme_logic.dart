@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:bilimusic/core/settings/app_settings_store.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import 'theme_catalog.dart';
 import 'theme_ui_model.dart';
 
 part 'theme_logic.g.dart';
@@ -19,7 +20,7 @@ class ThemeLogic extends _$ThemeLogic {
       themeMode: _readThemeMode(
         settingsStore.readString(HiveKeys.themeMode, defaultValue: ''),
       ),
-      themeVariant: _readThemeVariant(
+      themeVariantId: _readThemeVariantId(
         settingsStore.readString(
           HiveKeys.themeVariant,
           defaultValue: settingsStore.readString(
@@ -38,11 +39,12 @@ class ThemeLogic extends _$ThemeLogic {
     state = state.copyWith(themeMode: mode);
   }
 
-  void setThemeVariant(ThemeVariant variant) {
+  void setThemeVariant(String variantId) {
+    final String normalizedVariantId = _readThemeVariantId(variantId);
     ref
         .read(appSettingsStoreProvider)
-        .writeString(HiveKeys.themeVariant, _themeVariantValue(variant));
-    state = state.copyWith(themeVariant: variant);
+        .writeString(HiveKeys.themeVariant, normalizedVariantId);
+    state = state.copyWith(themeVariantId: normalizedVariantId);
   }
 
   void toggleTheme() {
@@ -71,25 +73,16 @@ class ThemeLogic extends _$ThemeLogic {
     return ThemeMode.system;
   }
 
-  ThemeVariant _readThemeVariant(String? rawValue) {
-    switch (rawValue) {
-      case 'classicGreen':
-        return ThemeVariant.classicGreen;
-      case 'frostTeaWhite':
-        return ThemeVariant.frostTeaWhite;
-      case 'skyBlue':
-        return ThemeVariant.skyBlue;
-      case 'irisPurple':
-        return ThemeVariant.irisPurple;
-      case 'blossomPink':
-        return ThemeVariant.blossomPink;
-      case 'sunsetOrange':
-        return ThemeVariant.sunsetOrange;
-      case null:
-        return ThemeVariant.classicGreen;
+  String _readThemeVariantId(String? rawValue) {
+    if (rawValue == null || rawValue.isEmpty) {
+      return defaultThemeVariantId;
     }
 
-    return ThemeVariant.classicGreen;
+    if (isKnownThemeVariantId(rawValue)) {
+      return rawValue;
+    }
+
+    return defaultThemeVariantId;
   }
 
   String _themeModeValue(ThemeMode mode) {
@@ -100,23 +93,6 @@ class ThemeLogic extends _$ThemeLogic {
         return 'light';
       case ThemeMode.dark:
         return 'dark';
-    }
-  }
-
-  String _themeVariantValue(ThemeVariant variant) {
-    switch (variant) {
-      case ThemeVariant.classicGreen:
-        return 'classicGreen';
-      case ThemeVariant.frostTeaWhite:
-        return 'frostTeaWhite';
-      case ThemeVariant.skyBlue:
-        return 'skyBlue';
-      case ThemeVariant.irisPurple:
-        return 'irisPurple';
-      case ThemeVariant.blossomPink:
-        return 'blossomPink';
-      case ThemeVariant.sunsetOrange:
-        return 'sunsetOrange';
     }
   }
 }
