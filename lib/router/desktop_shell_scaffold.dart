@@ -18,8 +18,6 @@ class DesktopShellScaffold extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
 
     return Scaffold(
       body: SafeArea(
@@ -44,14 +42,8 @@ class DesktopShellScaffold extends ConsumerWidget {
                           children: [
                             const DesktopTopBar(),
                             Expanded(
-                              child: DecoratedBox(
-                                decoration: BoxDecoration(
-                                  color: colorScheme.surfaceContainerLowest,
-                                  borderRadius: BorderRadius.circular(24),
-                                ),
                                 child: Container(child: navigationShell),
                               ),
-                            ),
                           ],
                         ),
                       ),
