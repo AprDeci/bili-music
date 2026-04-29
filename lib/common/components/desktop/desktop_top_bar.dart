@@ -647,23 +647,3 @@ class _DesktopHistoryPane extends StatelessWidget {
   }
 }
 
-class _LeadingSlot extends ConsumerWidget {
-  const _LeadingSlot();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final bool canPop = GoRouter.of(context).canPop();
-
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: <Widget>[
-        BarIconButton(
-          icon: Icons.chevron_left_rounded,
-          onPressed: canPop ? () => context.pop() : null,
-        ),
-        const SizedBox(width: 4),
-        BarIconButton(icon: Icons.chevron_right_rounded, onPressed: null),
-      ],
-    );
-  }
-}

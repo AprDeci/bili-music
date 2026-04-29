@@ -1,4 +1,4 @@
-import 'package:bilimusic/common/util/platform_util.dart';
+
 import 'package:bilimusic/core/theme/dark_theme_catalog.dart';
 import 'package:bilimusic/core/theme/light_theme_catalog.dart';
 import 'package:bilimusic/core/theme/theme_ui_model.dart';
@@ -78,10 +78,4 @@ final class AppTheme {
     );
   }
 
-  static String? _getFontFamily() {
-    if (PlatformUtil.isDesktop) {
-      return 'MiSans';
-    }
-    return null;
-  }
 }
