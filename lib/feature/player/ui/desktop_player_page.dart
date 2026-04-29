@@ -1,8 +1,10 @@
 import 'package:bilimusic/common/components/bar_icon_button.dart';
 import 'package:bilimusic/common/components/cached_image.dart';
+import 'package:bilimusic/common/components/desktop/desktop_side_panel.dart';
 import 'package:bilimusic/common/components/desktop/volumn_attach.dart';
 import 'package:bilimusic/common/util/toast_util.dart';
 import 'package:bilimusic/feature/comment/domain/comment_target.dart';
+import 'package:bilimusic/feature/comment/ui/comment_page.dart';
 import 'package:bilimusic/feature/favorites/logic/favorites_controller.dart';
 import 'package:bilimusic/feature/player/domain/audio_stream_info.dart';
 import 'package:bilimusic/feature/player/domain/playable_item.dart';
@@ -21,7 +23,6 @@ import 'package:bilimusic/feature/player/ui/components/player_ui_helpers.dart';
 import 'package:bilimusic/router/player_navigation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:hugeicons/hugeicons.dart';
 import 'package:window_manager/window_manager.dart';
 
@@ -220,13 +221,16 @@ class _DesktopPlayerPageState extends ConsumerState<DesktopPlayerPage> {
   }
 
   Future<void> _openComments(PlayableItem item) async {
-    await context.push(
-      '/comments',
-      extra: CommentTarget.video(
-        aid: item.aid,
-        bvid: item.bvid,
-        title: item.title,
-        coverUrl: item.coverUrl,
+    await showDesktopSidePanel(
+      context: context,
+      width: 520,
+      builder: (BuildContext context) => CommentPage(
+        target: CommentTarget.video(
+          aid: item.aid,
+          bvid: item.bvid,
+          title: item.title,
+          coverUrl: item.coverUrl,
+        ),
       ),
     );
   }
