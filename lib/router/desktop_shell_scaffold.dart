@@ -38,9 +38,6 @@ class DesktopShellScaffold extends ConsumerWidget {
                       child: Container(
                         key: desktopSidePanelHostKey,
                         decoration: BoxDecoration(
-                          color: colorScheme.surfaceContainer.withValues(
-                            alpha: 0.52,
-                          ),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Column(
