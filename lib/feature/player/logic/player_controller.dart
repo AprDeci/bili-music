@@ -4,6 +4,8 @@ import 'package:audio_service/audio_service.dart';
 import 'package:bilimusic/common/logger.dart';
 import 'package:bilimusic/common/util/toast_util.dart';
 import 'package:bilimusic/core/bili/session/bili_session_controller.dart';
+import 'package:bilimusic/core/hive/hive_keys.dart';
+import 'package:bilimusic/core/settings/app_settings_store.dart';
 import 'package:bilimusic/feature/player/data/audio_cache_repository.dart';
 import 'package:bilimusic/feature/player/data/bili_player_repository.dart';
 import 'package:bilimusic/feature/player/data/player_queue_local_repository.dart';
@@ -32,6 +34,9 @@ class PlayerController extends Notifier<PlayerState>
 
   late final PlayerQueueLocalRepository _queueRepository = ref.read(
     playerQueueLocalRepositoryProvider,
+  );
+  late final AppSettingsStore _settingsStore = ref.read(
+    appSettingsStoreProvider,
   );
   late final AppAudioHandler _audioHandler = ref.read(appAudioHandlerProvider);
   late final PlayerAudioEngine _audioEngine = PlayerAudioEngine();
@@ -70,8 +75,14 @@ class PlayerController extends Notifier<PlayerState>
 
   @override
   PlayerState build() {
+    final double savedVolume = _readPersistedVolume();
+    if (savedVolume > 0) {
+      _lastAudibleVolume = savedVolume;
+    }
+
     if (!_isBound) {
       _bindPlayerStreams();
+      unawaited(_audioEngine.setVolume(savedVolume));
       _audioHandler.attachTarget(this);
       unawaited(_audioSessionCoordinator.bind());
       _isBound = true;
@@ -81,7 +92,7 @@ class PlayerController extends Notifier<PlayerState>
       unawaited(_dispose());
     });
 
-    return const PlayerState();
+    return PlayerState(volume: savedVolume);
   }
 
   Future<void> _dispose() async {
@@ -244,6 +255,7 @@ class PlayerController extends Notifier<PlayerState>
     }
     state = state.copyWith(volume: nextVolume);
     await _audioEngine.setVolume(nextVolume);
+    await _settingsStore.writeDouble(HiveKeys.playerVolume, nextVolume);
   }
 
   Future<double> toggleMute() async {
@@ -986,6 +998,13 @@ class PlayerController extends Notifier<PlayerState>
   int _nextGeneration() {
     _operationGeneration += 1;
     return _operationGeneration;
+  }
+
+  double _readPersistedVolume() {
+    return _settingsStore
+        .readDouble(HiveKeys.playerVolume, defaultValue: 1.0)
+        .clamp(0.0, 1.0)
+        .toDouble();
   }
 
   bool _isCurrentGeneration(int generation) {
