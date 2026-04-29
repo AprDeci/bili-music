@@ -24,6 +24,15 @@ void main() {
     }
   });
 
+  test('uses frost tea white as default theme variant', () async {
+    final ProviderContainer container = ProviderContainer();
+    addTearDown(container.dispose);
+
+    final ThemeUiModel state = container.read(themeLogicProvider);
+
+    expect(state.themeVariantId, 'frostTeaWhite');
+  });
+
   test('reads persisted theme preferences', () async {
     final Box<String> prefsBox = Hive.box<String>(HiveBoxNames.prefs);
     await prefsBox.put(HiveKeys.themeMode, 'dark');

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-const String defaultThemeVariantId = 'classicGreen';
+const String defaultThemeVariantId = 'frostTeaWhite';
 
 class ThemeDefinition {
   const ThemeDefinition({
@@ -28,7 +28,7 @@ class ThemeDefinition {
 
 const List<ThemeDefinition> themeCatalog = <ThemeDefinition>[
   ThemeDefinition(
-    id: defaultThemeVariantId,
+    id: 'classicGreen',
     label: '经典绿',
     description: '默认',
     seedColor: Color(0xFF31C27C),
@@ -37,7 +37,7 @@ const List<ThemeDefinition> themeCatalog = <ThemeDefinition>[
     darkSurfaceColor: Color(0xFF13211D),
   ),
   ThemeDefinition(
-    id: 'frostTeaWhite',
+    id: defaultThemeVariantId,
     label: '霜茶白',
     description: '白色打底的低饱和浅色主题',
     seedColor: Color(0xFFF6F6F6),
