@@ -89,19 +89,7 @@ class _DesktopPlayerPageState extends ConsumerState<DesktopPlayerPage> {
 
     return Scaffold(
       backgroundColor: colorScheme.surface,
-      body: DecoratedBox(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: <Color>[
-              colorScheme.primaryContainer.withValues(alpha: 0.54),
-              colorScheme.surfaceContainerLowest,
-              colorScheme.primary.withValues(alpha: 0.12),
-            ],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-        ),
-        child: SafeArea(
+      body: SafeArea(
           child: Stack(
             children: <Widget>[
               Positioned(
@@ -203,8 +191,7 @@ class _DesktopPlayerPageState extends ConsumerState<DesktopPlayerPage> {
                   ),
                 ],
               ),
-            ],
-          ),
+          ],
         ),
       ),
     );
@@ -622,7 +609,7 @@ class _DesktopPlayerControlDeck extends StatelessWidget {
                               onSelected: onSelectQueueMode,
                               iconSize: 22,
                             ),
-                            const SizedBox(width: 14),
+                            const SizedBox(width: 28),
                             BarIconButton(
                               icon: Icons.skip_previous_rounded,
                               tooltip: '上一首',
@@ -643,7 +630,7 @@ class _DesktopPlayerControlDeck extends StatelessWidget {
                               iconSize: 26,
                               onPressed: canGoNext ? onNext : null,
                             ),
-                            const SizedBox(width: 14),
+                            const SizedBox(width: 28),
                             DesktopVolumnAttach(
                               enabled: state.hasQueue,
                               volume: state.volume,
@@ -655,6 +642,7 @@ class _DesktopPlayerControlDeck extends StatelessWidget {
                         ),
                         const SizedBox(height: 4),
                         Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
                           children: <Widget>[
                             SizedBox(
                               width: 44,
@@ -668,10 +656,11 @@ class _DesktopPlayerControlDeck extends StatelessWidget {
                                 ),
                               ),
                             ),
-                            Expanded(
+                            ConstrainedBox(
+                              constraints: const BoxConstraints(maxWidth: 300),
                               child: SliderTheme(
                                 data: SliderTheme.of(context).copyWith(
-                                  trackHeight: 3,
+                                  trackHeight: 1,
                                   inactiveTrackColor: colorScheme.onSurface
                                       .withValues(alpha: 0.14),
                                   activeTrackColor: colorScheme.onSurface
