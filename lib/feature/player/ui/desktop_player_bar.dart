@@ -54,9 +54,6 @@ class DesktopPlayerBar extends ConsumerWidget {
       decoration: BoxDecoration(
         color: colorScheme.surface,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: colorScheme.outlineVariant.withValues(alpha: 0.5),
-        ),
       ),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
