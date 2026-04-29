@@ -85,6 +85,7 @@ Future<void> showDesktopSidePanel({
 
   return SmartDialog.show<void>(
     tag: tag,
+    usePenetrate: true,
     alignment: Alignment.topRight,
     maskColor: maskColor ?? Colors.transparent,
     animationTime: const Duration(milliseconds: 180),
