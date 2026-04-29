@@ -1,4 +1,5 @@
 import 'package:bilimusic/common/components/cached_image.dart';
+import 'package:bilimusic/common/util/platform_util.dart';
 import 'package:bilimusic/feature/comment/domain/comment_item.dart';
 import 'package:bilimusic/feature/comment/domain/comment_sort.dart';
 import 'package:bilimusic/feature/comment/domain/comment_state.dart';
@@ -61,7 +62,7 @@ class _CommentPageState extends ConsumerState<CommentPage> {
     final ColorScheme colorScheme = theme.colorScheme;
 
     return Scaffold(
-      appBar: AppBar(title: Text('评论')),
+      appBar: PlatformUtil.isDesktop ? null : AppBar(title: const Text('评论')),
       body: SafeArea(
         child: RefreshIndicator(
           onRefresh: controller.refresh,
@@ -248,6 +249,10 @@ class _CommentSectionHeader extends StatelessWidget {
     final List<CommentSort> sorts = state.supportedSorts.isEmpty
         ? const <CommentSort>[CommentSort.time, CommentSort.like]
         : state.supportedSorts;
+    final CommentSort nextSort = state.sort == sorts.first
+        ? sorts.last
+        : sorts.first;
+    final bool canChangeSort = sorts.length > 1;
 
     return Row(
       children: <Widget>[
@@ -259,29 +264,19 @@ class _CommentSectionHeader extends StatelessWidget {
             ),
           ),
         ),
-        PopupMenuButton<CommentSort>(
-          tooltip: '切换排序',
-          onSelected: controller.changeSort,
-          itemBuilder: (BuildContext context) {
-            return sorts.map((CommentSort sort) {
-              return PopupMenuItem<CommentSort>(
-                value: sort,
-                child: Text(
-                  sort.label,
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    fontWeight: state.sort == sort
-                        ? FontWeight.w700
-                        : FontWeight.w500,
-                  ),
-                ),
-              );
-            }).toList();
-          },
-          child: Text(
-            state.sort.label,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: colorScheme.primary,
-              fontWeight: FontWeight.w700,
+        InkWell(
+          borderRadius: BorderRadius.circular(999),
+          onTap: canChangeSort ? () => controller.changeSort(nextSort) : null,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            child: Text(
+              state.sort.label,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: canChangeSort
+                    ? colorScheme.primary
+                    : colorScheme.onSurfaceVariant,
+                fontWeight: FontWeight.w700,
+              ),
             ),
           ),
         ),
@@ -305,7 +300,6 @@ class _CommentSectionTitle extends StatelessWidget {
     );
   }
 }
-
 
 class _CommentErrorCard extends StatelessWidget {
   const _CommentErrorCard({required this.message, required this.onRetry});
