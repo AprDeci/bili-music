@@ -101,6 +101,7 @@ dev_dependencies:
   json_serializable: ^6.13.0
   hive_ce_generator: 1.11.0
   flutter_launcher_icons: ^0.14.4
+  icon_font_generator: ^4.1.0
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
