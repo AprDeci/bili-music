@@ -35,6 +35,17 @@ class AppSettingsStore {
     return _prefsBox.put(key, value ? 'true' : 'false');
   }
 
+  double readDouble(String key, {required double defaultValue}) {
+    final String defaultRawValue = defaultValue.toString();
+    final String rawValue =
+        _prefsBox.get(key, defaultValue: defaultRawValue) ?? defaultRawValue;
+    return double.tryParse(rawValue) ?? defaultValue;
+  }
+
+  Future<void> writeDouble(String key, double value) {
+    return _prefsBox.put(key, value.toString());
+  }
+
   List<String> readStringList(String key, {int maxItems = 20}) {
     final String rawValue = _prefsBox.get(key, defaultValue: '[]') ?? '[]';
 
