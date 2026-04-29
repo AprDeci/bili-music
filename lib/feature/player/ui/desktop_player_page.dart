@@ -174,7 +174,7 @@ class _DesktopPlayerPageState extends ConsumerState<DesktopPlayerPage> {
                           ),
                     onPartTap: item == null || state.availableParts.length < 2
                         ? null
-                        : () => showPlayerPartSelector(
+                        : () => showDesktopPlayerPartSelectorPanel(
                             context: context,
                             parts: state.availableParts,
                             currentItem: item,
