@@ -169,3 +169,19 @@ flutter_launcher_icons:
   macos:
     generate: true
     image_path: "assets/icons/icon2.png"
+
+icon_font:
+  input_svg_dir: "assets/icons/svg"
+  output_font_file: "assets/fonts/BmIcons.ttf"
+  
+  output_class_file: "lib/common/bm_icons.dart"
+  class_name: "BmIcons"
+  package: bm_font_package
+  format: true
+
+  font_name: "BmIcons"
+  normalize: true
+  ignore_shapes: true
+
+  recursive: true
+  verbose: false
