@@ -29,6 +29,14 @@ const Map<ThemeVariant, LightThemeDefinition> lightThemeCatalog =
         scaffoldBackgroundColor: Color(0xFFF4F7FB),
         surfaceColor: Colors.white,
       ),
+      ThemeVariant.frostTeaWhite: LightThemeDefinition(
+        variant: ThemeVariant.frostTeaWhite,
+        label: '霜茶白',
+        description: '白色打底的低饱和浅色主题',
+        seedColor: Color(0xFFF6F6F6),
+        scaffoldBackgroundColor: Colors.white,
+        surfaceColor: Colors.white,
+      ),
       ThemeVariant.skyBlue: LightThemeDefinition(
         variant: ThemeVariant.skyBlue,
         label: '海盐蓝',

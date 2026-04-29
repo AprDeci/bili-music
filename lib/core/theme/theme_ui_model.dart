@@ -6,6 +6,7 @@ part 'theme_ui_model.g.dart';
 
 enum ThemeVariant {
   classicGreen,
+  frostTeaWhite,
   skyBlue,
   irisPurple,
   blossomPink,

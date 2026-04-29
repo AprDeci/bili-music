@@ -75,6 +75,8 @@ class ThemeLogic extends _$ThemeLogic {
     switch (rawValue) {
       case 'classicGreen':
         return ThemeVariant.classicGreen;
+      case 'frostTeaWhite':
+        return ThemeVariant.frostTeaWhite;
       case 'skyBlue':
         return ThemeVariant.skyBlue;
       case 'irisPurple':
@@ -105,6 +107,8 @@ class ThemeLogic extends _$ThemeLogic {
     switch (variant) {
       case ThemeVariant.classicGreen:
         return 'classicGreen';
+      case ThemeVariant.frostTeaWhite:
+        return 'frostTeaWhite';
       case ThemeVariant.skyBlue:
         return 'skyBlue';
       case ThemeVariant.irisPurple:

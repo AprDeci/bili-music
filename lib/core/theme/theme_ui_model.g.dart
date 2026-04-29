@@ -30,6 +30,7 @@ const _$ThemeModeEnumMap = {
 
 const _$ThemeVariantEnumMap = {
   ThemeVariant.classicGreen: 'classicGreen',
+  ThemeVariant.frostTeaWhite: 'frostTeaWhite',
   ThemeVariant.skyBlue: 'skyBlue',
   ThemeVariant.irisPurple: 'irisPurple',
   ThemeVariant.blossomPink: 'blossomPink',

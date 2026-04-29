@@ -29,6 +29,14 @@ const Map<ThemeVariant, DarkThemeDefinition> darkThemeCatalog =
         scaffoldBackgroundColor: Color(0xFF09120F),
         surfaceColor: Color(0xFF13211D),
       ),
+      ThemeVariant.frostTeaWhite: DarkThemeDefinition(
+        variant: ThemeVariant.frostTeaWhite,
+        label: '霜茶白',
+        description: '白色主题的深色回退配色',
+        seedColor: Color(0xFFF6F6F6),
+        scaffoldBackgroundColor: Color(0xFF101010),
+        surfaceColor: Color(0xFF1C1C1C),
+      ),
       ThemeVariant.skyBlue: DarkThemeDefinition(
         variant: ThemeVariant.skyBlue,
         label: '海盐蓝',
