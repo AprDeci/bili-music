@@ -108,9 +108,11 @@ class DesktopFavoriteCollectionPage extends ConsumerWidget {
                         ),
                         tileColor: isEvenRow
                             ? Colors.transparent
-                            : ColorUtil.getShade(
-                                primary,
-                                800,
+                            : const Color.fromARGB(
+                                255,
+                                189,
+                                189,
+                                189,
                               ).withValues(alpha: 0.1),
                         contentPadding: const EdgeInsets.symmetric(
                           horizontal: 14,
