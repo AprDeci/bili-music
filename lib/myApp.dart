@@ -27,8 +27,8 @@ class _MyAppState extends ConsumerState<MyApp> {
     return MaterialApp.router(
       routerConfig: router,
       themeMode: currentTheme.themeMode,
-      theme: AppTheme.lightTheme(currentTheme.themeVariant),
-      darkTheme: AppTheme.darkTheme(currentTheme.themeVariant),
+      theme: AppTheme.lightTheme(currentTheme.themeVariantId),
+      darkTheme: AppTheme.darkTheme(currentTheme.themeVariantId),
       scrollBehavior: MyBehavior(),
       builder: FlutterSmartDialog.init(
         builder: (BuildContext context, Widget? child) {

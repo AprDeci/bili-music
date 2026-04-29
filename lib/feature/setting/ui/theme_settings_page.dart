@@ -1,4 +1,4 @@
-import 'package:bilimusic/core/theme/light_theme_catalog.dart';
+import 'package:bilimusic/core/theme/theme_catalog.dart';
 import 'package:bilimusic/core/theme/theme_logic.dart';
 import 'package:bilimusic/core/theme/theme_ui_model.dart';
 import 'package:bilimusic/feature/setting/logic/appearance_setting_logic.dart';
@@ -61,18 +61,15 @@ class ThemeSettingsPage extends ConsumerWidget {
             margin: EdgeInsets.zero,
             clipBehavior: Clip.antiAlias,
             child: Column(
-              children: ThemeVariant.values
-                  .map((ThemeVariant variant) {
-                    final LightThemeDefinition definition =
-                        lightThemeDefinitionOf(variant);
-
-                    return RadioListTile<ThemeVariant>(
-                      value: variant,
-                      groupValue: themeState.themeVariant,
+              children: themeCatalog
+                  .map((ThemeDefinition definition) {
+                    return RadioListTile<String>(
+                      value: definition.id,
+                      groupValue: themeState.themeVariantId,
                       title: Text(definition.label),
                       subtitle: Text(definition.description),
                       secondary: _ThemePreviewDot(color: definition.seedColor),
-                      onChanged: (ThemeVariant? value) {
+                      onChanged: (String? value) {
                         if (value == null) {
                           return;
                         }
