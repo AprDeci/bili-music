@@ -13,6 +13,7 @@ import 'package:bilimusic/feature/favorites/logic/favorites_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:hugeicons/hugeicons.dart';
 
 class DesktopProfileSidebar extends ConsumerWidget {
   const DesktopProfileSidebar({super.key, required this.currentLocation});
@@ -132,11 +133,27 @@ class DesktopProfileSidebar extends ConsumerWidget {
           ),
           Align(
             alignment: Alignment.centerLeft,
-            child: BarIconButton(
-              icon: Icons.settings_outlined,
-              iconSize: 20,
-              isActive: currentLocation.startsWith('/settings'),
-              onPressed: () => context.go('/settings'),
+            child: Row(
+              children: [
+                BarIconButton(
+                  icon: HugeIcon(
+                    icon: HugeIcons.strokeRoundedSettings03,
+                    size: 20,
+                  ),
+                  isActive: currentLocation.startsWith('/settings'),
+                  onPressed: () => context.go('/settings'),
+                ),
+                const SizedBox(width: 12),
+                // 外观
+                BarIconButton(
+                  icon: HugeIcon(
+                    icon: HugeIcons.strokeRoundedShirt01,
+                    size: 20,
+                  ),
+                  isActive: currentLocation.startsWith('/settings/theme'),
+                  onPressed: () => context.go('/settings/theme'),
+                ),
+              ],
             ),
           ),
         ],

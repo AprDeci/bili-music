@@ -61,7 +61,7 @@ class DesktopQueueModeAttach extends StatelessWidget {
         onPressed: enabled ? () {} : null,
         icon: queueModeIcon(mode),
         iconSize: iconSize,
-        isActive: enabled,
+        isActive: false,
       ),
     );
   }
