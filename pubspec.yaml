@@ -122,9 +122,6 @@ flutter:
     - assets/lottie/
 
   fonts:
-    - family: 'MiSans'
-      fonts:
-        - asset: assets/fonts/MiSans-Regular.ttf
     - family: BmIcons
       fonts:
         - asset: assets/fonts/BmIcons.ttf 
