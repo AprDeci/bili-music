@@ -9,7 +9,7 @@ class MiniPlayerBar extends StatelessWidget {
     required this.state,
     required this.onTap,
     required this.onTogglePlayback,
-    this.bottomPadding = BottomHeightHelper.miniPlayerCollapsedBottomPadding,
+    this.bottomPadding = BottomHeightHelper.miniPlayerGapWithoutBottomBar,
   });
 
   final PlayerState state;
