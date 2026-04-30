@@ -12,7 +12,7 @@ import 'package:bilimusic/feature/profile/ui/profile_page.dart';
 import 'package:bilimusic/feature/search/ui/search_page.dart';
 import 'package:bilimusic/feature/setting/ui/about_settings_page.dart';
 import 'package:bilimusic/feature/setting/ui/cache_settings_page.dart';
-import 'package:bilimusic/feature/setting/ui/favorites_transfer_page.dart';
+import 'package:bilimusic/feature/setting/ui/app_transfer_page.dart';
 import 'package:bilimusic/feature/setting/ui/player_settings_page.dart';
 import 'package:bilimusic/feature/setting/ui/setting_page.dart';
 import 'package:bilimusic/feature/setting/ui/theme_settings_page.dart';
@@ -87,8 +87,8 @@ final List<Map<String, dynamic>> desktopTabs = [
         builder: (context, state) => const PlayerSettingsPage(),
       ),
       GoRoute(
-        path: 'favorites-transfer',
-        builder: (context, state) => const FavoritesTransferPage(),
+        path: 'app-transfer',
+        builder: (context, state) => const AppTransferPage(),
       ),
       GoRoute(
         path: 'about',
@@ -104,7 +104,7 @@ final List<Map<String, dynamic>> desktopTabs = [
       final CommentTarget target = state.extra! as CommentTarget;
       return CommentPage(target: target);
     },
-  }
+  },
 ];
 
 final List<RouteBase> mobileRoutes = [
@@ -166,9 +166,9 @@ final List<RouteBase> mobileRoutes = [
     builder: (context, state) => const PlayerSettingsPage(),
   ),
   GoRoute(
-    path: '/settings/favorites-transfer',
+    path: '/settings/app-transfer',
     parentNavigatorKey: _rootNavigatorKey,
-    builder: (context, state) => const FavoritesTransferPage(),
+    builder: (context, state) => const AppTransferPage(),
   ),
   GoRoute(
     path: '/settings/about',

@@ -38,10 +38,7 @@ class _SettingPageState extends State<SettingPage> {
             contentPadding: EdgeInsets.zero,
             leading: const Icon(Icons.palette_outlined),
             title: const Text('外观设置'),
-            subtitle: Text(
-              '外观,主题选择',
-              style: theme.textTheme.bodySmall,
-            ),
+            subtitle: Text('外观,主题选择', style: theme.textTheme.bodySmall),
             trailing: const Icon(Icons.chevron_right_rounded),
             onTap: () => context.push('/settings/theme'),
           ),
@@ -56,10 +53,10 @@ class _SettingPageState extends State<SettingPage> {
           ListTile(
             contentPadding: EdgeInsets.zero,
             leading: const Icon(Icons.import_export_rounded),
-            title: const Text('收藏导入导出'),
-            subtitle: Text('导出或导入我喜欢与自建歌单', style: theme.textTheme.bodySmall),
+            title: const Text('数据导入导出'),
+            subtitle: Text('导出或导入收藏与应用设置', style: theme.textTheme.bodySmall),
             trailing: const Icon(Icons.chevron_right_rounded),
-            onTap: () => context.push('/settings/favorites-transfer'),
+            onTap: () => context.push('/settings/app-transfer'),
           ),
           FutureBuilder<int>(
             future: _cacheSizeFuture,
