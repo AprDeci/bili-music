@@ -319,7 +319,7 @@ class _PlayerLyricPanelStatus extends StatelessWidget {
             )
           else
             FilledButton.tonal(
-              onPressed: () => context.go('/settings/player'),
+              onPressed: () => context.push('/settings/player'),
               child: Text('设置'),
             ),
         ],
