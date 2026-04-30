@@ -175,6 +175,7 @@ jobs:
             cmake \
             curl \
             file \
+            imagemagick \
             libfuse2 \
             libgtk-3-dev \
             liblzma-dev \

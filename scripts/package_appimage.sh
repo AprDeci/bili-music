@@ -24,8 +24,13 @@ mkdir -p "${TOOLS_DIR}"
 mkdir -p "${ARTIFACTS_DIR}"
 
 cp -R build/linux/x64/release/bundle/. "${APPDIR}/usr/bin/"
-cp assets/icons/icon2.png "${APPDIR}/bilimusic.png"
-cp assets/icons/icon2.png "${APPDIR}/usr/share/icons/hicolor/256x256/apps/bilimusic.png"
+if command -v magick >/dev/null 2>&1; then
+  magick assets/icons/icon2.png -resize 512x512 "${APPDIR}/bilimusic.png"
+  magick assets/icons/icon2.png -resize 256x256 "${APPDIR}/usr/share/icons/hicolor/256x256/apps/bilimusic.png"
+else
+  convert assets/icons/icon2.png -resize 512x512 "${APPDIR}/bilimusic.png"
+  convert assets/icons/icon2.png -resize 256x256 "${APPDIR}/usr/share/icons/hicolor/256x256/apps/bilimusic.png"
+fi
 cp scripts/linux/bilimusic.desktop "${APPDIR}/bilimusic.desktop"
 
 cat > "${APPDIR}/AppRun" <<'EOF'
