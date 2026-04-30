@@ -90,107 +90,107 @@ class _DesktopPlayerPageState extends ConsumerState<DesktopPlayerPage> {
     return Scaffold(
       backgroundColor: colorScheme.surface,
       body: SafeArea(
-          child: Stack(
-            children: <Widget>[
-              Positioned(
-                left: -120,
-                bottom: 90,
-                child: _DesktopGlowOrb(
-                  size: 360,
-                  color: colorScheme.primary.withValues(alpha: 0.16),
-                ),
+        child: Stack(
+          children: <Widget>[
+            Positioned(
+              left: -120,
+              bottom: 90,
+              child: _DesktopGlowOrb(
+                size: 360,
+                color: colorScheme.primary.withValues(alpha: 0.16),
               ),
-              Positioned(
-                right: -90,
-                top: 110,
-                child: _DesktopGlowOrb(
-                  size: 300,
-                  color: colorScheme.secondary.withValues(alpha: 0.13),
-                ),
+            ),
+            Positioned(
+              right: -90,
+              top: 110,
+              child: _DesktopGlowOrb(
+                size: 300,
+                color: colorScheme.secondary.withValues(alpha: 0.13),
               ),
-              Positioned(
-                bottom: 80,
-                right: 20,
-                child: _DesktopLyricToolRail(
-                  enabled: item != null,
-                  onSearch: item == null
-                      ? null
-                      : () {
-                          final PlayerLyricsState lyricsState = ref.read(
-                            playerLyricsControllerProvider,
-                          );
-                          showManualLyricSearchSheet(
-                            context: context,
-                            initialKeyword: resolveLyricSearchKeyword(
-                              lyricsState: lyricsState,
-                              item: item,
-                            ),
-                          );
-                        },
-                  onOffset: item == null
-                      ? null
-                      : () => showLyricOffsetSheet(context),
-                ),
-              ),
-              Column(
-                children: <Widget>[
-                  _DesktopPlayerTopBar(
-                    onBack: () => Navigator.of(context).maybePop(),
-                  ),
-                  Expanded(
-                    child: _DesktopPlayerHeroSection(
-                      state: state,
-                      item: item,
-                      onSeek: controller.seek,
-                    ),
-                  ),
-                  _DesktopPlayerControlDeck(
-                    state: state,
-                    item: item,
-                    isFavorite: isFavorite,
-                    onFavoriteToggle: item == null
-                        ? null
-                        : () => _toggleFavorite(item),
-                    onOpenComments: item == null || item.aid <= 0
-                        ? null
-                        : () => _openComments(item),
-                    onOpenCollectionSheet: item == null
-                        ? null
-                        : () => showPlayerCollectionSheet(
-                            context: context,
+            ),
+            Positioned(
+              bottom: 80,
+              right: 20,
+              child: _DesktopLyricToolRail(
+                enabled: item != null,
+                onSearch: item == null
+                    ? null
+                    : () {
+                        final PlayerLyricsState lyricsState = ref.read(
+                          playerLyricsControllerProvider,
+                        );
+                        showManualLyricSearchSheet(
+                          context: context,
+                          initialKeyword: resolveLyricSearchKeyword(
+                            lyricsState: lyricsState,
                             item: item,
                           ),
-                    onPartTap: item == null || state.availableParts.length < 2
-                        ? null
-                        : () => showDesktopPlayerPartSelectorPanel(
-                            context: context,
-                            parts: state.availableParts,
-                            currentItem: item,
-                            state: state,
-                            controller: controller,
-                          ),
-                    onOpenQueue: () => showDesktopPlayerQueuePanel(
-                      context: context,
-                      state: state,
-                    ),
-                    onSelectQuality: controller.switchCurrentAudioQuality,
-                    onSelectQueueMode: controller.setQueueMode,
-                    onPrevious: controller.skipToPrevious,
-                    onTogglePlayback: controller.togglePlayback,
-                    onNext: controller.skipToNext,
-                    onVolumeChanged: controller.setVolume,
-                    onToggleMute: controller.toggleMute,
-                    onSeek: (double value) {
-                      final Duration total = _resolveTotalDuration(state);
-                      controller.seek(
-                        Duration(
-                          milliseconds: (total.inMilliseconds * value).round(),
-                        ),
-                      );
-                    },
-                  ),
-                ],
+                        );
+                      },
+                onOffset: item == null
+                    ? null
+                    : () => showLyricOffsetSheet(context),
               ),
+            ),
+            Column(
+              children: <Widget>[
+                _DesktopPlayerTopBar(
+                  onBack: () => Navigator.of(context).maybePop(),
+                ),
+                Expanded(
+                  child: _DesktopPlayerHeroSection(
+                    state: state,
+                    item: item,
+                    onSeek: controller.seek,
+                  ),
+                ),
+                _DesktopPlayerControlDeck(
+                  state: state,
+                  item: item,
+                  isFavorite: isFavorite,
+                  onFavoriteToggle: item == null
+                      ? null
+                      : () => _toggleFavorite(item),
+                  onOpenComments: item == null || item.aid <= 0
+                      ? null
+                      : () => _openComments(item),
+                  onOpenCollectionSheet: item == null
+                      ? null
+                      : () => showPlayerCollectionSheet(
+                          context: context,
+                          item: item,
+                        ),
+                  onPartTap: item == null || state.availableParts.length < 2
+                      ? null
+                      : () => showDesktopPlayerPartSelectorPanel(
+                          context: context,
+                          parts: state.availableParts,
+                          currentItem: item,
+                          state: state,
+                          controller: controller,
+                        ),
+                  onOpenQueue: () => showDesktopPlayerQueuePanel(
+                    context: context,
+                    state: state,
+                  ),
+                  onSelectQuality: controller.switchCurrentAudioQuality,
+                  onSelectQueueMode: controller.setQueueMode,
+                  onPrevious: controller.skipToPrevious,
+                  onTogglePlayback: controller.togglePlayback,
+                  onNext: controller.skipToNext,
+                  onVolumeChanged: controller.setVolume,
+                  onToggleMute: controller.toggleMute,
+                  onSeek: (double value) {
+                    final Duration total = _resolveTotalDuration(state);
+                    controller.seek(
+                      Duration(
+                        milliseconds: (total.inMilliseconds * value).round(),
+                      ),
+                    );
+                  },
+                ),
+              ],
+            ),
           ],
         ),
       ),
@@ -707,6 +707,11 @@ class _DesktopPlayerControlDeck extends StatelessWidget {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: <Widget>[
+                        DesktopQualityAttach(
+                          qualities: qualities,
+                          onSelected: onSelectQuality,
+                        ),
+                        const SizedBox(width: 16),
                         BarIconButton(
                           icon: HugeIcon(
                             icon: HugeIcons.strokeRoundedListVideo,
@@ -714,11 +719,6 @@ class _DesktopPlayerControlDeck extends StatelessWidget {
                           ),
                           tooltip: '选择分 P',
                           onPressed: onPartTap,
-                        ),
-                        const SizedBox(width: 16),
-                        DesktopQualityAttach(
-                          qualities: qualities,
-                          onSelected: onSelectQuality,
                         ),
                         const SizedBox(width: 16),
                         BarIconButton(

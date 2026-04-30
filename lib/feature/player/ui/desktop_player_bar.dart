@@ -10,6 +10,7 @@ import 'package:bilimusic/feature/player/domain/player_state.dart';
 import 'package:bilimusic/feature/player/logic/player_controller.dart';
 import 'package:bilimusic/feature/player/ui/components/desktop/quality_attach.dart';
 import 'package:bilimusic/feature/player/ui/components/desktop/queue_mode_attach.dart';
+import 'package:bilimusic/feature/player/ui/components/player_part_selector.dart';
 import 'package:bilimusic/feature/player/ui/components/player_queue_sheet.dart';
 import 'package:bilimusic/feature/player/ui/components/player_ui_helpers.dart';
 import 'package:bilimusic/router/player_navigation.dart';
@@ -115,6 +116,15 @@ class DesktopPlayerBar extends ConsumerWidget {
               flex: 2,
               child: _ActionSection(
                 state: state,
+                onOpenParts: item == null || state.availableParts.length < 2
+                    ? null
+                    : () => showDesktopPlayerPartSelectorPanel(
+                        context: context,
+                        parts: state.availableParts,
+                        currentItem: item,
+                        state: state,
+                        controller: controller,
+                      ),
                 onOpenQueue: () =>
                     showDesktopPlayerQueuePanel(context: context, state: state),
                 onSelectQuality: (int? qualityId) {
@@ -404,11 +414,13 @@ class _PlaybackSection extends StatelessWidget {
 class _ActionSection extends StatelessWidget {
   const _ActionSection({
     required this.state,
+    required this.onOpenParts,
     required this.onOpenQueue,
     required this.onSelectQuality,
   });
 
   final PlayerState state;
+  final VoidCallback? onOpenParts;
   final VoidCallback onOpenQueue;
   final ValueChanged<int?> onSelectQuality;
 
@@ -421,6 +433,12 @@ class _ActionSection extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.end,
       children: <Widget>[
         DesktopQualityAttach(qualities: qualities, onSelected: onSelectQuality),
+        const SizedBox(width: 10),
+        BarIconButton(
+          onPressed: onOpenParts,
+          icon: HugeIcon(icon: HugeIcons.strokeRoundedListVideo, size: 22),
+          tooltip: '选择分 P',
+        ),
         const SizedBox(width: 10),
         BarIconButton(
           onPressed: state.hasQueue ? onOpenQueue : null,
