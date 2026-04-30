@@ -18,6 +18,11 @@ on:
         required: true
         type: boolean
         default: false
+      build_linux_appimage:
+        description: Build Linux AppImage
+        required: true
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -143,4 +148,50 @@ jobs:
         with:
           name: bilimusic-windows-installer
           path: build/artifacts/bilimusic-*-windows-setup.exe
+          retention-days: 30
+
+  # ==================== Linux Job ====================
+  build-linux-appimage:
+    name: Build Linux AppImage
+    runs-on: ubuntu-22.04
+    if: ${{ inputs.build_linux_appimage }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: "beta"
+          flutter-version: "3.43.0-0.2.pre"
+          cache: true
+
+      - name: Install Linux build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            clang \
+            cmake \
+            curl \
+            file \
+            libfuse2 \
+            libgtk-3-dev \
+            liblzma-dev \
+            ninja-build \
+            pkg-config
+
+      - name: Flutter Pub Get
+        run: flutter pub get
+
+      - name: Build AppImage
+        run: |
+          chmod +x scripts/package_appimage.sh
+          scripts/package_appimage.sh "Test-Build"
+
+      - name: Upload Linux AppImage Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: bili-music-linux-appimage
+          path: build/artifacts/*.AppImage
           retention-days: 30

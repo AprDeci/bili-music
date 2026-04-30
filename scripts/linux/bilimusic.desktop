@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=BiliMusic
+Comment=A Flutter Bilibili music player
+Exec=bilimusic
+Icon=bilimusic
+Terminal=false
+Categories=Audio;Music;Player;
