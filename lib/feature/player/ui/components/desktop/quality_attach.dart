@@ -44,7 +44,7 @@ class _DesktopQualityAttachState extends State<DesktopQualityAttach> {
           return CommonAttachMenuItem<int?>(
             value: option.qualityId,
             label: option.label,
-            icon: SizedBox.shrink(),
+            icon: const SizedBox.shrink(),
             selected: option.isSelected,
           );
         })
@@ -66,7 +66,7 @@ class _DesktopQualityAttachState extends State<DesktopQualityAttach> {
         onPressed: enabled ? () {} : null,
         icon: _DesktopQualityBadge(label: badgeLabel),
         iconSize: 20,
-        width: badgeLabel == 'HiRise' ? 44 : 30,
+        width: badgeLabel == 'HiRse' ? 44 : 30,
       ),
     );
   }
@@ -142,7 +142,7 @@ String _qualityBadgeLabel({required List<AudioQualityOption> qualities}) {
   }
 
   if (label.contains('hi-res')) {
-    return 'HiRise';
+    return 'HiRse';
   }
 
   return 'HQ';
