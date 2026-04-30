@@ -8,6 +8,8 @@ class BarIconButton extends StatefulWidget {
     required this.icon,
     this.tooltip,
     this.iconSize = 20,
+    this.width = 30,
+    this.height = 30,
     this.isActive = false,
     this.activeColor,
   });
@@ -16,6 +18,8 @@ class BarIconButton extends StatefulWidget {
   final Object icon;
   final String? tooltip;
   final double iconSize;
+  final double width;
+  final double height;
   final bool isActive;
   final Color? activeColor;
 
@@ -48,8 +52,8 @@ class _BarIconButtonState extends State<BarIconButton> {
         onTap: widget.onPressed,
         behavior: HitTestBehavior.opaque,
         child: SizedBox(
-          width: 30,
-          height: 30,
+          width: widget.width,
+          height: widget.height,
           child: Center(
             child: IconAndWidget(
               icon: widget.icon,
