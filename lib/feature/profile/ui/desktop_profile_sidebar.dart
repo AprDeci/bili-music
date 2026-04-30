@@ -1,6 +1,7 @@
 import 'package:bilimusic/common/components/bar_icon_button.dart';
 import 'package:bilimusic/common/components/cached_avatar.dart';
 import 'package:bilimusic/common/components/cached_image.dart';
+import 'package:bilimusic/common/components/common_attach_menu.dart';
 import 'package:bilimusic/common/util/toast_util.dart';
 import 'package:bilimusic/core/bili/session/bili_session.dart';
 import 'package:bilimusic/core/bili/session/bili_session_controller.dart';
@@ -12,6 +13,7 @@ import 'package:bilimusic/feature/favorites/domain/favorites_state.dart';
 import 'package:bilimusic/feature/favorites/logic/favorites_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_smart_dialog/flutter_smart_dialog.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hugeicons/hugeicons.dart';
 
@@ -127,6 +129,14 @@ class DesktopProfileSidebar extends ConsumerWidget {
                         showZeroCount: false,
                         onTap: () =>
                             context.go('/profile/favorites/${collection.id}'),
+                        onSecondaryTapDown: (TapDownDetails details) {
+                          _showCollectionContextMenu(
+                            context: context,
+                            ref: ref,
+                            collection: collection,
+                            globalPosition: details.globalPosition,
+                          );
+                        },
                       );
                     },
                   ),
@@ -192,7 +202,159 @@ class DesktopProfileSidebar extends ConsumerWidget {
       ToastUtil.show('歌单名称已存在');
     }
   }
+
+  void _showCollectionContextMenu({
+    required BuildContext context,
+    required WidgetRef ref,
+    required FavoriteCollection collection,
+    required Offset globalPosition,
+  }) {
+    final BuildContext sidebarContext = context;
+
+    SmartDialog.showAttach<void>(
+      maskColor: Colors.transparent,
+      targetContext: null,
+      targetBuilder: (Offset targetOffset, Size targetSize) {
+        return Offset(globalPosition.dx + 70, globalPosition.dy);
+      },
+      alignment: Alignment.bottomLeft,
+      clickMaskDismiss: true,
+      keepSingle: true,
+      builder: (BuildContext menuContext) {
+        return Material(
+          color: Theme.of(menuContext).colorScheme.surfaceContainerLowest,
+          borderRadius: BorderRadius.circular(10),
+          clipBehavior: Clip.antiAlias,
+          elevation: 0,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8.0),
+            child: SizedBox(
+              width: 144,
+              child: CommonAttachMenu<_CollectionAction>(
+                itemHeight: 40,
+                items: const <CommonAttachMenuItem<_CollectionAction>>[
+                  CommonAttachMenuItem<_CollectionAction>(
+                    value: _CollectionAction.delete,
+                    label: '删除',
+                    icon: Icons.delete_outline_rounded,
+                  ),
+                  CommonAttachMenuItem<_CollectionAction>(
+                    value: _CollectionAction.rename,
+                    label: '重命名',
+                    icon: SizedBox.shrink(),
+                  ),
+                ],
+                onSelected: (_CollectionAction action) async {
+                  switch (action) {
+                    case _CollectionAction.rename:
+                      await _showRenameCollectionDialog(
+                        sidebarContext,
+                        ref,
+                        collection,
+                      );
+                    case _CollectionAction.delete:
+                      await _showDeleteCollectionDialog(
+                        sidebarContext,
+                        ref,
+                        collection,
+                      );
+                  }
+                },
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _showRenameCollectionDialog(
+    BuildContext context,
+    WidgetRef ref,
+    FavoriteCollection collection,
+  ) async {
+    final String? result = await showDialog<String>(
+      context: context,
+      useRootNavigator: true,
+      builder: (BuildContext context) {
+        return _CollectionNameDialog(
+          title: '重命名歌单',
+          hintText: '请输入歌单名称',
+          confirmText: '保存',
+          initialValue: collection.name,
+        );
+      },
+    );
+
+    if (result == null) {
+      return;
+    }
+
+    final String trimmedName = result.trim();
+    if (trimmedName.isEmpty) {
+      ToastUtil.show('歌单名称不能为空');
+      return;
+    }
+
+    if (trimmedName == collection.name.trim()) {
+      return;
+    }
+
+    final bool renamed = await ref
+        .read(favoritesControllerProvider.notifier)
+        .renameCollection(collectionId: collection.id, name: trimmedName);
+    if (!context.mounted) {
+      return;
+    }
+
+    ToastUtil.show(renamed ? '已重命名歌单' : '歌单名称已存在');
+  }
+
+  Future<void> _showDeleteCollectionDialog(
+    BuildContext context,
+    WidgetRef ref,
+    FavoriteCollection collection,
+  ) async {
+    final bool? confirmed = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('删除歌单'),
+          content: Text('确认删除“${collection.name}”？删除后无法恢复。'),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('取消'),
+            ),
+            FilledButton(
+              style: FilledButton.styleFrom(
+                backgroundColor: Theme.of(context).colorScheme.error,
+                foregroundColor: Theme.of(context).colorScheme.onError,
+              ),
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text('删除'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmed != true) {
+      return;
+    }
+
+    final bool deleted = await ref
+        .read(favoritesControllerProvider.notifier)
+        .deleteCollection(collection.id);
+    if (!context.mounted) {
+      return;
+    }
+
+    ToastUtil.show(deleted ? '已删除歌单' : '删除失败');
+  }
 }
+
+enum _CollectionAction { rename, delete }
 
 class _SidebarAccountHeader extends ConsumerWidget {
   const _SidebarAccountHeader();
@@ -250,7 +412,7 @@ class _SidebarAccountHeader extends ConsumerWidget {
                       size: 19,
                     ),
                   ),
-                )
+                ),
             ],
           ),
         ),
@@ -377,6 +539,7 @@ class _SidebarListItem extends StatelessWidget {
     required this.count,
     required this.isSelected,
     required this.onTap,
+    this.onSecondaryTapDown,
     this.padding = const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
     this.showZeroCount = true,
   });
@@ -386,6 +549,7 @@ class _SidebarListItem extends StatelessWidget {
   final int count;
   final bool isSelected;
   final VoidCallback onTap;
+  final GestureTapDownCallback? onSecondaryTapDown;
   final EdgeInsetsGeometry padding;
   final bool showZeroCount;
 
@@ -396,7 +560,7 @@ class _SidebarListItem extends StatelessWidget {
     final Color foregroundColor = isSelected
         ? colorScheme.onSurface
         : colorScheme.onSurfaceVariant;
-    final String label = showZeroCount || count > 0 ? '$title:$count' : title;
+    final String label = showZeroCount || count > 0 ? '$title·$count' : title;
 
     return Material(
       color: isSelected
@@ -406,6 +570,7 @@ class _SidebarListItem extends StatelessWidget {
       child: InkWell(
         borderRadius: BorderRadius.circular(10),
         onTap: onTap,
+        onSecondaryTapDown: onSecondaryTapDown,
         child: Padding(
           padding: padding,
           child: Row(
@@ -534,7 +699,17 @@ class _EmptyCollectionHint extends StatelessWidget {
 }
 
 class _CollectionNameDialog extends StatefulWidget {
-  const _CollectionNameDialog();
+  const _CollectionNameDialog({
+    this.title = '新建歌单',
+    this.hintText = '例如：深夜循环',
+    this.confirmText = '创建',
+    this.initialValue = '',
+  });
+
+  final String title;
+  final String hintText;
+  final String confirmText;
+  final String initialValue;
 
   @override
   State<_CollectionNameDialog> createState() => _CollectionNameDialogState();
@@ -546,7 +721,7 @@ class _CollectionNameDialogState extends State<_CollectionNameDialog> {
   @override
   void initState() {
     super.initState();
-    _controller = TextEditingController();
+    _controller = TextEditingController(text: widget.initialValue);
   }
 
   @override
@@ -558,12 +733,12 @@ class _CollectionNameDialogState extends State<_CollectionNameDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('新建歌单'),
+      title: Text(widget.title),
       content: TextField(
         controller: _controller,
         maxLength: 24,
         autofocus: true,
-        decoration: const InputDecoration(hintText: '例如：深夜循环'),
+        decoration: InputDecoration(hintText: widget.hintText),
         onSubmitted: (String value) {
           Navigator.of(context).pop(value);
         },
@@ -575,7 +750,7 @@ class _CollectionNameDialogState extends State<_CollectionNameDialog> {
         ),
         FilledButton(
           onPressed: () => Navigator.of(context).pop(_controller.text),
-          child: const Text('创建'),
+          child: Text(widget.confirmText),
         ),
       ],
     );
