@@ -1,3 +1,4 @@
+import 'package:bilimusic/core/theme/desktop_chinese_font.dart';
 import 'package:bilimusic/core/theme/theme_catalog.dart';
 import 'package:chinese_font_library/chinese_font_library.dart';
 import 'package:flutter/material.dart';
@@ -14,7 +15,7 @@ final class AppTheme {
 
     return ThemeData(
       useMaterial3: true,
-      textTheme: TextTheme().useSystemChineseFont(Brightness.light),
+      textTheme: _textTheme(Brightness.light),
       colorScheme: colorScheme,
       scaffoldBackgroundColor: definition.lightScaffoldBackgroundColor,
       appBarTheme: AppBarTheme(
@@ -48,8 +49,7 @@ final class AppTheme {
 
     return ThemeData(
       useMaterial3: true,
-      // fontFamily: _getFontFamily(),
-      textTheme: TextTheme().useSystemChineseFont(Brightness.dark),
+      textTheme: _textTheme(Brightness.dark),
       colorScheme: colorScheme,
       scaffoldBackgroundColor: definition.darkScaffoldBackgroundColor,
       appBarTheme: AppBarTheme(
@@ -72,5 +72,21 @@ final class AppTheme {
         ),
       ),
     );
+  }
+
+  static const List<String> _fontFamilyFallback = <String>[
+    DesktopChineseFont.fontFamily,
+    'Noto Sans CJK SC',
+    'Noto Sans SC',
+    'Source Han Sans SC',
+    'WenQuanYi Micro Hei',
+    'Microsoft YaHei',
+    'sans-serif',
+  ];
+
+  static TextTheme _textTheme(Brightness brightness) {
+    return TextTheme()
+        .useSystemChineseFont(brightness)
+        .apply(fontFamilyFallback: _fontFamilyFallback);
   }
 }
