@@ -1,7 +1,7 @@
 #define MyAppName "bilimusic"
 #define MyAppExeName "bilimusic.exe"
 #define MyAppVersion GetEnv("APP_VERSION")
-#define MyAppPublisher "bilimusic"
+#define MyAppPublisher "Aprdec"
 
 [Setup]
 AppId=bilimusic
