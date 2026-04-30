@@ -109,3 +109,43 @@ jobs:
             build/artifacts/bili-music-*.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  build-windows:
+    name: Build Windows Installer
+    runs-on: windows-latest
+    needs:
+      - release
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: "beta"
+          flutter-version: "3.43.0-0.2.pre"
+          cache: true
+
+      - name: Flutter Pub Get
+        run: flutter pub get
+
+      - name: Build Windows
+        run: flutter build windows --release
+
+      - name: Setup Inno Setup
+        run: choco install innosetup --no-progress -y
+
+      - name: Build Windows Installer
+        shell: pwsh
+        run: |
+          $env:APP_VERSION = "${{ github.ref_name }}"
+          iscc scripts/bilimusic.iss
+
+      - name: Upload Windows release asset
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          files: build/artifacts/bilimusic-*-windows-setup.exe
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
