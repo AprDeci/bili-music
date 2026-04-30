@@ -1,23 +1,23 @@
 import 'dart:typed_data';
 
-import 'package:bilimusic/feature/setting/data/favorites_transfer_repository.dart';
-import 'package:bilimusic/feature/setting/domain/favorites_import_preview.dart';
+import 'package:bilimusic/feature/setting/data/app_transfer_repository.dart';
+import 'package:bilimusic/feature/setting/domain/app_import_preview.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-part 'favorites_transfer_controller.g.dart';
+part 'app_transfer_controller.g.dart';
 
 @riverpod
-FavoritesTransferController favoritesTransferController(Ref ref) {
-  return FavoritesTransferController(
-    repository: ref.read(favoritesTransferRepositoryProvider),
+AppTransferController appTransferController(Ref ref) {
+  return AppTransferController(
+    repository: ref.read(appTransferRepositoryProvider),
   );
 }
 
-class FavoritesTransferController {
-  FavoritesTransferController({required FavoritesTransferRepository repository})
+class AppTransferController {
+  AppTransferController({required AppTransferRepository repository})
     : _repository = repository;
 
-  final FavoritesTransferRepository _repository;
+  final AppTransferRepository _repository;
 
   Future<String> buildExportJson() {
     return _repository.buildExportJson();
@@ -27,7 +27,7 @@ class FavoritesTransferController {
     return _repository.saveExportToPath(json: json, path: path);
   }
 
-  Future<FavoritesImportPreview> previewImport(Uint8List bytes) {
+  Future<AppImportPreview> previewImport(Uint8List bytes) {
     return _repository.previewImport(bytes);
   }
 
@@ -35,11 +35,13 @@ class FavoritesTransferController {
     required Uint8List bytes,
     required bool importLikedCollection,
     required Set<String> selectedCollectionIds,
+    required bool importSettings,
   }) async {
     return _repository.importBytes(
       bytes: bytes,
       importLikedCollection: importLikedCollection,
       selectedCollectionIds: selectedCollectionIds,
+      importSettings: importSettings,
     );
   }
 }

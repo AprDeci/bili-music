@@ -2,12 +2,15 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:bilimusic/core/hive/hive_adapters.dart';
+import 'package:bilimusic/core/hive/hive_keys.dart';
+import 'package:bilimusic/core/settings/app_settings_store.dart';
 import 'package:bilimusic/feature/favorites/data/favorites_local_repository.dart';
 import 'package:bilimusic/feature/favorites/domain/favorite_collection.dart';
 import 'package:bilimusic/feature/favorites/domain/favorite_entry.dart';
 import 'package:bilimusic/feature/favorites/domain/favorite_membership.dart';
 import 'package:bilimusic/feature/favorites/domain/favorites_state.dart';
-import 'package:bilimusic/feature/setting/data/favorites_transfer_repository.dart';
+import 'package:bilimusic/feature/setting/data/app_transfer_repository.dart';
+import 'package:bilimusic/feature/setting/domain/app_transfer_bundle.dart';
 import 'package:bilimusic/feature/setting/domain/favorites_transfer_bundle.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hive_ce/hive.dart';
@@ -17,13 +20,12 @@ void main() {
   late Box<FavoriteCollection> collectionsBox;
   late Box<FavoriteEntry> entriesBox;
   late Box<FavoriteMembership> membershipsBox;
+  late Box<String> prefsBox;
   late FavoritesLocalRepository favoritesRepository;
-  late FavoritesTransferRepository transferRepository;
+  late AppTransferRepository transferRepository;
 
   setUp(() async {
-    tempDirectory = await Directory.systemTemp.createTemp(
-      'favorites-transfer-test-',
-    );
+    tempDirectory = await Directory.systemTemp.createTemp('app-transfer-test-');
     Hive.init(tempDirectory.path);
     if (!Hive.isAdapterRegistered(1)) {
       Hive.registerAdapter(FavoriteCollectionAdapter());
@@ -42,13 +44,15 @@ void main() {
     membershipsBox = await Hive.openBox<FavoriteMembership>(
       favoriteMembershipsBoxName,
     );
+    prefsBox = await Hive.openBox<String>(HiveBoxNames.prefs);
     favoritesRepository = FavoritesLocalRepository(
       collectionsBox: collectionsBox,
       entriesBox: entriesBox,
       membershipsBox: membershipsBox,
     );
-    transferRepository = FavoritesTransferRepository(
+    transferRepository = AppTransferRepository(
       favoritesRepository: favoritesRepository,
+      settingsStore: AppSettingsStore(prefsBox),
     );
     await favoritesRepository.initialize();
   });
@@ -57,9 +61,11 @@ void main() {
     await collectionsBox.close();
     await entriesBox.close();
     await membershipsBox.close();
+    await prefsBox.close();
     await Hive.deleteBoxFromDisk(favoriteCollectionsBoxName);
     await Hive.deleteBoxFromDisk(favoriteEntriesBoxName);
     await Hive.deleteBoxFromDisk(favoriteMembershipsBoxName);
+    await Hive.deleteBoxFromDisk(HiveBoxNames.prefs);
     await Hive.close();
     await tempDirectory.delete(recursive: true);
   });
@@ -110,9 +116,10 @@ void main() {
     );
 
     final String exported = await transferRepository.buildExportJson();
-    final FavoritesTransferBundle bundle = FavoritesTransferBundle.fromJson(
+    final AppTransferBundle appBundle = AppTransferBundle.fromJson(
       jsonDecode(exported) as Map<String, dynamic>,
     );
+    final FavoritesTransferBundle bundle = appBundle.favorites;
 
     expect(
       bundle.collections.map((FavoriteCollection item) => item.id),
@@ -214,6 +221,7 @@ void main() {
         bytes: utf8.encode(jsonEncode(bundle.toJson())),
         importLikedCollection: true,
         selectedCollectionIds: <String>{importedCustom.id},
+        importSettings: false,
       );
 
       final FavoritesState result = favoritesRepository.loadState();

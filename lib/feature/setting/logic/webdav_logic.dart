@@ -2,9 +2,9 @@ import 'dart:typed_data';
 
 import 'package:bilimusic/feature/favorites/logic/favorites_controller.dart';
 import 'package:bilimusic/feature/setting/data/webdav_repository.dart';
-import 'package:bilimusic/feature/setting/domain/favorites_import_preview.dart';
+import 'package:bilimusic/feature/setting/domain/app_import_preview.dart';
 import 'package:bilimusic/feature/setting/domain/webdav_config.dart';
-import 'package:bilimusic/feature/setting/logic/favorites_transfer_controller.dart';
+import 'package:bilimusic/feature/setting/logic/app_transfer_controller.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'webdav_logic.g.dart';
@@ -13,7 +13,7 @@ part 'webdav_logic.g.dart';
 WebDavLogic webDavLogic(Ref ref) {
   return WebDavLogic(
     repository: ref.read(webDavRepositoryProvider),
-    favoritesTransferController: ref.read(favoritesTransferControllerProvider),
+    appTransferController: ref.read(appTransferControllerProvider),
     favoritesController: ref.read(favoritesControllerProvider.notifier),
   );
 }
@@ -21,14 +21,14 @@ WebDavLogic webDavLogic(Ref ref) {
 class WebDavLogic {
   WebDavLogic({
     required WebDavRepository repository,
-    required FavoritesTransferController favoritesTransferController,
+    required AppTransferController appTransferController,
     required FavoritesController favoritesController,
   }) : _repository = repository,
-       _favoritesTransferController = favoritesTransferController,
+       _appTransferController = appTransferController,
        _favoritesController = favoritesController;
 
   final WebDavRepository _repository;
-  final FavoritesTransferController _favoritesTransferController;
+  final AppTransferController _appTransferController;
   final FavoritesController _favoritesController;
 
   WebDavConfig loadConfig() {
@@ -48,27 +48,27 @@ class WebDavLogic {
   }
 
   Future<void> uploadCurrentFavoritesBackup() async {
-    final String json = await _favoritesTransferController.buildExportJson();
+    final String json = await _appTransferController.buildExportJson();
     await _repository.uploadFavoritesBackup(json, _buildBackupFileName());
   }
 
-  Future<FavoritesImportPreview> downloadBackupPreview(
-    String remotePath,
-  ) async {
+  Future<AppImportPreview> downloadBackupPreview(String remotePath) async {
     final Uint8List bytes = await _repository.downloadBackupBytes(remotePath);
-    return _favoritesTransferController.previewImport(bytes);
+    return _appTransferController.previewImport(bytes);
   }
 
   Future<void> importBackup({
     required String remotePath,
     required bool importLikedCollection,
     required Set<String> selectedCollectionIds,
+    required bool importSettings,
   }) async {
     final Uint8List bytes = await _repository.downloadBackupBytes(remotePath);
-    await _favoritesTransferController.importBytes(
+    await _appTransferController.importBytes(
       bytes: bytes,
       importLikedCollection: importLikedCollection,
       selectedCollectionIds: selectedCollectionIds,
+      importSettings: importSettings,
     );
     await _favoritesController.reload();
   }
@@ -85,6 +85,6 @@ class WebDavLogic {
     final String hh = now.hour.toString().padLeft(2, '0');
     final String min = now.minute.toString().padLeft(2, '0');
     final String ss = now.second.toString().padLeft(2, '0');
-    return 'bilimusic-favorites-v1-$yyyy$mm$dd-$hh$min$ss.json';
+    return 'bilimusic-backup-$yyyy$mm$dd-$hh$min$ss.json';
   }
 }

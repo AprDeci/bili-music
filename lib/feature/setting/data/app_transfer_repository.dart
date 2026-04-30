@@ -2,32 +2,64 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:bilimusic/core/hive/hive_keys.dart';
+import 'package:bilimusic/core/settings/app_settings_store.dart';
 import 'package:bilimusic/feature/favorites/data/favorites_local_repository.dart';
 import 'package:bilimusic/feature/favorites/domain/favorite_collection.dart';
 import 'package:bilimusic/feature/favorites/domain/favorite_entry.dart';
 import 'package:bilimusic/feature/favorites/domain/favorite_membership.dart';
 import 'package:bilimusic/feature/favorites/domain/favorites_state.dart';
-import 'package:bilimusic/feature/setting/domain/favorites_import_preview.dart';
+import 'package:bilimusic/feature/setting/domain/app_transfer_bundle.dart';
+import 'package:bilimusic/feature/setting/domain/app_import_preview.dart';
 import 'package:bilimusic/feature/setting/domain/favorites_transfer_bundle.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-part 'favorites_transfer_repository.g.dart';
+part 'app_transfer_repository.g.dart';
 
 @riverpod
-FavoritesTransferRepository favoritesTransferRepository(Ref ref) {
-  return FavoritesTransferRepository(
+AppTransferRepository appTransferRepository(Ref ref) {
+  return AppTransferRepository(
     favoritesRepository: ref.read(favoritesLocalRepositoryProvider),
+    settingsStore: ref.read(appSettingsStoreProvider),
   );
 }
 
-class FavoritesTransferRepository {
-  FavoritesTransferRepository({required this._favoritesRepository});
+class AppTransferRepository {
+  AppTransferRepository({
+    required FavoritesLocalRepository favoritesRepository,
+    required AppSettingsStore settingsStore,
+  }) : _favoritesRepository = favoritesRepository,
+       _settingsStore = settingsStore;
 
   final FavoritesLocalRepository _favoritesRepository;
+  final AppSettingsStore _settingsStore;
+
+  static const List<_TransferSettingKey> _settingKeys = <_TransferSettingKey>[
+    _TransferSettingKey(key: HiveKeys.themeMode, defaultValue: ''),
+    _TransferSettingKey(key: HiveKeys.themeVariant, defaultValue: ''),
+    _TransferSettingKey(key: HiveKeys.lightThemeVariant, defaultValue: ''),
+    _TransferSettingKey(
+      key: HiveKeys.appearanceUseGlassBar,
+      defaultValue: 'true',
+    ),
+    _TransferSettingKey(
+      key: HiveKeys.playerAllowMixWithOthers,
+      defaultValue: 'false',
+    ),
+    _TransferSettingKey(
+      key: HiveKeys.playerAudioQualityPreference,
+      defaultValue: 'auto',
+    ),
+    _TransferSettingKey(key: HiveKeys.metingBaseUrl, defaultValue: ''),
+  ];
 
   Future<String> buildExportJson() async {
     final FavoritesState state = _favoritesRepository.loadState();
-    final FavoritesTransferBundle bundle = _buildExportBundle(state);
+    final AppTransferBundle bundle = AppTransferBundle(
+      exportedAt: DateTime.now().toUtc(),
+      favorites: _buildExportBundle(state),
+      settings: _readExportedSettings(),
+    );
     return const JsonEncoder.withIndent('  ').convert(bundle.toJson());
   }
 
@@ -40,8 +72,9 @@ class FavoritesTransferRepository {
     await file.writeAsString(json, flush: true);
   }
 
-  Future<FavoritesImportPreview> previewImport(Uint8List bytes) async {
-    final FavoritesState importedState = _parseBytes(bytes);
+  Future<AppImportPreview> previewImport(Uint8List bytes) async {
+    final _ParsedTransfer parsed = _parseBytes(bytes);
+    final FavoritesState importedState = parsed.favoritesState;
     final FavoritesState localState = _favoritesRepository.loadState();
     final Set<String> localNames = localState.collections
         .where((FavoriteCollection collection) => !collection.isLikedCollection)
@@ -52,13 +85,13 @@ class FavoritesTransferRepository {
         .where((String name) => name.isNotEmpty)
         .toSet();
 
-    final List<FavoritesImportCollectionPreview> collections = importedState
+    final List<AppImportCollectionPreview> collections = importedState
         .collections
         .map((FavoriteCollection collection) {
           final bool hasNameConflict =
               !collection.isLikedCollection &&
               localNames.contains(_normalizeCollectionName(collection.name));
-          return FavoritesImportCollectionPreview(
+          return AppImportCollectionPreview(
             sourceCollectionId: collection.id,
             name: collection.name,
             isLikedCollection: collection.isLikedCollection,
@@ -68,7 +101,7 @@ class FavoritesTransferRepository {
         })
         .toList(growable: false);
 
-    return FavoritesImportPreview(
+    return AppImportPreview(
       hasLikedCollection: importedState.hasCollection(
         FavoriteCollection.likedCollectionId,
       ),
@@ -81,13 +114,14 @@ class FavoritesTransferRepository {
           )
           .length,
       totalEntryCount: importedState.entries.length,
+      hasSettings: parsed.settings.isNotEmpty,
       collections: collections,
       conflictingCollectionNames: collections
           .where(
-            (FavoritesImportCollectionPreview collection) =>
+            (AppImportCollectionPreview collection) =>
                 collection.hasNameConflict,
           )
-          .map((FavoritesImportCollectionPreview collection) => collection.name)
+          .map((AppImportCollectionPreview collection) => collection.name)
           .toSet(),
     );
   }
@@ -96,8 +130,10 @@ class FavoritesTransferRepository {
     required Uint8List bytes,
     required bool importLikedCollection,
     required Set<String> selectedCollectionIds,
+    required bool importSettings,
   }) async {
-    final FavoritesState importedState = _parseBytes(bytes);
+    final _ParsedTransfer parsed = _parseBytes(bytes);
+    final FavoritesState importedState = parsed.favoritesState;
     final FavoritesState currentState = _favoritesRepository.loadState();
     final FavoritesState nextState = _applyImport(
       currentState: currentState,
@@ -106,6 +142,9 @@ class FavoritesTransferRepository {
       selectedCollectionIds: selectedCollectionIds,
     );
     await _favoritesRepository.replaceAll(nextState);
+    if (importSettings && parsed.settings.isNotEmpty) {
+      await _applyImportedSettings(parsed.settings);
+    }
   }
 
   FavoritesTransferBundle _buildExportBundle(FavoritesState state) {
@@ -154,21 +193,63 @@ class FavoritesTransferRepository {
     );
   }
 
-  FavoritesState _parseBytes(Uint8List bytes) {
+  _ParsedTransfer _parseBytes(Uint8List bytes) {
     final String raw = utf8.decode(bytes, allowMalformed: false);
     final Object? decoded = jsonDecode(raw);
     if (decoded is! Map<String, dynamic>) {
-      throw const FavoritesTransferException('导入文件格式不正确。');
+      throw const AppTransferException('导入文件格式不正确。');
+    }
+
+    if (decoded.containsKey('favorites')) {
+      final AppTransferBundle bundle = AppTransferBundle.fromJson(decoded);
+      if (bundle.schemaVersion != 2) {
+        throw AppTransferException('暂不支持版本 ${bundle.schemaVersion} 的导入文件。');
+      }
+
+      return _ParsedTransfer(
+        favoritesState: _sanitizeImportedState(bundle.favorites),
+        settings: _sanitizeImportedSettings(bundle.settings),
+      );
     }
 
     final FavoritesTransferBundle bundle = FavoritesTransferBundle.fromJson(
       decoded,
     );
     if (bundle.schemaVersion != 1) {
-      throw FavoritesTransferException('暂不支持版本 ${bundle.schemaVersion} 的导入文件。');
+      throw AppTransferException('暂不支持版本 ${bundle.schemaVersion} 的导入文件。');
     }
 
-    return _sanitizeImportedState(bundle);
+    return _ParsedTransfer(
+      favoritesState: _sanitizeImportedState(bundle),
+      settings: const <String, String>{},
+    );
+  }
+
+  Map<String, String> _readExportedSettings() {
+    return <String, String>{
+      for (final _TransferSettingKey item in _settingKeys)
+        item.key: _settingsStore.readString(
+          item.key,
+          defaultValue: item.defaultValue,
+        ),
+    };
+  }
+
+  Map<String, String> _sanitizeImportedSettings(Map<String, String> settings) {
+    final Set<String> allowedKeys = _settingKeys
+        .map((_TransferSettingKey item) => item.key)
+        .toSet();
+    return <String, String>{
+      for (final MapEntry<String, String> entry in settings.entries)
+        if (allowedKeys.contains(entry.key)) entry.key: entry.value,
+    };
+  }
+
+  Future<void> _applyImportedSettings(Map<String, String> settings) async {
+    await Future.wait(<Future<void>>[
+      for (final MapEntry<String, String> entry in settings.entries)
+        _settingsStore.writeString(entry.key, entry.value),
+    ]);
   }
 
   FavoritesState _sanitizeImportedState(FavoritesTransferBundle bundle) {
@@ -504,8 +585,22 @@ class _MutableFavorites {
   }
 }
 
-class FavoritesTransferException implements Exception {
-  const FavoritesTransferException(this.message);
+class _TransferSettingKey {
+  const _TransferSettingKey({required this.key, required this.defaultValue});
+
+  final String key;
+  final String defaultValue;
+}
+
+class _ParsedTransfer {
+  const _ParsedTransfer({required this.favoritesState, required this.settings});
+
+  final FavoritesState favoritesState;
+  final Map<String, String> settings;
+}
+
+class AppTransferException implements Exception {
+  const AppTransferException(this.message);
 
   final String message;
 

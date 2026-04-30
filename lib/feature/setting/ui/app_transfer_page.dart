@@ -4,25 +4,29 @@ import 'dart:typed_data';
 import 'package:bilimusic/common/util/format_util.dart';
 import 'package:bilimusic/common/util/toast_util.dart';
 import 'package:bilimusic/common/components/url_text_input.dart';
+import 'package:bilimusic/core/theme/theme_logic.dart';
 import 'package:bilimusic/feature/favorites/logic/favorites_controller.dart';
+import 'package:bilimusic/feature/meting/logic/meting_settings_logic.dart';
+import 'package:bilimusic/feature/player/logic/player_audio_quality_preference_logic.dart';
+import 'package:bilimusic/feature/player/logic/player_settings_logic.dart';
 import 'package:bilimusic/feature/setting/data/webdav_repository.dart';
-import 'package:bilimusic/feature/setting/domain/favorites_import_preview.dart';
+import 'package:bilimusic/feature/setting/domain/app_import_preview.dart';
 import 'package:bilimusic/feature/setting/domain/webdav_config.dart';
-import 'package:bilimusic/feature/setting/logic/favorites_transfer_controller.dart';
+import 'package:bilimusic/feature/setting/logic/appearance_setting_logic.dart';
+import 'package:bilimusic/feature/setting/logic/app_transfer_controller.dart';
 import 'package:bilimusic/feature/setting/logic/webdav_logic.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class FavoritesTransferPage extends ConsumerStatefulWidget {
-  const FavoritesTransferPage({super.key});
+class AppTransferPage extends ConsumerStatefulWidget {
+  const AppTransferPage({super.key});
 
   @override
-  ConsumerState<FavoritesTransferPage> createState() =>
-      _FavoritesTransferPageState();
+  ConsumerState<AppTransferPage> createState() => _AppTransferPageState();
 }
 
-class _FavoritesTransferPageState extends ConsumerState<FavoritesTransferPage> {
+class _AppTransferPageState extends ConsumerState<AppTransferPage> {
   bool _isExporting = false;
   bool _isImporting = false;
   bool _isTestingWebDav = false;
@@ -53,7 +57,7 @@ class _FavoritesTransferPageState extends ConsumerState<FavoritesTransferPage> {
     final ThemeData theme = Theme.of(context);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('收藏导入导出')),
+      appBar: AppBar(title: const Text('数据导入导出')),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
         children: <Widget>[
@@ -147,10 +151,10 @@ class _FavoritesTransferPageState extends ConsumerState<FavoritesTransferPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
-                  Text('导出收藏', style: theme.textTheme.titleMedium),
+                  Text('导出数据', style: theme.textTheme.titleMedium),
                   const SizedBox(height: 8),
                   Text(
-                    '导出范围包括“我喜欢”、自建歌单及其包含的歌曲，可导出为本地 JSON 或上传到 WebDAV。',
+                    '导出范围包括收藏、主题、播放器与歌词服务设置，可导出为本地 JSON 或上传到 WebDAV。',
                     style: theme.textTheme.bodyMedium,
                   ),
                   const SizedBox(height: 16),
@@ -200,10 +204,10 @@ class _FavoritesTransferPageState extends ConsumerState<FavoritesTransferPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
-                  Text('导入收藏', style: theme.textTheme.titleMedium),
+                  Text('导入数据', style: theme.textTheme.titleMedium),
                   const SizedBox(height: 8),
                   Text(
-                    '支持按歌单导入、覆盖同名歌单或覆盖全部本地收藏。默认会合并“我喜欢”，同名自建歌单默认新建副本。',
+                    '支持按歌单导入收藏。新备份可选择是否同时导入应用设置。',
                     style: theme.textTheme.bodyMedium,
                   ),
                   const SizedBox(height: 16),
@@ -270,8 +274,8 @@ class _FavoritesTransferPageState extends ConsumerState<FavoritesTransferPage> {
         return;
       }
 
-      final FavoritesTransferController controller = ref.read(
-        favoritesTransferControllerProvider,
+      final AppTransferController controller = ref.read(
+        appTransferControllerProvider,
       );
       final String json = await controller.buildExportJson();
       final String fileName = _buildExportFileName();
@@ -320,12 +324,10 @@ class _FavoritesTransferPageState extends ConsumerState<FavoritesTransferPage> {
         throw const _TransferUiException('读取导入文件失败。');
       }
 
-      final FavoritesTransferController controller = ref.read(
-        favoritesTransferControllerProvider,
+      final AppTransferController controller = ref.read(
+        appTransferControllerProvider,
       );
-      final FavoritesImportPreview preview = await controller.previewImport(
-        bytes,
-      );
+      final AppImportPreview preview = await controller.previewImport(bytes);
       if (!mounted) {
         return;
       }
@@ -344,14 +346,16 @@ class _FavoritesTransferPageState extends ConsumerState<FavoritesTransferPage> {
         bytes: bytes,
         importLikedCollection: decision.importLikedCollection,
         selectedCollectionIds: decision.selectedCollectionIds,
+        importSettings: decision.importSettings,
       );
 
       await ref.read(favoritesControllerProvider.notifier).reload();
+      _refreshImportedSettings(decision);
 
       if (!mounted) {
         return;
       }
-      ToastUtil.show('收藏导入完成');
+      ToastUtil.show('数据导入完成');
     } on Object catch (error) {
       if (!mounted) {
         return;
@@ -512,7 +516,7 @@ class _FavoritesTransferPageState extends ConsumerState<FavoritesTransferPage> {
     });
 
     try {
-      final FavoritesImportPreview preview = await ref
+      final AppImportPreview preview = await ref
           .read(webDavLogicProvider)
           .downloadBackupPreview(item.remotePath);
       if (!mounted) {
@@ -535,12 +539,14 @@ class _FavoritesTransferPageState extends ConsumerState<FavoritesTransferPage> {
             remotePath: item.remotePath,
             importLikedCollection: decision.importLikedCollection,
             selectedCollectionIds: decision.selectedCollectionIds,
+            importSettings: decision.importSettings,
           );
 
       if (!mounted) {
         return;
       }
-      ToastUtil.show('WebDAV 收藏导入完成');
+      _refreshImportedSettings(decision);
+      ToastUtil.show('WebDAV 数据导入完成');
     } on Object catch (error) {
       if (!mounted) {
         return;
@@ -571,7 +577,18 @@ class _FavoritesTransferPageState extends ConsumerState<FavoritesTransferPage> {
     final String hh = now.hour.toString().padLeft(2, '0');
     final String min = now.minute.toString().padLeft(2, '0');
     final String ss = now.second.toString().padLeft(2, '0');
-    return 'bilimusic-favorites-$yyyy$mm$dd-$hh$min$ss.json';
+    return 'bilimusic-backup-$yyyy$mm$dd-$hh$min$ss.json';
+  }
+
+  void _refreshImportedSettings(_ImportDecision decision) {
+    if (!decision.importSettings) {
+      return;
+    }
+    ref.invalidate(themeLogicProvider);
+    ref.invalidate(appearanceSettingLogicProvider);
+    ref.invalidate(playerSettingsLogicProvider);
+    ref.invalidate(playerAudioQualityPreferenceLogicProvider);
+    ref.invalidate(metingSettingsLogicProvider);
   }
 }
 
@@ -783,7 +800,7 @@ class _RemoteImportDialogState extends ConsumerState<_RemoteImportDialog> {
 class _ImportConfigDialog extends StatefulWidget {
   const _ImportConfigDialog({required this.preview});
 
-  final FavoritesImportPreview preview;
+  final AppImportPreview preview;
 
   @override
   State<_ImportConfigDialog> createState() => _ImportConfigDialogState();
@@ -791,19 +808,21 @@ class _ImportConfigDialog extends StatefulWidget {
 
 class _ImportConfigDialogState extends State<_ImportConfigDialog> {
   late bool _importLikedCollection;
+  late bool _importSettings;
   late Set<String> _selectedCollectionIds;
 
   @override
   void initState() {
     super.initState();
     _importLikedCollection = widget.preview.likedItemCount > 0;
+    _importSettings = widget.preview.hasSettings;
     _selectedCollectionIds = widget.preview.collections
         .where(
-          (FavoritesImportCollectionPreview collection) =>
+          (AppImportCollectionPreview collection) =>
               !collection.isLikedCollection,
         )
         .map(
-          (FavoritesImportCollectionPreview collection) =>
+          (AppImportCollectionPreview collection) =>
               collection.sourceCollectionId,
         )
         .toSet();
@@ -814,7 +833,7 @@ class _ImportConfigDialogState extends State<_ImportConfigDialog> {
     final ThemeData theme = Theme.of(context);
 
     return AlertDialog(
-      title: const Text('导入收藏'),
+      title: const Text('导入数据'),
       content: SizedBox(
         width: 420,
         child: SingleChildScrollView(
@@ -839,6 +858,20 @@ class _ImportConfigDialogState extends State<_ImportConfigDialog> {
                 ),
               ],
               const SizedBox(height: 16),
+              if (widget.preview.hasSettings) ...<Widget>[
+                CheckboxListTile(
+                  contentPadding: EdgeInsets.zero,
+                  value: _importSettings,
+                  title: const Text('导入应用设置'),
+                  subtitle: const Text('主题、外观、播放器与歌词服务设置'),
+                  onChanged: (bool? value) {
+                    setState(() {
+                      _importSettings = value ?? false;
+                    });
+                  },
+                ),
+                const SizedBox(height: 12),
+              ],
               if (widget.preview.likedItemCount > 0) ...<Widget>[
                 const SizedBox(height: 12),
                 CheckboxListTile(
@@ -860,10 +893,10 @@ class _ImportConfigDialogState extends State<_ImportConfigDialog> {
               const SizedBox(height: 4),
               ...widget.preview.collections
                   .where(
-                    (FavoritesImportCollectionPreview collection) =>
+                    (AppImportCollectionPreview collection) =>
                         !collection.isLikedCollection,
                   )
-                  .map((FavoritesImportCollectionPreview collection) {
+                  .map((AppImportCollectionPreview collection) {
                     final bool selected = _selectedCollectionIds.contains(
                       collection.sourceCollectionId,
                     );
@@ -905,6 +938,7 @@ class _ImportConfigDialogState extends State<_ImportConfigDialog> {
                     _ImportDecision(
                       importLikedCollection: _importLikedCollection,
                       selectedCollectionIds: _selectedCollectionIds,
+                      importSettings: _importSettings,
                     ),
                   );
                 }
@@ -919,7 +953,7 @@ class _ImportConfigDialogState extends State<_ImportConfigDialog> {
     if (_importLikedCollection) {
       return true;
     }
-    return _selectedCollectionIds.isNotEmpty;
+    return _selectedCollectionIds.isNotEmpty || _importSettings;
   }
 }
 
@@ -927,10 +961,12 @@ class _ImportDecision {
   const _ImportDecision({
     required this.importLikedCollection,
     required this.selectedCollectionIds,
+    required this.importSettings,
   });
 
   final bool importLikedCollection;
   final Set<String> selectedCollectionIds;
+  final bool importSettings;
 }
 
 class _TransferUiException implements Exception {
