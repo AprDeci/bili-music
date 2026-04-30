@@ -60,16 +60,8 @@ class ThemeSettingsPage extends ConsumerWidget {
           Card(
             margin: EdgeInsets.zero,
             clipBehavior: Clip.antiAlias,
-            child: Column(
-              children: themeCatalog
-                  .map((ThemeDefinition definition) {
-                    return RadioListTile<String>(
-                      value: definition.id,
-                      groupValue: themeState.themeVariantId,
-                      title: Text(definition.label),
-                      subtitle: Text(definition.description),
-                      secondary: _ThemePreviewDot(color: definition.seedColor),
-                      onChanged: (String? value) {
+            child: RadioGroup(
+              onChanged: (String? value) {
                         if (value == null) {
                           return;
                         }
@@ -77,9 +69,21 @@ class ThemeSettingsPage extends ConsumerWidget {
                             .read(themeLogicProvider.notifier)
                             .setThemeVariant(value);
                       },
+              groupValue: themeState.themeVariantId,
+              child: Column(
+                children: themeCatalog
+                    .map((ThemeDefinition definition) {
+                      return RadioListTile<String>(
+                        value: definition.id,
+                        title: Text(definition.label),
+                        subtitle: Text(definition.description),
+                        secondary: _ThemePreviewDot(
+                          color: definition.seedColor,
+                        ),
                     );
                   })
-                  .toList(growable: false),
+                    .toList(growable: false),
+              ),
             ),
           ),
         ],

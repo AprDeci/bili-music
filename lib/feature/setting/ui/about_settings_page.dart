@@ -16,8 +16,8 @@ class AboutSettingsPage extends StatelessWidget {
       appBar: AppBar(title: const Text('关于')),
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
+        child: ListView(
+          // crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             const AboutHero(),
             const SizedBox(height: 24),
