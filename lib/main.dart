@@ -16,6 +16,7 @@ import 'package:flutter_smart_dialog/flutter_smart_dialog.dart';
 import 'package:hive_ce/hive.dart';
 import 'package:just_audio_media_kit/just_audio_media_kit.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
+import 'package:tray_manager/tray_manager.dart';
 import 'package:window_manager/window_manager.dart';
 
 Future<void> bootstrap() async {
@@ -35,6 +36,20 @@ Future<void> bootstrap() async {
   );
 
   if (PlatformUtil.isDesktop) {
+    await trayManager.setIcon(
+      PlatformUtil.isWindows
+          ? 'assets/icons/tray_icon.ico'
+          : 'assets/images/tray_icon.png',
+    );
+    Menu menu = Menu(
+      items: [
+        MenuItem(key: 'show_window', label: 'Show Window'),
+        MenuItem.separator(),
+        MenuItem(key: 'exit_app', label: 'Exit App'),
+      ],
+    );
+    await trayManager.setToolTip('BiliMusic');
+    await trayManager.setContextMenu(menu);
     await windowManager.ensureInitialized();
 
     final DesktopWindowStateStore windowStateStore = DesktopWindowStateStore(
