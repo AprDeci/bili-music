@@ -125,6 +125,9 @@ flutter:
     - family: 'MiSans'
       fonts:
         - asset: assets/fonts/MiSans-Regular.ttf
+    - family: BmIcons
+      fonts:
+        - asset: assets/fonts/BmIcons.ttf 
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
@@ -176,7 +179,6 @@ icon_font:
   
   output_class_file: "lib/common/bm_icons.dart"
   class_name: "BmIcons"
-  package: bm_font_package
   format: true
 
   font_name: "BmIcons"
