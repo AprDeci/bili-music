@@ -8,6 +8,7 @@ import 'package:bilimusic/feature/player/logic/player_lyrics_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_lyric/flutter_lyric.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 enum PlayerLyricPanelVariant { mobile, desktop }
 
@@ -138,6 +139,7 @@ class _PlayerLyricPanelState extends ConsumerState<PlayerLyricPanel> {
         message: lyricsState.errorMessage!,
         icon: Icons.error_outline_rounded,
         actionLabel: '重试',
+        goSetting: true,
         onAction: () =>
             ref.read(playerLyricsControllerProvider.notifier).retryCurrent(),
       );
@@ -240,6 +242,7 @@ class _PlayerLyricPanelStatus extends StatelessWidget {
     required this.title,
     required this.message,
     required this.icon,
+    this.goSetting = false,
     this.isLoading = false,
     this.actionLabel,
     this.onAction,
@@ -249,6 +252,7 @@ class _PlayerLyricPanelStatus extends StatelessWidget {
   final String title;
   final String message;
   final IconData icon;
+  final bool goSetting;
   final bool isLoading;
   final String? actionLabel;
   final VoidCallback? onAction;
@@ -306,6 +310,18 @@ class _PlayerLyricPanelStatus extends StatelessWidget {
             TextButton(onPressed: onAction, child: Text(actionLabel!))
           else
             FilledButton.tonal(onPressed: onAction, child: Text(actionLabel!)),
+        ],
+        if (goSetting) ...<Widget>[
+          if (_isDesktop)
+            TextButton(
+              onPressed: () => context.go('/settings/player'),
+              child: Text('设置'),
+            )
+          else
+            FilledButton.tonal(
+              onPressed: () => context.go('/settings/player'),
+              child: Text('设置'),
+            ),
         ],
       ],
     );
