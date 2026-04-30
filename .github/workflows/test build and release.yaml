@@ -13,6 +13,11 @@ on:
         required: true
         type: boolean
         default: false
+      build_windows:
+        description: Build Windows installer
+        required: true
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -51,9 +56,9 @@ jobs:
         run: |
           VERSION=${GITHUB_REF_NAME:-Test-Build}
           mkdir -p build/artifacts
-          cp build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk "build/artifacts/bili-music-${VERSION}-armeabi-v7a.apk"
-          cp build/app/outputs/flutter-apk/app-arm64-v8a-release.apk   "build/artifacts/bili-music-${VERSION}-arm64-v8a.apk"
-          cp build/app/outputs/flutter-apk/app-x86_64-release.apk     "build/artifacts/bili-music-${VERSION}-x86_64.apk"
+          cp build/app/outputs/flutter-apk/app-armeabi-v7a-production-release.apk "build/artifacts/bili-music-${VERSION}-armeabi-v7a.apk"
+          cp build/app/outputs/flutter-apk/app-arm64-v8a-production-release.apk "build/artifacts/bili-music-${VERSION}-arm64-v8a.apk"
+          cp build/app/outputs/flutter-apk/app-x86_64-production-release.apk "build/artifacts/bili-music-${VERSION}-x86_64.apk"
 
       - name: Upload Android Artifacts
         uses: actions/upload-artifact@v4
@@ -85,9 +90,11 @@ jobs:
       - name: Build iOS
         run: |
           flutter build ios --release --no-codesign
-          ln -sf ./build/ios/iphoneos Payload  
-          find Payload/Runner.app/Frameworks -type d -name "*.framework" -exec codesign --force --sign - --preserve-metadata=identifier,entitlements {} \;  
-          zip -r9 bili-music.ipa Payload/runner.app
+          rm -rf Payload
+          mkdir -p Payload
+          cp -R build/ios/iphoneos/Runner.app Payload/Runner.app
+          find Payload/Runner.app/Frameworks -type d -name "*.framework" -exec codesign --force --sign - --preserve-metadata=identifier,entitlements {} \;
+          zip -r9 bili-music.ipa Payload
 
       - name: Upload iOS Artifacts
         uses: actions/upload-artifact@v4
@@ -98,3 +105,42 @@ jobs:
 
       - name: Show IPA Info
         run: ls -lh bili-music.ipa
+
+  # ==================== Windows Job ====================
+  build-windows:
+    name: Build Windows Installer
+    runs-on: windows-latest
+    if: ${{ inputs.build_windows }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: "beta"
+          flutter-version: "3.43.0-0.2.pre"
+          cache: true
+
+      - name: Flutter Pub Get
+        run: flutter pub get
+
+      - name: Build Windows
+        run: flutter build windows --release
+
+      - name: Setup Inno Setup
+        run: choco install innosetup --no-progress -y
+
+      - name: Build Windows Installer
+        shell: pwsh
+        run: |
+          $env:APP_VERSION = "Test-Build"
+          iscc scripts/bilimusic.iss
+
+      - name: Upload Windows Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: bilimusic-windows-installer
+          path: build/artifacts/bilimusic-*-windows-setup.exe
+          retention-days: 30
