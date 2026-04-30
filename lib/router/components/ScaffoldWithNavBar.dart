@@ -74,12 +74,16 @@ class _ScaffoldWithNavBarState extends ConsumerState<ScaffoldWithNavBar> {
     final ColorScheme colorScheme = theme.colorScheme;
     final PlayerState playerState = ref.watch(playerControllerProvider);
     final bool useGlassBar = ref.watch(appearanceSettingLogicProvider);
+    final double bottomBarOffset = BottomHeightHelper.bottomBarOffset(
+      bottomInset: bottomInset,
+    );
     final bool usesCollapsedBottomChrome = _usesCollapsedBottomChrome(
       widget.currentLocation,
     );
     final double miniPlayerVisibleBottomPadding =
         BottomHeightHelper.miniPlayerBottomPaddingWithBottomBar(
           bottomInset: bottomInset,
+          bottomBarOffset: bottomBarOffset,
         );
     final double miniPlayerCollapsedBottomPadding =
         BottomHeightHelper.miniPlayerBottomPaddingWithoutBottomBar(
@@ -101,9 +105,10 @@ class _ScaffoldWithNavBarState extends ConsumerState<ScaffoldWithNavBar> {
 
     return Scaffold(
       body: BottomBar(
+        respectSafeArea: false,
         fit: StackFit.expand,
         borderRadius: BorderRadius.circular(40),
-        offset: 0,
+        offset: bottomBarOffset,
         barColor: Colors.transparent,
         duration: _animationDuration,
         width: screenWidth * 0.92,
