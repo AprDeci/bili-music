@@ -1,10 +1,11 @@
+import 'package:bilimusic/common/components/bar_icon_button.dart';
 import 'package:bilimusic/common/components/common_attach_button.dart';
 import 'package:bilimusic/common/components/common_attach_menu.dart';
 import 'package:bilimusic/common/components/common_attach_panel.dart';
 import 'package:bilimusic/feature/player/domain/audio_stream_info.dart';
 import 'package:flutter/material.dart';
 
-class DesktopQualityAttach extends StatelessWidget {
+class DesktopQualityAttach extends StatefulWidget {
   const DesktopQualityAttach({
     super.key,
     required this.qualities,
@@ -15,14 +16,35 @@ class DesktopQualityAttach extends StatelessWidget {
   final ValueChanged<int?> onSelected;
 
   @override
+  State<DesktopQualityAttach> createState() => _DesktopQualityAttachState();
+}
+
+class _DesktopQualityAttachState extends State<DesktopQualityAttach> {
+  String? _pendingBadgeLabel;
+  List<AudioQualityOption>? _pendingSourceQualities;
+
+  @override
+  void didUpdateWidget(covariant DesktopQualityAttach oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (_pendingBadgeLabel != null &&
+        !identical(widget.qualities, _pendingSourceQualities) &&
+        _hasSelectedQuality(widget.qualities)) {
+      _pendingBadgeLabel = null;
+      _pendingSourceQualities = null;
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final bool enabled = qualities.isNotEmpty;
-    final List<CommonAttachMenuItem<int?>> items = qualities
+    final bool enabled = widget.qualities.isNotEmpty;
+    final String badgeLabel =
+        _pendingBadgeLabel ?? _qualityBadgeLabel(qualities: widget.qualities);
+    final List<CommonAttachMenuItem<int?>> items = widget.qualities
         .map((AudioQualityOption option) {
           return CommonAttachMenuItem<int?>(
             value: option.qualityId,
             label: option.label,
-            icon: Icons.hd_outlined,
+            icon: SizedBox.shrink(),
             selected: option.isSelected,
           );
         })
@@ -35,48 +57,105 @@ class DesktopQualityAttach extends StatelessWidget {
         width: 142,
         height: _panelHeight(items.length),
         bodyHeight: _menuHeight(items.length),
-        child: CommonAttachMenu<int?>(items: items, onSelected: onSelected),
+        child: CommonAttachMenu<int?>(
+          items: items,
+          onSelected: _handleSelected,
+        ),
       ),
-      child: _DesktopQualityBadge(isEnabled: enabled),
+      child: BarIconButton(
+        onPressed: enabled ? () {} : null,
+        icon: _DesktopQualityBadge(label: badgeLabel),
+        iconSize: 20,
+        width: badgeLabel == 'HiRise' ? 44 : 30,
+      ),
     );
+  }
+
+  void _handleSelected(int? qualityId) {
+    AudioQualityOption? selectedOption;
+    for (final AudioQualityOption option in widget.qualities) {
+      if (option.qualityId == qualityId) {
+        selectedOption = option;
+        break;
+      }
+    }
+
+    setState(() {
+      _pendingBadgeLabel = _qualityBadgeLabel(
+        qualities: selectedOption == null
+            ? const <AudioQualityOption>[]
+            : <AudioQualityOption>[selectedOption],
+      );
+      _pendingSourceQualities = widget.qualities;
+    });
+    widget.onSelected(qualityId);
   }
 }
 
 class _DesktopQualityBadge extends StatelessWidget {
-  const _DesktopQualityBadge({required this.isEnabled});
+  const _DesktopQualityBadge({required this.label});
 
-  final bool isEnabled;
+  final String label;
 
   @override
   Widget build(BuildContext context) {
-    final ColorScheme colorScheme = Theme.of(context).colorScheme;
-    final Color color = isEnabled
-        ? colorScheme.primary
-        : colorScheme.onSurface.withValues(alpha: 0.28);
+    final Color color =
+        IconTheme.of(context).color ??
+        Theme.of(context).colorScheme.onSurfaceVariant;
 
-    return SizedBox(
-      width: 30,
-      height: 30,
-      child: Center(
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-          decoration: BoxDecoration(
-            border: Border.all(color: color, width: 1.4),
-            borderRadius: BorderRadius.circular(4),
-          ),
-          child: Text(
-            'SQ',
-            style: TextStyle(
-              color: color,
-              fontSize: 10,
-              fontWeight: FontWeight.w900,
-              height: 1,
-            ),
-          ),
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 2),
+      decoration: BoxDecoration(
+        border: Border.all(color: color, width: 1.4),
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: color,
+          fontSize: 10,
+          fontWeight: FontWeight.w900,
+          height: 1,
         ),
       ),
     );
   }
+}
+
+String _qualityBadgeLabel({required List<AudioQualityOption> qualities}) {
+  AudioQualityOption? quality;
+  for (final AudioQualityOption option in qualities) {
+    if (option.isSelected) {
+      quality = option;
+      break;
+    }
+  }
+
+  quality ??= qualities.isEmpty ? null : qualities.first;
+  if (quality == null) {
+    return 'HQ';
+  }
+
+  final String label = quality.label.toLowerCase();
+  if (quality.qualityId == 192000 || label.contains('192k')) {
+    return 'SQ';
+  }
+
+  if (label.contains('hi-res')) {
+    return 'HiRise';
+  }
+
+  return 'HQ';
+}
+
+bool _hasSelectedQuality(List<AudioQualityOption> qualities) {
+  for (final AudioQualityOption option in qualities) {
+    if (option.isSelected) {
+      return true;
+    }
+  }
+
+  return false;
 }
 
 double _menuHeight(int itemCount) {
