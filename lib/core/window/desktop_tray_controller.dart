@@ -50,7 +50,7 @@ class DesktopTrayController with TrayListener, WindowListener {
 
   @override
   void onTrayIconRightMouseDown() {
-    unawaited(trayManager.popUpContextMenu());
+    unawaited(trayManager.popUpContextMenu(bringAppToFront: true));
   }
 
   @override
