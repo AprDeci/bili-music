@@ -1,8 +1,11 @@
+import 'dart:async';
+
 import 'package:bilimusic/common/util/platform_util.dart';
 import 'package:bilimusic/core/bili/session/bili_session_controller.dart';
 import 'package:bilimusic/core/hive/hive.dart';
 import 'package:bilimusic/core/hive/hive_keys.dart';
 import 'package:bilimusic/core/theme/desktop_chinese_font.dart';
+import 'package:bilimusic/core/window/desktop_hotkey_controller.dart';
 import 'package:bilimusic/core/window/desktop_tray_controller.dart';
 import 'package:bilimusic/core/window/desktop_window_state_controller.dart';
 import 'package:bilimusic/core/window/desktop_window_state_store.dart';
@@ -87,6 +90,7 @@ class _AppBootstrap extends ConsumerStatefulWidget {
 
 class _AppBootstrapState extends ConsumerState<_AppBootstrap> {
   bool _didBootstrap = false;
+  DesktopHotkeyController? _desktopHotkeyController;
 
   @override
   void initState() {
@@ -101,7 +105,17 @@ class _AppBootstrapState extends ConsumerState<_AppBootstrap> {
       await ref
           .read(playerControllerProvider.notifier)
           .restoreFromPersistence();
+      if (PlatformUtil.isDesktop) {
+        _desktopHotkeyController = DesktopHotkeyController();
+        await _desktopHotkeyController!.attach(ref);
+      }
     });
+  }
+
+  @override
+  void dispose() {
+    unawaited(_desktopHotkeyController?.detach());
+    super.dispose();
   }
 
   @override
