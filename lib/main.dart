@@ -3,6 +3,7 @@ import 'package:bilimusic/core/bili/session/bili_session_controller.dart';
 import 'package:bilimusic/core/hive/hive.dart';
 import 'package:bilimusic/core/hive/hive_keys.dart';
 import 'package:bilimusic/core/theme/desktop_chinese_font.dart';
+import 'package:bilimusic/core/window/desktop_tray_controller.dart';
 import 'package:bilimusic/core/window/desktop_window_state_controller.dart';
 import 'package:bilimusic/core/window/desktop_window_state_store.dart';
 import 'package:bilimusic/feature/favorites/logic/favorites_controller.dart';
@@ -16,7 +17,6 @@ import 'package:flutter_smart_dialog/flutter_smart_dialog.dart';
 import 'package:hive_ce/hive.dart';
 import 'package:just_audio_media_kit/just_audio_media_kit.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
-import 'package:tray_manager/tray_manager.dart';
 import 'package:window_manager/window_manager.dart';
 
 Future<void> bootstrap() async {
@@ -36,21 +36,8 @@ Future<void> bootstrap() async {
   );
 
   if (PlatformUtil.isDesktop) {
-    await trayManager.setIcon(
-      PlatformUtil.isWindows
-          ? 'assets/icons/tray_icon.ico'
-          : 'assets/images/tray_icon.png',
-    );
-    Menu menu = Menu(
-      items: [
-        MenuItem(key: 'show_window', label: 'Show Window'),
-        MenuItem.separator(),
-        MenuItem(key: 'exit_app', label: 'Exit App'),
-      ],
-    );
-    await trayManager.setToolTip('BiliMusic');
-    await trayManager.setContextMenu(menu);
     await windowManager.ensureInitialized();
+    await DesktopTrayController().attach();
 
     final DesktopWindowStateStore windowStateStore = DesktopWindowStateStore(
       Hive.box<String>(HiveBoxNames.prefs),
