@@ -13,6 +13,7 @@ import 'package:bilimusic/feature/search/ui/search_page.dart';
 import 'package:bilimusic/feature/setting/ui/about_settings_page.dart';
 import 'package:bilimusic/feature/setting/ui/cache_settings_page.dart';
 import 'package:bilimusic/feature/setting/ui/app_transfer_page.dart';
+import 'package:bilimusic/feature/setting/ui/hotkey_settings_page.dart';
 import 'package:bilimusic/feature/setting/ui/player_settings_page.dart';
 import 'package:bilimusic/feature/setting/ui/setting_page.dart';
 import 'package:bilimusic/feature/setting/ui/theme_settings_page.dart';
@@ -89,6 +90,10 @@ final List<Map<String, dynamic>> desktopTabs = [
       GoRoute(
         path: 'app-transfer',
         builder: (context, state) => const AppTransferPage(),
+      ),
+      GoRoute(
+        path: 'hotkeys',
+        builder: (context, state) => const HotkeySettingsPage(),
       ),
       GoRoute(
         path: 'about',
@@ -169,6 +174,11 @@ final List<RouteBase> mobileRoutes = [
     path: '/settings/app-transfer',
     parentNavigatorKey: _rootNavigatorKey,
     builder: (context, state) => const AppTransferPage(),
+  ),
+  GoRoute(
+    path: '/settings/hotkeys',
+    parentNavigatorKey: _rootNavigatorKey,
+    builder: (context, state) => const HotkeySettingsPage(),
   ),
   GoRoute(
     path: '/settings/about',

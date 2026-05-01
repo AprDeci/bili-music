@@ -1,4 +1,5 @@
 import 'package:bilimusic/core/cache/cache_util.dart';
+import 'package:bilimusic/common/util/platform_util.dart';
 import 'package:bilimusic/common/util/format_util.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -58,6 +59,15 @@ class _SettingPageState extends State<SettingPage> {
             trailing: const Icon(Icons.chevron_right_rounded),
             onTap: () => context.push('/settings/app-transfer'),
           ),
+          if (PlatformUtil.isDesktop)
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.keyboard_command_key_rounded),
+              title: const Text('快捷键设置'),
+              subtitle: Text('全局播放控制与窗口显示隐藏', style: theme.textTheme.bodySmall),
+              trailing: const Icon(Icons.chevron_right_rounded),
+              onTap: () => context.push('/settings/hotkeys'),
+            ),
           FutureBuilder<int>(
             future: _cacheSizeFuture,
             builder: (context, snapshot) {
