@@ -85,6 +85,7 @@ dependencies:
   hugeicons: ^1.1.6
   chinese_font_library: ^1.2.0
   tray_manager: ^0.5.2
+  hotkey_manager: ^0.2.3
 
 dev_dependencies:
   flutter_test:
