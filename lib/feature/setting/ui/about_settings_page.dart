@@ -47,7 +47,8 @@ class AboutSettingsPage extends StatelessWidget {
               title: const Text('检查更新'),
               subtitle: Text('查看是否有新版本', style: theme.textTheme.bodySmall),
               trailing: const Icon(Icons.arrow_forward_outlined),
-              onTap: () => UpdateUtil.checkAndPromptForUpdate(context, manual: true),
+              onTap: () =>
+                  UpdateUtil.checkAndPromptForUpdate(context, manual: true),
             ),
             ListTile(
               contentPadding: EdgeInsets.zero,
@@ -87,7 +88,7 @@ class AboutHero extends StatelessWidget {
         SizedBox(
           width: 100,
           height: 100,
-          child: Image.asset('assets/icons/icon2.png'),
+          child: Image.asset('assets/icons/icon3.png'),
         ),
         const SizedBox(height: 24),
         Text(
