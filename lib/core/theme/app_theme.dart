@@ -1,3 +1,4 @@
+import 'package:bilimusic/common/util/platform_util.dart';
 import 'package:bilimusic/core/theme/desktop_chinese_font.dart';
 import 'package:bilimusic/core/theme/theme_catalog.dart';
 import 'package:chinese_font_library/chinese_font_library.dart';
@@ -74,19 +75,13 @@ final class AppTheme {
     );
   }
 
-  static const List<String> _fontFamilyFallback = <String>[
-    DesktopChineseFont.fontFamily,
-    'Noto Sans CJK SC',
-    'Noto Sans SC',
-    'Source Han Sans SC',
-    'WenQuanYi Micro Hei',
-    'Microsoft YaHei',
-    'sans-serif',
-  ];
-
   static TextTheme _textTheme(Brightness brightness) {
-    return TextTheme()
-        .useSystemChineseFont(brightness)
-        .apply(fontFamilyFallback: _fontFamilyFallback);
+    final TextTheme textTheme = TextTheme().useSystemChineseFont(brightness);
+
+    if (PlatformUtil.isDesktop) {
+      return textTheme.apply(fontFamily: DesktopChineseFont.fontFamily);
+    }
+
+    return textTheme;
   }
 }
