@@ -205,9 +205,9 @@ class _PlayerQueueContentState extends ConsumerState<_PlayerQueueContent> {
                       : colorScheme.surfaceContainerHighest.withValues(
                           alpha: 0.45,
                         ),
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: BorderRadius.circular(8.0),
                   child: InkWell(
-                    borderRadius: BorderRadius.circular(20),
+                    borderRadius: BorderRadius.circular(8.0),
                     onTap: () async {
                       await _close(context);
                       await liveController.skipToQueueIndex(index);
@@ -257,26 +257,26 @@ class _PlayerQueueContentState extends ConsumerState<_PlayerQueueContent> {
                             ),
                           ),
                           if (isCurrent)
-                            Icon(
-                              Icons.graphic_eq_rounded,
-                              color: colorScheme.primary,
+                            // Icon(
+                            //   Icons.graphic_eq_rounded,
+                            //   color: colorScheme.primary,
+                            // ),
+                            IconButton(
+                              tooltip: '移出队列',
+                              onPressed: () async {
+                                await liveController.removeQueueItemAt(index);
+                                if (!context.mounted) {
+                                  return;
+                                }
+                                final PlayerState refreshedState = ref.read(
+                                  playerControllerProvider,
+                                );
+                                if (!refreshedState.hasQueue) {
+                                  await _close(context);
+                                }
+                              },
+                              icon: const Icon(Icons.close_rounded),
                             ),
-                          IconButton(
-                            tooltip: '移出队列',
-                            onPressed: () async {
-                              await liveController.removeQueueItemAt(index);
-                              if (!context.mounted) {
-                                return;
-                              }
-                              final PlayerState refreshedState = ref.read(
-                                playerControllerProvider,
-                              );
-                              if (!refreshedState.hasQueue) {
-                                await _close(context);
-                              }
-                            },
-                            icon: const Icon(Icons.close_rounded),
-                          ),
                         ],
                       ),
                     ),
