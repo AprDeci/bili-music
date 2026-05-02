@@ -154,6 +154,7 @@ flutter:
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
 
+#dart run flutter_launcher_icons 
 flutter_launcher_icons:
   android: "launcher_icon"
   ios: true
@@ -172,6 +173,7 @@ flutter_launcher_icons:
     generate: true
     image_path: "assets/icons/icon3.png"
 
+# dart run icon_font_generator:generator
 icon_font:
   input_svg_dir: "assets/icons/svg"
   output_font_file: "assets/fonts/BmIcons.ttf"
