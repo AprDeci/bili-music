@@ -34,20 +34,6 @@ class PlayerArtworkFrame extends StatelessWidget {
                 placeholder: const PlayerArtworkFallback(),
                 errorWidget: const PlayerArtworkFallback(),
               ),
-              Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: <Color>[
-                      colorScheme.primary.withValues(alpha: 0.78),
-                      const Color(0x00000000),
-                      colorScheme.primaryContainer.withValues(alpha: 0.44),
-                    ],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    stops: const <double>[0, 0.55, 1],
-                  ),
-                ),
-              ),
             ],
           ),
         ),
