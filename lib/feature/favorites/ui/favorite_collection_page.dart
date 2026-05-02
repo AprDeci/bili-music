@@ -1,3 +1,4 @@
+import 'package:bilimusic/common/bm_icons.dart';
 import 'package:bilimusic/common/components/bottom_page_spacer.dart';
 import 'package:bilimusic/common/components/cached_image.dart';
 import 'package:bilimusic/common/logger.dart';
@@ -16,6 +17,7 @@ import 'package:bilimusic/feature/player/ui/components/player_collection_sheet.d
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:hugeicons/hugeicons.dart';
 
 class FavoriteCollectionPage extends ConsumerStatefulWidget {
   const FavoriteCollectionPage({super.key, required this.collectionId});
@@ -200,7 +202,7 @@ class _FavoriteCollectionPageState
                             width: 44,
                             height: 44,
                             fit: BoxFit.cover,
-                            borderRadius: BorderRadius.circular(14),
+                            borderRadius: BorderRadius.circular(8),
                             fallbackIcon: Icons.music_note_rounded,
                             iconColor: primary,
                             backgroundColor: primary.withValues(alpha: 0.14),
@@ -219,9 +221,13 @@ class _FavoriteCollectionPageState
                             overflow: TextOverflow.ellipsis,
                           ),
                           trailing: Row(
+                            spacing: 0,
+                            mainAxisAlignment: MainAxisAlignment.end,
                             mainAxisSize: MainAxisSize.min,
                             children: <Widget>[
                               IconButton(
+                                padding: EdgeInsets.zero,
+                                visualDensity: VisualDensity.compact,
                                 tooltip: '播放',
                                 onPressed: () async {
                                   await _playCollectionItem(
@@ -232,9 +238,11 @@ class _FavoriteCollectionPageState
                                     index: index,
                                   );
                                 },
-                                icon: const Icon(Icons.play_arrow_rounded),
+                                icon: const Icon(BmIcons.addPlaylist),
                               ),
                               IconButton(
+                                padding: EdgeInsets.zero,
+                                visualDensity: VisualDensity.compact,
                                 tooltip: '更多',
                                 onPressed: () async {
                                   await _showItemActionSheet(
@@ -244,7 +252,7 @@ class _FavoriteCollectionPageState
                                     item: item,
                                   );
                                 },
-                                icon: const Icon(Icons.more_horiz_rounded),
+                                icon: const Icon(Icons.more_vert_outlined),
                               ),
                             ],
                           ),

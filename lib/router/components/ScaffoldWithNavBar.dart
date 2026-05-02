@@ -11,6 +11,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_floating_bottom_bar/flutter_floating_bottom_bar.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:hugeicons/hugeicons.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 import 'package:liquid_glass_widgets/widgets/surfaces/glass_bottom_bar.dart';
 
@@ -139,11 +140,17 @@ class _ScaffoldWithNavBarState extends ConsumerState<ScaffoldWithNavBar> {
                       ).withValues(alpha: 0.2),
                       tabs: const <GlassBottomBarTab>[
                         GlassBottomBarTab(
-                          icon: Icon(Icons.home_outlined),
+                          icon: HugeIcon(
+                            icon: HugeIcons.strokeRoundedHome07,
+                            size: 20,
+                          ),
                           label: '首页',
                         ),
                         GlassBottomBarTab(
-                          icon: Icon(Icons.person_outlined),
+                          icon: HugeIcon(
+                            icon: HugeIcons.strokeRoundedUser,
+                            size: 20,
+                          ),
                           label: '我的',
                         ),
                       ],

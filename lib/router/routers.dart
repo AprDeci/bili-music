@@ -20,6 +20,7 @@ import 'package:bilimusic/feature/setting/ui/theme_settings_page.dart';
 import 'package:bilimusic/router/app_shell.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:hugeicons/hugeicons.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'routers.g.dart';
@@ -40,7 +41,7 @@ final List<Map<String, dynamic>> mobileTabs = [
     'path': '/home',
     'builder': (context, state) => const HomePage(),
     'routes': const <RouteBase>[],
-    'icon': Icons.home,
+    'icon': HugeIcon(icon: HugeIcons.strokeRoundedHome07),
     'label': '首页',
   },
   {
@@ -57,7 +58,7 @@ final List<Map<String, dynamic>> mobileTabs = [
         },
       ),
     ],
-    'icon': Icons.person,
+    'icon': HugeIcon(icon: HugeIcons.strokeRoundedUser),
     'label': '我的',
   },
   {
