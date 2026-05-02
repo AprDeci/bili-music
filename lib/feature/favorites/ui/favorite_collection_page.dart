@@ -6,14 +6,18 @@ import 'package:bilimusic/common/util/toast_util.dart';
 import 'package:bilimusic/feature/favorites/domain/favorite_collection.dart';
 import 'package:bilimusic/feature/favorites/domain/favorite_entry.dart';
 import 'package:bilimusic/feature/favorites/domain/favorites_state.dart';
+import 'package:bilimusic/feature/favorites/logic/favorite_entry_search.dart';
 import 'package:bilimusic/feature/favorites/logic/favorites_controller.dart';
+import 'package:bilimusic/feature/favorites/ui/components/favorite_collection_search_field.dart';
+import 'package:bilimusic/feature/favorites/ui/components/favorite_search_empty_state.dart';
 import 'package:bilimusic/feature/player/domain/playable_item.dart';
 import 'package:bilimusic/feature/player/logic/player_controller.dart';
 import 'package:bilimusic/feature/player/ui/components/player_collection_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
-class FavoriteCollectionPage extends ConsumerWidget {
+class FavoriteCollectionPage extends ConsumerStatefulWidget {
   const FavoriteCollectionPage({super.key, required this.collectionId});
 
   static final AppLogger _logger = AppLogger('FavoriteCollectionPage');
@@ -21,14 +25,43 @@ class FavoriteCollectionPage extends ConsumerWidget {
   final String collectionId;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<FavoriteCollectionPage> createState() =>
+      _FavoriteCollectionPageState();
+}
+
+class _FavoriteCollectionPageState
+    extends ConsumerState<FavoriteCollectionPage> {
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _updateSearchQuery(String value) {
+    setState(() {
+      _searchQuery = value;
+    });
+  }
+
+  void _clearSearchQuery() {
+    _searchController.clear();
+    setState(() {
+      _searchQuery = '';
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final FavoritesState state = ref.watch(favoritesControllerProvider);
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
     final Color primary = colorScheme.primary;
     FavoriteCollection? collection;
     for (final FavoriteCollection item in state.collections) {
-      if (item.id == collectionId) {
+      if (item.id == widget.collectionId) {
         collection = item;
         break;
       }
@@ -46,7 +79,11 @@ class FavoriteCollectionPage extends ConsumerWidget {
     final List<FavoriteEntry> items = state.itemsForCollection(
       resolvedCollection.id,
     );
-    final List<PlayableItem> queueItems = items
+    final List<FavoriteEntry> visibleItems = filterFavoriteEntries(
+      items,
+      _searchQuery,
+    );
+    final List<PlayableItem> queueItems = visibleItems
         .map((FavoriteEntry item) => item.toPlayableItem())
         .toList(growable: false);
     return Scaffold(
@@ -59,7 +96,7 @@ class FavoriteCollectionPage extends ConsumerWidget {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: <Widget>[
-                    Container(
+                    SizedBox(
                       width: 72,
                       height: 72,
                       child: Icon(
@@ -91,87 +128,100 @@ class FavoriteCollectionPage extends ConsumerWidget {
               ),
             )
           : ListView(
-              padding: const EdgeInsets.fromLTRB(0, 0, 0, 0),
+              padding: EdgeInsets.zero,
               children: <Widget>[
-                const SizedBox(height: 2),
-                ...List<Widget>.generate(items.length, (int index) {
-                  final FavoriteEntry item = items[index];
-                  return Padding(
-                    padding: EdgeInsets.only(
-                      bottom: index == items.length - 1 ? 0 : 0,
-                    ),
-                    child: Material(
-                      child: ListTile(
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 14,
-                          vertical: 0,
-                        ),
-                        leading: CommonCachedImage(
-                          imageUrl: item.coverUrl,
-                          width: 44,
-                          height: 44,
-                          fit: BoxFit.cover,
-                          borderRadius: BorderRadius.circular(14),
-                          fallbackIcon: Icons.music_note_rounded,
-                          iconColor: primary,
-                          backgroundColor: primary.withValues(alpha: 0.14),
-                        ),
-                        title: Text(
-                          item.title,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: theme.textTheme.titleSmall?.copyWith(
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                        subtitle: Text(
-                          _buildSubtitle(item),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        trailing: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: <Widget>[
-                            IconButton(
-                              tooltip: '播放',
-                              onPressed: () async {
-                                await _playCollectionItem(
-                                  context,
-                                  ref,
-                                  collectionName: resolvedCollection.name,
-                                  queueItems: queueItems,
-                                  index: index,
-                                );
-                              },
-                              icon: const Icon(Icons.play_arrow_rounded),
-                            ),
-                            IconButton(
-                              tooltip: '更多',
-                              onPressed: () async {
-                                await _showItemActionSheet(
-                                  context,
-                                  ref,
-                                  collection: resolvedCollection,
-                                  item: item,
-                                );
-                              },
-                              icon: const Icon(Icons.more_horiz_rounded),
-                            ),
-                          ],
-                        ),
-                        onTap: () async {
-                          await _playCollectionItem(
-                            context,
-                            ref,
-                            collectionName: resolvedCollection.name,
-                            queueItems: queueItems,
-                            index: index,
-                          );
-                        },
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(14, 10, 14, 8),
+                  child: FavoriteCollectionSearchField(
+                    controller: _searchController,
+                    query: _searchQuery,
+                    onChanged: _updateSearchQuery,
+                    onClear: _clearSearchQuery,
+                  ),
+                ),
+                if (visibleItems.isEmpty)
+                  FavoriteSearchEmptyState(
+                    onSearchOnline: () => context.go('/search'),
+                  )
+                else
+                  ...List<Widget>.generate(visibleItems.length, (int index) {
+                    final FavoriteEntry item = visibleItems[index];
+                    return Padding(
+                      padding: EdgeInsets.only(
+                        bottom: index == visibleItems.length - 1 ? 0 : 0,
                       ),
-                    ),
-                  );
-                }),
+                      child: Material(
+                        child: ListTile(
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 0,
+                          ),
+                          leading: CommonCachedImage(
+                            imageUrl: item.coverUrl,
+                            width: 44,
+                            height: 44,
+                            fit: BoxFit.cover,
+                            borderRadius: BorderRadius.circular(14),
+                            fallbackIcon: Icons.music_note_rounded,
+                            iconColor: primary,
+                            backgroundColor: primary.withValues(alpha: 0.14),
+                          ),
+                          title: Text(
+                            item.title,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: theme.textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          subtitle: Text(
+                            _buildSubtitle(item),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          trailing: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: <Widget>[
+                              IconButton(
+                                tooltip: '播放',
+                                onPressed: () async {
+                                  await _playCollectionItem(
+                                    context,
+                                    ref,
+                                    collectionName: resolvedCollection.name,
+                                    queueItems: queueItems,
+                                    index: index,
+                                  );
+                                },
+                                icon: const Icon(Icons.play_arrow_rounded),
+                              ),
+                              IconButton(
+                                tooltip: '更多',
+                                onPressed: () async {
+                                  await _showItemActionSheet(
+                                    context,
+                                    ref,
+                                    collection: resolvedCollection,
+                                    item: item,
+                                  );
+                                },
+                                icon: const Icon(Icons.more_horiz_rounded),
+                              ),
+                            ],
+                          ),
+                          onTap: () async {
+                            await _playCollectionItem(
+                              context,
+                              ref,
+                              collectionName: resolvedCollection.name,
+                              queueItems: queueItems,
+                              index: index,
+                            );
+                          },
+                        ),
+                      ),
+                    );
+                  }),
                 const BottomPageSpacer.overlay(),
               ],
             ),
@@ -203,7 +253,7 @@ class FavoriteCollectionPage extends ConsumerWidget {
     required List<PlayableItem> queueItems,
     required int index,
   }) async {
-    _logger.d(
+    FavoriteCollectionPage._logger.d(
       '[FavoriteDebug] tapPlay | collection=$collectionName, '
       'index=$index, queueLength=${queueItems.length}, '
       'itemStableId=${queueItems[index].stableId}, '

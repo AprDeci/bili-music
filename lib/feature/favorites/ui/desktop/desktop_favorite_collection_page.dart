@@ -1,20 +1,23 @@
 import 'package:bilimusic/common/components/bottom_page_spacer.dart';
 import 'package:bilimusic/common/components/cached_image.dart';
 import 'package:bilimusic/common/logger.dart';
-import 'package:bilimusic/common/util/color_util.dart';
 import 'package:bilimusic/common/util/player_util.dart';
 import 'package:bilimusic/common/util/toast_util.dart';
 import 'package:bilimusic/feature/favorites/domain/favorite_collection.dart';
 import 'package:bilimusic/feature/favorites/domain/favorite_entry.dart';
 import 'package:bilimusic/feature/favorites/domain/favorites_state.dart';
+import 'package:bilimusic/feature/favorites/logic/favorite_entry_search.dart';
 import 'package:bilimusic/feature/favorites/logic/favorites_controller.dart';
+import 'package:bilimusic/feature/favorites/ui/components/favorite_collection_search_field.dart';
+import 'package:bilimusic/feature/favorites/ui/components/favorite_search_empty_state.dart';
 import 'package:bilimusic/feature/player/domain/playable_item.dart';
 import 'package:bilimusic/feature/player/logic/player_controller.dart';
 import 'package:bilimusic/feature/player/ui/components/player_collection_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
-class DesktopFavoriteCollectionPage extends ConsumerWidget {
+class DesktopFavoriteCollectionPage extends ConsumerStatefulWidget {
   const DesktopFavoriteCollectionPage({super.key, required this.collectionId});
 
   static final AppLogger _logger = AppLogger('DesktopFavoriteCollectionPage');
@@ -22,14 +25,43 @@ class DesktopFavoriteCollectionPage extends ConsumerWidget {
   final String collectionId;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<DesktopFavoriteCollectionPage> createState() =>
+      _DesktopFavoriteCollectionPageState();
+}
+
+class _DesktopFavoriteCollectionPageState
+    extends ConsumerState<DesktopFavoriteCollectionPage> {
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _updateSearchQuery(String value) {
+    setState(() {
+      _searchQuery = value;
+    });
+  }
+
+  void _clearSearchQuery() {
+    _searchController.clear();
+    setState(() {
+      _searchQuery = '';
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final FavoritesState state = ref.watch(favoritesControllerProvider);
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
     final Color primary = colorScheme.primary;
     FavoriteCollection? collection;
     for (final FavoriteCollection item in state.collections) {
-      if (item.id == collectionId) {
+      if (item.id == widget.collectionId) {
         collection = item;
         break;
       }
@@ -47,7 +79,11 @@ class DesktopFavoriteCollectionPage extends ConsumerWidget {
     final List<FavoriteEntry> items = state.itemsForCollection(
       resolvedCollection.id,
     );
-    final List<PlayableItem> queueItems = items
+    final List<FavoriteEntry> visibleItems = filterFavoriteEntries(
+      items,
+      _searchQuery,
+    );
+    final List<PlayableItem> queueItems = visibleItems
         .map((FavoriteEntry item) => item.toPlayableItem())
         .toList(growable: false);
     return Scaffold(
@@ -58,7 +94,7 @@ class DesktopFavoriteCollectionPage extends ConsumerWidget {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: <Widget>[
-                    Container(
+                    SizedBox(
                       width: 72,
                       height: 72,
                       child: Icon(
@@ -89,102 +125,138 @@ class DesktopFavoriteCollectionPage extends ConsumerWidget {
                 ),
               ),
             )
-          : ListView(
-              padding: const EdgeInsets.fromLTRB(0, 0, 0, 0),
+          : Column(
               children: <Widget>[
-                const SizedBox(height: 2),
-                ...List<Widget>.generate(items.length, (int index) {
-                  final FavoriteEntry item = items[index];
-                  final bool isEvenRow = index.isEven;
-                  return Padding(
-                    padding: EdgeInsets.only(
-                      bottom: index == items.length - 1 ? 0 : 0,
-                    ),
-                    child: Material(
-                      color: isEvenRow ? Colors.transparent : null,
-                      child: ListTile(
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        tileColor: isEvenRow
-                            ? Colors.transparent
-                            : const Color.fromARGB(
-                                255,
-                                189,
-                                189,
-                                189,
-                              ).withValues(alpha: 0.1),
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 14,
-                          vertical: 0,
-                        ),
-                        leading: CommonCachedImage(
-                          imageUrl: item.coverUrl,
-                          width: 44,
-                          height: 44,
-                          fit: BoxFit.cover,
-                          borderRadius: BorderRadius.circular(14),
-                          fallbackIcon: Icons.music_note_rounded,
-                          iconColor: primary,
-                          backgroundColor: primary.withValues(alpha: 0.14),
-                        ),
-                        title: Text(
-                          item.title,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: theme.textTheme.titleSmall?.copyWith(
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                        subtitle: Text(
-                          _buildSubtitle(item),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        trailing: Row(
-                          mainAxisSize: MainAxisSize.min,
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(14, 10, 14, 8),
+                  child: FavoriteCollectionSearchField(
+                    controller: _searchController,
+                    query: _searchQuery,
+                    onChanged: _updateSearchQuery,
+                    onClear: _clearSearchQuery,
+                  ),
+                ),
+                Expanded(
+                  child: visibleItems.isEmpty
+                      ? ListView(
+                          padding: EdgeInsets.zero,
                           children: <Widget>[
-                            IconButton(
-                              tooltip: '播放',
-                              onPressed: () async {
-                                await _playCollectionItem(
-                                  context,
-                                  ref,
-                                  collectionName: resolvedCollection.name,
-                                  queueItems: queueItems,
-                                  index: index,
-                                );
-                              },
-                              icon: const Icon(Icons.play_arrow_rounded),
+                            FavoriteSearchEmptyState(
+                              onSearchOnline: () => context.go('/search'),
                             ),
-                            IconButton(
-                              tooltip: '更多',
-                              onPressed: () async {
-                                await _showItemActionSheet(
-                                  context,
-                                  ref,
-                                  collection: resolvedCollection,
-                                  item: item,
-                                );
-                              },
-                              icon: const Icon(Icons.more_horiz_rounded),
-                            ),
+                            const BottomPageSpacer.overlay(),
+                          ],
+                        )
+                      : ListView(
+                          padding: EdgeInsets.zero,
+                          children: <Widget>[
+                            ...List<Widget>.generate(visibleItems.length, (
+                              int index,
+                            ) {
+                              final FavoriteEntry item = visibleItems[index];
+                              final bool isEvenRow = index.isEven;
+                              return Padding(
+                                padding: EdgeInsets.only(
+                                  bottom: index == visibleItems.length - 1
+                                      ? 0
+                                      : 0,
+                                ),
+                                child: Material(
+                                  color: isEvenRow ? Colors.transparent : null,
+                                  child: ListTile(
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                    tileColor: isEvenRow
+                                        ? Colors.transparent
+                                        : const Color.fromARGB(
+                                            255,
+                                            189,
+                                            189,
+                                            189,
+                                          ).withValues(alpha: 0.1),
+                                    contentPadding: const EdgeInsets.symmetric(
+                                      horizontal: 14,
+                                      vertical: 0,
+                                    ),
+                                    leading: CommonCachedImage(
+                                      imageUrl: item.coverUrl,
+                                      width: 44,
+                                      height: 44,
+                                      fit: BoxFit.cover,
+                                      borderRadius: BorderRadius.circular(14),
+                                      fallbackIcon: Icons.music_note_rounded,
+                                      iconColor: primary,
+                                      backgroundColor: primary.withValues(
+                                        alpha: 0.14,
+                                      ),
+                                    ),
+                                    title: Text(
+                                      item.title,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: theme.textTheme.titleSmall
+                                          ?.copyWith(
+                                            fontWeight: FontWeight.w700,
+                                          ),
+                                    ),
+                                    subtitle: Text(
+                                      _buildSubtitle(item),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    trailing: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: <Widget>[
+                                        IconButton(
+                                          tooltip: '播放',
+                                          onPressed: () async {
+                                            await _playCollectionItem(
+                                              context,
+                                              ref,
+                                              collectionName:
+                                                  resolvedCollection.name,
+                                              queueItems: queueItems,
+                                              index: index,
+                                            );
+                                          },
+                                          icon: const Icon(
+                                            Icons.play_arrow_rounded,
+                                          ),
+                                        ),
+                                        IconButton(
+                                          tooltip: '更多',
+                                          onPressed: () async {
+                                            await _showItemActionSheet(
+                                              context,
+                                              ref,
+                                              collection: resolvedCollection,
+                                              item: item,
+                                            );
+                                          },
+                                          icon: const Icon(
+                                            Icons.more_horiz_rounded,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    onTap: () async {
+                                      await _playCollectionItem(
+                                        context,
+                                        ref,
+                                        collectionName: resolvedCollection.name,
+                                        queueItems: queueItems,
+                                        index: index,
+                                      );
+                                    },
+                                  ),
+                                ),
+                              );
+                            }),
+                            const BottomPageSpacer.overlay(),
                           ],
                         ),
-                        onTap: () async {
-                          await _playCollectionItem(
-                            context,
-                            ref,
-                            collectionName: resolvedCollection.name,
-                            queueItems: queueItems,
-                            index: index,
-                          );
-                        },
-                      ),
-                    ),
-                  );
-                }),
-                const BottomPageSpacer.overlay(),
+                ),
               ],
             ),
     );
@@ -215,7 +287,7 @@ class DesktopFavoriteCollectionPage extends ConsumerWidget {
     required List<PlayableItem> queueItems,
     required int index,
   }) async {
-    _logger.d(
+    DesktopFavoriteCollectionPage._logger.d(
       '[FavoriteDebug] tapPlay | collection=$collectionName, '
       'index=$index, queueLength=${queueItems.length}, '
       'itemStableId=${queueItems[index].stableId}, '
