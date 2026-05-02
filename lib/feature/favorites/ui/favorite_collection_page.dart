@@ -35,6 +35,25 @@ class _FavoriteCollectionPageState
   String _searchQuery = '';
 
   @override
+  void didUpdateWidget(covariant FavoriteCollectionPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.collectionId != widget.collectionId) {
+      _resetSearchState();
+    }
+  }
+
+  @override
+  void deactivate() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+      _resetSearchState();
+    });
+    super.deactivate();
+  }
+
+  @override
   void dispose() {
     _searchController.dispose();
     super.dispose();
@@ -51,6 +70,26 @@ class _FavoriteCollectionPageState
     setState(() {
       _searchQuery = '';
     });
+  }
+
+  void _resetSearchState() {
+    if (_searchQuery.isEmpty && _searchController.text.isEmpty) {
+      return;
+    }
+
+    _searchController.clear();
+    setState(() {
+      _searchQuery = '';
+    });
+  }
+
+  void _resetSearchStateWithoutSetState() {
+    if (_searchQuery.isEmpty && _searchController.text.isEmpty) {
+      return;
+    }
+
+    _searchController.clear();
+    _searchQuery = '';
   }
 
   @override
