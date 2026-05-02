@@ -10,6 +10,7 @@ import 'package:bilimusic/feature/player/ui/components/player_shared.dart';
 import 'package:bilimusic/feature/player/ui/components/player_ui_helpers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hugeicons/hugeicons.dart';
 
 class PlayerMainPage extends ConsumerWidget {
   const PlayerMainPage({
@@ -187,7 +188,7 @@ class _PlayerToolBar extends StatelessWidget {
           onTap: onPartTap,
         ),
         _PlayerToolButton(
-          icon: Icons.folder_open_outlined,
+          icon: const Icon(Icons.folder_open_outlined),
           isEnabled: hasItem,
           onTap: onOpenCollectionSheet,
         ),
@@ -226,7 +227,7 @@ class _PlayerCommentToolButton extends StatelessWidget {
       clipBehavior: Clip.none,
       children: <Widget>[
         _PlayerToolButton(
-          icon: Icons.comment_outlined,
+          icon: const Icon(Icons.comment_outlined),
           isEnabled: isEnabled,
           onTap: onTap,
         ),
@@ -279,7 +280,7 @@ class _PlayerQualityToolButton extends ConsumerWidget {
       clipBehavior: Clip.none,
       children: <Widget>[
         _PlayerToolButton(
-          icon: Icons.graphic_eq_rounded,
+          icon: const Icon(Icons.graphic_eq_rounded),
           isEnabled: isEnabled,
           onTap: !isEnabled
               ? null
@@ -377,14 +378,13 @@ class _PlayerPartToolButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
     final int currentPage = item?.page ?? 1;
 
     return Stack(
       clipBehavior: Clip.none,
       children: <Widget>[
         _PlayerToolButton(
-          icon: Icons.playlist_play_rounded,
+          icon: const HugeIcon(icon: HugeIcons.strokeRoundedListVideo),
           isEnabled: isEnabled,
           onTap: onTap,
         ),
@@ -438,7 +438,7 @@ class _PlayerToolButton extends StatelessWidget {
     this.onTap,
   });
 
-  final IconData icon;
+  final Widget icon;
   final bool isEnabled;
   final VoidCallback? onTap;
 
@@ -459,7 +459,10 @@ class _PlayerToolButton extends StatelessWidget {
           child: SizedBox(
             width: 24,
             height: 24,
-            child: Icon(icon, size: 24, color: foregroundColor),
+            child: IconTheme.merge(
+              data: IconThemeData(size: 24, color: foregroundColor),
+              child: icon,
+            ),
           ),
         ),
       ),

@@ -1,6 +1,8 @@
+import 'package:bilimusic/common/components/queue_mode_icon.dart';
 import 'package:bilimusic/feature/player/domain/player_state.dart';
 import 'package:bilimusic/feature/player/ui/components/player_ui_helpers.dart';
 import 'package:flutter/material.dart';
+import 'package:hugeicons/hugeicons.dart';
 
 class PlayerProgressSection extends StatelessWidget {
   const PlayerProgressSection({
@@ -104,12 +106,12 @@ class PlayerTransportControls extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: <Widget>[
         PlayerCircleActionButton(
-          icon: _buildQueueModeIcon(state.queueMode),
+          icon: queueModeIcon(state.queueMode),
           color: state.isReady ? activeModeColor : iconColor,
           onPressed: state.hasQueue ? onToggleQueueMode : null,
         ),
         PlayerCircleActionButton(
-          icon: Icons.skip_previous_rounded,
+          icon: const Icon(Icons.skip_previous_rounded),
           color: iconColor,
           onPressed: canGoPrevious ? onBackward : null,
         ),
@@ -142,25 +144,17 @@ class PlayerTransportControls extends StatelessWidget {
           ),
         ),
         PlayerCircleActionButton(
-          icon: Icons.skip_next_rounded,
+          icon: const Icon(Icons.skip_next_rounded),
           color: iconColor,
           onPressed: canGoNext ? onForward : null,
         ),
         PlayerCircleActionButton(
-          icon: Icons.list,
+          icon: const HugeIcon(icon: HugeIcons.strokeRoundedListMusic),
           color: iconColor,
           onPressed: state.hasQueue ? onOpenQueue : null,
         ),
       ],
     );
-  }
-
-  IconData _buildQueueModeIcon(PlayerQueueMode mode) {
-    return switch (mode) {
-      PlayerQueueMode.sequence => Icons.repeat_rounded,
-      PlayerQueueMode.singleRepeat => Icons.repeat_one_rounded,
-      PlayerQueueMode.shuffle => Icons.shuffle_rounded,
-    };
   }
 }
 
@@ -172,7 +166,7 @@ class PlayerCircleActionButton extends StatelessWidget {
     required this.onPressed,
   });
 
-  final IconData icon;
+  final Widget icon;
   final Color color;
   final VoidCallback? onPressed;
 
@@ -180,7 +174,7 @@ class PlayerCircleActionButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return IconButton(
       onPressed: onPressed,
-      icon: Icon(icon),
+      icon: icon,
       iconSize: 34,
       color: color,
       style: IconButton.styleFrom(
