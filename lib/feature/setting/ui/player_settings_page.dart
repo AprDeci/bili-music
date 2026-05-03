@@ -66,7 +66,7 @@ class _PlayerSettingsPageState extends ConsumerState<PlayerSettingsPage> {
             child: ExpansionTile(
               tilePadding: EdgeInsets.zero,
               leading: const Icon(Icons.lyrics_outlined),
-              title: const Text('Meting API 地址'),
+              title: const Text('Meting API 接口地址'),
               subtitle: Text(
                 ref.watch(metingSettingsLogicProvider).isEmpty
                     ? '未配置歌词查询服务'
@@ -81,7 +81,7 @@ class _PlayerSettingsPageState extends ConsumerState<PlayerSettingsPage> {
                     children: <Widget>[
                       UrlTextInput(
                         labelText: '服务地址',
-                        hintText: 'meting.example.com',
+                        hintText: 'https://meting.example.com/api',
                         value: _metingBaseUrlValue,
                         enabled: !_isSavingMetingBaseUrl,
                         onChanged: (String value) {
@@ -150,7 +150,9 @@ class _PlayerSettingsPageState extends ConsumerState<PlayerSettingsPage> {
       setState(() {
         _metingBaseUrlValue = ref.read(metingSettingsLogicProvider);
       });
-      ToastUtil.show(value.isEmpty ? '已清空 Meting API 地址' : 'Meting API 地址已保存');
+      ToastUtil.show(
+        value.isEmpty ? '已清空 Meting API 接口地址' : 'Meting API 接口地址已保存',
+      );
     } finally {
       if (mounted) {
         setState(() {

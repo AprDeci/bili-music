@@ -10,7 +10,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   group('MetingRepository', () {
-    test('search rejects missing base URL', () async {
+    test('search rejects missing API URL', () async {
       final MetingRepository repository = MetingRepository(Dio());
 
       await expectLater(
@@ -19,7 +19,7 @@ void main() {
           isA<MetingException>().having(
             (MetingException error) => error.message,
             'message',
-            contains('配置 Meting API 地址'),
+            contains('配置 Meting API 接口地址'),
           ),
         ),
       );
@@ -62,7 +62,11 @@ void main() {
       expect(items.single.title, '晴天');
       expect(items.single.author, '周杰伦');
       expect(items.single.lrc, contains('type=lrc'));
-      expect(adapter.requests.single.path, '/api');
+      expect(
+        adapter.requests.single.baseUrl,
+        'https://meting.example/custom/meting.php',
+      );
+      expect(adapter.requests.single.path, isEmpty);
       expect(adapter.requests.single.queryParameters['server'], 'tencent');
       expect(adapter.requests.single.queryParameters['type'], 'search');
       expect(adapter.requests.single.queryParameters['id'], '晴天');
@@ -159,7 +163,7 @@ Dio _dioWithResponse(Object response) {
 }
 
 Dio _dioWithAdapter(_FakeHttpClientAdapter adapter) {
-  return Dio(BaseOptions(baseUrl: 'https://meting.example'))
+  return Dio(BaseOptions(baseUrl: 'https://meting.example/custom/meting.php'))
     ..httpClientAdapter = adapter;
 }
 
@@ -181,6 +185,7 @@ class _FakeHttpClientAdapter implements HttpClientAdapter {
   ) async {
     requests.add(
       _Request(
+        baseUrl: options.baseUrl,
         path: options.path,
         queryParameters: Map<String, dynamic>.from(options.queryParameters),
       ),
@@ -212,8 +217,13 @@ class _FakeHttpClientAdapter implements HttpClientAdapter {
 enum _FakeResponseType { json, text }
 
 class _Request {
-  const _Request({required this.path, required this.queryParameters});
+  const _Request({
+    required this.baseUrl,
+    required this.path,
+    required this.queryParameters,
+  });
 
+  final String baseUrl;
   final String path;
   final Map<String, dynamic> queryParameters;
 }

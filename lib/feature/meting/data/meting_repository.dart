@@ -26,12 +26,12 @@ class MetingRepository {
     }
 
     if (_dio.options.baseUrl.trim().isEmpty) {
-      throw const MetingException('请先在播放器设置中配置 Meting API 地址。');
+      throw const MetingException('请先在播放器设置中配置 Meting API 接口地址。');
     }
 
     try {
       final Response<dynamic> response = await _dio.get<dynamic>(
-        '/api',
+        '',
         queryParameters: <String, dynamic>{
           'server': server.apiValue,
           'type': 'search',
