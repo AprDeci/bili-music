@@ -15,6 +15,7 @@ import 'package:bilimusic/feature/player/logic/player_lyrics_controller.dart';
 import 'package:bilimusic/feature/player/ui/components/desktop/quality_attach.dart';
 import 'package:bilimusic/feature/player/ui/components/desktop/queue_mode_attach.dart';
 import 'package:bilimusic/feature/player/ui/components/player_collection_sheet.dart';
+import 'package:bilimusic/feature/player/ui/components/player_dynamic_backdrop.dart';
 import 'package:bilimusic/feature/player/ui/components/player_lyric_panel.dart';
 import 'package:bilimusic/feature/player/ui/components/player_lyric_tools.dart';
 import 'package:bilimusic/feature/player/ui/components/player_part_selector.dart';
@@ -92,20 +93,10 @@ class _DesktopPlayerPageState extends ConsumerState<DesktopPlayerPage> {
       body: SafeArea(
         child: Stack(
           children: <Widget>[
-            Positioned(
-              left: -120,
-              bottom: 90,
-              child: _DesktopGlowOrb(
-                size: 360,
-                color: colorScheme.primary.withValues(alpha: 0.16),
-              ),
-            ),
-            Positioned(
-              right: -90,
-              top: 110,
-              child: _DesktopGlowOrb(
-                size: 300,
-                color: colorScheme.secondary.withValues(alpha: 0.13),
+            Positioned.fill(
+              child: PlayerDynamicBackdrop(
+                coverUrl: item?.coverUrl,
+                variant: PlayerBackdropVariant.desktop,
               ),
             ),
             Positioned(
@@ -766,29 +757,6 @@ class _DesktopPlayButton extends StatelessWidget {
       child: Icon(
         isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
         size: 30,
-      ),
-    );
-  }
-}
-
-class _DesktopGlowOrb extends StatelessWidget {
-  const _DesktopGlowOrb({required this.size, required this.color});
-
-  final double size;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return IgnorePointer(
-      child: Container(
-        width: size,
-        height: size,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          gradient: RadialGradient(
-            colors: <Color>[color, color.withValues(alpha: 0)],
-          ),
-        ),
       ),
     );
   }

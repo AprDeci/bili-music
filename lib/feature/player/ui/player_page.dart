@@ -4,13 +4,13 @@ import 'package:bilimusic/feature/favorites/logic/favorites_controller.dart';
 import 'package:bilimusic/feature/player/domain/playable_item.dart';
 import 'package:bilimusic/feature/player/domain/player_state.dart';
 import 'package:bilimusic/feature/player/logic/player_controller.dart';
+import 'package:bilimusic/feature/player/ui/components/player_dynamic_backdrop.dart';
 import 'package:bilimusic/feature/player/ui/components/player_lyric_page.dart';
 import 'package:bilimusic/feature/player/ui/components/player_main_page.dart';
 import 'package:bilimusic/feature/player/ui/components/player_collection_sheet.dart';
 import 'package:bilimusic/feature/player/ui/components/player_meta_page.dart';
 import 'package:bilimusic/feature/player/ui/components/player_part_selector.dart';
 import 'package:bilimusic/feature/player/ui/components/player_queue_sheet.dart';
-import 'package:bilimusic/feature/player/ui/components/player_shared.dart';
 import 'package:bilimusic/feature/player/ui/components/player_top_bar.dart';
 import 'package:bilimusic/router/player_navigation.dart';
 import 'package:flutter/material.dart';
@@ -96,11 +96,8 @@ class _PlayerPageState extends ConsumerState<PlayerPage> {
         decoration: BoxDecoration(),
         child: Stack(
           children: <Widget>[
-            const Positioned(top: -120, left: -90, child: PlayerBackdropOrb()),
-            const Positioned(
-              right: -70,
-              top: 180,
-              child: PlayerBackdropOrb(size: 220, opacity: 0.35),
+            Positioned.fill(
+              child: PlayerDynamicBackdrop(coverUrl: item?.coverUrl),
             ),
             SafeArea(
               child: Center(
