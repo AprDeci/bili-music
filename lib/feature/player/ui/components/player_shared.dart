@@ -35,7 +35,8 @@ class PlayerTrackHeader extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
                 style: theme.textTheme.headlineSmall?.copyWith(
                   color: colorScheme.onSurface,
-                  fontWeight: FontWeight.w800,
+                  fontSize: 22,
+                  fontWeight: FontWeight.w600,
                   height: 1.15,
                 ),
               ),
@@ -46,7 +47,8 @@ class PlayerTrackHeader extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
                 style: theme.textTheme.bodyLarge?.copyWith(
                   color: colorScheme.onSurface.withValues(alpha: 0.62),
-                  fontWeight: FontWeight.w600,
+                  fontWeight: FontWeight.w500,
+                  fontSize: 14,
                   height: 1.35,
                 ),
               ),

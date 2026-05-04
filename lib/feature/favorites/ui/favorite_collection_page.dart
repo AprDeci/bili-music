@@ -211,10 +211,14 @@ class _FavoriteCollectionPageState
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: theme.textTheme.titleSmall?.copyWith(
-                              fontWeight: FontWeight.w700,
+                              fontWeight: FontWeight.w500,
                             ),
                           ),
                           subtitle: Text(
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: colorScheme.onSurfaceVariant,
+                              height: 1.5,
+                            ),
                             _buildSubtitle(item),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,

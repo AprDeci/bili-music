@@ -241,6 +241,11 @@ class _DesktopFavoriteCollectionPageState
                                           ),
                                     ),
                                     subtitle: Text(
+                                      style: theme.textTheme.bodySmall
+                                          ?.copyWith(
+                                            color: colorScheme.onSurfaceVariant,
+                                            height: 1.5,
+                                          ),
                                       _buildSubtitle(item),
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
