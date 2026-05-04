@@ -1,5 +1,7 @@
 import 'package:bilimusic/common/components/bar_icon_button.dart';
 import 'package:bilimusic/common/components/cached_image.dart';
+import 'package:bilimusic/common/components/desktop/pingpong_marquee.dart';
+import 'package:bilimusic/common/components/desktop/pingpong_marquee_plus.dart';
 import 'package:bilimusic/common/components/desktop/volumn_attach.dart';
 import 'package:bilimusic/common/util/color_util.dart';
 import 'package:bilimusic/feature/comment/domain/comment_target.dart';
@@ -167,12 +169,16 @@ class _TrackSection extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
-              Text(
-                item?.title ?? '未选择播放内容',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: theme.textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.w600,
+              Semantics(
+                child: ExcludeSemantics(
+                  child: PingPongMarqueePlus(
+                    text: item?.title ?? '未选择播放内容',
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                    speed: 40,
+                    pauseDuration: const Duration(seconds: 2),
+                  ),
                 ),
               ),
               const SizedBox(height: 4),
