@@ -233,6 +233,7 @@ jobs:
             curl \
             file \
             imagemagick \
+            libayatana-appindicator3-dev \
             libfuse2 \
             libgtk-3-dev \
             libkeybinder-3.0-dev \
