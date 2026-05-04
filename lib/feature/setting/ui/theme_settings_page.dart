@@ -1,3 +1,4 @@
+import 'package:bilimusic/common/util/platform_util.dart';
 import 'package:bilimusic/core/theme/theme_catalog.dart';
 import 'package:bilimusic/core/theme/theme_logic.dart';
 import 'package:bilimusic/core/theme/theme_ui_model.dart';
@@ -19,15 +20,17 @@ class ThemeSettingsPage extends ConsumerWidget {
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
         children: <Widget>[
-          SwitchListTile.adaptive(
-            title: const Text('启用玻璃导航栏/播放栏'),
-            value: useGlassBar,
-            onChanged: (bool value) async {
-              await ref
-                  .read(appearanceSettingLogicProvider.notifier)
-                  .setUseGlassBar(value);
-            },
-          ),
+          PlatformUtil.isMobile
+              ? SwitchListTile.adaptive(
+                  title: const Text('启用玻璃导航栏/播放栏'),
+                  value: useGlassBar,
+                  onChanged: (bool value) async {
+                    await ref
+                        .read(appearanceSettingLogicProvider.notifier)
+                        .setUseGlassBar(value);
+                  },
+                )
+              : Container(),
           Text('主题模式', style: theme.textTheme.titleMedium),
           const SizedBox(height: 8),
           Card(
@@ -62,13 +65,11 @@ class ThemeSettingsPage extends ConsumerWidget {
             clipBehavior: Clip.antiAlias,
             child: RadioGroup(
               onChanged: (String? value) {
-                        if (value == null) {
-                          return;
-                        }
-                        ref
-                            .read(themeLogicProvider.notifier)
-                            .setThemeVariant(value);
-                      },
+                if (value == null) {
+                  return;
+                }
+                ref.read(themeLogicProvider.notifier).setThemeVariant(value);
+              },
               groupValue: themeState.themeVariantId,
               child: Column(
                 children: themeCatalog
@@ -80,8 +81,8 @@ class ThemeSettingsPage extends ConsumerWidget {
                         secondary: _ThemePreviewDot(
                           color: definition.seedColor,
                         ),
-                    );
-                  })
+                      );
+                    })
                     .toList(growable: false),
               ),
             ),

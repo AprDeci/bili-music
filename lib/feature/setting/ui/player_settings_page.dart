@@ -1,3 +1,4 @@
+import 'package:bilimusic/common/util/platform_util.dart';
 import 'package:bilimusic/common/util/toast_util.dart';
 import 'package:bilimusic/common/components/url_text_input.dart';
 import 'package:bilimusic/feature/player/domain/player_audio_quality_preference.dart';
@@ -38,18 +39,20 @@ class _PlayerSettingsPageState extends ConsumerState<PlayerSettingsPage> {
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
         children: <Widget>[
-          SwitchListTile.adaptive(
-            contentPadding: EdgeInsets.zero,
-            secondary: const Icon(Icons.multitrack_audio_outlined),
-            title: const Text('允许与其他应用同时播放'),
-            subtitle: Text('重启后生效', style: theme.textTheme.bodySmall),
-            value: allowMixWithOthers,
-            onChanged: (bool value) async {
-              await ref
-                  .read(playerSettingsLogicProvider.notifier)
-                  .setAllowMixWithOthers(value);
-            },
-          ),
+          PlatformUtil.isMobile
+              ? SwitchListTile.adaptive(
+                  contentPadding: EdgeInsets.zero,
+                  secondary: const Icon(Icons.multitrack_audio_outlined),
+                  title: const Text('允许与其他应用同时播放'),
+                  subtitle: Text('重启后生效', style: theme.textTheme.bodySmall),
+                  value: allowMixWithOthers,
+                  onChanged: (bool value) async {
+                    await ref
+                        .read(playerSettingsLogicProvider.notifier)
+                        .setAllowMixWithOthers(value);
+                  },
+                )
+              : Container(),
           ListTile(
             contentPadding: EdgeInsets.zero,
             leading: const Icon(Icons.graphic_eq_rounded),
