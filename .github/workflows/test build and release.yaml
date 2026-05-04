@@ -18,6 +18,11 @@ on:
         required: true
         type: boolean
         default: false
+      build_macos_dmg:
+        description: Build unsigned macOS DMG
+        required: true
+        type: boolean
+        default: false
       build_linux_appimage:
         description: Build Linux AppImage
         required: true
@@ -110,6 +115,55 @@ jobs:
 
       - name: Show IPA Info
         run: ls -lh bili-music.ipa
+
+  # ==================== macOS Job ====================
+  build-macos-dmg:
+    name: Build macOS DMG (Unsigned)
+    runs-on: macos-latest
+    if: ${{ inputs.build_macos_dmg }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: "beta"
+          flutter-version: "3.43.0-0.2.pre"
+          cache: true
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install packaging tools
+        run: |
+          npm install -g appdmg
+          dart pub global activate fastforge
+          echo "$HOME/.pub-cache/bin" >> "$GITHUB_PATH"
+
+      - name: Flutter Pub Get
+        run: flutter pub get
+
+      - name: Prepare DMG config
+        run: |
+          mkdir -p macos/packaging/dmg
+          cp scripts/macos/make_config.yaml macos/packaging/dmg/make_config.yaml
+
+      - name: Build macOS DMG
+        run: fastforge package --platform macos --targets dmg
+
+      - name: Upload macOS DMG Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: bili-music-macos-dmg
+          path: |
+            dist/**/*.dmg
+            build/**/*.dmg
+            *.dmg
+          retention-days: 30
 
   # ==================== Windows Job ====================
   build-windows:
