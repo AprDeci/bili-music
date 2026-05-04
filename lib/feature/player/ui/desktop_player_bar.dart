@@ -1,6 +1,5 @@
 import 'package:bilimusic/common/components/bar_icon_button.dart';
 import 'package:bilimusic/common/components/cached_image.dart';
-import 'package:bilimusic/common/components/desktop/pingpong_marquee.dart';
 import 'package:bilimusic/common/components/desktop/pingpong_marquee_plus.dart';
 import 'package:bilimusic/common/components/desktop/volumn_attach.dart';
 import 'package:bilimusic/common/util/color_util.dart';

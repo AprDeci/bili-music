@@ -22,12 +22,10 @@ FavoritesLocalRepository favoritesLocalRepository(Ref ref) {
 
 class FavoritesLocalRepository {
   FavoritesLocalRepository({
-    required Box<FavoriteCollection> collectionsBox,
-    required Box<FavoriteEntry> entriesBox,
-    required Box<FavoriteMembership> membershipsBox,
-  }) : _collectionsBox = collectionsBox,
-       _entriesBox = entriesBox,
-       _membershipsBox = membershipsBox;
+    required this._collectionsBox,
+    required this._entriesBox,
+    required this._membershipsBox,
+  });
 
   final Box<FavoriteCollection> _collectionsBox;
   final Box<FavoriteEntry> _entriesBox;

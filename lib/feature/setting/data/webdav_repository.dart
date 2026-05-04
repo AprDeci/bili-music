@@ -18,8 +18,7 @@ WebDavRepository webDavRepository(Ref ref) {
 class WebDavRepository {
   static const String _remoteDir = '/bilimusic';
 
-  WebDavRepository({required AppSettingsStore settingsStore})
-    : _settingsStore = settingsStore;
+  WebDavRepository({required this._settingsStore});
 
   final AppSettingsStore _settingsStore;
 

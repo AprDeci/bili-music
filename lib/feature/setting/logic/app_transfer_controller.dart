@@ -14,8 +14,7 @@ AppTransferController appTransferController(Ref ref) {
 }
 
 class AppTransferController {
-  AppTransferController({required AppTransferRepository repository})
-    : _repository = repository;
+  AppTransferController({required this._repository});
 
   final AppTransferRepository _repository;
 

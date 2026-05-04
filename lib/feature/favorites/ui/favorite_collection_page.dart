@@ -17,7 +17,6 @@ import 'package:bilimusic/feature/player/ui/components/player_collection_sheet.d
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:hugeicons/hugeicons.dart';
 
 class FavoriteCollectionPage extends ConsumerStatefulWidget {
   const FavoriteCollectionPage({super.key, required this.collectionId});

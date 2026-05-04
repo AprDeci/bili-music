@@ -26,10 +26,9 @@ AppTransferRepository appTransferRepository(Ref ref) {
 
 class AppTransferRepository {
   AppTransferRepository({
-    required FavoritesLocalRepository favoritesRepository,
-    required AppSettingsStore settingsStore,
-  }) : _favoritesRepository = favoritesRepository,
-       _settingsStore = settingsStore;
+    required this._favoritesRepository,
+    required this._settingsStore,
+  });
 
   final FavoritesLocalRepository _favoritesRepository;
   final AppSettingsStore _settingsStore;

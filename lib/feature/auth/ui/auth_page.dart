@@ -359,7 +359,7 @@ class _QrCard extends StatelessWidget {
                 dataModuleShape: QrDataModuleShape.square,
                 color: Color(0xFF111111),
               ),
-              errorStateBuilder: (_, __) {
+              errorStateBuilder: (_, _) {
                 return const Center(child: Text('二维码生成失败'));
               },
             ),

@@ -16,13 +16,21 @@ class MusicRankingItem with _$MusicRankingItem {
     required this.durationText,
   });
 
+  @override
   final int aid;
+  @override
   final String bvid;
+  @override
   final String title;
+  @override
   final String coverUrl;
+  @override
   final String author;
+  @override
   final String tagText;
+  @override
   final String playCountText;
+  @override
   final String durationText;
 
   PlayableItem toPlayableItem() {

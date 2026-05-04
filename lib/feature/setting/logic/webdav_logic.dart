@@ -20,12 +20,10 @@ WebDavLogic webDavLogic(Ref ref) {
 
 class WebDavLogic {
   WebDavLogic({
-    required WebDavRepository repository,
-    required AppTransferController appTransferController,
-    required FavoritesController favoritesController,
-  }) : _repository = repository,
-       _appTransferController = appTransferController,
-       _favoritesController = favoritesController;
+    required this._repository,
+    required this._appTransferController,
+    required this._favoritesController,
+  });
 
   final WebDavRepository _repository;
   final AppTransferController _appTransferController;
