@@ -1,4 +1,4 @@
-name: Flutter Release (Android Signed + iOS Unsigned)
+name: Flutter Release (Android Signed + iOS/macOS Unsigned)
 
 on:
   push:
@@ -60,6 +60,63 @@ jobs:
         with:
           tag_name: ${{ github.ref_name }}
           files: bili-music-*.ipa
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  build-macos-dmg:
+    name: Build macOS DMG (Unsigned)
+    runs-on: macos-latest
+    needs:
+      - release
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: "beta"
+          flutter-version: "3.43.0-0.2.pre"
+          cache: true
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install packaging tools
+        run: |
+          npm install -g appdmg
+          dart pub global activate fastforge
+          echo "$HOME/.pub-cache/bin" >> "$GITHUB_PATH"
+
+      - name: Flutter Pub Get
+        run: flutter pub get
+
+      - name: Prepare DMG config
+        run: |
+          mkdir -p macos/packaging/dmg
+          cp scripts/macos/make_config.yaml macos/packaging/dmg/make_config.yaml
+
+      - name: Build macOS DMG
+        run: fastforge package --platform macos --targets dmg
+
+      - name: Collect macOS DMG
+        run: |
+          mkdir -p build/artifacts
+          DMG_PATH="$(find dist -name '*.dmg' -type f -print -quit)"
+          if [ -z "$DMG_PATH" ]; then
+            echo "No DMG found under dist"
+            exit 1
+          fi
+          cp "$DMG_PATH" "build/artifacts/bili-music-${GITHUB_REF_NAME}-macos.dmg"
+
+      - name: Upload macOS DMG release asset
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          files: build/artifacts/*.dmg
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 

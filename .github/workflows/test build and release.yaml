@@ -155,14 +155,21 @@ jobs:
       - name: Build macOS DMG
         run: fastforge package --platform macos --targets dmg
 
+      - name: Collect macOS DMG
+        run: |
+          mkdir -p build/artifacts
+          DMG_PATH="$(find dist -name '*.dmg' -type f -print -quit)"
+          if [ -z "$DMG_PATH" ]; then
+            echo "No DMG found under dist"
+            exit 1
+          fi
+          cp "$DMG_PATH" "build/artifacts/bili-music-Test-Build-macos.dmg"
+
       - name: Upload macOS DMG Artifact
         uses: actions/upload-artifact@v4
         with:
           name: bili-music-macos-dmg
-          path: |
-            dist/**/*.dmg
-            build/**/*.dmg
-            *.dmg
+          path: build/artifacts/*.dmg
           retention-days: 30
 
   # ==================== Windows Job ====================
