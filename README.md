@@ -5,10 +5,14 @@ flutter 制作的 B站音乐客户端()
 
 ## 图片
 
-![showcase](https://github.com/AprDeci/bili-music/blob/main/pics/v1.3.0.jpg)
+![showcase](https://github.com/AprDeci/bili-music/blob/main/pics/v1.4.0.jpg)
+
+![showcase_desktop](https://github.com/AprDeci/bili-music/blob/main/pics/desktop/v1.4.0.webp)
 
 ## 关于metingApi
 基于[metowolf/Meting-API](https://github.com/metowolf/Meting-API)部署,1.3版本会自动补充/api路径.
+
+公益API: https://meting.aprdec.top/api
 
 后面会取消对于metingApi的依赖
 
