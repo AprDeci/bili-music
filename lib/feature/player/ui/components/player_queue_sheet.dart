@@ -36,6 +36,7 @@ Future<void> showDesktopPlayerQueuePanel({
   }
 
   await showDesktopSidePanel(
+    tag: 'player_queue_panel',
     context: context,
     width: 420,
     builder: (BuildContext context) {

@@ -37,6 +37,7 @@ Future<void> showDesktopPlayerPartSelectorPanel({
   required PlayerController controller,
 }) async {
   await showDesktopSidePanel(
+    tag: 'player_part_selector',
     context: context,
     width: 420,
     builder: (BuildContext context) {

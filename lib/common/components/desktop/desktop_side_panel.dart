@@ -7,6 +7,9 @@ final GlobalKey desktopSidePanelHostKey = GlobalKey(
   debugLabel: 'desktop_side_panel_host',
 );
 
+final Set<String> _activeDesktopSidePanelTags = <String>{};
+final Map<String, int> _desktopSidePanelTokens = <String, int>{};
+
 class DesktopSidePanel extends StatelessWidget {
   const DesktopSidePanel({
     super.key,
@@ -75,7 +78,19 @@ Future<void> showDesktopSidePanel({
   bool clickMaskDismiss = true,
   bool keepSingle = true,
   String tag = desktopSidePanelTag,
-}) {
+}) async {
+  final bool isActive = _activeDesktopSidePanelTags.contains(tag);
+  final bool exists = SmartDialog.checkExist(tag: tag);
+  if (isActive || exists) {
+    _activeDesktopSidePanelTags.remove(tag);
+    await SmartDialog.dismiss<void>(tag: tag);
+    return;
+  }
+
+  final int token = (_desktopSidePanelTokens[tag] ?? 0) + 1;
+  _desktopSidePanelTokens[tag] = token;
+  _activeDesktopSidePanelTags.add(tag);
+
   final MediaQueryData mediaQuery = MediaQuery.of(context);
   final Size screenSize = mediaQuery.size;
   final Rect? hostRect = _resolveDesktopSidePanelHostRect();
@@ -83,7 +98,7 @@ Future<void> showDesktopSidePanel({
   final double top = hostRect?.top ?? 0;
   final double right = hostRect == null ? 0 : screenSize.width - hostRect.right;
 
-  return SmartDialog.show<void>(
+  await SmartDialog.show<void>(
     tag: tag,
     usePenetrate: true,
     alignment: Alignment.topRight,
@@ -103,6 +118,14 @@ Future<void> showDesktopSidePanel({
     },
     clickMaskDismiss: clickMaskDismiss,
     keepSingle: keepSingle,
+    onDismiss: () {
+      Future<void>.delayed(const Duration(milliseconds: 220), () {
+        if (_desktopSidePanelTokens[tag] == token &&
+            !SmartDialog.checkExist(tag: tag)) {
+          _activeDesktopSidePanelTags.remove(tag);
+        }
+      });
+    },
     builder: (BuildContext context) {
       return Padding(
         padding: EdgeInsets.only(top: top, right: right),

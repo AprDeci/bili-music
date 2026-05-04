@@ -200,6 +200,7 @@ class _DesktopPlayerPageState extends ConsumerState<DesktopPlayerPage> {
 
   Future<void> _openComments(PlayableItem item) async {
     await showDesktopSidePanel(
+      tag: 'player_comments_panel',
       context: context,
       width: 520,
       builder: (BuildContext context) => CommentPage(
