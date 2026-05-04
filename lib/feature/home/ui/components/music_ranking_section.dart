@@ -1,17 +1,22 @@
 import 'dart:math' as math;
 
+import 'package:bilimusic/common/components/bar_icon_button.dart';
 import 'package:bilimusic/common/components/cached_image.dart';
+import 'package:bilimusic/common/util/platform_util.dart';
 import 'package:bilimusic/common/util/player_util.dart';
 import 'package:bilimusic/feature/home/domain/music_ranking_item.dart';
 import 'package:bilimusic/feature/home/logic/music_ranking_controller.dart';
 import 'package:bilimusic/feature/player/domain/playable_item.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hugeicons/hugeicons.dart';
 
 class MusicRankingSection extends ConsumerWidget {
   const MusicRankingSection({super.key});
 
   static const int _columnSize = 3;
+  static const int _desktopPageColumns = 2;
+  static const int _desktopPageSize = _columnSize * _desktopPageColumns;
   static const int _sectionCount = 2;
 
   @override
@@ -91,25 +96,40 @@ class _MusicRankingSplitView extends StatelessWidget {
   Widget build(BuildContext context) {
     final List<_RankingSectionData> sections = _splitIntoSections(items);
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: List<Widget>.generate(sections.length, (int index) {
-        final _RankingSectionData section = sections[index];
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) {
+        if (PlatformUtil.isDesktop) {
+          return SizedBox(
+            height: 202,
+            child: _MusicRankingDesktopPager(
+              items: items,
+              startRank: 1,
+              onItemTap: onItemTap,
+            ),
+          );
+        }
 
-        return Padding(
-          padding: EdgeInsets.only(
-            bottom: index == sections.length - 1 ? 0 : 18,
-          ),
-          child: _MusicRankingGroup(
-            title: section.title,
-            items: section.items,
-            startRank: section.startRank,
-            onItemTap: (int localIndex) {
-              onItemTap(section.startIndex + localIndex);
-            },
-          ),
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: List<Widget>.generate(sections.length, (int index) {
+            final _RankingSectionData section = sections[index];
+
+            return Padding(
+              padding: EdgeInsets.only(
+                bottom: index == sections.length - 1 ? 0 : 18,
+              ),
+              child: _MusicRankingGroup(
+                title: section.title,
+                items: section.items,
+                startRank: section.startRank,
+                onItemTap: (int localIndex) {
+                  onItemTap(section.startIndex + localIndex);
+                },
+              ),
+            );
+          }),
         );
-      }),
+      },
     );
   }
 
@@ -227,6 +247,14 @@ class _MusicRankingPager extends StatelessWidget {
 
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
+        if (PlatformUtil.isDesktop) {
+          return _MusicRankingDesktopPager(
+            items: items,
+            startRank: startRank,
+            onItemTap: onItemTap,
+          );
+        }
+
         final double pageWidth = math.min(constraints.maxWidth * 0.9, 620);
         final double viewportFraction = constraints.maxWidth <= 0
             ? 1
@@ -265,19 +293,257 @@ class _MusicRankingPager extends StatelessWidget {
   }
 }
 
+class _MusicRankingDesktopPager extends StatefulWidget {
+  const _MusicRankingDesktopPager({
+    required this.items,
+    required this.startRank,
+    required this.onItemTap,
+  });
+
+  final List<MusicRankingItem> items;
+  final int startRank;
+  final ValueChanged<int> onItemTap;
+
+  @override
+  State<_MusicRankingDesktopPager> createState() =>
+      _MusicRankingDesktopPagerState();
+}
+
+class _MusicRankingDesktopPagerState extends State<_MusicRankingDesktopPager> {
+  late final PageController _pageController;
+  bool _isHovering = false;
+  int _currentPage = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _pageController = PageController();
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final List<List<List<MusicRankingItem>>> pages = _buildPages(widget.items);
+    if (pages.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    final bool canPage = pages.length > 1;
+
+    return MouseRegion(
+      onEnter: (_) => setState(() => _isHovering = true),
+      onExit: (_) => setState(() => _isHovering = false),
+      child: Stack(
+        children: <Widget>[
+          PageView.builder(
+            controller: _pageController,
+            itemCount: pages.length,
+            onPageChanged: (int page) {
+              setState(() => _currentPage = page);
+            },
+            itemBuilder: (BuildContext context, int pageIndex) {
+              return _MusicRankingPageGrid(
+                columns: pages[pageIndex],
+                pageStartIndex:
+                    pageIndex * MusicRankingSection._desktopPageSize,
+                startRank: widget.startRank,
+                onItemTap: widget.onItemTap,
+              );
+            },
+          ),
+          if (canPage) ...<Widget>[
+            Positioned(
+              left: 0,
+              top: 0,
+              bottom: 0,
+              child: Center(
+                child: IgnorePointer(
+                  ignoring: !_isHovering,
+                  child: AnimatedOpacity(
+                    opacity: _isHovering ? 1 : 0,
+                    duration: const Duration(milliseconds: 150),
+                    child: BarIconButton(
+                      icon: Icons.chevron_left_rounded,
+                      width: 34,
+                      height: 72,
+                      iconSize: 34,
+                      onPressed: () => _goPrevious(pages.length),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            Positioned(
+              right: 0,
+              top: 0,
+              bottom: 0,
+              child: Center(
+                child: IgnorePointer(
+                  ignoring: !_isHovering,
+                  child: AnimatedOpacity(
+                    opacity: _isHovering ? 1 : 0,
+                    duration: const Duration(milliseconds: 150),
+                    child: BarIconButton(
+                      icon: Icons.chevron_right_rounded,
+                      width: 34,
+                      height: 72,
+                      iconSize: 34,
+                      onPressed: () => _goNext(pages.length),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  List<List<List<MusicRankingItem>>> _buildPages(List<MusicRankingItem> items) {
+    final List<List<List<MusicRankingItem>>> pages =
+        <List<List<MusicRankingItem>>>[];
+
+    for (
+      int pageStart = 0;
+      pageStart < items.length;
+      pageStart += MusicRankingSection._desktopPageSize
+    ) {
+      final int pageEnd = math.min(
+        pageStart + MusicRankingSection._desktopPageSize,
+        items.length,
+      );
+      final List<List<MusicRankingItem>> columns = <List<MusicRankingItem>>[];
+
+      for (
+        int columnStart = pageStart;
+        columnStart < pageEnd;
+        columnStart += MusicRankingSection._columnSize
+      ) {
+        final int columnEnd = math.min(
+          columnStart + MusicRankingSection._columnSize,
+          pageEnd,
+        );
+        columns.add(items.sublist(columnStart, columnEnd));
+      }
+
+      pages.add(columns);
+    }
+
+    return pages;
+  }
+
+  void _goPrevious(int pageCount) {
+    final int targetPage = _currentPage == 0 ? pageCount - 1 : _currentPage - 1;
+    _animateToPage(targetPage);
+  }
+
+  void _goNext(int pageCount) {
+    final int targetPage = _currentPage == pageCount - 1 ? 0 : _currentPage + 1;
+    _animateToPage(targetPage);
+  }
+
+  void _animateToPage(int page) {
+    _pageController.animateToPage(
+      page,
+      duration: const Duration(milliseconds: 260),
+      curve: Curves.easeOutCubic,
+    );
+  }
+}
+
+class _MusicRankingPageGrid extends StatelessWidget {
+  const _MusicRankingPageGrid({
+    required this.columns,
+    required this.pageStartIndex,
+    required this.startRank,
+    required this.onItemTap,
+  });
+
+  final List<List<MusicRankingItem>> columns;
+  final int pageStartIndex;
+  final int startRank;
+  final ValueChanged<int> onItemTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final List<Widget> children = <Widget>[];
+
+    for (
+      int index = 0;
+      index < MusicRankingSection._desktopPageColumns;
+      index++
+    ) {
+      if (index > 0) {
+        children.add(const SizedBox(width: 30));
+      }
+
+      if (index >= columns.length) {
+        children.add(const Expanded(child: SizedBox.shrink()));
+        continue;
+      }
+
+      children.add(
+        Expanded(
+          child: _MusicRankingColumn(
+            items: columns[index],
+            startRank:
+                startRank +
+                pageStartIndex +
+                index * MusicRankingSection._columnSize,
+            onItemTap: (int localIndex) {
+              onItemTap(
+                pageStartIndex +
+                    index * MusicRankingSection._columnSize +
+                    localIndex,
+              );
+            },
+          ),
+        ),
+      );
+    }
+
+    return Row(children: children);
+  }
+}
+
 class _MusicRankingLoading extends StatelessWidget {
   const _MusicRankingLoading();
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: List<Widget>.generate(2, (int index) {
-        return Padding(
-          padding: EdgeInsets.only(bottom: index == 1 ? 0 : 18),
-          child: const _MusicRankingLoadingGroup(),
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) {
+        if (PlatformUtil.isDesktop) {
+          return const SizedBox(
+            height: 202,
+            child: Row(
+              children: <Widget>[
+                Expanded(child: _MusicRankingLoadingColumn()),
+                SizedBox(width: 30),
+                Expanded(child: _MusicRankingLoadingColumn()),
+                SizedBox(width: 30),
+                Expanded(child: _MusicRankingLoadingColumn()),
+              ],
+            ),
+          );
+        }
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: List<Widget>.generate(2, (int index) {
+            return Padding(
+              padding: EdgeInsets.only(bottom: index == 1 ? 0 : 18),
+              child: const _MusicRankingLoadingGroup(),
+            );
+          }),
         );
-      }),
+      },
     );
   }
 }
@@ -305,7 +571,22 @@ class _MusicRankingLoadingGroup extends StatelessWidget {
           height: 202,
           child: LayoutBuilder(
             builder: (BuildContext context, BoxConstraints constraints) {
-              final double pageWidth = math.min(constraints.maxWidth * 0.9, 620);
+              if (PlatformUtil.isDesktop) {
+                return const Row(
+                  children: <Widget>[
+                    Expanded(child: _MusicRankingLoadingColumn()),
+                    SizedBox(width: 30),
+                    Expanded(child: _MusicRankingLoadingColumn()),
+                    SizedBox(width: 30),
+                    Expanded(child: _MusicRankingLoadingColumn()),
+                  ],
+                );
+              }
+
+              final double pageWidth = math.min(
+                constraints.maxWidth * 0.9,
+                620,
+              );
 
               return SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
@@ -553,7 +834,7 @@ class _MusicRankingTile extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: theme.textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.w900,
+                        fontWeight: FontWeight.w600,
                         fontSize: 14,
                         height: 1,
                         letterSpacing: -1.4,
@@ -584,7 +865,6 @@ class _MusicRankingTile extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 4),
-              const _PlayGlyph(),
             ],
           ),
         ),
@@ -643,26 +923,6 @@ class _TagBadge extends StatelessWidget {
           fontWeight: FontWeight.w800,
           height: 1,
         ),
-      ),
-    );
-  }
-}
-
-class _PlayGlyph extends StatelessWidget {
-  const _PlayGlyph();
-
-  @override
-  Widget build(BuildContext context) {
-    final ColorScheme colorScheme = Theme.of(context).colorScheme;
-
-    return Container(
-      width: 38,
-      height: 38,
-      alignment: Alignment.center,
-      child: Icon(
-        Icons.play_arrow_rounded,
-        color: colorScheme.onSurfaceVariant,
-        size: 32,
       ),
     );
   }

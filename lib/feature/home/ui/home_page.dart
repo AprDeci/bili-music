@@ -27,7 +27,9 @@ class HomePage extends ConsumerWidget {
             ref.read(musicRankingControllerProvider.notifier).refresh(),
         child: ListView(
           physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.fromLTRB(16, 20, 16, 0),
+          padding: PlatformUtil.isDesktop
+              ? const EdgeInsets.symmetric(horizontal: 0)
+              : const EdgeInsets.fromLTRB(16, 20, 16, 0),
           children: <Widget>[
             const RecentPlaybackSection(),
             const SizedBox(height: 30),
