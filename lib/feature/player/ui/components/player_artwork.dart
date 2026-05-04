@@ -13,16 +13,7 @@ class PlayerArtworkFrame extends StatelessWidget {
     return AspectRatio(
       aspectRatio: 1,
       child: DecoratedBox(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(34),
-          boxShadow: <BoxShadow>[
-            BoxShadow(
-              color: colorScheme.primary.withValues(alpha: 0.16),
-              blurRadius: 32,
-              offset: const Offset(0, 12),
-            ),
-          ],
-        ),
+        decoration: BoxDecoration(borderRadius: BorderRadius.circular(34)),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(34),
           child: Stack(
