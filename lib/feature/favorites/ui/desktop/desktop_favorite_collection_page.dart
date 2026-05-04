@@ -1,3 +1,4 @@
+import 'package:bilimusic/common/bm_icons.dart';
 import 'package:bilimusic/common/components/bottom_page_spacer.dart';
 import 'package:bilimusic/common/components/cached_image.dart';
 import 'package:bilimusic/common/logger.dart';
@@ -245,9 +246,13 @@ class _DesktopFavoriteCollectionPageState
                                       overflow: TextOverflow.ellipsis,
                                     ),
                                     trailing: Row(
+                                      spacing: 0,
+                                      mainAxisAlignment: MainAxisAlignment.end,
                                       mainAxisSize: MainAxisSize.min,
                                       children: <Widget>[
                                         IconButton(
+                                          padding: EdgeInsets.zero,
+                                          visualDensity: VisualDensity.compact,
                                           tooltip: '播放',
                                           onPressed: () async {
                                             await _playCollectionItem(
@@ -259,11 +264,11 @@ class _DesktopFavoriteCollectionPageState
                                               index: index,
                                             );
                                           },
-                                          icon: const Icon(
-                                            Icons.play_arrow_rounded,
-                                          ),
+                                          icon: const Icon(BmIcons.addPlaylist),
                                         ),
                                         IconButton(
+                                          padding: EdgeInsets.zero,
+                                          visualDensity: VisualDensity.compact,
                                           tooltip: '更多',
                                           onPressed: () async {
                                             await _showItemActionSheet(
@@ -274,7 +279,7 @@ class _DesktopFavoriteCollectionPageState
                                             );
                                           },
                                           icon: const Icon(
-                                            Icons.more_horiz_rounded,
+                                            Icons.more_vert_outlined,
                                           ),
                                         ),
                                       ],
