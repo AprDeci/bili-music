@@ -307,6 +307,9 @@ class _ScaffoldWithNavBarState extends ConsumerState<ScaffoldWithNavBar> {
   bool _usesCollapsedBottomChrome(String location) {
     return location == '/profile/favorites' ||
         location.startsWith('/profile/favorites/') ||
-        location == '/search';
+        location == '/search' ||
+        location == '/home/player' ||
+        location == '/profile/player' ||
+        location == '/search/player';
   }
 }

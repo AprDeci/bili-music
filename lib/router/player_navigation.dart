@@ -1,4 +1,5 @@
 import 'package:bilimusic/common/logger.dart';
+import 'package:bilimusic/common/util/platform_util.dart';
 import 'package:bilimusic/feature/player/domain/playable_item.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -26,10 +27,28 @@ Future<void> openPlayerPage(BuildContext context, {PlayableItem? item}) async {
 
   _playerPageOpening = true;
   try {
-    await context.push(playerRoutePath, extra: item);
+    await context.push(_playerPathForCurrentLocation(context), extra: item);
   } finally {
     _playerPageOpening = false;
   }
+}
+
+String _playerPathForCurrentLocation(BuildContext context) {
+  if (PlatformUtil.isDesktop) {
+    return playerRoutePath;
+  }
+
+  final String location = GoRouter.of(
+    context,
+  ).routeInformationProvider.value.uri.path;
+  if (location == '/search' || location.startsWith('/search/')) {
+    return '/search/player';
+  }
+  if (location == '/profile' || location.startsWith('/profile/')) {
+    return '/profile/player';
+  }
+
+  return '/home/player';
 }
 
 void markPlayerPageVisible() {
@@ -54,8 +73,7 @@ void _setPlayerPageVisible(bool value, {required String logLabel}) {
     _logger.d(logLabel);
   }
 
-  final SchedulerPhase schedulerPhase =
-      WidgetsBinding.instance.schedulerPhase;
+  final SchedulerPhase schedulerPhase = WidgetsBinding.instance.schedulerPhase;
   final bool shouldDefer =
       schedulerPhase == SchedulerPhase.transientCallbacks ||
       schedulerPhase == SchedulerPhase.midFrameMicrotasks ||

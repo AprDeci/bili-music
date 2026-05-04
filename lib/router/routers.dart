@@ -40,7 +40,15 @@ final List<Map<String, dynamic>> mobileTabs = [
   {
     'path': '/home',
     'builder': (context, state) => const HomePage(),
-    'routes': const <RouteBase>[],
+    'routes': <RouteBase>[
+      GoRoute(
+        path: 'player',
+        builder: (context, state) {
+          final PlayableItem? item = state.extra as PlayableItem?;
+          return PlayerPage(initialItem: item);
+        },
+      ),
+    ],
     'icon': HugeIcon(icon: HugeIcons.strokeRoundedHome07),
     'label': '首页',
   },
@@ -57,6 +65,13 @@ final List<Map<String, dynamic>> mobileTabs = [
               : FavoriteCollectionPage(collectionId: collectionId);
         },
       ),
+      GoRoute(
+        path: 'player',
+        builder: (context, state) {
+          final PlayableItem? item = state.extra as PlayableItem?;
+          return PlayerPage(initialItem: item);
+        },
+      ),
     ],
     'icon': HugeIcon(icon: HugeIcons.strokeRoundedUser),
     'label': '我的',
@@ -64,7 +79,15 @@ final List<Map<String, dynamic>> mobileTabs = [
   {
     'path': '/search',
     'builder': (context, state) => const SearchPage(),
-    'routes': const <RouteBase>[],
+    'routes': <RouteBase>[
+      GoRoute(
+        path: 'player',
+        builder: (context, state) {
+          final PlayableItem? item = state.extra as PlayableItem?;
+          return PlayerPage(initialItem: item);
+        },
+      ),
+    ],
     'icon': Icons.search,
     'label': '搜索',
   },
@@ -121,34 +144,6 @@ final List<RouteBase> mobileRoutes = [
     builder: (context, state) {
       final CommentTarget target = state.extra! as CommentTarget;
       return CommentPage(target: target);
-    },
-  ),
-  GoRoute(
-    path: '/player',
-    parentNavigatorKey: _rootNavigatorKey,
-    pageBuilder: (context, state) {
-      final PlayableItem? item = state.extra as PlayableItem?;
-      return CustomTransitionPage<void>(
-        key: state.pageKey,
-        child: PlayerPage(initialItem: item),
-        transitionDuration: const Duration(milliseconds: 450),
-        reverseTransitionDuration: const Duration(milliseconds: 400),
-        transitionsBuilder: (context, animation, secondaryAnimation, child) {
-          final Animation<Offset> offsetAnimation =
-              Tween<Offset>(
-                begin: const Offset(0, 1),
-                end: Offset.zero,
-              ).animate(
-                CurvedAnimation(
-                  parent: animation,
-                  curve: Curves.easeOutCubic,
-                  reverseCurve: Curves.easeInCubic,
-                ),
-              );
-
-          return SlideTransition(position: offsetAnimation, child: child);
-        },
-      );
     },
   ),
   GoRoute(
