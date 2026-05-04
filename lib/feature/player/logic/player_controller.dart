@@ -311,8 +311,17 @@ class PlayerController extends Notifier<PlayerState>
     }
 
     final int generation = _nextGeneration();
-    final int resolvedIndex = startIndex.clamp(0, items.length - 1);
-    final List<PlayableItem> queue = List<PlayableItem>.unmodifiable(items);
+    final PlayableItem startItem = items[startIndex.clamp(0, items.length - 1)];
+    final List<PlayableItem> uniqueItems = _dedupeQueueItems(items);
+    final int resolvedIndex = uniqueItems.indexWhere(
+      (PlayableItem item) => item.stableId == startItem.stableId,
+    );
+    if (resolvedIndex < 0) {
+      return;
+    }
+    final List<PlayableItem> queue = List<PlayableItem>.unmodifiable(
+      uniqueItems,
+    );
     _qualityOverrides.clear();
     _queueManager.resetForQueue(currentIndex: resolvedIndex);
     state = state.copyWith(
@@ -390,8 +399,18 @@ class PlayerController extends Notifier<PlayerState>
       return;
     }
 
+    final Set<String> queuedIds = state.queue
+        .map((PlayableItem item) => item.stableId)
+        .toSet();
+    final List<PlayableItem> appendItems = items
+        .where((PlayableItem item) => queuedIds.add(item.stableId))
+        .toList(growable: false);
+    if (appendItems.isEmpty) {
+      return;
+    }
+
     final List<PlayableItem> queue = List<PlayableItem>.unmodifiable(
-      <PlayableItem>[...state.queue, ...items],
+      <PlayableItem>[...state.queue, ...appendItems],
     );
 
     if (!state.hasActiveQueueIndex) {
@@ -410,6 +429,18 @@ class PlayerController extends Notifier<PlayerState>
   }
 
   Future<void> playNext(PlayableItem item) async {
+    final int existingIndex = state.queue.indexWhere(
+      (PlayableItem queuedItem) => queuedItem.stableId == item.stableId,
+    );
+    if (existingIndex >= 0) {
+      final int targetIndex = state.hasActiveQueueIndex
+          ? state.currentQueueIndex! +
+                (existingIndex < state.currentQueueIndex! ? 0 : 1)
+          : 0;
+      await reorderQueueItem(existingIndex, targetIndex);
+      return;
+    }
+
     if (!state.hasActiveQueueIndex) {
       await setQueue(<PlayableItem>[item]);
       return;
@@ -419,6 +450,32 @@ class PlayerController extends Notifier<PlayerState>
     final List<PlayableItem> nextQueue = List<PlayableItem>.of(state.queue)
       ..insert(insertIndex, item);
     state = state.copyWith(queue: List<PlayableItem>.unmodifiable(nextQueue));
+    _publishMediaSession();
+    await _persistQueueSnapshot();
+  }
+
+  Future<void> reorderQueueItem(int oldIndex, int newIndex) async {
+    if (oldIndex < 0 || oldIndex >= state.queue.length) {
+      return;
+    }
+    if (newIndex < 0 || newIndex > state.queue.length) {
+      return;
+    }
+
+    final QueueReorderResult reorder = _queueManager.reorder(
+      queue: state.queue,
+      currentIndex: state.currentQueueIndex,
+      oldIndex: oldIndex,
+      newIndex: newIndex,
+    );
+    final int? nextCurrentIndex = reorder.nextCurrentIndex;
+    state = state.copyWith(
+      queue: reorder.queue,
+      currentQueueIndex: nextCurrentIndex,
+      currentItem: nextCurrentIndex == null
+          ? null
+          : reorder.queue[nextCurrentIndex],
+    );
     _publishMediaSession();
     await _persistQueueSnapshot();
   }
@@ -445,6 +502,7 @@ class PlayerController extends Notifier<PlayerState>
 
     final int generation = _nextGeneration();
     final int? previousCurrentIndex = state.currentQueueIndex;
+    final bool wasPlaying = state.isPlaying;
     final int? nextCurrentIndex = removal.nextCurrentIndex;
     state = state.copyWith(
       queue: List<PlayableItem>.unmodifiable(nextQueue),
@@ -477,7 +535,7 @@ class PlayerController extends Notifier<PlayerState>
     if (removal.removedCurrentItem && previousCurrentIndex != null) {
       await _loadQueueIndex(
         nextCurrentIndex,
-        autoplay: state.isPlaying,
+        autoplay: wasPlaying,
         initialPosition: Duration.zero,
         generation: generation,
       );
@@ -1133,5 +1191,12 @@ class PlayerController extends Notifier<PlayerState>
           ? '[PlayerDebug] $event'
           : '[PlayerDebug] $event | $detailText',
     );
+  }
+
+  List<PlayableItem> _dedupeQueueItems(List<PlayableItem> items) {
+    final Set<String> seenIds = <String>{};
+    return items
+        .where((PlayableItem item) => seenIds.add(item.stableId))
+        .toList(growable: false);
   }
 }

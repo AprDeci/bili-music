@@ -129,6 +129,62 @@ class PlayerQueueManager {
     );
   }
 
+  QueueReorderResult reorder({
+    required List<PlayableItem> queue,
+    required int? currentIndex,
+    required int oldIndex,
+    required int newIndex,
+  }) {
+    if (oldIndex < 0 || oldIndex >= queue.length) {
+      return QueueReorderResult(
+        queue: List<PlayableItem>.unmodifiable(queue),
+        nextCurrentIndex: currentIndex,
+      );
+    }
+
+    final int resolvedNewIndex = newIndex.clamp(0, queue.length - 1);
+
+    if (oldIndex == resolvedNewIndex) {
+      return QueueReorderResult(
+        queue: List<PlayableItem>.unmodifiable(queue),
+        nextCurrentIndex: currentIndex,
+      );
+    }
+
+    final List<PlayableItem> nextQueue = List<PlayableItem>.of(queue);
+    final PlayableItem movedItem = nextQueue.removeAt(oldIndex);
+    nextQueue.insert(resolvedNewIndex, movedItem);
+
+    int? nextCurrentIndex = currentIndex;
+    if (nextCurrentIndex != null) {
+      if (nextCurrentIndex == oldIndex) {
+        nextCurrentIndex = resolvedNewIndex;
+      } else if (oldIndex < nextCurrentIndex &&
+          resolvedNewIndex >= nextCurrentIndex) {
+        nextCurrentIndex -= 1;
+      } else if (oldIndex > nextCurrentIndex &&
+          resolvedNewIndex <= nextCurrentIndex) {
+        nextCurrentIndex += 1;
+      }
+    }
+
+    for (int index = 0; index < _shuffleHistory.length; index += 1) {
+      final int value = _shuffleHistory[index];
+      if (value == oldIndex) {
+        _shuffleHistory[index] = resolvedNewIndex;
+      } else if (oldIndex < value && resolvedNewIndex >= value) {
+        _shuffleHistory[index] = value - 1;
+      } else if (oldIndex > value && resolvedNewIndex <= value) {
+        _shuffleHistory[index] = value + 1;
+      }
+    }
+
+    return QueueReorderResult(
+      queue: List<PlayableItem>.unmodifiable(nextQueue),
+      nextCurrentIndex: nextCurrentIndex,
+    );
+  }
+
   int _wrapQueueIndex(int value, int length) {
     if (length <= 0) {
       return 0;
@@ -162,4 +218,14 @@ class QueueRemovalResult {
   final List<PlayableItem> queue;
   final int? nextCurrentIndex;
   final bool removedCurrentItem;
+}
+
+class QueueReorderResult {
+  const QueueReorderResult({
+    required this.queue,
+    required this.nextCurrentIndex,
+  });
+
+  final List<PlayableItem> queue;
+  final int? nextCurrentIndex;
 }

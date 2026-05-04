@@ -74,6 +74,8 @@ dependencies:
   liquid_glass_widgets: ^0.8.3
   flutter_smart_dialog: ^5.1.0
   flutter_lyric: ^3.0.3
+  scroll_to_index: ^3.0.1
+  multi_reorderable: ^0.2.2
 
   # 系统
   saver_gallery: ^4.1.0
@@ -86,6 +88,7 @@ dependencies:
   chinese_font_library: ^1.2.0
   tray_manager: ^0.5.2
   hotkey_manager: ^0.2.3
+
 
 dev_dependencies:
   flutter_test:

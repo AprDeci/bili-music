@@ -5,6 +5,8 @@ import 'package:bilimusic/feature/player/logic/player_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_smart_dialog/flutter_smart_dialog.dart';
+import 'package:hugeicons/hugeicons.dart';
+import 'package:scroll_to_index/scroll_to_index.dart';
 
 Future<void> showPlayerQueueSheet({
   required BuildContext context,
@@ -56,21 +58,17 @@ class _PlayerQueueSheet extends ConsumerWidget {
       initialChildSize: 0.72,
       minChildSize: 0.4,
       maxChildSize: 0.92,
-      builder: (BuildContext context, ScrollController scrollController) {
-        return _PlayerQueueContent(
-          closeTarget: _QueueCloseTarget.navigator,
-          scrollController: scrollController,
-        );
+      builder: (BuildContext context, ScrollController _) {
+        return _PlayerQueueContent(closeTarget: _QueueCloseTarget.navigator);
       },
     );
   }
 }
 
 class _PlayerQueueContent extends ConsumerStatefulWidget {
-  const _PlayerQueueContent({required this.closeTarget, this.scrollController});
+  const _PlayerQueueContent({required this.closeTarget});
 
   final _QueueCloseTarget closeTarget;
-  final ScrollController? scrollController;
 
   @override
   ConsumerState<_PlayerQueueContent> createState() =>
@@ -80,40 +78,21 @@ class _PlayerQueueContent extends ConsumerStatefulWidget {
 class _PlayerQueueContentState extends ConsumerState<_PlayerQueueContent> {
   static const double _estimatedQueueItemExtent = 66;
 
-  late ScrollController _scrollController;
-  bool _ownsScrollController = false;
+  late final AutoScrollController _scrollController;
   bool _didFocusInitialItem = false;
 
   @override
   void initState() {
     super.initState();
-    _syncScrollController();
-  }
-
-  @override
-  void didUpdateWidget(covariant _PlayerQueueContent oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.scrollController != widget.scrollController) {
-      if (_ownsScrollController) {
-        _scrollController.dispose();
-      }
-      _syncScrollController();
-      _didFocusInitialItem = false;
-    }
+    _scrollController = AutoScrollController(
+      suggestedRowHeight: _estimatedQueueItemExtent,
+    );
   }
 
   @override
   void dispose() {
-    if (_ownsScrollController) {
-      _scrollController.dispose();
-    }
+    _scrollController.dispose();
     super.dispose();
-  }
-
-  void _syncScrollController() {
-    final ScrollController? providedController = widget.scrollController;
-    _ownsScrollController = providedController == null;
-    _scrollController = providedController ?? ScrollController();
   }
 
   @override
@@ -182,10 +161,12 @@ class _PlayerQueueContentState extends ConsumerState<_PlayerQueueContent> {
           ),
         ),
         Expanded(
-          child: ListView.builder(
-            controller: _scrollController,
+          child: ReorderableListView.builder(
+            scrollController: _scrollController,
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
             itemCount: liveState.queue.length,
+            buildDefaultDragHandles: false,
+            onReorderItem: liveController.reorderQueueItem,
             itemBuilder: (BuildContext context, int index) {
               final PlayableItem queuedItem = liveState.queue[index];
               final bool isCurrent = liveState.currentQueueIndex == index;
@@ -195,72 +176,71 @@ class _PlayerQueueContentState extends ConsumerState<_PlayerQueueContent> {
                   ? queuedItem.author
                   : 'P$page · $partTitle';
 
-              return Padding(
-                padding: EdgeInsets.only(
-                  bottom: index == liveState.queue.length - 1 ? 0 : 10,
-                ),
-                child: Material(
-                  color: isCurrent
-                      ? colorScheme.primary.withValues(alpha: 0.1)
-                      : colorScheme.surfaceContainerHighest.withValues(
-                          alpha: 0.45,
-                        ),
-                  borderRadius: BorderRadius.circular(8.0),
-                  child: InkWell(
-                    borderRadius: BorderRadius.circular(8.0),
-                    onTap: () async {
-                      await _close(context);
-                      await liveController.skipToQueueIndex(index);
-                    },
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 10,
-                      ),
-                      child: Row(
-                        children: <Widget>[
-                          CircleAvatar(
-                            radius: 18,
-                            backgroundColor: isCurrent
-                                ? colorScheme.primary
-                                : colorScheme.primary.withValues(alpha: 0.12),
-                            foregroundColor: isCurrent
-                                ? colorScheme.onPrimary
-                                : colorScheme.primary,
-                            child: Text('${index + 1}'),
+              return AutoScrollTag(
+                key: ValueKey<String>('queue-${queuedItem.stableId}'),
+                controller: _scrollController,
+                index: index,
+                child: Padding(
+                  padding: EdgeInsets.only(
+                    bottom: index == liveState.queue.length - 1 ? 0 : 10,
+                  ),
+                  child: Material(
+                    color: isCurrent
+                        ? colorScheme.primary.withValues(alpha: 0.1)
+                        : colorScheme.surfaceContainerHighest.withValues(
+                            alpha: 0.45,
                           ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: <Widget>[
-                                Text(
-                                  queuedItem.title,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: theme.textTheme.titleSmall?.copyWith(
-                                    fontWeight: FontWeight.w800,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  subtitle,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: theme.textTheme.bodySmall?.copyWith(
-                                    color: colorScheme.onSurface.withValues(
-                                      alpha: 0.64,
+                    borderRadius: BorderRadius.circular(8.0),
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(8.0),
+                      onTap: () async {
+                        await _close(context);
+                        await liveController.skipToQueueIndex(index);
+                      },
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 10,
+                        ),
+                        child: Row(
+                          children: <Widget>[
+                            CircleAvatar(
+                              radius: 18,
+                              backgroundColor: isCurrent
+                                  ? colorScheme.primary
+                                  : colorScheme.primary.withValues(alpha: 0.12),
+                              foregroundColor: isCurrent
+                                  ? colorScheme.onPrimary
+                                  : colorScheme.primary,
+                              child: Text('${index + 1}'),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: <Widget>[
+                                  Text(
+                                    queuedItem.title,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: theme.textTheme.titleSmall?.copyWith(
+                                      fontWeight: FontWeight.w800,
                                     ),
                                   ),
-                                ),
-                              ],
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    subtitle,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: theme.textTheme.bodySmall?.copyWith(
+                                      color: colorScheme.onSurface.withValues(
+                                        alpha: 0.64,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
-                          ),
-                          if (isCurrent)
-                            // Icon(
-                            //   Icons.graphic_eq_rounded,
-                            //   color: colorScheme.primary,
-                            // ),
                             IconButton(
                               tooltip: '移出队列',
                               onPressed: () async {
@@ -275,9 +255,23 @@ class _PlayerQueueContentState extends ConsumerState<_PlayerQueueContent> {
                                   await _close(context);
                                 }
                               },
-                              icon: const Icon(Icons.close_rounded),
+                              icon: HugeIcon(
+                                icon: HugeIcons.strokeRoundedCancel01,
+                                size: 16,
+                              ),
                             ),
-                        ],
+                            ReorderableDragStartListener(
+                              index: index,
+                              child: const Padding(
+                                padding: EdgeInsets.all(8),
+                                child: HugeIcon(
+                                  icon: HugeIcons.strokeRoundedMenu09,
+                                  size: 16,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ),
@@ -296,20 +290,15 @@ class _PlayerQueueContentState extends ConsumerState<_PlayerQueueContent> {
     }
 
     _didFocusInitialItem = true;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!mounted || !_scrollController.hasClients) {
         return;
       }
 
-      final ScrollPosition position = _scrollController.position;
-      final double targetOffset =
-          currentQueueIndex * _estimatedQueueItemExtent -
-          position.viewportDimension * 0.35;
-      final double clampedOffset = targetOffset.clamp(
-        position.minScrollExtent,
-        position.maxScrollExtent,
+      await _scrollController.scrollToIndex(
+        currentQueueIndex,
+        preferPosition: AutoScrollPosition.middle,
       );
-      _scrollController.jumpTo(clampedOffset);
     });
   }
 

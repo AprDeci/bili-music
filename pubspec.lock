@@ -864,6 +864,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "5.6.3"
+  multi_reorderable:
+    dependency: "direct main"
+    description:
+      name: multi_reorderable
+      sha256: "6498029e86ad22dbac9d2ea04b4bfc4e7d874019465ed92f7ac7ef3d6aa5b594"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.2.2"
   native_toolchain_c:
     dependency: transitive
     description:
@@ -1160,6 +1168,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.2.0"
+  scroll_to_index:
+    dependency: "direct main"
+    description:
+      name: scroll_to_index
+      sha256: b707546e7500d9f070d63e5acf74fd437ec7eeeb68d3412ef7b0afada0b4f176
+      url: "https://pub.dev"
+    source: hosted
+    version: "3.0.1"
   shelf:
     dependency: transitive
     description:
