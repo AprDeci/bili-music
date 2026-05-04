@@ -6,6 +6,7 @@ import 'package:bilimusic/common/util/toast_util.dart';
 import 'package:bilimusic/feature/comment/domain/comment_target.dart';
 import 'package:bilimusic/feature/comment/ui/comment_page.dart';
 import 'package:bilimusic/feature/favorites/logic/favorites_controller.dart';
+import 'package:bilimusic/feature/favorites/ui/components/favorite_like_button.dart';
 import 'package:bilimusic/feature/player/domain/audio_stream_info.dart';
 import 'package:bilimusic/feature/player/domain/playable_item.dart';
 import 'package:bilimusic/feature/player/domain/player_lyrics_state.dart';
@@ -565,13 +566,8 @@ class _DesktopPlayerControlDeck extends StatelessWidget {
                           onPressed: () => Navigator.of(context).maybePop(),
                         ),
                         const SizedBox(width: 8),
-                        BarIconButton(
-                          icon: isFavorite
-                              ? Icons.favorite_rounded
-                              : Icons.favorite_border,
-                          tooltip: '我喜欢',
-                          isActive: isFavorite,
-                          activeColor: const Color(0xFFFF6A7A),
+                        FavoriteLikeBarButton(
+                          isLiked: isFavorite,
                           onPressed: onFavoriteToggle,
                         ),
                         const SizedBox(width: 8),

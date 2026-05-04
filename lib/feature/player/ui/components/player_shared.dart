@@ -1,4 +1,5 @@
 import 'package:bilimusic/common/util/color_util.dart';
+import 'package:bilimusic/feature/favorites/ui/components/favorite_like_button.dart';
 import 'package:flutter/material.dart';
 
 class PlayerTrackHeader extends StatelessWidget {
@@ -56,15 +57,10 @@ class PlayerTrackHeader extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 16),
-        IconButton(
-          onPressed: isFavoriteEnabled ? onFavoriteToggle : null,
-          icon: Icon(
-            isFavorite ? Icons.favorite_rounded : Icons.favorite_border_rounded,
-          ),
-          color: isFavorite
-              ? colorScheme.primary
-              : colorScheme.primary.withValues(alpha: 0.55),
-          iconSize: 28,
+        FavoriteLikeIconButton(
+          isLiked: isFavorite,
+          isEnabled: isFavoriteEnabled,
+          onPressed: onFavoriteToggle,
         ),
       ],
     );
