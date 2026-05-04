@@ -235,6 +235,7 @@ jobs:
             imagemagick \
             libfuse2 \
             libgtk-3-dev \
+            libkeybinder-3.0-dev \
             liblzma-dev \
             ninja-build \
             pkg-config
