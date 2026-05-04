@@ -5,6 +5,7 @@ import 'package:bilimusic/feature/player/domain/player_state.dart';
 import 'package:bilimusic/feature/player/logic/player_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_smart_dialog/flutter_smart_dialog.dart';
+import 'package:scroll_to_index/scroll_to_index.dart';
 
 Future<void> showPlayerPartSelector({
   required BuildContext context,
@@ -105,13 +106,15 @@ class _PlayerPartSelectorContentState
     extends State<_PlayerPartSelectorContent> {
   static const double _estimatedPartItemExtent = 66;
 
-  late final ScrollController _scrollController;
+  late final AutoScrollController _scrollController;
   bool _didFocusInitialItem = false;
 
   @override
   void initState() {
     super.initState();
-    _scrollController = ScrollController();
+    _scrollController = AutoScrollController(
+      suggestedRowHeight: _estimatedPartItemExtent,
+    );
   }
 
   @override
@@ -148,46 +151,51 @@ class _PlayerPartSelectorContentState
       itemCount: widget.parts.length + 1,
       itemBuilder: (BuildContext context, int index) {
         if (index == 0) {
-          return Material(
-            color: Colors.transparent,
-            child: ListTile(
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 14,
-                vertical: 4,
-              ),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-              leading: CircleAvatar(
-                backgroundColor: colorScheme.primary,
-                foregroundColor: colorScheme.onPrimary,
-                child: const Icon(Icons.queue_music_rounded),
-              ),
-              title: Text(
-                '全部加入队列',
-                style: theme.textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.w800,
+          return AutoScrollTag(
+            key: const ValueKey<String>('part-selector-add-all'),
+            controller: _scrollController,
+            index: index,
+            child: Material(
+              color: Colors.transparent,
+              child: ListTile(
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 4,
                 ),
-              ),
-              subtitle: Text(
-                partsToEnqueue.isEmpty
-                    ? '其余分P已全部在队列中'
-                    : '将 ${partsToEnqueue.length} 个其余分P追加到当前队列',
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: colorScheme.onSurface.withValues(alpha: 0.68),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
                 ),
+                leading: CircleAvatar(
+                  backgroundColor: colorScheme.primary,
+                  foregroundColor: colorScheme.onPrimary,
+                  child: const Icon(Icons.queue_music_rounded),
+                ),
+                title: Text(
+                  '全部加入队列',
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                subtitle: Text(
+                  partsToEnqueue.isEmpty
+                      ? '其余分P已全部在队列中'
+                      : '将 ${partsToEnqueue.length} 个其余分P追加到当前队列',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: colorScheme.onSurface.withValues(alpha: 0.68),
+                  ),
+                ),
+                trailing: const Icon(Icons.add_rounded),
+                onTap: partsToEnqueue.isEmpty
+                    ? null
+                    : () async {
+                        await _close(context);
+                        await widget.controller.enqueue(partsToEnqueue);
+                        if (!context.mounted) {
+                          return;
+                        }
+                        ToastUtil.show('已将 ${partsToEnqueue.length} 个分P加入队列');
+                      },
               ),
-              trailing: const Icon(Icons.add_rounded),
-              onTap: partsToEnqueue.isEmpty
-                  ? null
-                  : () async {
-                      await _close(context);
-                      await widget.controller.enqueue(partsToEnqueue);
-                      if (!context.mounted) {
-                        return;
-                      }
-                      ToastUtil.show('已将 ${partsToEnqueue.length} 个分P加入队列');
-                    },
             ),
           );
         }
@@ -198,44 +206,49 @@ class _PlayerPartSelectorContentState
         final int page = part.page ?? index;
         final String label = title.isEmpty ? 'P$page' : 'P$page · $title';
 
-        return Material(
-          color: Colors.transparent,
-          borderRadius: BorderRadius.circular(8),
-          clipBehavior: Clip.antiAlias,
-          child: ListTile(
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 14,
-              vertical: 4,
-            ),
-            tileColor: isSelected
-                ? colorScheme.primary.withValues(alpha: 0.1)
-                : colorScheme.surfaceContainerHighest.withValues(alpha: 0.35),
-            leading: CircleAvatar(
-              backgroundColor: isSelected
-                  ? colorScheme.primary
-                  : colorScheme.primary.withValues(alpha: 0.12),
-              foregroundColor: isSelected
-                  ? colorScheme.onPrimary
-                  : colorScheme.primary,
-              child: Text('P$page'),
-            ),
-            title: Text(
-              label,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: theme.textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.w800,
+        return AutoScrollTag(
+          key: ValueKey<String>('part-selector-${part.stableId}'),
+          controller: _scrollController,
+          index: index,
+          child: Material(
+            color: Colors.transparent,
+            borderRadius: BorderRadius.circular(8),
+            clipBehavior: Clip.antiAlias,
+            child: ListTile(
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 14,
+                vertical: 4,
               ),
+              tileColor: isSelected
+                  ? colorScheme.primary.withValues(alpha: 0.1)
+                  : colorScheme.surfaceContainerHighest.withValues(alpha: 0.35),
+              leading: CircleAvatar(
+                backgroundColor: isSelected
+                    ? colorScheme.primary
+                    : colorScheme.primary.withValues(alpha: 0.12),
+                foregroundColor: isSelected
+                    ? colorScheme.onPrimary
+                    : colorScheme.primary,
+                child: Text('P$page'),
+              ),
+              title: Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: theme.textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              trailing: isSelected
+                  ? Icon(Icons.check_rounded, color: colorScheme.primary)
+                  : const Icon(Icons.play_arrow_rounded),
+              onTap: () async {
+                await _close(context);
+                if (part != widget.currentItem) {
+                  widget.controller.replaceCurrentQueueItem(part);
+                }
+              },
             ),
-            trailing: isSelected
-                ? Icon(Icons.check_rounded, color: colorScheme.primary)
-                : const Icon(Icons.play_arrow_rounded),
-            onTap: () async {
-              await _close(context);
-              if (part != widget.currentItem) {
-                widget.controller.replaceCurrentQueueItem(part);
-              }
-            },
           ),
         );
       },
@@ -256,20 +269,15 @@ class _PlayerPartSelectorContentState
     }
 
     _didFocusInitialItem = true;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!mounted || !_scrollController.hasClients) {
         return;
       }
 
-      final ScrollPosition position = _scrollController.position;
-      final double targetOffset =
-          (selectedIndex + 1) * _estimatedPartItemExtent -
-          position.viewportDimension * 0.35;
-      final double clampedOffset = targetOffset.clamp(
-        position.minScrollExtent,
-        position.maxScrollExtent,
+      await _scrollController.scrollToIndex(
+        selectedIndex + 1,
+        preferPosition: AutoScrollPosition.middle,
       );
-      _scrollController.jumpTo(clampedOffset);
     });
   }
 
