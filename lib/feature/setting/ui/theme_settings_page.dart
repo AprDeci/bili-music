@@ -36,25 +36,25 @@ class ThemeSettingsPage extends ConsumerWidget {
           Card(
             margin: EdgeInsets.zero,
             clipBehavior: Clip.antiAlias,
-            child: Column(
-              children: ThemeMode.values
-                  .map((ThemeMode mode) {
-                    return RadioListTile<ThemeMode>(
-                      value: mode,
-                      groupValue: themeState.themeMode,
-                      title: Text(_themeModeLabel(mode)),
-                      subtitle: Text(_themeModeDescription(mode)),
-                      onChanged: (ThemeMode? value) {
-                        if (value == null) {
-                          return;
-                        }
-                        ref
-                            .read(themeLogicProvider.notifier)
-                            .setThemeMode(value);
-                      },
-                    );
-                  })
-                  .toList(growable: false),
+            child: RadioGroup(
+              onChanged: (ThemeMode? value) {
+                if (value == null) {
+                  return;
+                }
+                ref.read(themeLogicProvider.notifier).setThemeMode(value);
+              },
+              groupValue: themeState.themeMode,
+              child: Column(
+                children: ThemeMode.values
+                    .map((ThemeMode mode) {
+                      return RadioListTile<ThemeMode>(
+                        value: mode,
+                        title: Text(_themeModeLabel(mode)),
+                        subtitle: Text(_themeModeDescription(mode)),
+                      );
+                    })
+                    .toList(growable: false),
+              ),
             ),
           ),
           const SizedBox(height: 24),
