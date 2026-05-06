@@ -19,6 +19,11 @@ class DesktopWindowStateController with WindowListener {
     windowManager.removeListener(this);
   }
 
+  Future<void> saveNow() async {
+    _saveTimer?.cancel();
+    await _saveNow();
+  }
+
   @override
   void onWindowMove() {
     _scheduleSave();

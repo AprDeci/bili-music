@@ -5,6 +5,10 @@ import 'package:tray_manager/tray_manager.dart';
 import 'package:window_manager/window_manager.dart';
 
 class DesktopTrayController with TrayListener, WindowListener {
+  DesktopTrayController({required this.onExitRequested});
+
+  final Future<void> Function() onExitRequested;
+
   bool _isExitRequested = false;
 
   Future<void> attach() async {
@@ -33,6 +37,8 @@ class DesktopTrayController with TrayListener, WindowListener {
     windowManager.removeListener(this);
     trayManager.removeListener(this);
   }
+
+  Future<void> requestExit() => _exitApp();
 
   @override
   void onWindowClose() {
@@ -72,7 +78,12 @@ class DesktopTrayController with TrayListener, WindowListener {
   }
 
   Future<void> _exitApp() async {
+    if (_isExitRequested) {
+      return;
+    }
     _isExitRequested = true;
+    await onExitRequested();
+    detach();
     await trayManager.destroy();
     await windowManager.setPreventClose(false);
     await windowManager.destroy();

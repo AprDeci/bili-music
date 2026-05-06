@@ -100,6 +100,7 @@ class PlayerController extends Notifier<PlayerState>
       return;
     }
     _isDisposed = true;
+    _nextGeneration();
     _audioHandler.detachTarget(this);
     await _audioSessionCoordinator.dispose();
 
@@ -108,9 +109,23 @@ class PlayerController extends Notifier<PlayerState>
     }
 
     try {
+      await _audioEngine.stop();
       await _audioEngine.dispose();
     } on Object {
       // Ignore engine dispose failures.
+    }
+  }
+
+  Future<void> shutdown() async {
+    if (_isDisposed) {
+      return;
+    }
+    _nextGeneration();
+    try {
+      await _audioEngine.stop();
+      await _persistQueueSnapshot();
+    } finally {
+      await _dispose();
     }
   }
 

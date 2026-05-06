@@ -3,26 +3,21 @@ import 'dart:async';
 import 'package:bilimusic/common/util/platform_util.dart';
 import 'package:bilimusic/core/bili/session/bili_session_controller.dart';
 import 'package:bilimusic/core/hive/hive.dart';
-import 'package:bilimusic/core/hive/hive_keys.dart';
 import 'package:bilimusic/core/theme/desktop_chinese_font.dart';
+import 'package:bilimusic/core/window/desktop_app_lifecycle.dart';
 import 'package:bilimusic/core/window/desktop_hotkey_controller.dart';
-import 'package:bilimusic/core/window/desktop_tray_controller.dart';
-import 'package:bilimusic/core/window/desktop_window_state_controller.dart';
-import 'package:bilimusic/core/window/desktop_window_state_store.dart';
 import 'package:bilimusic/feature/favorites/logic/favorites_controller.dart';
 import 'package:bilimusic/feature/player/logic/app_audio_handler.dart';
 import 'package:bilimusic/feature/player/logic/player_controller.dart';
 import 'package:bilimusic/feature/player/logic/player_lyrics_controller.dart';
 import 'package:bilimusic/myApp.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_smart_dialog/flutter_smart_dialog.dart';
-import 'package:hive_ce/hive.dart';
 import 'package:just_audio_media_kit/just_audio_media_kit.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
-import 'package:window_manager/window_manager.dart';
 
-Future<void> bootstrap() async {
+Future<DesktopAppLifecycle?> bootstrap(ProviderContainer container) async {
   await PlayerAudioService.initialize();
   await LiquidGlassWidgets.initialize();
   JustAudioMediaKit.ensureInitialized(
@@ -39,50 +34,34 @@ Future<void> bootstrap() async {
   );
 
   if (PlatformUtil.isDesktop) {
-    await windowManager.ensureInitialized();
-    await DesktopTrayController().attach();
-
-    final DesktopWindowStateStore windowStateStore = DesktopWindowStateStore(
-      Hive.box<String>(HiveBoxNames.prefs),
-    );
-    final DesktopWindowState? savedWindowState = windowStateStore.read();
-    final WindowOptions windowOptions = WindowOptions(
-      size: savedWindowState?.size ?? defaultDesktopWindowSize,
-      minimumSize: defaultDesktopWindowSize,
-      center: savedWindowState == null,
-      backgroundColor: Colors.transparent,
-      skipTaskbar: false,
-      titleBarStyle: TitleBarStyle.hidden,
-    );
-    windowManager.waitUntilReadyToShow(windowOptions, () async {
-      if (savedWindowState != null) {
-        await windowManager.setPosition(savedWindowState.position);
-      }
-      await windowManager.show();
-      if (savedWindowState?.isMaximized == true) {
-        await windowManager.maximize();
-      }
-      await windowManager.focus();
-    });
-    DesktopWindowStateController(windowStateStore).attach();
+    return DesktopAppLifecycle.initialize(container);
   }
+  return null;
 }
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await DesktopChineseFont.load();
-  await bootstrap();
+  final ProviderContainer container = ProviderContainer();
+  final DesktopAppLifecycle? desktopLifecycle = await bootstrap(container);
   runApp(
     LiquidGlassWidgets.wrap(
-      const ProviderScope(child: _AppBootstrap(child: MyApp())),
+      UncontrolledProviderScope(
+        container: container,
+        child: _AppBootstrap(
+          desktopLifecycle: desktopLifecycle,
+          child: const MyApp(),
+        ),
+      ),
     ),
   );
 }
 
 class _AppBootstrap extends ConsumerStatefulWidget {
-  const _AppBootstrap({required this.child});
+  const _AppBootstrap({required this.child, this.desktopLifecycle});
 
   final Widget child;
+  final DesktopAppLifecycle? desktopLifecycle;
 
   @override
   ConsumerState<_AppBootstrap> createState() => _AppBootstrapState();
@@ -108,13 +87,25 @@ class _AppBootstrapState extends ConsumerState<_AppBootstrap> {
       if (PlatformUtil.isDesktop) {
         _desktopHotkeyController = DesktopHotkeyController();
         await _desktopHotkeyController!.attach(ref);
+        widget.desktopLifecycle?.attachHotkeyController(
+          _desktopHotkeyController!,
+        );
       }
     });
   }
 
   @override
   void dispose() {
-    unawaited(_desktopHotkeyController?.detach());
+    final DesktopHotkeyController? desktopHotkeyController =
+        _desktopHotkeyController;
+    if (desktopHotkeyController != null) {
+      unawaited(
+        widget.desktopLifecycle?.detachHotkeyController(
+              desktopHotkeyController,
+            ) ??
+            desktopHotkeyController.detach(),
+      );
+    }
     super.dispose();
   }
 
