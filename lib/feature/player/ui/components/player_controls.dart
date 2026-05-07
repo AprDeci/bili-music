@@ -95,9 +95,7 @@ class PlayerTransportControls extends StatelessWidget {
     final Color activeModeColor = state.isReady
         ? colorScheme.primary
         : colorScheme.primary.withValues(alpha: 0.4);
-    final bool canGoPrevious =
-        state.isReady &&
-        (state.hasPrevious || state.position > const Duration(seconds: 3));
+    final bool canGoPrevious = state.isReady && state.hasPrevious;
     final bool canGoNext =
         state.isReady &&
         (state.queueMode == PlayerQueueMode.singleRepeat || state.hasNext);

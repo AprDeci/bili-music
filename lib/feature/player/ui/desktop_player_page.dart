@@ -534,9 +534,7 @@ class _DesktopPlayerControlDeck extends StatelessWidget {
             1.0,
           );
     final bool canTogglePlayback = state.hasQueue && !state.isLoading;
-    final bool canGoPrevious =
-        state.isReady &&
-        (state.hasPrevious || state.position > const Duration(seconds: 3));
+    final bool canGoPrevious = state.isReady && state.hasPrevious;
     final bool canGoNext =
         state.isReady &&
         (state.queueMode == PlayerQueueMode.singleRepeat || state.hasNext);
