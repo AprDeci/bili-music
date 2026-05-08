@@ -58,7 +58,7 @@ class DesktopPlayerBar extends ConsumerWidget {
         borderRadius: BorderRadius.circular(8),
       ),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
         child: Row(
           children: <Widget>[
             SizedBox(
@@ -169,6 +169,7 @@ class _TrackSection extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
+              const SizedBox(height: 6),
               Semantics(
                 child: ExcludeSemantics(
                   child: PingPongMarqueePlus(
@@ -181,7 +182,6 @@ class _TrackSection extends StatelessWidget {
                   ),
                 ),
               ),
-              const SizedBox(height: 4),
               Row(
                 children: <Widget>[
                   BarIconButton(
@@ -199,7 +199,7 @@ class _TrackSection extends StatelessWidget {
                       size: 20,
                       strokeWidth: 2,
                     ),
-                    badgeIcon: const Icon(BmIcons.commentWithBadge, size: 26),
+                    badgeIcon: const Icon(BmIcons.commentWithBadge, size: 24),
                     badge: formatCommentBadgeCount(item?.replyCount),
                     onPressed: onCommentPressed,
                     tooltip: '评论',
