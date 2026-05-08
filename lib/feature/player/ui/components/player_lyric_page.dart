@@ -12,11 +12,13 @@ class PlayerLyricPage extends ConsumerWidget {
     super.key,
     required this.state,
     required this.item,
+    required this.isActive,
     required this.onSeek,
   });
 
   final PlayerState state;
   final PlayableItem? item;
+  final bool isActive;
   final ValueChanged<Duration> onSeek;
 
   @override
@@ -28,6 +30,7 @@ class PlayerLyricPage extends ConsumerWidget {
     final Widget content = PlayerLyricPanel(
       state: state,
       item: item,
+      isActive: isActive,
       onSeek: onSeek,
     );
     if (item == null) {

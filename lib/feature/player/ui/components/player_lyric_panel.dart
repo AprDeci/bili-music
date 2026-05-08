@@ -17,12 +17,14 @@ class PlayerLyricPanel extends ConsumerStatefulWidget {
     super.key,
     required this.state,
     required this.item,
+    required this.isActive,
     required this.onSeek,
     this.variant = PlayerLyricPanelVariant.mobile,
   });
 
   final PlayerState state;
   final PlayableItem? item;
+  final bool isActive;
   final ValueChanged<Duration> onSeek;
   final PlayerLyricPanelVariant variant;
 
@@ -31,10 +33,13 @@ class PlayerLyricPanel extends ConsumerStatefulWidget {
 }
 
 class _PlayerLyricPanelState extends ConsumerState<PlayerLyricPanel> {
+  static const Duration _inactiveSyncInterval = Duration(seconds: 1);
+
   late final LyricController _lyricController;
 
   String? _loadedStableId;
   String? _loadedRenderableLyrics;
+  Duration? _lastInactiveSyncedPosition;
 
   bool get _isDesktop => widget.variant == PlayerLyricPanelVariant.desktop;
 
@@ -53,6 +58,24 @@ class _PlayerLyricPanelState extends ConsumerState<PlayerLyricPanel> {
   @override
   void didUpdateWidget(covariant PlayerLyricPanel oldWidget) {
     super.didUpdateWidget(oldWidget);
+    _syncProgressIfNeeded();
+  }
+
+  void _syncProgressIfNeeded() {
+    if (widget.isActive) {
+      _lastInactiveSyncedPosition = null;
+      _syncProgress();
+      return;
+    }
+
+    final Duration position = widget.state.position;
+    final Duration? lastPosition = _lastInactiveSyncedPosition;
+    if (lastPosition != null &&
+        (position - lastPosition).abs() < _inactiveSyncInterval) {
+      return;
+    }
+
+    _lastInactiveSyncedPosition = position;
     _syncProgress();
   }
 
@@ -174,14 +197,14 @@ class _PlayerLyricPanelState extends ConsumerState<PlayerLyricPanel> {
 
     if (_loadedStableId == stableId &&
         _loadedRenderableLyrics == renderableLyrics) {
-      _syncProgress();
+      _syncProgressIfNeeded();
       return;
     }
 
     _loadedStableId = stableId;
     _loadedRenderableLyrics = renderableLyrics;
     _lyricController.loadLyric(renderableLyrics);
-    _syncProgress();
+    _syncProgressIfNeeded();
   }
 
   void _syncProgress() {

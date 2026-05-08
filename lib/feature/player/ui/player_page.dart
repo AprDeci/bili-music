@@ -87,6 +87,7 @@ class _PlayerPageState extends ConsumerState<PlayerPage> {
     final PlayableItem? item = state.currentItem ?? widget.initialItem;
     final List<PlayableItem> availableParts = state.availableParts;
     final bool isFavorite = item != null ? favoritesState.isLiked(item) : false;
+    final bool isLyricPageActive = _currentPage == 2;
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
 
@@ -189,6 +190,7 @@ class _PlayerPageState extends ConsumerState<PlayerPage> {
                               child: PlayerLyricPage(
                                 state: state,
                                 item: item,
+                                isActive: isLyricPageActive,
                                 onSeek: playerController.seek,
                               ),
                             ),

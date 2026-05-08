@@ -385,6 +385,7 @@ class _DesktopPlayerHeroSection extends ConsumerWidget {
                             child: PlayerLyricPanel(
                               state: state,
                               item: item,
+                              isActive: true,
                               onSeek: onSeek,
                               variant: PlayerLyricPanelVariant.desktop,
                             ),
