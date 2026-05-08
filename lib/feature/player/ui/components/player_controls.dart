@@ -1,4 +1,5 @@
 import 'package:bilimusic/common/components/queue_mode_icon.dart';
+import 'package:bilimusic/core/theme/theme_colors.dart';
 import 'package:bilimusic/feature/player/domain/player_state.dart';
 import 'package:bilimusic/feature/player/ui/components/player_ui_helpers.dart';
 import 'package:flutter/material.dart';
@@ -17,6 +18,7 @@ class PlayerProgressSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
+    final neutralColor = neutralColorOf(context);
     final ColorScheme colorScheme = theme.colorScheme;
     final Duration total = state.duration ?? Duration.zero;
     final double progress = total.inMilliseconds <= 0
@@ -27,13 +29,13 @@ class PlayerProgressSection extends StatelessWidget {
       children: <Widget>[
         SliderTheme(
           data: SliderTheme.of(context).copyWith(
-            trackHeight: 5,
-            inactiveTrackColor: colorScheme.primary.withValues(alpha: 0.18),
-            activeTrackColor: colorScheme.primary,
-            thumbColor: colorScheme.surface,
-            thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
+            trackHeight: 2,
+            inactiveTrackColor: neutralColor.withValues(alpha: 0.18),
+            activeTrackColor: neutralColor,
+            thumbColor: neutralColor,
+            thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 3),
             overlayShape: const RoundSliderOverlayShape(overlayRadius: 16),
-            overlayColor: colorScheme.primary.withValues(alpha: 0.14),
+            overlayColor: neutralColor.withValues(alpha: 0.14),
           ),
           child: Slider(
             value: progress.clamp(0.0, 1.0),
@@ -49,12 +51,14 @@ class PlayerProgressSection extends StatelessWidget {
                 style: theme.textTheme.labelMedium?.copyWith(
                   color: colorScheme.onSurface.withValues(alpha: 0.55),
                   fontWeight: FontWeight.w700,
+                  fontSize: 8,
                 ),
               ),
               const Spacer(),
               Text(
                 formatPlayerDuration(total),
                 style: theme.textTheme.labelMedium?.copyWith(
+                  fontSize: 8,
                   color: colorScheme.onSurface.withValues(alpha: 0.55),
                   fontWeight: FontWeight.w700,
                 ),
@@ -87,14 +91,17 @@ class PlayerTransportControls extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ColorScheme colorScheme = Theme.of(context).colorScheme;
+    final Color playerControlColor = neutralColorOf(context);
+    final Color disabledPlayerControlColor = playerControlColor.withValues(
+      alpha: 0.32,
+    );
     final bool canTogglePlayback = state.hasQueue && !state.isLoading;
     final Color iconColor = state.isReady
-        ? colorScheme.onSurface
-        : colorScheme.onSurface.withValues(alpha: 0.3);
+        ? playerControlColor
+        : disabledPlayerControlColor;
     final Color activeModeColor = state.isReady
-        ? colorScheme.primary
-        : colorScheme.primary.withValues(alpha: 0.4);
+        ? playerControlColor
+        : disabledPlayerControlColor;
     final bool canGoPrevious = state.isReady && state.hasPrevious;
     final bool canGoNext =
         state.isReady &&
@@ -113,32 +120,25 @@ class PlayerTransportControls extends StatelessWidget {
           color: iconColor,
           onPressed: canGoPrevious ? onBackward : null,
         ),
-        DecoratedBox(
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            boxShadow: <BoxShadow>[
-              BoxShadow(
-                color: colorScheme.primary.withValues(alpha: 0.18),
-                blurRadius: 24,
-                offset: const Offset(0, 14),
-              ),
-            ],
+        OutlinedButton(
+          onPressed: canTogglePlayback ? onTogglePlayback : null,
+          style: OutlinedButton.styleFrom(
+            splashFactory: NoSplash.splashFactory,
+            minimumSize: const Size(58, 58),
+            shape: const CircleBorder(),
+            foregroundColor: playerControlColor,
+            disabledForegroundColor: disabledPlayerControlColor,
+            side: BorderSide(
+              color: canTogglePlayback
+                  ? playerControlColor
+                  : disabledPlayerControlColor,
+              width: 2,
+            ),
+            padding: EdgeInsets.zero,
           ),
-          child: FilledButton(
-            onPressed: canTogglePlayback ? onTogglePlayback : null,
-            style: FilledButton.styleFrom(
-              minimumSize: const Size(54, 54),
-              shape: const CircleBorder(),
-              backgroundColor: colorScheme.primary,
-              disabledBackgroundColor: colorScheme.primary.withValues(
-                alpha: 0.3,
-              ),
-              foregroundColor: Colors.white,
-            ),
-            child: Icon(
-              state.isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
-              size: 40,
-            ),
+          child: Icon(
+            state.isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
+            size: 40,
           ),
         ),
         PlayerCircleActionButton(
