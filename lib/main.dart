@@ -19,7 +19,9 @@ import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 
 Future<DesktopAppLifecycle?> bootstrap(ProviderContainer container) async {
   await PlayerAudioService.initialize();
-  await LiquidGlassWidgets.initialize();
+  if (PlatformUtil.isMobile) {
+    await LiquidGlassWidgets.initialize();
+  }
   JustAudioMediaKit.ensureInitialized(
     linux: true, // default: true  - dependency: media_kit_libs_linux
     windows: true, // default: true  - dependency: media_kit_libs_windows_audio
@@ -44,6 +46,19 @@ void main() async {
   await DesktopChineseFont.load();
   final ProviderContainer container = ProviderContainer();
   final DesktopAppLifecycle? desktopLifecycle = await bootstrap(container);
+  // 如果桌面端 不用LiquidGlassWidgets.wrap
+  if (PlatformUtil.isDesktop) {
+    runApp(
+      UncontrolledProviderScope(
+        container: container,
+        child: _AppBootstrap(
+          desktopLifecycle: desktopLifecycle,
+          child: const MyApp(),
+        ),
+      ),
+    );
+    return;
+  }
   runApp(
     LiquidGlassWidgets.wrap(
       UncontrolledProviderScope(
