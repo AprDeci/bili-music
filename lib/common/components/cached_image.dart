@@ -17,7 +17,13 @@ class CommonCachedImage extends StatelessWidget {
     this.fallbackIcon = Icons.image_rounded,
     this.iconColor,
     this.iconSize,
+    this.memCacheWidth,
+    this.memCacheHeight,
+    this.maxDiskCacheWidth,
+    this.maxDiskCacheHeight,
   });
+
+  static const int _defaultMaxCacheExtent = 720;
 
   final String? imageUrl;
   final double? width;
@@ -31,6 +37,10 @@ class CommonCachedImage extends StatelessWidget {
   final IconData fallbackIcon;
   final Color? iconColor;
   final double? iconSize;
+  final int? memCacheWidth;
+  final int? memCacheHeight;
+  final int? maxDiskCacheWidth;
+  final int? maxDiskCacheHeight;
 
   @override
   Widget build(BuildContext context) {
@@ -38,6 +48,19 @@ class CommonCachedImage extends StatelessWidget {
     final Widget loadingState = placeholder ?? _buildDefaultFallback();
     final Widget failureState =
         errorWidget ?? placeholder ?? _buildDefaultFallback();
+    final double devicePixelRatio = MediaQuery.devicePixelRatioOf(context);
+    final int? resolvedMemCacheWidth =
+        memCacheWidth ??
+        _resolveCacheExtent(width, devicePixelRatio: devicePixelRatio);
+    final int? resolvedMemCacheHeight =
+        memCacheHeight ??
+        _resolveCacheExtent(height, devicePixelRatio: devicePixelRatio);
+    final int? resolvedMaxDiskCacheWidth =
+        maxDiskCacheWidth ??
+        _resolveCacheExtent(width, devicePixelRatio: devicePixelRatio);
+    final int? resolvedMaxDiskCacheHeight =
+        maxDiskCacheHeight ??
+        _resolveCacheExtent(height, devicePixelRatio: devicePixelRatio);
 
     Widget child;
     if (resolvedUrl.isEmpty) {
@@ -49,6 +72,10 @@ class CommonCachedImage extends StatelessWidget {
         width: width,
         height: height,
         fit: fit,
+        memCacheWidth: resolvedMemCacheWidth,
+        memCacheHeight: resolvedMemCacheHeight,
+        maxWidthDiskCache: resolvedMaxDiskCacheWidth,
+        maxHeightDiskCache: resolvedMaxDiskCacheHeight,
         placeholder: (BuildContext context, String url) {
           return loadingState;
         },
@@ -67,6 +94,20 @@ class CommonCachedImage extends StatelessWidget {
     }
 
     return child;
+  }
+
+  int? _resolveCacheExtent(
+    double? logicalExtent, {
+    required double devicePixelRatio,
+  }) {
+    if (logicalExtent == null ||
+        !logicalExtent.isFinite ||
+        logicalExtent <= 0) {
+      return null;
+    }
+
+    final int physicalExtent = (logicalExtent * devicePixelRatio).ceil();
+    return physicalExtent.clamp(1, _defaultMaxCacheExtent);
   }
 
   Widget _buildDefaultFallback() {

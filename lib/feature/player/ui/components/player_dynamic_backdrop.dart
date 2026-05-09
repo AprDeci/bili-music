@@ -22,6 +22,8 @@ class PlayerDynamicBackdrop extends StatefulWidget {
 class _PlayerDynamicBackdropState extends State<PlayerDynamicBackdrop> {
   static const Duration _extractDelay = Duration(milliseconds: 520);
   static const Duration _colorTransitionDuration = Duration(milliseconds: 1000);
+  static const int _paletteCacheExtent = 96;
+  static const int _maxColorCacheEntries = 160;
   static final Map<String, Color> _colorCache = <String, Color>{};
 
   String? _loadedUrl;
@@ -100,11 +102,13 @@ class _PlayerDynamicBackdropState extends State<PlayerDynamicBackdrop> {
         CachedNetworkImageProvider(
           resolvedUrl,
           cacheManager: CacheUtil.imageCacheManager,
+          maxWidth: _paletteCacheExtent,
+          maxHeight: _paletteCacheExtent,
         ),
         count: 5, // 1–10, default 5
       );
       final Color extractedColor = imageColorScheme[0];
-      _colorCache[resolvedUrl] = extractedColor;
+      _rememberColor(resolvedUrl, extractedColor);
       if (!mounted ||
           generation != _loadGeneration ||
           _loadedUrl != resolvedUrl) {
@@ -128,6 +132,15 @@ class _PlayerDynamicBackdropState extends State<PlayerDynamicBackdrop> {
     setState(() {
       _baseColor = color;
     });
+  }
+
+  void _rememberColor(String url, Color color) {
+    _colorCache[url] = color;
+    if (_colorCache.length <= _maxColorCacheEntries) {
+      return;
+    }
+
+    _colorCache.remove(_colorCache.keys.first);
   }
 
   @override
