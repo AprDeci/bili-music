@@ -1,3 +1,4 @@
+import 'package:adaptive_palette/adaptive_palette.dart';
 import 'package:bilimusic/common/bm_icons.dart';
 import 'package:bilimusic/common/components/badged_icon_button.dart';
 import 'package:bilimusic/common/components/bar_icon_button.dart';

@@ -1,3 +1,4 @@
+import 'package:adaptive_palette/adaptive_palette.dart';
 import 'package:bilimusic/core/cache/cache_util.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
@@ -87,14 +88,21 @@ class _PlayerDynamicBackdropState extends State<PlayerDynamicBackdrop> {
     }
 
     try {
-      final ColorScheme imageColorScheme = await ColorScheme.fromImageProvider(
-        provider: CachedNetworkImageProvider(
+      // final ColorScheme imageColorScheme = await ColorScheme.fromImageProvider(
+      //   provider: CachedNetworkImageProvider(
+      //     resolvedUrl,
+      //     cacheManager: CacheUtil.imageCacheManager,
+      //   ),
+      //   brightness: brightness,
+      // );
+      final imageColorScheme = await FluidPaletteExtractor.extractColors(
+        CachedNetworkImageProvider(
           resolvedUrl,
           cacheManager: CacheUtil.imageCacheManager,
         ),
-        brightness: brightness,
+        count: 5, // 1–10, default 5
       );
-      final Color extractedColor = imageColorScheme.primary;
+      final Color extractedColor = imageColorScheme[0];
       _colorCache[resolvedUrl] = extractedColor;
       if (!mounted ||
           generation != _loadGeneration ||

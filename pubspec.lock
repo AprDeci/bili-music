@@ -9,6 +9,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "92.0.0"
+  adaptive_palette:
+    dependency: "direct main"
+    description:
+      name: adaptive_palette
+      sha256: da31f9f3b67dae287d0366f5e5245d4a67a7ca49a28dc7b9a753c6787a3f1238
+      url: "https://pub.dev"
+    source: hosted
+    version: "3.1.0"
   analyzer:
     dependency: transitive
     description:
