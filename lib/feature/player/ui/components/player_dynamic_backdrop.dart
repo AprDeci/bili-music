@@ -21,6 +21,7 @@ class PlayerDynamicBackdrop extends StatefulWidget {
 
 class _PlayerDynamicBackdropState extends State<PlayerDynamicBackdrop> {
   static const Duration _extractDelay = Duration(milliseconds: 520);
+  static const Duration _colorTransitionDuration = Duration(milliseconds: 1000);
   static final Map<String, Color> _colorCache = <String, Color>{};
 
   String? _loadedUrl;
@@ -142,26 +143,46 @@ class _PlayerDynamicBackdropState extends State<PlayerDynamicBackdrop> {
 
     return IgnorePointer(
       child: RepaintBoundary(
-        child: AnimatedSwitcher(
-          duration: const Duration(milliseconds: 220),
-          reverseDuration: Duration.zero,
-          switchInCurve: Curves.easeOutCubic,
-          switchOutCurve: Curves.easeOutCubic,
-          child: _BackdropLayer(
-            key: ValueKey<int>(colors.hashCode),
-            colors: colors,
-            colorScheme: colorScheme,
-            variant: widget.variant,
-          ),
+        child: TweenAnimationBuilder<_BackdropColors>(
+          tween: _BackdropColorsTween(end: colors),
+          duration: _colorTransitionDuration,
+          curve: Curves.easeOutCubic,
+          builder:
+              (
+                BuildContext context,
+                _BackdropColors animatedColors,
+                Widget? child,
+              ) {
+                return _BackdropLayer(
+                  colors: animatedColors,
+                  colorScheme: colorScheme,
+                  variant: widget.variant,
+                );
+              },
         ),
       ),
     );
   }
 }
 
+class _BackdropColorsTween extends Tween<_BackdropColors> {
+  _BackdropColorsTween({required _BackdropColors end}) : super(end: end);
+
+  @override
+  _BackdropColors lerp(double t) {
+    final _BackdropColors? beginColors = begin;
+    final _BackdropColors? endColors = end;
+
+    if (beginColors == null || endColors == null) {
+      return endColors ?? beginColors!;
+    }
+
+    return _BackdropColors.lerp(beginColors, endColors, t);
+  }
+}
+
 class _BackdropLayer extends StatelessWidget {
   const _BackdropLayer({
-    super.key,
     required this.colors,
     required this.colorScheme,
     required this.variant,
@@ -279,6 +300,16 @@ class _BackdropColors {
         other.bottom == bottom &&
         other.glow == glow &&
         other.accent == accent;
+  }
+
+  static _BackdropColors lerp(_BackdropColors a, _BackdropColors b, double t) {
+    return _BackdropColors(
+      top: Color.lerp(a.top, b.top, t) ?? b.top,
+      center: Color.lerp(a.center, b.center, t) ?? b.center,
+      bottom: Color.lerp(a.bottom, b.bottom, t) ?? b.bottom,
+      glow: Color.lerp(a.glow, b.glow, t) ?? b.glow,
+      accent: Color.lerp(a.accent, b.accent, t) ?? b.accent,
+    );
   }
 
   factory _BackdropColors.from({
