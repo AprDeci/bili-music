@@ -11,6 +11,7 @@ Future<void> showPlayerCollectionSheet({
   required PlayableItem item,
 }) async {
   await showModalBottomSheet<void>(
+    useRootNavigator: true,
     context: context,
     showDragHandle: true,
     isScrollControlled: true,
@@ -89,9 +90,9 @@ class _PlayerCollectionSheet extends ConsumerWidget {
                         : colorScheme.surfaceContainerHighest.withValues(
                             alpha: 0.45,
                           ),
-                    borderRadius: BorderRadius.circular(20),
+                    borderRadius: BorderRadius.circular(8),
                     child: InkWell(
-                      borderRadius: BorderRadius.circular(20),
+                      borderRadius: BorderRadius.circular(8),
                       onTap: () async {
                         Navigator.of(context).pop();
 
