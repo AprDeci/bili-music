@@ -50,6 +50,7 @@ class _BadgedIconButtonState extends State<BadgedIconButton> {
   Widget build(BuildContext context) {
     final Object? badge = widget.badge;
     final Color iconColor = _resolveIconColor(context);
+    final Offset badgeOffset = _resolveBadgeOffset(badge);
 
     final Widget button = MouseRegion(
       cursor: _isEnabled
@@ -83,8 +84,8 @@ class _BadgedIconButtonState extends State<BadgedIconButton> {
           ),
           if (_isEnabled && badge != null)
             Positioned(
-              top: widget.badgeOffset.dy,
-              right: widget.badgeOffset.dx,
+              top: badgeOffset.dy,
+              right: badgeOffset.dx,
               child: IgnorePointer(
                 child: BadgedIconButtonBadge(content: badge, color: iconColor),
               ),
@@ -118,6 +119,16 @@ class _BadgedIconButtonState extends State<BadgedIconButton> {
       return widget.hoverColor ?? colorScheme.primary;
     }
     return widget.enabledColor ?? colorScheme.onSurface;
+  }
+
+  Offset _resolveBadgeOffset(Object? badge) {
+    if (badge is! String) {
+      return widget.badgeOffset;
+    }
+
+    final int digitCount = badge.length;
+    final double dx = 0 - (digitCount - 1) * 2;
+    return Offset(dx, 4);
   }
 }
 

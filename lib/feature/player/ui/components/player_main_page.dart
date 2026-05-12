@@ -438,19 +438,12 @@ class _PlayerPartToolButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final String? badge = formatPartBadge(item);
-    final int digitCount = (item?.page ?? 1).toString().length;
-    final Offset badgeOffset = switch (digitCount) {
-      1 => const Offset(2, 4),
-      2 => const Offset(-2, 4),
-      _ => const Offset(-6, 4),
-    };
 
     return BadgedIconButton(
       noBadgeIcon: const HugeIcon(icon: HugeIcons.strokeRoundedListVideo),
       badgeIcon: const Icon(BmIcons.partListWithBadge, size: 26),
       badge: badge,
       onPressed: isEnabled ? onTap : null,
-      badgeOffset: badgeOffset,
     );
   }
 }
