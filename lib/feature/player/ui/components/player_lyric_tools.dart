@@ -167,11 +167,11 @@ class _LyricSearchSheetState extends ConsumerState<_LyricSearchSheet> {
                       onSubmitted: (_) => _submitSearch(),
                     ),
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: 20),
                   DropdownMenu<MetingServer>(
                     initialSelection: _selectedServer,
                     label: const Text('平台'),
-                    width: 136,
+                    width: 160,
                     dropdownMenuEntries: MetingServer.values
                         .map(
                           (MetingServer server) =>
