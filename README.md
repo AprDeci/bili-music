@@ -1,6 +1,6 @@
 # bilimusic
 
-flutter 制作的 B站音乐客户端()
+flutter 制作的 B站音乐客户端
 
 
 ## 图片
@@ -9,9 +9,13 @@ flutter 制作的 B站音乐客户端()
 
 ![showcase_desktop](https://github.com/AprDeci/bili-music/blob/main/pics/desktop/v1.5.0.jpeg)
 
-## 关于metingApi
+## 支持平台
+📱 Android
+🍎 iOS
+🪟 Windows
+🐧 Linux
+🍎 macOS(未测试)
 
-v1.5.0 取消外部接口依赖.
 
 ## 声明
 
