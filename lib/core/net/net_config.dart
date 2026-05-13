@@ -1,6 +1,8 @@
 class NetConfig {
   static const String baseUrl = 'https://api.bilibili.com';
 
+  static const String bmBaseUrl = 'https://bm.126386.xyz';
+
   static const String apiVersion = '/v1';
 
   static const Duration connectTimeout = Duration(seconds: 15);
@@ -15,5 +17,11 @@ class NetConfig {
         '(KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
     'Referer': 'https://www.bilibili.com/',
     'Origin': 'https://www.bilibili.com',
+  };
+
+  static const Map<String, dynamic> bmHeaders = {
+    'Accept': '*/*',
+    'Content-Type': 'application/json',
+    'User-Agent': 'bilimusic',
   };
 }
