@@ -84,15 +84,6 @@ class _FavoriteCollectionPageState
     });
   }
 
-  void _resetSearchStateWithoutSetState() {
-    if (_searchQuery.isEmpty && _searchController.text.isEmpty) {
-      return;
-    }
-
-    _searchController.clear();
-    _searchQuery = '';
-  }
-
   @override
   Widget build(BuildContext context) {
     final FavoritesState state = ref.watch(favoritesControllerProvider);
@@ -167,7 +158,8 @@ class _FavoriteCollectionPageState
                 ),
               ),
             )
-          : ListView(
+          : visibleItems.isEmpty
+          ? ListView(
               padding: EdgeInsets.zero,
               children: <Widget>[
                 Padding(
@@ -179,101 +171,115 @@ class _FavoriteCollectionPageState
                     onClear: _clearSearchQuery,
                   ),
                 ),
-                if (visibleItems.isEmpty)
-                  FavoriteSearchEmptyState(
-                    onSearchOnline: () => context.go('/search'),
-                  )
-                else
-                  ...List<Widget>.generate(visibleItems.length, (int index) {
-                    final FavoriteEntry item = visibleItems[index];
-                    return Padding(
-                      padding: EdgeInsets.only(
-                        bottom: index == visibleItems.length - 1 ? 0 : 0,
+                FavoriteSearchEmptyState(
+                  onSearchOnline: () => context.go('/search'),
+                ),
+                const BottomPageSpacer.overlay(),
+              ],
+            )
+          : ListView.builder(
+              padding: EdgeInsets.zero,
+              itemCount: visibleItems.length + 2,
+              itemBuilder: (BuildContext context, int index) {
+                if (index == 0) {
+                  return Padding(
+                    padding: const EdgeInsets.fromLTRB(14, 10, 14, 8),
+                    child: FavoriteCollectionSearchField(
+                      controller: _searchController,
+                      query: _searchQuery,
+                      onChanged: _updateSearchQuery,
+                      onClear: _clearSearchQuery,
+                    ),
+                  );
+                }
+
+                if (index == visibleItems.length + 1) {
+                  return const BottomPageSpacer.overlay();
+                }
+
+                final int itemIndex = index - 1;
+                final FavoriteEntry item = visibleItems[itemIndex];
+                return Material(
+                  child: ListTile(
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 0,
+                    ),
+                    leading: CommonCachedImage(
+                      imageUrl: item.coverUrl,
+                      width: 44,
+                      height: 44,
+                      fit: BoxFit.cover,
+                      borderRadius: BorderRadius.circular(8),
+                      fallbackIcon: Icons.music_note_rounded,
+                      iconColor: primary,
+                      backgroundColor: primary.withValues(alpha: 0.14),
+                    ),
+                    title: Text(
+                      item.title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w500,
                       ),
-                      child: Material(
-                        child: ListTile(
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 14,
-                            vertical: 0,
-                          ),
-                          leading: CommonCachedImage(
-                            imageUrl: item.coverUrl,
-                            width: 44,
-                            height: 44,
-                            fit: BoxFit.cover,
-                            borderRadius: BorderRadius.circular(8),
-                            fallbackIcon: Icons.music_note_rounded,
-                            iconColor: primary,
-                            backgroundColor: primary.withValues(alpha: 0.14),
-                          ),
-                          title: Text(
-                            item.title,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: theme.textTheme.titleSmall?.copyWith(
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                          subtitle: Text(
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: colorScheme.onSurfaceVariant,
-                              height: 1.5,
-                            ),
-                            _buildSubtitle(item),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          trailing: Row(
-                            spacing: 0,
-                            mainAxisAlignment: MainAxisAlignment.end,
-                            mainAxisSize: MainAxisSize.min,
-                            children: <Widget>[
-                              IconButton(
-                                padding: EdgeInsets.zero,
-                                visualDensity: VisualDensity.compact,
-                                tooltip: '播放',
-                                onPressed: () async {
-                                  await _playCollectionItem(
-                                    context,
-                                    ref,
-                                    collectionName: resolvedCollection.name,
-                                    queueItems: queueItems,
-                                    index: index,
-                                  );
-                                },
-                                icon: const Icon(BmIcons.addPlaylist),
-                              ),
-                              IconButton(
-                                padding: EdgeInsets.zero,
-                                visualDensity: VisualDensity.compact,
-                                tooltip: '更多',
-                                onPressed: () async {
-                                  await _showItemActionSheet(
-                                    context,
-                                    ref,
-                                    collection: resolvedCollection,
-                                    item: item,
-                                  );
-                                },
-                                icon: const Icon(Icons.more_vert_outlined),
-                              ),
-                            ],
-                          ),
-                          onTap: () async {
+                    ),
+                    subtitle: Text(
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                        height: 1.5,
+                      ),
+                      _buildSubtitle(item),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    trailing: Row(
+                      spacing: 0,
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      mainAxisSize: MainAxisSize.min,
+                      children: <Widget>[
+                        IconButton(
+                          padding: EdgeInsets.zero,
+                          visualDensity: VisualDensity.compact,
+                          tooltip: '播放',
+                          onPressed: () async {
                             await _playCollectionItem(
                               context,
                               ref,
                               collectionName: resolvedCollection.name,
                               queueItems: queueItems,
-                              index: index,
+                              index: itemIndex,
                             );
                           },
+                          icon: const Icon(BmIcons.addPlaylist),
                         ),
-                      ),
-                    );
-                  }),
-                const BottomPageSpacer.overlay(),
-              ],
+                        IconButton(
+                          padding: EdgeInsets.zero,
+                          visualDensity: VisualDensity.compact,
+                          tooltip: '更多',
+                          onPressed: () async {
+                            await _showItemActionSheet(
+                              context,
+                              ref,
+                              collection: resolvedCollection,
+                              item: item,
+                            );
+                          },
+                          icon: const Icon(Icons.more_vert_outlined),
+                        ),
+                      ],
+                    ),
+                    onTap: () async {
+                      await _playCollectionItem(
+                        context,
+                        ref,
+                        collectionName: resolvedCollection.name,
+                        queueItems: queueItems,
+                        index: itemIndex,
+                      );
+                    },
+                  ),
+                );
+              },
             ),
     );
   }
