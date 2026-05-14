@@ -40,7 +40,7 @@ final class BmClientProvider extends $NotifierProvider<BmClient, Dio> {
   }
 }
 
-String _$bmClientHash() => r'3439a39b96f911b645e531eb9ab8066f05948688';
+String _$bmClientHash() => r'43e33c067ca34a14a51bb7ea70a2d53ecbd376fa';
 
 abstract class _$BmClient extends $Notifier<Dio> {
   Dio build();
