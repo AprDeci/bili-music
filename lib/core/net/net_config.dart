@@ -23,5 +23,6 @@ class NetConfig {
     'Accept': '*/*',
     'Content-Type': 'application/json',
     'User-Agent': 'bilimusic',
+    'oh-my-pass': 'bilibilimusic',
   };
 }
