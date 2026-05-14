@@ -25,19 +25,33 @@ typedef MetingLyricRequest =
       required String id,
     });
 
+typedef MetingPictureRequest =
+    Future<Object?> Function({
+      required MetingServer server,
+      required String id,
+      required int size,
+    });
+
 class MetingRepository {
   const MetingRepository({
     MetingSearchRequest searchRequest = _defaultSearchRequest,
     MetingLyricRequest lyricRequest = _defaultLyricRequest,
-  }) : this._(searchRequest: searchRequest, lyricRequest: lyricRequest);
+    MetingPictureRequest pictureRequest = _defaultPictureRequest,
+  }) : this._(
+         searchRequest: searchRequest,
+         lyricRequest: lyricRequest,
+         pictureRequest: pictureRequest,
+       );
 
   const MetingRepository._({
     required this._searchRequest,
     required this._lyricRequest,
+    required this._pictureRequest,
   });
 
   final MetingSearchRequest _searchRequest;
   final MetingLyricRequest _lyricRequest;
+  final MetingPictureRequest _pictureRequest;
 
   Future<List<MetingSearchItem>> search({
     required String keyword,
@@ -90,6 +104,35 @@ class MetingRepository {
     }
   }
 
+  Future<String> fetchPicture(MetingSearchItem item, {int size = 300}) async {
+    final String id = (item.picId?.trim().isNotEmpty ?? false)
+        ? item.picId!.trim()
+        : item.id.trim();
+    if (id.isEmpty) {
+      throw const MetingException('当前歌曲没有封面 ID。');
+    }
+
+    try {
+      final Object? response = await _pictureRequest(
+        server: item.server,
+        id: id,
+        size: size,
+      );
+      final Object? data = _decodeFormattedResponse(response);
+      if (data is Map<String, dynamic>) {
+        return _readString(data['url']);
+      }
+      if (data is String) {
+        return data;
+      }
+      throw const MetingException('Meting 封面返回格式异常。');
+    } on MetingException {
+      rethrow;
+    } on Object catch (error) {
+      throw MetingException('Meting 封面请求失败：$error');
+    }
+  }
+
   MetingSearchItem _mapSearchItem(
     Map<String, dynamic> json,
     MetingServer server,
@@ -101,6 +144,7 @@ class MetingRepository {
       title: _readString(json['name'] ?? json['title']),
       author: _readAuthor(json['artist'] ?? json['author']),
       server: server,
+      picId: _readString(json['pic_id']),
     );
   }
 
@@ -142,6 +186,15 @@ Future<Object?> _defaultLyricRequest({
 }) {
   final Meting meting = Meting(server: server.apiValue)..format(true);
   return meting.lyric(id);
+}
+
+Future<Object?> _defaultPictureRequest({
+  required MetingServer server,
+  required String id,
+  required int size,
+}) {
+  final Meting meting = Meting(server: server.apiValue)..format(true);
+  return meting.pic(id, size: size);
 }
 
 class MetingException implements Exception {

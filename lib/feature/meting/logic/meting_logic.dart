@@ -50,6 +50,10 @@ class MetingLogic {
     return _repository.fetchLyrics(item);
   }
 
+  Future<String> fetchPicture(MetingSearchItem item, {int size = 300}) {
+    return _repository.fetchPicture(item, size: size);
+  }
+
   Future<MetingSearchItem?> find({
     required String title,
     MetingServer server = MetingServer.netease,
