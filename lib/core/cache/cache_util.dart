@@ -12,6 +12,8 @@ class CacheUtil {
   static CacheManager get imageCacheManager => AppImageCacheManager.instance;
   static CacheManager get audioCacheManager => AppAudioCacheManager.instance;
   static CacheManager get lyricsCacheManager => AppLyricsCacheManager.instance;
+  static CacheManager get metadataCacheManager =>
+      AppMetadataCacheManager.instance;
 
   static Future<void> clearImageCache() async {
     await imageCacheManager.emptyCache();
@@ -38,11 +40,15 @@ class CacheUtil {
     }
   }
 
+  static Future<void> clearMetadataCache() async {
+    await metadataCacheManager.emptyCache();
+  }
+
   static Future<void> clearAllCache() async {
     await Future.wait(<Future<void>>[
       clearImageCache(),
       clearAudioCache(),
-      clearLyricsCache(),
+      clearMetadataCache(),
     ]);
   }
 
@@ -58,6 +64,10 @@ class CacheUtil {
     await lyricsCacheManager.removeFile(key);
   }
 
+  static Future<void> removeMetadataCache(String key) async {
+    await metadataCacheManager.removeFile(key);
+  }
+
   static Future<FileInfo?> getImageCache(String url) async {
     return await imageCacheManager.getFileFromCache(url);
   }
@@ -68,6 +78,10 @@ class CacheUtil {
 
   static Future<FileInfo?> getLyricsCache(String key) async {
     return await lyricsCacheManager.getFileFromCache(key);
+  }
+
+  static Future<FileInfo?> getMetadataCache(String key) async {
+    return await metadataCacheManager.getFileFromCache(key);
   }
 
   static Future<int> getImageCacheSizeBytes() async {
@@ -94,6 +108,29 @@ class CacheUtil {
     return total;
   }
 
+  static Future<int> getMetadataCacheSizeBytes() async {
+    final Directory metadataCacheDirectory = await _getMetadataCacheDirectory();
+    if (!await metadataCacheDirectory.exists()) {
+      return 0;
+    }
+
+    int total = 0;
+    await for (final FileSystemEntity entity in metadataCacheDirectory.list()) {
+      if (entity is! File) {
+        continue;
+      }
+      total += await entity.length();
+    }
+    return total;
+  }
+
+  static Future<Directory> _getMetadataCacheDirectory() async {
+    final Directory baseDirectory = await getTemporaryDirectory();
+    return Directory.fromUri(
+      baseDirectory.uri.resolve('$_lyricsCacheDirectoryName/'),
+    );
+  }
+
   static Future<Directory> _getLyricsCacheDirectory() async {
     final Directory baseDirectory = await getTemporaryDirectory();
     return Directory.fromUri(
@@ -105,7 +142,7 @@ class CacheUtil {
     final List<int> sizes = await Future.wait<int>(<Future<int>>[
       getImageCacheSizeBytes(),
       getAudioCacheSizeBytes(),
-      getLyricsCacheSizeBytes(),
+      getMetadataCacheSizeBytes(),
     ]);
     return sizes.fold<int>(0, (int total, int item) => total + item);
   }
