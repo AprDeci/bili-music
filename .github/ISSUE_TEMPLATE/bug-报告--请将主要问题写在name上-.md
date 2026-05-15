@@ -1,5 +1,5 @@
 ---
-name: Bug 报告
+name: Bug 报告 (请将主要问题写在name上)
 about: Create a report to help us improve
 title: ''
 labels: bug
