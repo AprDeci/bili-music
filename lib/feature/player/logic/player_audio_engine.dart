@@ -17,11 +17,12 @@ class PlayerAudioEngine {
     if (kIsWeb) {
       return true;
     }
-    return switch (defaultTargetPlatform) {
-      TargetPlatform.windows => true,
-      TargetPlatform.linux => true,
-      _ => false,
-    };
+    // return switch (defaultTargetPlatform) {
+    //   TargetPlatform.windows => true,
+    //   TargetPlatform.linux => true,
+    //   _ => false,
+    // };
+    return false;
   }
 
   bool get playing => _audioPlayer.playing;
