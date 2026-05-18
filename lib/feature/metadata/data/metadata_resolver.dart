@@ -21,6 +21,7 @@ abstract final class MetadataResolver {
     required String? artist,
     required String? title,
     required String? lyrics,
+    MetaLyrics? metaLyrics,
     required String? albumArtUrl,
     required List<MetingSearchItem> searchResults,
     String? searchKeyword,
@@ -31,6 +32,7 @@ abstract final class MetadataResolver {
         artist: _normalizeText(artist),
         title: _normalizeText(title),
         lyrics: _normalizeText(lyrics),
+        metaLyrics: _normalizeMetaLyrics(metaLyrics),
         albumArtUrl: _normalizeText(albumArtUrl),
         updatedAt: DateTime.now(),
       ),
@@ -44,6 +46,7 @@ abstract final class MetadataResolver {
     String? artist,
     String? title,
     String? lyrics,
+    MetaLyrics? metaLyrics,
     String? albumArtUrl,
     int lyricOffsetMs = 0,
     DateTime? updatedAt,
@@ -53,6 +56,7 @@ abstract final class MetadataResolver {
       artist: _normalizeText(artist),
       title: _normalizeText(title),
       lyrics: _normalizeText(lyrics),
+      metaLyrics: _normalizeMetaLyrics(metaLyrics),
       albumArtUrl: _normalizeText(albumArtUrl),
       lyricOffsetMs: lyricOffsetMs,
       updatedAt: updatedAt,
@@ -62,5 +66,20 @@ abstract final class MetadataResolver {
   static String? _normalizeText(String? value) {
     final String trimmed = value?.trim() ?? '';
     return trimmed.isEmpty ? null : trimmed;
+  }
+
+  static MetaLyrics? _normalizeMetaLyrics(MetaLyrics? value) {
+    if (value == null) {
+      return null;
+    }
+
+    final MetaLyrics normalized = MetaLyrics(
+      lyric: _normalizeText(value.lyric),
+      translatedLyric: _normalizeText(value.translatedLyric),
+      romanizedLyric: _normalizeText(value.romanizedLyric),
+      karaokeLyric: _normalizeText(value.karaokeLyric),
+      karaokeTranslatedLyric: _normalizeText(value.karaokeTranslatedLyric),
+    );
+    return normalized.hasLyrics ? normalized : null;
   }
 }
