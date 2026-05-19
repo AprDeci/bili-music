@@ -1,4 +1,5 @@
 import 'package:bilimusic/feature/meting/data/meting_repository.dart';
+import 'package:bilimusic/common/domain/meta_lyrics.dart';
 import 'package:bilimusic/feature/meting/domain/meting_search_item.dart';
 import 'package:bilimusic/feature/meting/domain/meting_server.dart';
 import 'package:bilimusic/feature/meting/logic/meting_logic.dart';
@@ -36,7 +37,9 @@ void main() {
         searchResponses: <String, List<MetingSearchItem>>{
           '夜曲': <MetingSearchItem>[item],
         },
-        lyricsResponses: <MetingSearchItem, String>{item: '[00:00.000] 夜曲'},
+        lyricsResponses: <MetingSearchItem, MetaLyrics>{
+          item: const MetaLyrics(lyric: '[00:00.000] 夜曲'),
+        },
       );
       final MetingLogic logic = MetingLogic(repository: repository);
 
@@ -65,13 +68,13 @@ MetingSearchItem _item({required String title, required String author}) {
 class _FakeMetingRepository extends MetingRepository {
   _FakeMetingRepository({
     Map<String, List<MetingSearchItem>>? searchResponses,
-    Map<MetingSearchItem, String>? lyricsResponses,
+    Map<MetingSearchItem, MetaLyrics>? lyricsResponses,
   }) : _searchResponses = searchResponses ?? <String, List<MetingSearchItem>>{},
-       _lyricsResponses = lyricsResponses ?? <MetingSearchItem, String>{},
+       _lyricsResponses = lyricsResponses ?? <MetingSearchItem, MetaLyrics>{},
        super();
 
   final Map<String, List<MetingSearchItem>> _searchResponses;
-  final Map<MetingSearchItem, String> _lyricsResponses;
+  final Map<MetingSearchItem, MetaLyrics> _lyricsResponses;
   final List<String> queries = <String>[];
   final List<MetingSearchItem> lyricsItems = <MetingSearchItem>[];
 
@@ -85,8 +88,8 @@ class _FakeMetingRepository extends MetingRepository {
   }
 
   @override
-  Future<String> fetchLyrics(MetingSearchItem item) async {
+  Future<MetaLyrics> fetchLyrics(MetingSearchItem item) async {
     lyricsItems.add(item);
-    return _lyricsResponses[item] ?? '';
+    return _lyricsResponses[item] ?? const MetaLyrics();
   }
 }

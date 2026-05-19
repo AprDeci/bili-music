@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:bilimusic/feature/meting/data/meting_repository.dart';
+import 'package:bilimusic/common/domain/meta_lyrics.dart';
 import 'package:bilimusic/feature/meting/domain/meting_search_item.dart';
 import 'package:bilimusic/feature/meting/domain/meting_server.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -139,8 +140,12 @@ void main() {
       );
     });
 
-    test('fetchLyrics returns formatted lyric text', () async {
+    test('fetchLyrics returns formatted lyric fields', () async {
       const String lyrics = '[00:00.000] 歌词第一行';
+      const String translation = '[00:00.000] translated';
+      const String romanized = '[00:00.000] romanized';
+      const String karaoke = '[0,1000](0,500)歌(500,500)词';
+      const String karaokeTranslation = '[0,1000]逐字翻译';
       final List<_LyricRequest> requests = <_LyricRequest>[];
       final MetingRepository repository = MetingRepository(
         searchRequest: _unusedSearchRequest,
@@ -149,12 +154,15 @@ void main() {
               requests.add(_LyricRequest(server: server, id: id));
               return jsonEncode(<String, dynamic>{
                 'lyric': lyrics,
-                'tlyric': '',
+                'tlyric': translation,
+                'rlyric': romanized,
+                'klyric': karaoke,
+                'ktlyric': karaokeTranslation,
               });
             },
       );
 
-      final String result = await repository.fetchLyrics(
+      final MetaLyrics result = await repository.fetchLyrics(
         const MetingSearchItem(
           id: 'kg_hash',
           title: '晴天',
@@ -164,7 +172,13 @@ void main() {
         ),
       );
 
-      expect(result, lyrics);
+      expect(result.lyric, lyrics);
+      expect(result.translatedLyric, translation);
+      expect(result.romanizedLyric, romanized);
+      expect(result.karaokeLyric, karaoke);
+      expect(result.karaokeTranslatedLyric, karaokeTranslation);
+      expect(result.preferredMainLyric, karaoke);
+      expect(result.preferredTranslationLyric, karaokeTranslation);
       expect(requests.single.server, MetingServer.kugou);
       expect(requests.single.id, 'kg_hash');
     });
@@ -245,14 +259,6 @@ Future<Object?> _unusedLyricRequest({
   required String id,
 }) {
   throw StateError('Unexpected lyric request');
-}
-
-Future<Object?> _unusedPictureRequest({
-  required MetingServer server,
-  required String id,
-  required int size,
-}) {
-  throw StateError('Unexpected picture request');
 }
 
 class _SearchRequest {
