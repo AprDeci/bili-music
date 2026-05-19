@@ -43,11 +43,11 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Flutter (Beta x64)
+      - name: Setup Flutter (Stable x64)
         uses: subosito/flutter-action@v2
         with:
-          channel: "beta"
-          flutter-version: "3.43.0-0.2.pre"
+          channel: "stable"
+          flutter-version: "3.44.0"
           architecture: "x64"
           cache: true
 
@@ -90,8 +90,8 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          channel: "beta"
-          flutter-version: "3.43.0-0.2.pre"
+          channel: "stable"
+          flutter-version: "3.44.0"
           cache: true
 
       - name: Flutter Pub Get
@@ -129,8 +129,8 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          channel: "beta"
-          flutter-version: "3.43.0-0.2.pre"
+          channel: "stable"
+          flutter-version: "3.44.0"
           cache: true
 
       - name: Setup Node.js
@@ -185,8 +185,8 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          channel: "beta"
-          flutter-version: "3.43.0-0.2.pre"
+          channel: "stable"
+          flutter-version: "3.44.0"
           cache: true
 
       - name: Flutter Pub Get
@@ -224,8 +224,8 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          channel: "beta"
-          flutter-version: "3.43.0-0.2.pre"
+          channel: "stable"
+          flutter-version: "3.44.0"
           cache: true
 
       - name: Install Linux build dependencies
