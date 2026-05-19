@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-import 'package:bilimusic/feature/metadata/domain/metadata.dart';
+import 'package:bilimusic/common/domain/meta_lyrics.dart';
 import 'package:bilimusic/feature/meting/domain/meting_search_item.dart';
 import 'package:bilimusic/feature/meting/domain/meting_server.dart';
 import 'package:meting_dart/meting_dart.dart';
