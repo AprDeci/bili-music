@@ -1,6 +1,8 @@
+import 'package:bilimusic/common/domain/meta_lyrics.dart';
 import 'package:bilimusic/feature/favorites/domain/favorite_collection.dart';
 import 'package:bilimusic/feature/favorites/domain/favorite_entry.dart';
 import 'package:bilimusic/feature/favorites/domain/favorite_membership.dart';
+import 'package:bilimusic/feature/metadata/domain/metadata.dart';
 import 'package:bilimusic/feature/player/domain/persisted_playback_queue.dart';
 import 'package:bilimusic/feature/player/domain/player_state.dart';
 import 'package:bilimusic/feature/recent/domain/recent_playback_entry.dart';
@@ -14,5 +16,7 @@ import 'package:hive_ce/hive.dart';
   AdapterSpec<PersistedPlayableItem>(),
   AdapterSpec<PersistedPlaybackQueue>(),
   AdapterSpec<RecentPlaybackEntry>(),
+  AdapterSpec<MetaLyrics>(),
+  AdapterSpec<Metadata>(),
 ])
 part 'hive_adapters.g.dart';

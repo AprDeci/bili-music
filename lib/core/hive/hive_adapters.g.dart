@@ -399,3 +399,104 @@ class RecentPlaybackEntryAdapter extends TypeAdapter<RecentPlaybackEntry> {
           runtimeType == other.runtimeType &&
           typeId == other.typeId;
 }
+
+class MetaLyricsAdapter extends TypeAdapter<MetaLyrics> {
+  @override
+  final typeId = 8;
+
+  @override
+  MetaLyrics read(BinaryReader reader) {
+    final numOfFields = reader.readByte();
+    final fields = <int, dynamic>{
+      for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
+    };
+    return MetaLyrics(
+      lyric: fields[0] as String?,
+      translatedLyric: fields[1] as String?,
+      romanizedLyric: fields[2] as String?,
+      karaokeLyric: fields[3] as String?,
+      karaokeTranslatedLyric: fields[4] as String?,
+    );
+  }
+
+  @override
+  void write(BinaryWriter writer, MetaLyrics obj) {
+    writer
+      ..writeByte(5)
+      ..writeByte(0)
+      ..write(obj.lyric)
+      ..writeByte(1)
+      ..write(obj.translatedLyric)
+      ..writeByte(2)
+      ..write(obj.romanizedLyric)
+      ..writeByte(3)
+      ..write(obj.karaokeLyric)
+      ..writeByte(4)
+      ..write(obj.karaokeTranslatedLyric);
+  }
+
+  @override
+  int get hashCode => typeId.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is MetaLyricsAdapter &&
+          runtimeType == other.runtimeType &&
+          typeId == other.typeId;
+}
+
+class MetadataAdapter extends TypeAdapter<Metadata> {
+  @override
+  final typeId = 9;
+
+  @override
+  Metadata read(BinaryReader reader) {
+    final numOfFields = reader.readByte();
+    final fields = <int, dynamic>{
+      for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
+    };
+    return Metadata(
+      stableId: fields[0] as String,
+      artist: fields[1] as String?,
+      title: fields[2] as String?,
+      lyrics: fields[3] as String?,
+      metaLyrics: fields[4] as MetaLyrics?,
+      albumArtUrl: fields[5] as String?,
+      lyricOffsetMs: fields[6] == null ? 0 : (fields[6] as num).toInt(),
+      updatedAt: fields[7] as DateTime?,
+    );
+  }
+
+  @override
+  void write(BinaryWriter writer, Metadata obj) {
+    writer
+      ..writeByte(8)
+      ..writeByte(0)
+      ..write(obj.stableId)
+      ..writeByte(1)
+      ..write(obj.artist)
+      ..writeByte(2)
+      ..write(obj.title)
+      ..writeByte(3)
+      ..write(obj.lyrics)
+      ..writeByte(4)
+      ..write(obj.metaLyrics)
+      ..writeByte(5)
+      ..write(obj.albumArtUrl)
+      ..writeByte(6)
+      ..write(obj.lyricOffsetMs)
+      ..writeByte(7)
+      ..write(obj.updatedAt);
+  }
+
+  @override
+  int get hashCode => typeId.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is MetadataAdapter &&
+          runtimeType == other.runtimeType &&
+          typeId == other.typeId;
+}
