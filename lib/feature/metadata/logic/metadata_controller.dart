@@ -7,7 +7,6 @@ import 'package:bilimusic/feature/favorites/logic/favorites_controller.dart';
 import 'package:bilimusic/feature/metadata/data/metadata_cache_repository.dart';
 import 'package:bilimusic/feature/metadata/data/metadata_resolver.dart';
 import 'package:bilimusic/feature/metadata/domain/metadata.dart';
-import 'package:bilimusic/feature/metadata/domain/metadata_cache_entry.dart';
 import 'package:bilimusic/feature/metadata/domain/metadata_state.dart';
 import 'package:bilimusic/feature/meting/data/meting_repository.dart';
 import 'package:bilimusic/common/domain/meta_lyrics.dart';
@@ -215,16 +214,16 @@ class MetadataController extends _$MetadataController {
     state = MetadataState(stableId: stableId, isLoading: true);
 
     if (!ignoreCache) {
-      final MetadataCacheEntry? cached = await ref
+      final Metadata? cached = await ref
           .read(metadataCacheRepositoryProvider)
-          .getCachedEntry(item: item);
+          .getCachedMetadata(item: item);
       if (!_isActiveRequest(requestGeneration, stableId)) {
         return;
       }
       if (cached != null) {
         state = MetadataState(
           stableId: stableId,
-          metadata: cached.toMetadata(),
+          metadata: cached,
           hasSearched: true,
         );
         return;
@@ -293,7 +292,7 @@ class MetadataController extends _$MetadataController {
 
     await ref
         .read(metadataCacheRepositoryProvider)
-        .putCachedEntry(item: item, metadata: metadata);
+        .putCachedMetadata(item: item, metadata: metadata);
   }
 
   bool _shouldCacheMetadata(PlayableItem item) {
