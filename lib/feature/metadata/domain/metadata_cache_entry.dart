@@ -1,4 +1,5 @@
 import 'package:bilimusic/feature/metadata/domain/metadata.dart';
+import 'package:bilimusic/common/domain/meta_lyrics.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 
 part 'metadata_cache_entry.freezed.dart';
@@ -11,6 +12,7 @@ abstract class MetadataCacheEntry with _$MetadataCacheEntry {
     String? artist,
     String? title,
     String? lyrics,
+    MetaLyrics? metaLyrics,
     String? albumArtUrl,
     @Default(0) int lyricOffsetMs,
     required int updatedAtEpochMs,
@@ -27,6 +29,7 @@ abstract class MetadataCacheEntry with _$MetadataCacheEntry {
       artist: artist,
       title: title,
       lyrics: lyrics,
+      metaLyrics: metaLyrics,
       albumArtUrl: albumArtUrl,
       lyricOffsetMs: lyricOffsetMs,
       updatedAt: updatedAtEpochMs > 0
@@ -41,6 +44,7 @@ abstract class MetadataCacheEntry with _$MetadataCacheEntry {
       artist: metadata.artist,
       title: metadata.title,
       lyrics: metadata.lyrics,
+      metaLyrics: metadata.metaLyrics,
       albumArtUrl: metadata.albumArtUrl,
       lyricOffsetMs: metadata.lyricOffsetMs,
       updatedAtEpochMs:
