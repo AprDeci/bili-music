@@ -95,6 +95,12 @@ dependencies:
   hotkey_manager: ^0.2.3
   adaptive_palette: ^3.1.0
 
+dependency_overrides: 
+  flutter_lyric: 
+       git:
+        url: https://github.com/AprDeci/flutter_lyric.git
+        ref: main
+
 
 dev_dependencies:
   flutter_test:
