@@ -3,6 +3,8 @@ import 'dart:math';
 import 'package:bilimusic/feature/player/domain/playable_item.dart';
 import 'package:bilimusic/feature/player/domain/player_state.dart';
 
+import '../../domain/player_state.dart';
+
 class PlayerQueueManager {
   PlayerQueueManager({Random? random}) : _random = random ?? Random();
 
@@ -48,8 +50,7 @@ class PlayerQueueManager {
     }
 
     return switch (mode) {
-      PlayerQueueMode.singleRepeat => currentIndex,
-      PlayerQueueMode.sequence => _wrapQueueIndex(
+      PlayerQueueMode.sequence || PlayerQueueMode.singleRepeat => _wrapQueueIndex(
         currentIndex + 1,
         queue.length,
       ),
@@ -70,7 +71,7 @@ class PlayerQueueManager {
     }
 
     if (mode == PlayerQueueMode.singleRepeat) {
-      return currentIndex;
+      return _wrapQueueIndex(currentIndex - 1, queue.length);
     }
 
     if (mode == PlayerQueueMode.shuffle) {
