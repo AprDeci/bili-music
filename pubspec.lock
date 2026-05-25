@@ -435,7 +435,7 @@ packages:
     description:
       path: "."
       ref: main
-      resolved-ref: b8bd576efff95c85c60b40f0a6d330c845b8f91c
+      resolved-ref: "0cbbe38b5fca22c567c331990eebc5039d2c5412"
       url: "https://github.com/AprDeci/flutter_lyric.git"
     source: git
     version: "3.0.3"
