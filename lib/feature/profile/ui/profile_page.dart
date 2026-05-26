@@ -1,3 +1,4 @@
+import 'package:bilimusic/common/bm_icons.dart';
 import 'package:bilimusic/common/components/bottom_page_spacer.dart';
 import 'package:bilimusic/common/components/cached_image.dart';
 import 'package:bilimusic/common/components/searchBar.dart';
@@ -538,6 +539,16 @@ class _ProfileSectionHeader extends StatelessWidget {
             ),
           ),
         ),
+        InkWell(
+          borderRadius: BorderRadius.circular(999),
+          // 导入外部歌单
+          onTap: () {},
+          child: Icon(
+            BmIcons.importright,
+            size: 24,
+            color: Colors.black.withValues(alpha: 0.6),
+          ),
+        ),
         Material(
           color: Colors.transparent,
           child: InkWell(
@@ -546,15 +557,12 @@ class _ProfileSectionHeader extends StatelessWidget {
             child: SizedBox(
               width: 38,
               height: 38,
-              child: Icon(Icons.add_rounded, color: primary),
+              child: Icon(
+                Icons.add_rounded,
+                color: Colors.black.withValues(alpha: 0.6),
+              ),
             ),
           ),
-        ),
-        InkWell(
-          borderRadius: BorderRadius.circular(999),
-          // 导入外部歌单
-          onTap: () {},
-          child: HugeIcon(icon: HugeIcons.strokeRoundedCloudDownload, size: 20),
         ),
       ],
     );
