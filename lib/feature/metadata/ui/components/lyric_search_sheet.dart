@@ -8,11 +8,35 @@ import 'package:bilimusic/feature/player/domain/playable_item.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+
+// 优先元数据信息-提取信息-原标题
 String resolveLyricSearchKeyword({
   required MetadataState metadataState,
   required PlayableItem? item,
 }) {
+  final String metadataKeyword = _metadataSearchKeyword(metadataState, item);
+  if (metadataKeyword.isNotEmpty) {
+    return metadataKeyword;
+  }
+
   return metadataState.searchKeyword?.trim() ?? item?.title.trim() ?? '';
+}
+
+String _metadataSearchKeyword(MetadataState metadataState, PlayableItem? item) {
+  final metadata = metadataState.metadata;
+  if (metadata == null || metadata.stableId != item?.stableId) {
+    return '';
+  }
+
+  final String title = metadata.title?.trim() ?? '';
+  final String artist = metadata.artist?.trim() ?? '';
+  if (title.isNotEmpty && artist.isNotEmpty) {
+    return '$title-$artist';
+  }
+  if (title.isNotEmpty) {
+    return title;
+  }
+  return artist;
 }
 
 Future<void> showManualLyricSearchSheet({
