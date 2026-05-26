@@ -51,7 +51,7 @@ dependencies:
   hive_ce: 2.19.3
   hive_ce_flutter: 2.3.4
   path_provider: ^2.1.5
-  file_picker: ^11.0.2
+  file_picker: ^12.0.0-beta.4
   flutter_cache_manager: ^3.4.1
   cached_network_image: ^3.4.1
 
@@ -83,8 +83,8 @@ dependencies:
   multi_reorderable: ^0.2.2
 
   # 系统
-  saver_gallery: ^4.1.0
-  package_info_plus: ^8.3.1
+  saver_gallery: ^4.1.2
+  package_info_plus: ^10.1.0
   url_launcher: ^6.3.2
 
   # 桌面端
