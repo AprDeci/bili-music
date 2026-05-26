@@ -14,6 +14,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:hugeicons/hugeicons.dart';
 
 class ProfilePage extends ConsumerStatefulWidget {
   const ProfilePage({super.key});
@@ -548,6 +549,12 @@ class _ProfileSectionHeader extends StatelessWidget {
               child: Icon(Icons.add_rounded, color: primary),
             ),
           ),
+        ),
+        InkWell(
+          borderRadius: BorderRadius.circular(999),
+          // 导入外部歌单
+          onTap: () {},
+          child: HugeIcon(icon: HugeIcons.strokeRoundedCloudDownload, size: 20),
         ),
       ],
     );
