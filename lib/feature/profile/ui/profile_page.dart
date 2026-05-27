@@ -15,7 +15,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:hugeicons/hugeicons.dart';
 
 class ProfilePage extends ConsumerStatefulWidget {
   const ProfilePage({super.key});
@@ -75,6 +74,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
             title: '自建歌单',
             count: customCollections.length,
             onAddPressed: () => _showCreateCollectionDialog(context),
+            onImportPressed: () => context.push('/profile/import'),
           ),
           if (visibleCollections.isNotEmpty) const SizedBox(height: 14),
           ...visibleCollections.map((FavoriteCollection collection) {
@@ -131,7 +131,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
       ),
     );
   }
-
+    
   Future<void> _showCreateCollectionDialog(BuildContext context) async {
     final String? result = await showDialog<String>(
       context: context,
@@ -505,17 +505,18 @@ class _ProfileSectionHeader extends StatelessWidget {
     required this.title,
     required this.count,
     required this.onAddPressed,
+    required this.onImportPressed,
   });
 
   final String title;
   final int count;
-  final VoidCallback onAddPressed;
+  final VoidCallback onAddPressed;  
+  final VoidCallback onImportPressed;
 
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
-    final Color primary = theme.colorScheme.primary;
 
     return Row(
       children: <Widget>[
@@ -542,7 +543,7 @@ class _ProfileSectionHeader extends StatelessWidget {
         InkWell(
           borderRadius: BorderRadius.circular(999),
           // 导入外部歌单
-          onTap: () {},
+          onTap: onImportPressed,
           child: Icon(
             BmIcons.importright,
             size: 24,

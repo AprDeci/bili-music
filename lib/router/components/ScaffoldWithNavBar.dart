@@ -317,6 +317,7 @@ class _ScaffoldWithNavBarState extends ConsumerState<ScaffoldWithNavBar> {
         location == '/search' ||
         location == '/home/player' ||
         location == '/profile/player' ||
+        location == '/profile/import' ||
         location == '/search/player';
   }
 }
