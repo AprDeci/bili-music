@@ -631,21 +631,6 @@ class PlayerController extends Notifier<PlayerState>
     }
 
     final int generation = _nextGeneration();
-    // state = state.copyWith(
-    //   currentQueueIndex: index,
-    //   currentItem: state.queue[index],
-    //   availableParts: const <PlayableItem>[],
-    //   audioStream: null,
-    //   duration: null,
-    //   position: Duration.zero,
-    //   bufferedPosition: Duration.zero,
-    //   isReady: false,
-    //   isPlaying: false,
-    //   isBuffering: false,
-    //   statusHint: null,
-    //   errorMessage: null,
-    // );
-    // _publishMediaSession();
     await _loadQueueIndex(
       index,
       autoplay: autoplay,
