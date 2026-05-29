@@ -886,7 +886,7 @@ packages:
     description:
       path: "."
       ref: main
-      resolved-ref: f3300341139d4e79f6918b731bcbabc7aa03096e
+      resolved-ref: ddf16b271eb9d58100b3f44b293628c72eda7522
       url: "https://github.com/AprDeci/meting-dart.git"
     source: git
     version: "1.0.0"

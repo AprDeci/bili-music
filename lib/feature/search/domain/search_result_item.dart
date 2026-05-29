@@ -4,6 +4,7 @@ class SearchResultItem {
   const SearchResultItem({
     required this.aid,
     required this.bvid,
+    required this.typeId,
     required this.title,
     required this.author,
     required this.coverUrl,
@@ -17,6 +18,7 @@ class SearchResultItem {
 
   final int aid;
   final String bvid;
+  final int typeId;
   final String title;
   final String author;
   final String coverUrl;
