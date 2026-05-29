@@ -131,7 +131,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
       ),
     );
   }
-    
+
   Future<void> _showCreateCollectionDialog(BuildContext context) async {
     final String? result = await showDialog<String>(
       context: context,
@@ -155,14 +155,14 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
     final FavoritesController controller = ref.read(
       favoritesControllerProvider.notifier,
     );
-    final FavoritesState previousState = ref.read(favoritesControllerProvider);
-    await controller.createCollection(result);
+    final FavoriteCollection? collection = await controller.createCollection(
+      result,
+    );
     if (!mounted) {
       return;
     }
 
-    final FavoritesState nextState = ref.read(favoritesControllerProvider);
-    if (nextState.collections.length == previousState.collections.length) {
+    if (collection == null) {
       _showMessage('歌单名称已存在');
     }
   }
@@ -510,7 +510,7 @@ class _ProfileSectionHeader extends StatelessWidget {
 
   final String title;
   final int count;
-  final VoidCallback onAddPressed;  
+  final VoidCallback onAddPressed;
   final VoidCallback onImportPressed;
 
   @override

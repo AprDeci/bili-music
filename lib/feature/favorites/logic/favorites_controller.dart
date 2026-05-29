@@ -177,10 +177,10 @@ class FavoritesController extends _$FavoritesController {
     return state.collectionsForItem(item);
   }
 
-  Future<void> createCollection(String name) async {
+  Future<FavoriteCollection?> createCollection(String name) async {
     final String trimmedName = name.trim();
     if (trimmedName.isEmpty || _hasDuplicateCustomCollectionName(trimmedName)) {
-      return;
+      return null;
     }
 
     final DateTime now = DateTime.now();
@@ -193,6 +193,45 @@ class FavoritesController extends _$FavoritesController {
     );
     await _repository.saveCollection(collection);
     state = _repository.loadState();
+    return collection;
+  }
+
+  Future<int> addItemsToCollection({
+    required String collectionId,
+    required Iterable<PlayableItem> items,
+  }) async {
+    if (!state.hasCollection(collectionId)) {
+      return 0;
+    }
+
+    final DateTime now = DateTime.now();
+    final Map<String, PlayableItem> uniqueItems = <String, PlayableItem>{};
+    for (final PlayableItem item in items) {
+      uniqueItems[item.stableId] = item;
+    }
+
+    int addedCount = 0;
+    for (final PlayableItem item in uniqueItems.values) {
+      final String itemId = item.stableId;
+      await _upsertEntry(item: item, now: now);
+      if (!state.isItemInCollection(
+        collectionId: collectionId,
+        itemId: itemId,
+      )) {
+        await _repository.saveMembership(
+          FavoriteMembership.create(
+            collectionId: collectionId,
+            itemId: itemId,
+            addedAt: now,
+          ),
+        );
+        addedCount++;
+      }
+    }
+
+    await _touchCollection(collectionId: collectionId, updatedAt: now);
+    state = _repository.loadState();
+    return addedCount;
   }
 
   Future<bool> renameCollection({

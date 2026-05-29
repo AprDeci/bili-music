@@ -195,12 +195,10 @@ class DesktopProfileSidebar extends ConsumerWidget {
       return;
     }
 
-    final FavoritesState previousState = ref.read(favoritesControllerProvider);
-    await ref
+    final FavoriteCollection? collection = await ref
         .read(favoritesControllerProvider.notifier)
         .createCollection(trimmedName);
-    final FavoritesState nextState = ref.read(favoritesControllerProvider);
-    if (nextState.collections.length == previousState.collections.length) {
+    if (collection == null) {
       ToastUtil.show('歌单名称已存在');
     }
   }
