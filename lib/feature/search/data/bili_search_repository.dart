@@ -100,7 +100,7 @@ class BiliSearchRepository {
     return SearchResultItem(
       aid: aid,
       bvid: json['bvid'] as String? ?? '',
-      typeId: (json['typeid'] as num? ?? 0).toInt(),
+      typeId: _readInt(json['typeid']) ?? 0,
       title: _stripKeywordTag(json['title'] as String? ?? ''),
       author: json['author'] as String? ?? '未知UP主',
       coverUrl: normalizeHttpUrl(json['pic'] as String? ?? ''),
@@ -148,6 +148,16 @@ class BiliSearchRepository {
       if (parsed != null && parsed > 0) {
         return parsed;
       }
+    }
+    return null;
+  }
+
+  int? _readInt(dynamic value) {
+    if (value is num) {
+      return value.toInt();
+    }
+    if (value is String) {
+      return int.tryParse(value);
     }
     return null;
   }

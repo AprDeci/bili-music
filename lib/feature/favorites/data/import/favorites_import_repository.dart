@@ -113,12 +113,16 @@ class FavoritesImportRepository {
       if (raw <= 0) {
         return 0;
       }
-      return raw > 1000 * 60 * 60 ? raw : raw * 1000;
+      return _normalizeDurationMs(raw);
     }
     final int? parsed = int.tryParse(_readString(value));
     if (parsed == null || parsed <= 0) {
       return 0;
     }
-    return parsed > 1000 * 60 * 60 ? parsed : parsed * 1000;
+    return _normalizeDurationMs(parsed);
+  }
+
+  int _normalizeDurationMs(int raw) {
+    return raw >= 10000 ? raw : raw * 1000;
   }
 }

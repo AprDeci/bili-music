@@ -102,7 +102,7 @@ class FavoritesImportMatcher {
     if (parsed == null || parsed <= 0) {
       return 0;
     }
-    return parsed > 1000 * 60 * 60 ? parsed : parsed * 1000;
+    return parsed >= 10000 ? parsed : parsed * 1000;
   }
 
   int _scoreFor(int typeId, int durationDiffMs) {
