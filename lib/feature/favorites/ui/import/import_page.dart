@@ -1,6 +1,8 @@
 import 'dart:async';
 
+import 'package:bilimusic/common/components/cached_image.dart';
 import 'package:bilimusic/common/util/toast_util.dart';
+import 'package:bilimusic/feature/favorites/domain/import/favorites_import_candidate.dart';
 import 'package:bilimusic/feature/favorites/domain/favorite_collection.dart';
 import 'package:bilimusic/feature/favorites/domain/import/favorites_import_platform.dart';
 import 'package:bilimusic/feature/favorites/domain/import/favorites_import_result.dart';
@@ -8,6 +10,7 @@ import 'package:bilimusic/feature/favorites/domain/import/favorites_import_statu
 import 'package:bilimusic/feature/favorites/logic/favorites_controller.dart';
 import 'package:bilimusic/feature/favorites/logic/import/favorites_import_controller.dart';
 import 'package:bilimusic/feature/favorites/logic/import/favorites_import_state.dart';
+import 'package:bilimusic/feature/favorites/ui/import/manual_match_sheet.dart';
 import 'package:bilimusic/feature/player/domain/playable_item.dart';
 import 'package:bilimusic/router/player_navigation.dart';
 import 'package:flutter/material.dart';
@@ -281,7 +284,7 @@ class _ImportQueueView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListView(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(0),
       children: <Widget>[
         _ImportProgressCard(
           state: state,
@@ -292,7 +295,9 @@ class _ImportQueueView extends StatelessWidget {
         if (state.results.isEmpty)
           const _EmptyQueueHint()
         else
-          ...state.results.reversed.map(_ResultTile.new),
+          ...state.results.reversed.map(
+            (FavoritesImportResult result) => _ResultTile(result),
+          ),
       ],
     );
   }
@@ -326,11 +331,11 @@ class _ImportProgressCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.center,
               children: <Widget>[
                 Expanded(
-                  child: Text(
-                    _statusText(state.status),
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w800,
-                    ),
+                  child: Row(
+                    children: [
+                      Text(_statusText(state.status)),
+                      Text('·${state.processedCount}/${state.totalCount}'),
+                    ],
                   ),
                 ),
                 if (!state.isRunning && state.matchedCount > 0) ...<Widget>[
@@ -349,19 +354,6 @@ class _ImportProgressCard extends StatelessWidget {
                   ? null
                   : progress.clamp(0, 1),
             ),
-            const SizedBox(height: 12),
-            Text(
-              '已处理 ${state.processedCount}/${state.totalCount} · '
-              '成功 ${state.matchedCount} · 失败 ${state.failedCount}',
-            ),
-            if (state.currentTrack != null) ...<Widget>[
-              const SizedBox(height: 12),
-              Text(
-                '当前：${state.currentTrack!.title} - ${state.currentTrack!.author}',
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ],
             if (state.currentCandidate != null) ...<Widget>[
               const SizedBox(height: 8),
               Text(
@@ -399,34 +391,146 @@ class _ImportProgressCard extends StatelessWidget {
   }
 }
 
-class _ResultTile extends StatelessWidget {
+class _ResultTile extends ConsumerWidget {
   const _ResultTile(this.result);
 
   final FavoritesImportResult result;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
     final bool matched = result.isMatched;
-    return Card(
-      child: ListTile(
-        leading: Icon(
-          matched ? Icons.check_circle_rounded : Icons.error_outline_rounded,
-          color: matched ? Colors.green : theme.colorScheme.error,
-        ),
-        title: Text(
-          '${result.track.title} - ${result.track.author}',
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
-        subtitle: Text(
-          matched
-              ? '${result.candidate!.title} · ${result.candidate!.durationText}'
-              : result.message ?? '匹配失败',
-          maxLines: 2,
-          overflow: TextOverflow.ellipsis,
+    return InkWell(
+      onTap: () => _openManualMatchSheet(context, ref),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Icon(
+                  matched
+                      ? Icons.check_circle_rounded
+                      : Icons.error_outline_rounded,
+                  color: matched ? Colors.green : colorScheme.error,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Text(
+                        '${result.track.title} - ${result.track.author}',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      if (matched)
+                        _MatchedCandidateSummary(candidate: result.candidate!)
+                      else
+                        Text(
+                          result.message ?? '匹配失败',
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: colorScheme.error,
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+          ],
         ),
       ),
+    );
+  }
+
+  Future<void> _openManualMatchSheet(
+    BuildContext context,
+    WidgetRef ref,
+  ) async {
+    final FavoritesImportController controller = ref.read(
+      favoritesImportControllerProvider.notifier,
+    );
+    final String initialKeyword = controller.buildManualSearchKeyword(
+      result.track,
+    );
+    final FavoritesImportCandidate? candidate =
+        await showModalBottomSheet<FavoritesImportCandidate>(
+          context: context,
+          useSafeArea: true,
+          isScrollControlled: true,
+          builder: (BuildContext context) {
+            return ManualMatchSheet(
+              result: result,
+              initialKeyword: initialKeyword,
+            );
+          },
+        );
+    if (candidate == null) {
+      return;
+    }
+    controller.replaceResultCandidate(result: result, candidate: candidate);
+  }
+}
+
+class _MatchedCandidateSummary extends StatelessWidget {
+  const _MatchedCandidateSummary({required this.candidate});
+
+  final FavoritesImportCandidate candidate;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        CommonCachedImage(
+          imageUrl: candidate.coverUrl,
+          width: 56,
+          height: 56,
+          borderRadius: BorderRadius.circular(8),
+          fallbackIcon: Icons.music_video_rounded,
+          iconColor: colorScheme.primary,
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Text(
+                candidate.title,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.w400,
+                  fontSize: 12
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                '${candidate.author} · ${candidate.durationText}',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }

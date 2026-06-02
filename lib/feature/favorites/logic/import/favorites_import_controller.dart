@@ -15,7 +15,6 @@ import 'package:bilimusic/feature/meting/data/meting_repository.dart';
 import 'package:bilimusic/feature/search/data/bili_search_repository.dart';
 import 'package:bilimusic/feature/search/domain/search_result_item.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter/foundation.dart';
 
 final favoritesImportControllerProvider =
     NotifierProvider<FavoritesImportController, FavoritesImportState>(
@@ -154,6 +153,54 @@ class FavoritesImportController extends Notifier<FavoritesImportState> {
     state = FavoritesImportState.initial().copyWith(request: state.request);
   }
 
+  String buildManualSearchKeyword(FavoritesImportTrack track) {
+    return _matcher.buildQuery(track);
+  }
+
+  Future<List<FavoritesImportCandidate>> searchManualCandidates({
+    required FavoritesImportTrack track,
+    required String keyword,
+  }) async {
+    final String query = keyword.trim().isEmpty
+        ? _matcher.buildQuery(track)
+        : keyword.trim();
+    if (query.isEmpty) {
+      return const <FavoritesImportCandidate>[];
+    }
+
+    final List<SearchResultItem> results = await _repository.searchVideos(
+      query,
+    );
+    return results.map(_matcher.toCandidate).toList(growable: false);
+  }
+
+  void replaceResultCandidate({
+    required FavoritesImportResult result,
+    required FavoritesImportCandidate candidate,
+  }) {
+    _replaceResult(
+      result,
+      result.copyWith(
+        status: FavoritesImportStatus.completed,
+        candidate: candidate,
+        clearMessage: true,
+        finishedAt: DateTime.now(),
+      ),
+    );
+  }
+
+  void clearResultCandidate(FavoritesImportResult result) {
+    _replaceResult(
+      result,
+      result.copyWith(
+        status: FavoritesImportStatus.failed,
+        clearCandidate: true,
+        message: '已清空匹配。',
+        finishedAt: DateTime.now(),
+      ),
+    );
+  }
+
   // 匹配视频
   Future<void> _processTrack(FavoritesImportTrack track, int jobId) async {
     try {
@@ -219,6 +266,46 @@ class FavoritesImportController extends Notifier<FavoritesImportState> {
       currentCandidate: currentCandidate,
       results: nextResults,
     );
+  }
+
+  void _replaceResult(
+    FavoritesImportResult oldResult,
+    FavoritesImportResult newResult,
+  ) {
+    final int index = _findResultIndex(oldResult);
+    if (index < 0) {
+      return;
+    }
+
+    final List<FavoritesImportResult> nextResults = <FavoritesImportResult>[
+      ...state.results,
+    ];
+    nextResults[index] = newResult;
+    state = state.copyWith(
+      results: nextResults,
+      matchedCount: nextResults
+          .where((FavoritesImportResult item) => item.isMatched)
+          .length,
+      failedCount: nextResults
+          .where((FavoritesImportResult item) => !item.isMatched)
+          .length,
+    );
+  }
+
+  int _findResultIndex(FavoritesImportResult target) {
+    final int identityIndex = state.results.indexWhere(
+      (FavoritesImportResult item) => identical(item, target),
+    );
+    if (identityIndex >= 0) {
+      return identityIndex;
+    }
+
+    return state.results.indexWhere((FavoritesImportResult item) {
+      return item.finishedAt == target.finishedAt &&
+          item.track.id == target.track.id &&
+          item.track.title == target.track.title &&
+          item.track.author == target.track.author;
+    });
   }
 
   bool _shouldStop(int jobId) {

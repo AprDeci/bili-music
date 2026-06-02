@@ -71,6 +71,19 @@ class FavoritesImportMatcher {
     return '$title-$author';
   }
 
+  FavoritesImportCandidate toCandidate(SearchResultItem item) {
+    return FavoritesImportCandidate(
+      aid: item.aid,
+      bvid: item.bvid,
+      title: item.title,
+      author: item.author,
+      coverUrl: item.coverUrl,
+      durationText: item.duration,
+      durationMs: _parseDurationMs(item.duration),
+      score: _scoreFor(item.typeId, 0),
+    );
+  }
+
   String _cleanText(String value) {
     return value.trim().replaceAll(RegExp(r'\s+'), ' ');
   }
