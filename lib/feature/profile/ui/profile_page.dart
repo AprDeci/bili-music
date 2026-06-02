@@ -546,7 +546,7 @@ class _ProfileSectionHeader extends StatelessWidget {
           onTap: onImportPressed,
           child: Icon(
             BmIcons.importright,
-            size: 24,
+            size: 20,
             color: Colors.black.withValues(alpha: 0.6),
           ),
         ),
