@@ -3,6 +3,7 @@ import 'package:bilimusic/core/theme/desktop_chinese_font.dart';
 import 'package:bilimusic/core/theme/theme_catalog.dart';
 import 'package:chinese_font_library/chinese_font_library.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 final class AppTheme {
   const AppTheme._();
@@ -25,6 +26,7 @@ final class AppTheme {
         surfaceTintColor: Colors.transparent,
         elevation: 0,
         scrolledUnderElevation: 0,
+        systemOverlayStyle: SystemUiOverlayStyle.dark,
       ),
       cardTheme: CardThemeData(
         elevation: 0,
