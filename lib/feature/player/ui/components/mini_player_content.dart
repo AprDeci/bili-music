@@ -1,10 +1,14 @@
 import 'dart:math';
 
 import 'package:bilimusic/common/components/cached_image.dart';
+import 'package:bilimusic/feature/metadata/domain/metadata_state.dart';
+import 'package:bilimusic/feature/metadata/logic/metadata_controller.dart';
 import 'package:bilimusic/feature/player/domain/player_state.dart';
+import 'package:bilimusic/feature/player/ui/components/player_display_metadata.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class MiniPlayerContent extends StatelessWidget {
+class MiniPlayerContent extends ConsumerWidget {
   const MiniPlayerContent({
     super.key,
     required this.state,
@@ -17,11 +21,16 @@ class MiniPlayerContent extends StatelessWidget {
   final EdgeInsets padding;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
+    final MetadataState metadataState = ref.watch(metadataControllerProvider);
     final String subtitle = buildMiniPlayerSubtitle(state);
     final double progress = buildMiniPlayerProgress(state);
+    final String? displayCoverUrl = resolveDisplayCoverUrl(
+      item: state.currentItem,
+      metadata: metadataState.metadata,
+    );
 
     return Padding(
       padding: padding,
@@ -29,9 +38,7 @@ class MiniPlayerContent extends StatelessWidget {
         children: <Widget>[
           Hero(
             tag: 'artwork',
-            child: MiniPlayerArtwork(
-              coverUrl: state.currentItem?.coverUrl ?? '',
-            ),
+            child: MiniPlayerArtwork(coverUrl: displayCoverUrl),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -102,7 +109,7 @@ class MiniPlayerArtwork extends StatelessWidget {
   static const double _outerSize = 52;
   static const double _imageSize = 48;
 
-  final String coverUrl;
+  final String? coverUrl;
 
   @override
   Widget build(BuildContext context) {
