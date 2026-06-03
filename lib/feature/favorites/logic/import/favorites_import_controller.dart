@@ -14,14 +14,12 @@ import 'package:bilimusic/core/net/bili_client.dart';
 import 'package:bilimusic/feature/meting/data/meting_repository.dart';
 import 'package:bilimusic/feature/search/data/bili_search_repository.dart';
 import 'package:bilimusic/feature/search/domain/search_result_item.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-final favoritesImportControllerProvider =
-    NotifierProvider<FavoritesImportController, FavoritesImportState>(
-      FavoritesImportController.new,
-    );
+part 'favorites_import_controller.g.dart';
 
-class FavoritesImportController extends Notifier<FavoritesImportState> {
+@Riverpod(keepAlive: true)
+class FavoritesImportController extends _$FavoritesImportController {
   late final FavoritesImportRepository _repository = FavoritesImportRepository(
     metingRepository: ref.read(metingRepositoryProvider),
     biliSearchRepository: BiliSearchRepository(
