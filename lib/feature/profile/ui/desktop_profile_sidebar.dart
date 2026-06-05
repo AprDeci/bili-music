@@ -12,19 +12,28 @@ import 'package:bilimusic/feature/favorites/domain/favorite_collection.dart';
 import 'package:bilimusic/feature/favorites/domain/favorite_entry.dart';
 import 'package:bilimusic/feature/favorites/domain/favorites_state.dart';
 import 'package:bilimusic/feature/favorites/logic/favorites_controller.dart';
+import 'package:bilimusic/feature/profile/ui/components/remote_collection_import_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_smart_dialog/flutter_smart_dialog.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hugeicons/hugeicons.dart';
 
-class DesktopProfileSidebar extends ConsumerWidget {
+class DesktopProfileSidebar extends ConsumerStatefulWidget {
   const DesktopProfileSidebar({super.key, required this.currentLocation});
 
   final String currentLocation;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<DesktopProfileSidebar> createState() =>
+      _DesktopProfileSidebarState();
+}
+
+class _DesktopProfileSidebarState extends ConsumerState<DesktopProfileSidebar> {
+  _FavoriteListTab _selectedTab = _FavoriteListTab.remote;
+
+  @override
+  Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
     final FavoritesState favoritesState = ref.watch(
@@ -34,12 +43,22 @@ class DesktopProfileSidebar extends ConsumerWidget {
       FavoriteCollection.likedCollectionId,
     );
     final bool isLikedSelected =
-        currentLocation ==
+        widget.currentLocation ==
         '/profile/favorites/${FavoriteCollection.likedCollectionId}';
-    final List<FavoriteCollection> customCollections = favoritesState
+    final List<FavoriteCollection> remoteCollections = favoritesState
         .collections
-        .where((FavoriteCollection collection) => !collection.isSystem)
+        .where((FavoriteCollection collection) => collection.isRemote)
         .toList(growable: false);
+    final List<FavoriteCollection> localCollections = favoritesState.collections
+        .where(
+          (FavoriteCollection collection) =>
+              collection.isLocal && !collection.isSystem,
+        )
+        .toList(growable: false);
+    final List<FavoriteCollection> visibleCollections = switch (_selectedTab) {
+      _FavoriteListTab.remote => remoteCollections,
+      _FavoriteListTab.local => localCollections,
+    };
 
     return Container(
       width: 240,
@@ -58,7 +77,7 @@ class DesktopProfileSidebar extends ConsumerWidget {
               Expanded(
                 child: _SidebarShortcutButton(
                   icon: Icons.home_outlined,
-                  isSelected: currentLocation == '/home',
+                  isSelected: widget.currentLocation == '/home',
                   onTap: () => context.go('/home'),
                 ),
               ),
@@ -66,7 +85,7 @@ class DesktopProfileSidebar extends ConsumerWidget {
               Expanded(
                 child: _SidebarShortcutButton(
                   icon: Icons.explore_outlined,
-                  isSelected: currentLocation == '/search',
+                  isSelected: widget.currentLocation == '/search',
                   onTap: () => context.go('/search'),
                 ),
               ),
@@ -94,21 +113,23 @@ class DesktopProfileSidebar extends ConsumerWidget {
           ),
           const SizedBox(height: 22),
           _CollectionHeader(
-            onAddPressed: () => _showCreateCollectionDialog(context, ref),
-            onImportPressed: () => context.push('/profile/import'),
+            selectedTab: _selectedTab,
+            onTabChanged: _handleTabChanged,
+            onAddPressed: () => _handleAddPressed(context, ref),
+            onImportPressed: () => _handleImportPressed(context),
           ),
           const SizedBox(height: 10),
           Expanded(
-            child: customCollections.isEmpty
-                ? const _EmptyCollectionHint()
+            child: visibleCollections.isEmpty
+                ? _EmptyCollectionHint(tab: _selectedTab)
                 : ListView.separated(
                     padding: EdgeInsets.zero,
-                    itemCount: customCollections.length,
+                    itemCount: visibleCollections.length,
                     separatorBuilder: (BuildContext context, int index) =>
                         const SizedBox(height: 4),
                     itemBuilder: (BuildContext context, int index) {
                       final FavoriteCollection collection =
-                          customCollections[index];
+                          visibleCollections[index];
                       final List<FavoriteEntry> items = favoritesState
                           .itemsForCollection(collection.id);
                       final FavoriteEntry? latestItem = items.isEmpty
@@ -120,9 +141,11 @@ class DesktopProfileSidebar extends ConsumerWidget {
                           coverUrl: latestItem?.coverUrl,
                         ),
                         title: collection.name,
-                        count: items.length,
+                        count: collection.isRemote
+                            ? collection.itemCount
+                            : items.length,
                         isSelected:
-                            currentLocation ==
+                            widget.currentLocation ==
                             '/profile/favorites/${collection.id}',
                         padding: const EdgeInsets.symmetric(
                           horizontal: 8,
@@ -152,7 +175,7 @@ class DesktopProfileSidebar extends ConsumerWidget {
                     icon: HugeIcons.strokeRoundedSettings03,
                     size: 20,
                   ),
-                  isActive: currentLocation.startsWith('/settings'),
+                  isActive: widget.currentLocation.startsWith('/settings'),
                   onPressed: () => context.go('/settings'),
                 ),
                 const SizedBox(width: 12),
@@ -162,7 +185,9 @@ class DesktopProfileSidebar extends ConsumerWidget {
                     icon: HugeIcons.strokeRoundedShirt01,
                     size: 20,
                   ),
-                  isActive: currentLocation.startsWith('/settings/theme'),
+                  isActive: widget.currentLocation.startsWith(
+                    '/settings/theme',
+                  ),
                   onPressed: () => context.go('/settings/theme'),
                 ),
               ],
@@ -201,6 +226,136 @@ class DesktopProfileSidebar extends ConsumerWidget {
     if (collection == null) {
       ToastUtil.show('歌单名称已存在');
     }
+  }
+
+  Future<void> _showCreateRemoteCollectionDialog(
+    BuildContext context,
+    WidgetRef ref,
+  ) async {
+    final String? result = await showDialog<String>(
+      context: context,
+      useRootNavigator: true,
+      builder: (BuildContext context) {
+        return const _CollectionNameDialog(
+          title: '新建网络歌单',
+          hintText: '例如：深夜循环',
+          confirmText: '创建',
+        );
+      },
+    );
+
+    if (result == null) {
+      return;
+    }
+
+    final String trimmedName = result.trim();
+    if (trimmedName.isEmpty) {
+      ToastUtil.show('歌单名称不能为空');
+      return;
+    }
+
+    final FavoriteCollection? collection = await ref
+        .read(favoritesControllerProvider.notifier)
+        .createRemoteCollection(trimmedName);
+    if (collection == null) {
+      ToastUtil.show('创建网络歌单失败');
+    }
+  }
+
+  Future<void> _showRemoteImportDialog(
+    BuildContext context,
+    WidgetRef ref,
+  ) async {
+    final FavoritesController controller = ref.read(
+      favoritesControllerProvider.notifier,
+    );
+    final FavoriteCollection? collection = await showDialog<FavoriteCollection>(
+      context: context,
+      useRootNavigator: true,
+      builder: (BuildContext context) {
+        return RemoteCollectionImportDialog(
+          collectionsFuture: controller.fetchImportableRemoteCollections(),
+        );
+      },
+    );
+
+    if (!context.mounted || collection == null) {
+      return;
+    }
+
+    await controller.bindRemoteCollection(collection);
+    await controller.refreshRemoteCollectionItems(collectionId: collection.id);
+    if (!context.mounted) {
+      return;
+    }
+    ToastUtil.show('已导入“${collection.name}”');
+  }
+
+  Future<void> _showRemoteAddOptions(
+    BuildContext context,
+    WidgetRef ref,
+  ) async {
+    final _RemoteAddAction? action = await showDialog<_RemoteAddAction>(
+      context: context,
+      builder: (BuildContext context) {
+        return SimpleDialog(
+          title: const Text('添加网络歌单'),
+          children: <Widget>[
+            SimpleDialogOption(
+              onPressed: () =>
+                  Navigator.of(context).pop(_RemoteAddAction.import),
+              child: const ListTile(
+                leading: Icon(Icons.cloud_download_outlined),
+                title: Text('导入已有收藏夹'),
+                contentPadding: EdgeInsets.zero,
+              ),
+            ),
+            SimpleDialogOption(
+              onPressed: () =>
+                  Navigator.of(context).pop(_RemoteAddAction.create),
+              child: const ListTile(
+                leading: Icon(Icons.add_rounded),
+                title: Text('新建网络歌单'),
+                contentPadding: EdgeInsets.zero,
+              ),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (!context.mounted || action == null) {
+      return;
+    }
+
+    switch (action) {
+      case _RemoteAddAction.import:
+        await _showRemoteImportDialog(context, ref);
+      case _RemoteAddAction.create:
+        await _showCreateRemoteCollectionDialog(context, ref);
+    }
+  }
+
+  void _handleTabChanged(_FavoriteListTab tab) {
+    if (_selectedTab == tab) {
+      return;
+    }
+    setState(() {
+      _selectedTab = tab;
+    });
+  }
+
+  void _handleAddPressed(BuildContext context, WidgetRef ref) {
+    switch (_selectedTab) {
+      case _FavoriteListTab.remote:
+        _showRemoteAddOptions(context, ref);
+      case _FavoriteListTab.local:
+        _showCreateCollectionDialog(context, ref);
+    }
+  }
+
+  void _handleImportPressed(BuildContext context) {
+    context.push('/profile/import');
   }
 
   void _showCollectionContextMenu({
@@ -355,6 +510,10 @@ class DesktopProfileSidebar extends ConsumerWidget {
 }
 
 enum _CollectionAction { rename, delete }
+
+enum _FavoriteListTab { remote, local }
+
+enum _RemoteAddAction { import, create }
 
 class _SidebarAccountHeader extends ConsumerWidget {
   const _SidebarAccountHeader();
@@ -598,10 +757,14 @@ class _SidebarListItem extends StatelessWidget {
 
 class _CollectionHeader extends StatelessWidget {
   const _CollectionHeader({
+    required this.selectedTab,
+    required this.onTabChanged,
     required this.onAddPressed,
     required this.onImportPressed,
   });
 
+  final _FavoriteListTab selectedTab;
+  final ValueChanged<_FavoriteListTab> onTabChanged;
   final VoidCallback onAddPressed;
   final VoidCallback onImportPressed;
 
@@ -612,12 +775,20 @@ class _CollectionHeader extends StatelessWidget {
     return Row(
       children: <Widget>[
         Expanded(
-          child: Text(
-            '自建歌单',
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: colorScheme.onSurface,
-              fontWeight: FontWeight.w700,
-            ),
+          child: Row(
+            children: <Widget>[
+              _PlaylistTabButton(
+                label: '网络歌单',
+                selected: selectedTab == _FavoriteListTab.remote,
+                onTap: () => onTabChanged(_FavoriteListTab.remote),
+              ),
+              const SizedBox(width: 14),
+              _PlaylistTabButton(
+                label: '本地歌单',
+                selected: selectedTab == _FavoriteListTab.local,
+                onTap: () => onTabChanged(_FavoriteListTab.local),
+              ),
+            ],
           ),
         ),
         const SizedBox(width: 12),
@@ -649,6 +820,39 @@ class _CollectionHeader extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _PlaylistTabButton extends StatelessWidget {
+  const _PlaylistTabButton({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 6),
+        child: Text(
+          label,
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: selected
+                ? Colors.black
+                : Colors.black.withValues(alpha: 0.45),
+            fontWeight: selected ? FontWeight.w800 : FontWeight.w500,
+          ),
+        ),
+      ),
     );
   }
 }
@@ -698,7 +902,9 @@ class _SidebarPlaylistPlaceholder extends StatelessWidget {
 }
 
 class _EmptyCollectionHint extends StatelessWidget {
-  const _EmptyCollectionHint();
+  const _EmptyCollectionHint({required this.tab});
+
+  final _FavoriteListTab tab;
 
   @override
   Widget build(BuildContext context) {
@@ -707,7 +913,7 @@ class _EmptyCollectionHint extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.fromLTRB(8, 6, 8, 0),
       child: Text(
-        '暂无自建歌单',
+        tab == _FavoriteListTab.remote ? '暂无网络歌单' : '暂无本地歌单',
         style: theme.textTheme.bodySmall?.copyWith(
           color: colorScheme.onSurfaceVariant.withValues(alpha: 0.72),
         ),

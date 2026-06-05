@@ -10,6 +10,7 @@ import 'package:bilimusic/feature/favorites/domain/favorite_collection.dart';
 import 'package:bilimusic/feature/favorites/domain/favorite_entry.dart';
 import 'package:bilimusic/feature/favorites/domain/favorites_state.dart';
 import 'package:bilimusic/feature/favorites/logic/favorites_controller.dart';
+import 'package:bilimusic/feature/profile/ui/components/remote_collection_import_dialog.dart';
 import 'package:bilimusic/feature/profile/ui/components/user_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -25,6 +26,7 @@ class ProfilePage extends ConsumerStatefulWidget {
 
 class _ProfilePageState extends ConsumerState<ProfilePage> {
   bool _showAllCollections = false;
+  _FavoriteListTab _selectedTab = _FavoriteListTab.remote;
 
   @override
   Widget build(BuildContext context) {
@@ -35,15 +37,25 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
     final int likedCount = favoritesState.itemCountForCollection(
       FavoriteCollection.likedCollectionId,
     );
-    final List<FavoriteCollection> customCollections = favoritesState
+    final List<FavoriteCollection> remoteCollections = favoritesState
         .collections
-        .where((FavoriteCollection collection) => !collection.isSystem)
+        .where((FavoriteCollection collection) => collection.isRemote)
         .toList(growable: false);
-    final bool shouldCollapse = customCollections.length > 5;
+    final List<FavoriteCollection> localCollections = favoritesState.collections
+        .where(
+          (FavoriteCollection collection) =>
+              collection.isLocal && !collection.isSystem,
+        )
+        .toList(growable: false);
+    final List<FavoriteCollection> selectedCollections = switch (_selectedTab) {
+      _FavoriteListTab.remote => remoteCollections,
+      _FavoriteListTab.local => localCollections,
+    };
+    final bool shouldCollapse = selectedCollections.length > 5;
     final List<FavoriteCollection> visibleCollections =
         shouldCollapse && !_showAllCollections
-        ? customCollections.take(5).toList(growable: false)
-        : customCollections;
+        ? selectedCollections.take(5).toList(growable: false)
+        : selectedCollections;
 
     return Scaffold(
       appBar: AppBar(
@@ -71,10 +83,10 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
           ),
           const SizedBox(height: 16),
           _ProfileSectionHeader(
-            title: '自建歌单',
-            count: customCollections.length,
-            onAddPressed: () => _showCreateCollectionDialog(context),
-            onImportPressed: () => context.push('/profile/import'),
+            selectedTab: _selectedTab,
+            onTabChanged: _handleTabChanged,
+            onAddPressed: _handleAddPressed,
+            onImportPressed: _handleImportPressed,
           ),
           if (visibleCollections.isNotEmpty) const SizedBox(height: 14),
           ...visibleCollections.map((FavoriteCollection collection) {
@@ -89,7 +101,9 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
               padding: const EdgeInsets.only(bottom: 12),
               child: _PlaylistTile(
                 title: collection.name,
-                count: items.length,
+                count: collection.isRemote
+                    ? collection.itemCount
+                    : items.length,
                 coverUrl: latestItem?.coverUrl,
                 onTap: () =>
                     context.push('/profile/favorites/${collection.id}'),
@@ -165,6 +179,132 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
     if (collection == null) {
       _showMessage('歌单名称已存在');
     }
+  }
+
+  Future<void> _showCreateRemoteCollectionDialog() async {
+    final String? result = await showDialog<String>(
+      context: context,
+      useRootNavigator: true,
+      builder: (BuildContext context) {
+        return const _CollectionNameDialog(
+          title: '新建网络歌单',
+          hintText: '例如：深夜循环',
+          confirmText: '创建',
+        );
+      },
+    );
+
+    if (result == null || result.trim().isEmpty) {
+      if (result != null) {
+        _showMessage('歌单名称不能为空');
+      }
+      return;
+    }
+
+    final FavoriteCollection? collection = await ref
+        .read(favoritesControllerProvider.notifier)
+        .createRemoteCollection(result);
+    if (!mounted) {
+      return;
+    }
+
+    if (collection == null) {
+      _showMessage('创建网络歌单失败');
+    }
+  }
+
+  Future<void> _showRemoteImportDialog() async {
+    final FavoritesController controller = ref.read(
+      favoritesControllerProvider.notifier,
+    );
+    final FavoriteCollection? collection = await showDialog<FavoriteCollection>(
+      context: context,
+      useRootNavigator: true,
+      builder: (BuildContext context) {
+        return RemoteCollectionImportDialog(
+          collectionsFuture: controller.fetchImportableRemoteCollections(),
+        );
+      },
+    );
+
+    if (!mounted || collection == null) {
+      return;
+    }
+
+    await controller.bindRemoteCollection(collection);
+    await controller.refreshRemoteCollectionItems(collectionId: collection.id);
+    if (!mounted) {
+      return;
+    }
+    _showMessage('已导入“${collection.name}”');
+  }
+
+  Future<void> _showRemoteAddOptions(BuildContext context) async {
+    final _RemoteAddAction? action = await showDialog<_RemoteAddAction>(
+      context: context,
+      builder: (BuildContext context) {
+        return SimpleDialog(
+          title: const Text('添加网络歌单'),
+          children: <Widget>[
+            SimpleDialogOption(
+              onPressed: () =>
+                  Navigator.of(context).pop(_RemoteAddAction.import),
+              child: const ListTile(
+                leading: Icon(Icons.cloud_download_outlined),
+                title: Text('导入已有收藏夹'),
+                contentPadding: EdgeInsets.zero,
+              ),
+            ),
+            SimpleDialogOption(
+              onPressed: () =>
+                  Navigator.of(context).pop(_RemoteAddAction.create),
+              child: const ListTile(
+                leading: Icon(Icons.add_rounded),
+                title: Text('新建网络歌单'),
+                contentPadding: EdgeInsets.zero,
+              ),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (!mounted || action == null) {
+      return;
+    }
+
+    switch (action) {
+      case _RemoteAddAction.import:
+        await _showRemoteImportDialog();
+      case _RemoteAddAction.create:
+        if (!mounted) {
+          return;
+        }
+        await _showCreateRemoteCollectionDialog();
+    }
+  }
+
+  void _handleTabChanged(_FavoriteListTab tab) {
+    if (_selectedTab == tab) {
+      return;
+    }
+    setState(() {
+      _selectedTab = tab;
+      _showAllCollections = false;
+    });
+  }
+
+  void _handleAddPressed() {
+    switch (_selectedTab) {
+      case _FavoriteListTab.remote:
+        _showRemoteAddOptions(context);
+      case _FavoriteListTab.local:
+        _showCreateCollectionDialog(context);
+    }
+  }
+
+  void _handleImportPressed() {
+    context.push('/profile/import');
   }
 
   Future<void> _showCollectionActionMenu({
@@ -348,6 +488,10 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
 
 enum _CollectionAction { rename, delete }
 
+enum _FavoriteListTab { remote, local }
+
+enum _RemoteAddAction { import, create }
+
 class _CollectionNameDialog extends StatefulWidget {
   const _CollectionNameDialog({
     required this.title,
@@ -502,42 +646,36 @@ class _ProfileQuickActionCard extends StatelessWidget {
 
 class _ProfileSectionHeader extends StatelessWidget {
   const _ProfileSectionHeader({
-    required this.title,
-    required this.count,
+    required this.selectedTab,
+    required this.onTabChanged,
     required this.onAddPressed,
     required this.onImportPressed,
   });
 
-  final String title;
-  final int count;
+  final _FavoriteListTab selectedTab;
+  final ValueChanged<_FavoriteListTab> onTabChanged;
   final VoidCallback onAddPressed;
   final VoidCallback onImportPressed;
 
   @override
   Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
-
     return Row(
       children: <Widget>[
         Expanded(
-          child: RichText(
-            text: TextSpan(
-              style: theme.textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.w900,
-                color: colorScheme.onSurface,
+          child: Row(
+            children: <Widget>[
+              _PlaylistTabButton(
+                label: '网络歌单',
+                selected: selectedTab == _FavoriteListTab.remote,
+                onTap: () => onTabChanged(_FavoriteListTab.remote),
               ),
-              children: <InlineSpan>[
-                TextSpan(text: title),
-                TextSpan(
-                  text: count == 0 ? '' : ' $count',
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w700,
-                    color: colorScheme.onSurfaceVariant,
-                  ),
-                ),
-              ],
-            ),
+              const SizedBox(width: 22),
+              _PlaylistTabButton(
+                label: '本地歌单',
+                selected: selectedTab == _FavoriteListTab.local,
+                onTap: () => onTabChanged(_FavoriteListTab.local),
+              ),
+            ],
           ),
         ),
         InkWell(
@@ -566,6 +704,39 @@ class _ProfileSectionHeader extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _PlaylistTabButton extends StatelessWidget {
+  const _PlaylistTabButton({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Text(
+          label,
+          style: theme.textTheme.titleMedium?.copyWith(
+            color: selected
+                ? Colors.black
+                : Colors.black.withValues(alpha: 0.45),
+            fontWeight: selected ? FontWeight.w900 : FontWeight.w600,
+          ),
+        ),
+      ),
     );
   }
 }
