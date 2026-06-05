@@ -96,6 +96,17 @@ class FavoritesController extends _$FavoritesController {
     state = _loadState();
   }
 
+  Future<bool> removeRemoteCollection(String collectionId) async {
+    final FavoriteCollection? targetCollection = _collectionById(collectionId);
+    if (targetCollection == null || !targetCollection.isRemote) {
+      return false;
+    }
+
+    await _remoteCache.deleteCollection(collectionId);
+    state = _loadState();
+    return true;
+  }
+
   Future<BiliFavoriteCollectionPage?> refreshRemoteCollectionItems({
     required String collectionId,
     int pageNumber = 1,

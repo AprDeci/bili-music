@@ -387,16 +387,22 @@ class _DesktopProfileSidebarState extends ConsumerState<DesktopProfileSidebar> {
               width: 144,
               child: CommonAttachMenu<_CollectionAction>(
                 itemHeight: 40,
-                items: const <CommonAttachMenuItem<_CollectionAction>>[
-                  CommonAttachMenuItem<_CollectionAction>(
-                    value: _CollectionAction.delete,
-                    label: '删除',
-                    icon: Icons.delete_outline_rounded,
-                  ),
-                  CommonAttachMenuItem<_CollectionAction>(
+                items: <CommonAttachMenuItem<_CollectionAction>>[
+                  const CommonAttachMenuItem<_CollectionAction>(
                     value: _CollectionAction.rename,
                     label: '重命名',
                     icon: SizedBox.shrink(),
+                  ),
+                  if (collection.isRemote)
+                    CommonAttachMenuItem<_CollectionAction>(
+                      value: _CollectionAction.remove,
+                      label: '移除',
+                      icon: Icons.remove_circle_outline_rounded,
+                    ),
+                  const CommonAttachMenuItem<_CollectionAction>(
+                    value: _CollectionAction.delete,
+                    label: '删除',
+                    icon: Icons.delete_outline_rounded,
                   ),
                 ],
                 onSelected: (_CollectionAction action) async {
@@ -409,6 +415,12 @@ class _DesktopProfileSidebarState extends ConsumerState<DesktopProfileSidebar> {
                       );
                     case _CollectionAction.delete:
                       await _showDeleteCollectionDialog(
+                        sidebarContext,
+                        ref,
+                        collection,
+                      );
+                    case _CollectionAction.remove:
+                      await _showRemoveRemoteCollectionDialog(
                         sidebarContext,
                         ref,
                         collection,
@@ -507,9 +519,56 @@ class _DesktopProfileSidebarState extends ConsumerState<DesktopProfileSidebar> {
 
     ToastUtil.show(deleted ? '已删除歌单' : '删除失败');
   }
+
+  Future<void> _showRemoveRemoteCollectionDialog(
+    BuildContext context,
+    WidgetRef ref,
+    FavoriteCollection collection,
+  ) async {
+    if (!collection.isRemote) {
+      return;
+    }
+
+    final bool? confirmed = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('移除网络歌单'),
+          content: Text('确认从列表中移除“${collection.name}”？不会删除 B 站收藏夹。'),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('取消'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text('移除'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmed != true) {
+      return;
+    }
+
+    final bool removed = await ref
+        .read(favoritesControllerProvider.notifier)
+        .removeRemoteCollection(collection.id);
+    if (!context.mounted) {
+      return;
+    }
+
+    if (removed &&
+        widget.currentLocation == '/profile/favorites/${collection.id}') {
+      context.go('/profile/favorites/${FavoriteCollection.likedCollectionId}');
+    }
+    ToastUtil.show(removed ? '已移除网络歌单' : '移除失败');
+  }
 }
 
-enum _CollectionAction { rename, delete }
+enum _CollectionAction { rename, delete, remove }
 
 enum _FavoriteListTab { remote, local }
 

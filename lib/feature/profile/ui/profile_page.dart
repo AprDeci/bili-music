@@ -326,7 +326,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
     final _CollectionAction? action = await showMenu<_CollectionAction>(
       context: context,
       position: position,
-      items: const <PopupMenuEntry<_CollectionAction>>[
+      items: <PopupMenuEntry<_CollectionAction>>[
         PopupMenuItem<_CollectionAction>(
           value: _CollectionAction.rename,
           child: ListTile(
@@ -335,6 +335,15 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
             contentPadding: EdgeInsets.zero,
           ),
         ),
+        if (collection.isRemote)
+          PopupMenuItem<_CollectionAction>(
+            value: _CollectionAction.remove,
+            child: ListTile(
+              leading: Icon(Icons.remove_circle_outline_rounded),
+              title: Text('移除'),
+              contentPadding: EdgeInsets.zero,
+            ),
+          ),
         PopupMenuItem<_CollectionAction>(
           value: _CollectionAction.delete,
           child: ListTile(
@@ -355,6 +364,8 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
         await _showRenameCollectionDialog(collection);
       case _CollectionAction.delete:
         await _showDeleteCollectionDialog(collection);
+      case _CollectionAction.remove:
+        await _showRemoveRemoteCollectionDialog(collection);
     }
   }
 
@@ -478,6 +489,46 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
     ToastUtil.show(deleted ? '已删除歌单' : '删除失败');
   }
 
+  Future<void> _showRemoveRemoteCollectionDialog(
+    FavoriteCollection collection,
+  ) async {
+    if (!collection.isRemote) {
+      return;
+    }
+
+    final bool? confirmed = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('移除网络歌单'),
+          content: Text('确认从列表中移除“${collection.name}”？不会删除 B 站收藏夹。'),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('取消'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text('移除'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmed != true) {
+      return;
+    }
+
+    final bool removed = await ref
+        .read(favoritesControllerProvider.notifier)
+        .removeRemoteCollection(collection.id);
+    if (!mounted) {
+      return;
+    }
+    ToastUtil.show(removed ? '已移除网络歌单' : '移除失败');
+  }
+
   void _showMessage(String message) {
     if (!mounted) {
       return;
@@ -486,7 +537,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
   }
 }
 
-enum _CollectionAction { rename, delete }
+enum _CollectionAction { rename, delete, remove }
 
 enum _FavoriteListTab { remote, local }
 
