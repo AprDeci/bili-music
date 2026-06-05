@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:bilimusic/core/bili/session/bili_session.dart';
 import 'package:bilimusic/common/util/platform_util.dart';
 import 'package:bilimusic/core/bili/session/bili_session_controller.dart';
 import 'package:bilimusic/core/hive/hive.dart';
@@ -95,7 +96,18 @@ class _AppBootstrapState extends ConsumerState<_AppBootstrap> {
       }
       _didBootstrap = true;
       await ref.read(favoritesControllerProvider.notifier).initialize();
-      await ref.read(biliSessionControllerProvider.notifier).bootstrap();
+      // 初始化远程收藏夹
+      final BiliSession? session = await ref
+          .read(biliSessionControllerProvider.notifier)
+          .bootstrap();
+      if (session?.isLoggedIn ?? false) {
+        unawaited(
+          ref
+              .read(favoritesControllerProvider.notifier)
+              .refreshRemoteCollections()
+              .catchError((Object _) {}),
+        );
+      }
       await ref
           .read(playerControllerProvider.notifier)
           .restoreFromPersistence();
