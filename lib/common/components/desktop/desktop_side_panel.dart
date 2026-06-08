@@ -136,11 +136,31 @@ Future<void> showDesktopSidePanel({
           backgroundColor: backgroundColor,
           borderRadius: borderRadius,
           clipBehavior: clipBehavior,
-          child: builder(context),
+          child: _DesktopSidePanelNavigatorHost(builder: builder),
         ),
       );
     },
   );
+}
+
+class _DesktopSidePanelNavigatorHost extends StatelessWidget {
+  const _DesktopSidePanelNavigatorHost({required this.builder});
+
+  final WidgetBuilder builder;
+
+  @override
+  Widget build(BuildContext context) {
+    return Navigator(
+      onGenerateRoute: (RouteSettings settings) {
+        return PageRouteBuilder<void>(
+          settings: settings,
+          pageBuilder: (BuildContext context, _, _) => builder(context),
+          transitionDuration: Duration.zero,
+          reverseTransitionDuration: Duration.zero,
+        );
+      },
+    );
+  }
 }
 
 Rect? _resolveDesktopSidePanelHostRect() {
