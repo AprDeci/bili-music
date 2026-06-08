@@ -41,7 +41,7 @@ abstract interface class BiliHttpClient {
   });
 }
 
-@riverpod
+@Riverpod(keepAlive: true)
 class BiliClient extends _$BiliClient implements BiliHttpClient {
   final AppLogger _logger = AppLogger('BiliClient');
 
@@ -57,7 +57,6 @@ class BiliClient extends _$BiliClient implements BiliHttpClient {
         headers: NetConfig.defaultHeaders,
       ),
     );
-
 
     // 匿名模式下，移除Cookie
     _dio.interceptors.add(
