@@ -1,3 +1,4 @@
+import 'package:bilimusic/common/components/error_page.dart';
 import 'package:bilimusic/common/util/platform_util.dart';
 import 'package:bilimusic/feature/comment/domain/comment_target.dart';
 import 'package:bilimusic/feature/comment/ui/comment_page.dart';
@@ -18,6 +19,8 @@ import 'package:bilimusic/feature/setting/ui/hotkey_settings_page.dart';
 import 'package:bilimusic/feature/setting/ui/player_settings_page.dart';
 import 'package:bilimusic/feature/setting/ui/setting_page.dart';
 import 'package:bilimusic/feature/setting/ui/theme_settings_page.dart';
+import 'package:bilimusic/feature/up/ui/collection_detail_page.dart';
+import 'package:bilimusic/feature/up/ui/up_page.dart';
 import 'package:bilimusic/router/app_shell.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -66,6 +69,30 @@ final List<Map<String, dynamic>> mobileTabs = [
 
 final List<Map<String, dynamic>> mobileHiddenBranches = [
   {'path': '/search', 'builder': (context, state) => const SearchPage()},
+  {
+    'path': '/up',
+    'builder': (context, state) =>
+        const ErrorPageStatefulWidget(message: 'Up Page Not Found'),
+    'routes': [
+      GoRoute(
+        path: ':mid',
+        builder: (context, state) {
+          final mid = int.parse(state.pathParameters['mid']!);
+          return UpPage(mid: mid);
+        },
+        routes: [
+          GoRoute(
+            path: 'collection/:seasonId', // 完整路径 /up/:mid/collection/:seasonId
+            builder: (context, state) {
+              final mid = int.parse(state.pathParameters['mid']!);
+              final seasonId = int.parse(state.pathParameters['seasonId']!);
+              return CollectionDetailPage(mid: mid, seasonId: seasonId);
+            },
+          ),
+        ],
+      ),
+    ],
+  },
   {
     'path': '/player',
     'builder': (context, state) {
