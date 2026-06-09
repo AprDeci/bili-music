@@ -1,5 +1,5 @@
 import 'package:bilimusic/common/components/bottom_page_spacer.dart';
-import 'package:bilimusic/common/components/cached_image.dart';
+import 'package:bilimusic/common/components/video_card.dart';
 import 'package:bilimusic/common/util/screen_util.dart';
 import 'package:bilimusic/common/util/player_util.dart';
 import 'package:bilimusic/common/util/toast_util.dart';
@@ -675,216 +675,58 @@ class _SearchResultSection extends StatelessWidget {
                 page: 1,
               );
 
-              return Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  onTap: () => onPlayItem(item),
-                  child: Container(
-                    margin: const EdgeInsets.only(bottom: 1),
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: <Widget>[
-                        Stack(
-                          children: <Widget>[
-                            Container(
-                              width: 82,
-                              height: 82,
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                              child: CommonCachedImage(
-                                imageUrl: item.coverUrl,
-                                fit: BoxFit.cover,
-                                borderRadius: BorderRadius.circular(8),
-                                fallbackIcon: Icons.music_video_rounded,
-                                iconColor: colorScheme.primary,
-                                backgroundColor: Colors.transparent,
-                                iconSize: 30,
-                              ),
-                            ),
-                            Positioned(
-                              left: 8,
-                              bottom: 8,
-                              child: Container(
-                                width: 26,
-                                height: 26,
-                                decoration: BoxDecoration(
-                                  color: colorScheme.surface.withValues(
-                                    alpha: 0.92,
-                                  ),
-                                  borderRadius: BorderRadius.circular(999),
-                                ),
-                                child: Icon(
-                                  Icons.play_arrow_rounded,
-                                  size: 18,
-                                  color: colorScheme.primary,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: <Widget>[
-                              Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: <Widget>[
-                                  Expanded(
-                                    child: Text(
-                                      item.title,
-                                      maxLines: 2,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: theme.textTheme.titleMedium
-                                          ?.copyWith(
-                                            fontWeight: FontWeight.w600,
-                                            color: colorScheme.onSurface,
-                                            height: 1.3,
-                                            fontSize: 14,
-                                          ),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  _ResultTag(label: item.tagText),
-                                ],
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                '${item.author} · ${item.publishTimeText}',
-                                style: theme.textTheme.bodyMedium?.copyWith(
-                                  fontSize: 8,
-                                  color: colorScheme.onSurfaceVariant,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                '播放 ${item.playCountText}  ·  弹幕 ${item.danmakuCountText}  ·  ${item.duration}',
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: theme.textTheme.bodySmall?.copyWith(
-                                  fontSize: 8,
-                                  color: colorScheme.onSurfaceVariant,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: <Widget>[
-                            InkResponse(
-                              onTap: () async {
-                                try {
-                                  final resolvedItem = await ref
-                                      .read(biliPlayerRepositoryProvider)
-                                      .resolvePreferredPart(
-                                        playableItem,
-                                        preferredPage: 1,
-                                      );
-                                  final bool liked = await ref
-                                      .read(
-                                        favoritesControllerProvider.notifier,
-                                      )
-                                      .toggleLiked(resolvedItem);
-                                  if (context.mounted) {
-                                    ToastUtil.show(
-                                      liked ? '已收藏 P1' : '已从“我喜欢”移除',
-                                    );
-                                  }
-                                } on Object catch (error) {
-                                  if (context.mounted) {
-                                    ToastUtil.show('收藏失败: $error');
-                                  }
-                                }
-                              },
-                              radius: 18,
-                              child: Container(
-                                width: 38,
-                                height: 38,
-                                decoration: BoxDecoration(
-                                  color: isFavorite
-                                      ? colorScheme.secondaryContainer
-                                      : colorScheme.surfaceContainerHigh,
-                                  borderRadius: BorderRadius.circular(14),
-                                ),
-                                child: Icon(
-                                  isFavorite
-                                      ? Icons.favorite_rounded
-                                      : Icons.favorite_border_rounded,
-                                  color: colorScheme.secondary,
-                                  size: 18,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            PopupMenuButton<_SearchQueueAction>(
-                              tooltip: '队列操作',
-                              padding: EdgeInsets.zero,
-                              onSelected: (_SearchQueueAction action) async {
-                                try {
-                                  switch (action) {
-                                    case _SearchQueueAction.playNext:
-                                      await onPlayNext(item);
-                                      if (context.mounted) {
-                                        ToastUtil.show('已加入下一首');
-                                      }
-                                    case _SearchQueueAction.enqueue:
-                                      await onEnqueue(item);
-                                      if (context.mounted) {
-                                        ToastUtil.show('已加入播放队列');
-                                      }
-                                  }
-                                } on Object catch (error) {
-                                  if (context.mounted) {
-                                    ToastUtil.show('操作失败: $error');
-                                  }
-                                }
-                              },
-                              itemBuilder: (BuildContext context) =>
-                                  const <PopupMenuEntry<_SearchQueueAction>>[
-                                    PopupMenuItem<_SearchQueueAction>(
-                                      value: _SearchQueueAction.playNext,
-                                      child: ListTile(
-                                        leading: Icon(Icons.skip_next_rounded),
-                                        title: Text('下一首播放'),
-                                        contentPadding: EdgeInsets.zero,
-                                      ),
-                                    ),
-                                    PopupMenuItem<_SearchQueueAction>(
-                                      value: _SearchQueueAction.enqueue,
-                                      child: ListTile(
-                                        leading: Icon(
-                                          Icons.queue_music_rounded,
-                                        ),
-                                        title: Text('加入队列'),
-                                        contentPadding: EdgeInsets.zero,
-                                      ),
-                                    ),
-                                  ],
-                              child: Container(
-                                width: 38,
-                                height: 38,
-                                decoration: BoxDecoration(
-                                  color: colorScheme.surfaceContainerHigh,
-                                  borderRadius: BorderRadius.circular(14),
-                                ),
-                                child: Icon(
-                                  Icons.more_horiz_rounded,
-                                  color: colorScheme.onSurfaceVariant,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
+              return VideoCard(
+                data: VideoCardData(
+                  title: item.title,
+                  coverUrl: item.coverUrl,
+                  primaryMeta: '${item.author} · ${item.publishTimeText}',
+                  secondaryMeta:
+                      '播放 ${item.playCountText}  ·  弹幕 ${item.danmakuCountText}  ·  ${item.duration}',
+                  tag: item.tagText,
                 ),
+                onTap: () => onPlayItem(item),
+                isFavorite: isFavorite,
+                onFavoriteToggle: () async {
+                  try {
+                    final PlayableItem resolvedItem = await ref
+                        .read(biliPlayerRepositoryProvider)
+                        .resolvePreferredPart(playableItem, preferredPage: 1);
+                    final bool liked = await ref
+                        .read(favoritesControllerProvider.notifier)
+                        .toggleLiked(resolvedItem);
+                    if (context.mounted) {
+                      ToastUtil.show(liked ? '已收藏 P1' : '已从“我喜欢”移除');
+                    }
+                  } on Object catch (error) {
+                    if (context.mounted) {
+                      ToastUtil.show('收藏失败: $error');
+                    }
+                  }
+                },
+                onPlayNext: () async {
+                  try {
+                    await onPlayNext(item);
+                    if (context.mounted) {
+                      ToastUtil.show('已加入下一首');
+                    }
+                  } on Object catch (error) {
+                    if (context.mounted) {
+                      ToastUtil.show('操作失败: $error');
+                    }
+                  }
+                },
+                onEnqueue: () async {
+                  try {
+                    await onEnqueue(item);
+                    if (context.mounted) {
+                      ToastUtil.show('已加入播放队列');
+                    }
+                  } on Object catch (error) {
+                    if (context.mounted) {
+                      ToastUtil.show('操作失败: $error');
+                    }
+                  }
+                },
               );
             },
           ),
@@ -893,8 +735,6 @@ class _SearchResultSection extends StatelessWidget {
     );
   }
 }
-
-enum _SearchQueueAction { playNext, enqueue }
 
 class _SearchResultFooter extends StatelessWidget {
   const _SearchResultFooter({
@@ -972,33 +812,5 @@ class _SearchResultFooter extends StatelessWidget {
     }
 
     return const SizedBox.shrink();
-  }
-}
-
-class _ResultTag extends StatelessWidget {
-  const _ResultTag({required this.label});
-
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: colorScheme.primary.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Text(
-        label,
-        style: theme.textTheme.labelSmall?.copyWith(
-          fontSize: 8,
-          color: colorScheme.primary,
-          fontWeight: FontWeight.w700,
-        ),
-      ),
-    );
   }
 }
