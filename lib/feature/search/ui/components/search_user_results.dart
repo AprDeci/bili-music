@@ -107,14 +107,22 @@ class _SearchUserTile extends StatelessWidget {
                   children: <Widget>[
                     Row(
                       children: <Widget>[
-                        Expanded(
-                          child: Text(
+                        Text(
                             item.name,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: theme.textTheme.titleSmall?.copyWith(
                               fontWeight: FontWeight.w500,
                             ),
+                          ),
+                        const SizedBox(width: 12),
+                        Text(
+                          'LV·${item.level}',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: colorScheme.onSurfaceVariant,
+                            fontWeight: FontWeight.w400,
                           ),
                         ),
                       ],
