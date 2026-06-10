@@ -19,6 +19,7 @@ import 'package:bilimusic/feature/setting/ui/player_settings_page.dart';
 import 'package:bilimusic/feature/setting/ui/setting_page.dart';
 import 'package:bilimusic/feature/setting/ui/theme_settings_page.dart';
 import 'package:bilimusic/feature/up/ui/collection_detail_page.dart';
+import 'package:bilimusic/feature/up/ui/desktop_up_page.dart';
 import 'package:bilimusic/feature/up/ui/up_page.dart';
 import 'package:bilimusic/router/shell/app_shell.dart';
 import 'package:bilimusic/router/util/mobile_branch_navigator_keys.dart';
@@ -181,6 +182,33 @@ final List<Map<String, dynamic>> desktopTabs = [
   },
 ];
 
+final List<Map<String, dynamic>> desktopHiddenBranches = [
+  {
+    'path': '/up',
+    'builder': (context, state) =>
+        const ErrorPageStatefulWidget(message: 'Up Page Not Found'),
+    'routes': [
+      GoRoute(
+        path: ':mid',
+        builder: (context, state) {
+          final mid = int.parse(state.pathParameters['mid']!);
+          return DesktopUpPage(mid: mid);
+        },
+        routes: [
+          GoRoute(
+            path: 'collection/:seasonId',
+            builder: (context, state) {
+              final mid = int.parse(state.pathParameters['mid']!);
+              final seasonId = int.parse(state.pathParameters['seasonId']!);
+              return CollectionDetailPage(mid: mid, seasonId: seasonId);
+            },
+          ),
+        ],
+      ),
+    ],
+  },
+];
+
 final List<RouteBase> mobileRoutes = [
   GoRoute(path: '/auth', builder: (context, state) => const AuthPage()),
   StatefulShellRoute.indexedStack(
@@ -252,7 +280,7 @@ final List<RouteBase> desktopRoutes = [
       );
     },
     branches: [
-      ...desktopTabs.map(
+      ...<Map<String, dynamic>>[...desktopTabs, ...desktopHiddenBranches].map(
         (tab) => StatefulShellBranch(
           routes: [
             GoRoute(
