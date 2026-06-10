@@ -14,7 +14,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$UpProfile {
 
- int get mid; String get name; String get avatarUrl; int get followerCount;
+ int get mid; String get name; String get avatarUrl; int get followerCount; int? get officialType;
 /// Create a copy of UpProfile
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -25,16 +25,16 @@ $UpProfileCopyWith<UpProfile> get copyWith => _$UpProfileCopyWithImpl<UpProfile>
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is UpProfile&&(identical(other.mid, mid) || other.mid == mid)&&(identical(other.name, name) || other.name == name)&&(identical(other.avatarUrl, avatarUrl) || other.avatarUrl == avatarUrl)&&(identical(other.followerCount, followerCount) || other.followerCount == followerCount));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is UpProfile&&(identical(other.mid, mid) || other.mid == mid)&&(identical(other.name, name) || other.name == name)&&(identical(other.avatarUrl, avatarUrl) || other.avatarUrl == avatarUrl)&&(identical(other.followerCount, followerCount) || other.followerCount == followerCount)&&(identical(other.officialType, officialType) || other.officialType == officialType));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,mid,name,avatarUrl,followerCount);
+int get hashCode => Object.hash(runtimeType,mid,name,avatarUrl,followerCount,officialType);
 
 @override
 String toString() {
-  return 'UpProfile(mid: $mid, name: $name, avatarUrl: $avatarUrl, followerCount: $followerCount)';
+  return 'UpProfile(mid: $mid, name: $name, avatarUrl: $avatarUrl, followerCount: $followerCount, officialType: $officialType)';
 }
 
 
@@ -45,7 +45,7 @@ abstract mixin class $UpProfileCopyWith<$Res>  {
   factory $UpProfileCopyWith(UpProfile value, $Res Function(UpProfile) _then) = _$UpProfileCopyWithImpl;
 @useResult
 $Res call({
- int mid, String name, String avatarUrl, int followerCount
+ int mid, String name, String avatarUrl, int followerCount, int? officialType
 });
 
 
@@ -62,13 +62,14 @@ class _$UpProfileCopyWithImpl<$Res>
 
 /// Create a copy of UpProfile
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? mid = null,Object? name = null,Object? avatarUrl = null,Object? followerCount = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? mid = null,Object? name = null,Object? avatarUrl = null,Object? followerCount = null,Object? officialType = freezed,}) {
   return _then(_self.copyWith(
 mid: null == mid ? _self.mid : mid // ignore: cast_nullable_to_non_nullable
 as int,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,avatarUrl: null == avatarUrl ? _self.avatarUrl : avatarUrl // ignore: cast_nullable_to_non_nullable
 as String,followerCount: null == followerCount ? _self.followerCount : followerCount // ignore: cast_nullable_to_non_nullable
-as int,
+as int,officialType: freezed == officialType ? _self.officialType : officialType // ignore: cast_nullable_to_non_nullable
+as int?,
   ));
 }
 
@@ -153,10 +154,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int mid,  String name,  String avatarUrl,  int followerCount)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int mid,  String name,  String avatarUrl,  int followerCount,  int? officialType)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _UpProfile() when $default != null:
-return $default(_that.mid,_that.name,_that.avatarUrl,_that.followerCount);case _:
+return $default(_that.mid,_that.name,_that.avatarUrl,_that.followerCount,_that.officialType);case _:
   return orElse();
 
 }
@@ -174,10 +175,10 @@ return $default(_that.mid,_that.name,_that.avatarUrl,_that.followerCount);case _
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int mid,  String name,  String avatarUrl,  int followerCount)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int mid,  String name,  String avatarUrl,  int followerCount,  int? officialType)  $default,) {final _that = this;
 switch (_that) {
 case _UpProfile():
-return $default(_that.mid,_that.name,_that.avatarUrl,_that.followerCount);case _:
+return $default(_that.mid,_that.name,_that.avatarUrl,_that.followerCount,_that.officialType);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -194,10 +195,10 @@ return $default(_that.mid,_that.name,_that.avatarUrl,_that.followerCount);case _
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int mid,  String name,  String avatarUrl,  int followerCount)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int mid,  String name,  String avatarUrl,  int followerCount,  int? officialType)?  $default,) {final _that = this;
 switch (_that) {
 case _UpProfile() when $default != null:
-return $default(_that.mid,_that.name,_that.avatarUrl,_that.followerCount);case _:
+return $default(_that.mid,_that.name,_that.avatarUrl,_that.followerCount,_that.officialType);case _:
   return null;
 
 }
@@ -209,13 +210,14 @@ return $default(_that.mid,_that.name,_that.avatarUrl,_that.followerCount);case _
 
 
 class _UpProfile implements UpProfile {
-  const _UpProfile({required this.mid, required this.name, required this.avatarUrl, required this.followerCount});
+  const _UpProfile({required this.mid, required this.name, required this.avatarUrl, required this.followerCount, this.officialType});
   
 
 @override final  int mid;
 @override final  String name;
 @override final  String avatarUrl;
 @override final  int followerCount;
+@override final  int? officialType;
 
 /// Create a copy of UpProfile
 /// with the given fields replaced by the non-null parameter values.
@@ -227,16 +229,16 @@ _$UpProfileCopyWith<_UpProfile> get copyWith => __$UpProfileCopyWithImpl<_UpProf
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _UpProfile&&(identical(other.mid, mid) || other.mid == mid)&&(identical(other.name, name) || other.name == name)&&(identical(other.avatarUrl, avatarUrl) || other.avatarUrl == avatarUrl)&&(identical(other.followerCount, followerCount) || other.followerCount == followerCount));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _UpProfile&&(identical(other.mid, mid) || other.mid == mid)&&(identical(other.name, name) || other.name == name)&&(identical(other.avatarUrl, avatarUrl) || other.avatarUrl == avatarUrl)&&(identical(other.followerCount, followerCount) || other.followerCount == followerCount)&&(identical(other.officialType, officialType) || other.officialType == officialType));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,mid,name,avatarUrl,followerCount);
+int get hashCode => Object.hash(runtimeType,mid,name,avatarUrl,followerCount,officialType);
 
 @override
 String toString() {
-  return 'UpProfile(mid: $mid, name: $name, avatarUrl: $avatarUrl, followerCount: $followerCount)';
+  return 'UpProfile(mid: $mid, name: $name, avatarUrl: $avatarUrl, followerCount: $followerCount, officialType: $officialType)';
 }
 
 
@@ -247,7 +249,7 @@ abstract mixin class _$UpProfileCopyWith<$Res> implements $UpProfileCopyWith<$Re
   factory _$UpProfileCopyWith(_UpProfile value, $Res Function(_UpProfile) _then) = __$UpProfileCopyWithImpl;
 @override @useResult
 $Res call({
- int mid, String name, String avatarUrl, int followerCount
+ int mid, String name, String avatarUrl, int followerCount, int? officialType
 });
 
 
@@ -264,13 +266,14 @@ class __$UpProfileCopyWithImpl<$Res>
 
 /// Create a copy of UpProfile
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? mid = null,Object? name = null,Object? avatarUrl = null,Object? followerCount = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? mid = null,Object? name = null,Object? avatarUrl = null,Object? followerCount = null,Object? officialType = freezed,}) {
   return _then(_UpProfile(
 mid: null == mid ? _self.mid : mid // ignore: cast_nullable_to_non_nullable
 as int,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,avatarUrl: null == avatarUrl ? _self.avatarUrl : avatarUrl // ignore: cast_nullable_to_non_nullable
 as String,followerCount: null == followerCount ? _self.followerCount : followerCount // ignore: cast_nullable_to_non_nullable
-as int,
+as int,officialType: freezed == officialType ? _self.officialType : officialType // ignore: cast_nullable_to_non_nullable
+as int?,
   ));
 }
 

@@ -9,5 +9,6 @@ abstract class UpProfile with _$UpProfile {
     required String name,
     required String avatarUrl,
     required int followerCount,
+    int? officialType,
   }) = _UpProfile;
 }

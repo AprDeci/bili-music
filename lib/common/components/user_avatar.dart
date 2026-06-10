@@ -9,13 +9,15 @@ class UserAvatar extends StatelessWidget {
     required this.avatarUrl,
     this.officialType,
     this.useCache = false,
+    this.radius = 26,
+    this.tipSize = 16,
   });
 
   final String avatarUrl;
   final int? officialType;
   final bool useCache;
-  final double radius = 26;
-  final double tipSize = 16;
+  final double radius;
+  final double tipSize;
 
   BadgeType? get _badgeType {
     return switch (officialType) {
@@ -27,8 +29,7 @@ class UserAvatar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
+    final ColorScheme colorScheme = Theme.of(context).colorScheme;
     final double avatarSize = radius * 2;
     final BadgeType? badgeType = _badgeType;
 
@@ -59,8 +60,8 @@ class UserAvatar extends StatelessWidget {
 
     if (useCache) {
       return CommonCachedAvatar(
-        size: avatarSize,
         imageUrl: avatarUrl,
+        size: avatarSize,
         fallbackIcon: Icons.person_rounded,
         backgroundColor: colorScheme.surfaceContainerHighest,
         iconColor: colorScheme.onSurfaceVariant,

@@ -25,12 +25,16 @@ class BiliUpRepository {
     );
     final Map<String, dynamic> data = _asMap(json['data']);
     final Map<String, dynamic> card = _asMap(data['card']);
+    final Map<String, dynamic>? officialVerify = _asNullableMap(
+      card['official_verify'],
+    );
 
     return UpProfile(
       mid: _readInt(card['mid']) ?? mid,
       name: (card['name'] as String? ?? '').trim(),
       avatarUrl: normalizeHttpUrl(card['face'] as String? ?? ''),
       followerCount: _readInt(data['follower']) ?? _readInt(card['fans']) ?? 0,
+      officialType: _readInt(officialVerify?['type']),
     );
   }
 

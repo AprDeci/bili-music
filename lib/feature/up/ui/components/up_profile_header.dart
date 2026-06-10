@@ -1,4 +1,4 @@
-import 'package:bilimusic/common/components/cached_image.dart';
+import 'package:bilimusic/common/components/user_avatar.dart';
 import 'package:bilimusic/common/util/format_util.dart';
 import 'package:bilimusic/feature/up/domain/up_profile.dart';
 import 'package:flutter/material.dart';
@@ -37,12 +37,12 @@ class UpProfileHeader extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
       child: Row(
         children: <Widget>[
-          CommonCachedImage(
-            imageUrl: value.avatarUrl,
-            width: 72,
-            height: 72,
-            borderRadius: BorderRadius.circular(36),
-            fallbackIcon: Icons.person_rounded,
+          UserAvatar(
+            avatarUrl: value.avatarUrl,
+            radius: 36,
+            tipSize: 16,
+            officialType: value.officialType,
+            useCache: true,
           ),
           const SizedBox(width: 16),
           Expanded(
