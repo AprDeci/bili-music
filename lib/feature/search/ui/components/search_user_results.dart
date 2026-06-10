@@ -1,3 +1,4 @@
+import 'package:bilimusic/common/components/user_avatar.dart';
 import 'package:bilimusic/feature/search/domain/search_user_item.dart';
 import 'package:bilimusic/feature/search/ui/components/search_results_view.dart';
 import 'package:flutter/material.dart';
@@ -95,18 +96,9 @@ class _SearchUserTile extends StatelessWidget {
           padding: const EdgeInsets.symmetric(vertical: 10),
           child: Row(
             children: <Widget>[
-              CircleAvatar(
-                radius: 26,
-                backgroundColor: colorScheme.surfaceContainerHighest,
-                backgroundImage: item.avatarUrl.isEmpty
-                    ? null
-                    : NetworkImage(item.avatarUrl),
-                child: item.avatarUrl.isEmpty
-                    ? Icon(
-                        Icons.person_rounded,
-                        color: colorScheme.onSurfaceVariant,
-                      )
-                    : null,
+              UserAvatar(
+                avatarUrl: item.avatarUrl,
+                officialType: item.officialType,
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -121,29 +113,20 @@ class _SearchUserTile extends StatelessWidget {
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: theme.textTheme.titleSmall?.copyWith(
-                              fontWeight: FontWeight.w700,
+                              fontWeight: FontWeight.w500,
                             ),
                           ),
                         ),
-                        if (item.officialTitle?.isNotEmpty ??
-                            false) ...<Widget>[
-                          const SizedBox(width: 8),
-                          Icon(
-                            Icons.verified_rounded,
-                            size: 16,
-                            color: colorScheme.primary,
-                          ),
-                        ],
                       ],
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      '粉丝 ${item.fansText}  ·  投稿 ${item.videoCountText}  ·  Lv.${item.level}',
+                      '粉丝 ${item.fansText}  ·  投稿 ${item.videoCountText}',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: colorScheme.onSurfaceVariant,
-                        fontWeight: FontWeight.w600,
+                        fontWeight: FontWeight.w400,
                       ),
                     ),
                     if (item.sign.isNotEmpty) ...<Widget>[
