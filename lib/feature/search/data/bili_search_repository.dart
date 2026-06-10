@@ -217,6 +217,7 @@ class BiliSearchRepository {
       fansText: formatCompactCount(fans),
       videoCountText: formatCompactCount(videos),
       level: _readInt(json['level']) ?? 0,
+      officialType: _readInt(officialVerify?['type']),
       officialTitle: _cleanDescription(officialVerify?['desc'] as String?),
     );
   }

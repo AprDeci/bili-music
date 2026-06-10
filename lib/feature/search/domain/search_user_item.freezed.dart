@@ -14,7 +14,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$SearchUserItem {
 
- int get mid; String get name; String get avatarUrl; String get sign; String get fansText; String get videoCountText; int get level; String? get officialTitle;
+ int get mid; String get name; String get avatarUrl; String get sign; String get fansText; String get videoCountText; int get level; int? get officialType; String? get officialTitle;
 /// Create a copy of SearchUserItem
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -25,16 +25,16 @@ $SearchUserItemCopyWith<SearchUserItem> get copyWith => _$SearchUserItemCopyWith
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is SearchUserItem&&(identical(other.mid, mid) || other.mid == mid)&&(identical(other.name, name) || other.name == name)&&(identical(other.avatarUrl, avatarUrl) || other.avatarUrl == avatarUrl)&&(identical(other.sign, sign) || other.sign == sign)&&(identical(other.fansText, fansText) || other.fansText == fansText)&&(identical(other.videoCountText, videoCountText) || other.videoCountText == videoCountText)&&(identical(other.level, level) || other.level == level)&&(identical(other.officialTitle, officialTitle) || other.officialTitle == officialTitle));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is SearchUserItem&&(identical(other.mid, mid) || other.mid == mid)&&(identical(other.name, name) || other.name == name)&&(identical(other.avatarUrl, avatarUrl) || other.avatarUrl == avatarUrl)&&(identical(other.sign, sign) || other.sign == sign)&&(identical(other.fansText, fansText) || other.fansText == fansText)&&(identical(other.videoCountText, videoCountText) || other.videoCountText == videoCountText)&&(identical(other.level, level) || other.level == level)&&(identical(other.officialType, officialType) || other.officialType == officialType)&&(identical(other.officialTitle, officialTitle) || other.officialTitle == officialTitle));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,mid,name,avatarUrl,sign,fansText,videoCountText,level,officialTitle);
+int get hashCode => Object.hash(runtimeType,mid,name,avatarUrl,sign,fansText,videoCountText,level,officialType,officialTitle);
 
 @override
 String toString() {
-  return 'SearchUserItem(mid: $mid, name: $name, avatarUrl: $avatarUrl, sign: $sign, fansText: $fansText, videoCountText: $videoCountText, level: $level, officialTitle: $officialTitle)';
+  return 'SearchUserItem(mid: $mid, name: $name, avatarUrl: $avatarUrl, sign: $sign, fansText: $fansText, videoCountText: $videoCountText, level: $level, officialType: $officialType, officialTitle: $officialTitle)';
 }
 
 
@@ -45,7 +45,7 @@ abstract mixin class $SearchUserItemCopyWith<$Res>  {
   factory $SearchUserItemCopyWith(SearchUserItem value, $Res Function(SearchUserItem) _then) = _$SearchUserItemCopyWithImpl;
 @useResult
 $Res call({
- int mid, String name, String avatarUrl, String sign, String fansText, String videoCountText, int level, String? officialTitle
+ int mid, String name, String avatarUrl, String sign, String fansText, String videoCountText, int level, int? officialType, String? officialTitle
 });
 
 
@@ -62,7 +62,7 @@ class _$SearchUserItemCopyWithImpl<$Res>
 
 /// Create a copy of SearchUserItem
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? mid = null,Object? name = null,Object? avatarUrl = null,Object? sign = null,Object? fansText = null,Object? videoCountText = null,Object? level = null,Object? officialTitle = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? mid = null,Object? name = null,Object? avatarUrl = null,Object? sign = null,Object? fansText = null,Object? videoCountText = null,Object? level = null,Object? officialType = freezed,Object? officialTitle = freezed,}) {
   return _then(_self.copyWith(
 mid: null == mid ? _self.mid : mid // ignore: cast_nullable_to_non_nullable
 as int,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
@@ -71,7 +71,8 @@ as String,sign: null == sign ? _self.sign : sign // ignore: cast_nullable_to_non
 as String,fansText: null == fansText ? _self.fansText : fansText // ignore: cast_nullable_to_non_nullable
 as String,videoCountText: null == videoCountText ? _self.videoCountText : videoCountText // ignore: cast_nullable_to_non_nullable
 as String,level: null == level ? _self.level : level // ignore: cast_nullable_to_non_nullable
-as int,officialTitle: freezed == officialTitle ? _self.officialTitle : officialTitle // ignore: cast_nullable_to_non_nullable
+as int,officialType: freezed == officialType ? _self.officialType : officialType // ignore: cast_nullable_to_non_nullable
+as int?,officialTitle: freezed == officialTitle ? _self.officialTitle : officialTitle // ignore: cast_nullable_to_non_nullable
 as String?,
   ));
 }
@@ -157,10 +158,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int mid,  String name,  String avatarUrl,  String sign,  String fansText,  String videoCountText,  int level,  String? officialTitle)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int mid,  String name,  String avatarUrl,  String sign,  String fansText,  String videoCountText,  int level,  int? officialType,  String? officialTitle)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _SearchUserItem() when $default != null:
-return $default(_that.mid,_that.name,_that.avatarUrl,_that.sign,_that.fansText,_that.videoCountText,_that.level,_that.officialTitle);case _:
+return $default(_that.mid,_that.name,_that.avatarUrl,_that.sign,_that.fansText,_that.videoCountText,_that.level,_that.officialType,_that.officialTitle);case _:
   return orElse();
 
 }
@@ -178,10 +179,10 @@ return $default(_that.mid,_that.name,_that.avatarUrl,_that.sign,_that.fansText,_
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int mid,  String name,  String avatarUrl,  String sign,  String fansText,  String videoCountText,  int level,  String? officialTitle)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int mid,  String name,  String avatarUrl,  String sign,  String fansText,  String videoCountText,  int level,  int? officialType,  String? officialTitle)  $default,) {final _that = this;
 switch (_that) {
 case _SearchUserItem():
-return $default(_that.mid,_that.name,_that.avatarUrl,_that.sign,_that.fansText,_that.videoCountText,_that.level,_that.officialTitle);case _:
+return $default(_that.mid,_that.name,_that.avatarUrl,_that.sign,_that.fansText,_that.videoCountText,_that.level,_that.officialType,_that.officialTitle);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -198,10 +199,10 @@ return $default(_that.mid,_that.name,_that.avatarUrl,_that.sign,_that.fansText,_
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int mid,  String name,  String avatarUrl,  String sign,  String fansText,  String videoCountText,  int level,  String? officialTitle)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int mid,  String name,  String avatarUrl,  String sign,  String fansText,  String videoCountText,  int level,  int? officialType,  String? officialTitle)?  $default,) {final _that = this;
 switch (_that) {
 case _SearchUserItem() when $default != null:
-return $default(_that.mid,_that.name,_that.avatarUrl,_that.sign,_that.fansText,_that.videoCountText,_that.level,_that.officialTitle);case _:
+return $default(_that.mid,_that.name,_that.avatarUrl,_that.sign,_that.fansText,_that.videoCountText,_that.level,_that.officialType,_that.officialTitle);case _:
   return null;
 
 }
@@ -213,7 +214,7 @@ return $default(_that.mid,_that.name,_that.avatarUrl,_that.sign,_that.fansText,_
 
 
 class _SearchUserItem implements SearchUserItem {
-  const _SearchUserItem({required this.mid, required this.name, required this.avatarUrl, required this.sign, required this.fansText, required this.videoCountText, required this.level, this.officialTitle});
+  const _SearchUserItem({required this.mid, required this.name, required this.avatarUrl, required this.sign, required this.fansText, required this.videoCountText, required this.level, this.officialType, this.officialTitle});
   
 
 @override final  int mid;
@@ -223,6 +224,7 @@ class _SearchUserItem implements SearchUserItem {
 @override final  String fansText;
 @override final  String videoCountText;
 @override final  int level;
+@override final  int? officialType;
 @override final  String? officialTitle;
 
 /// Create a copy of SearchUserItem
@@ -235,16 +237,16 @@ _$SearchUserItemCopyWith<_SearchUserItem> get copyWith => __$SearchUserItemCopyW
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _SearchUserItem&&(identical(other.mid, mid) || other.mid == mid)&&(identical(other.name, name) || other.name == name)&&(identical(other.avatarUrl, avatarUrl) || other.avatarUrl == avatarUrl)&&(identical(other.sign, sign) || other.sign == sign)&&(identical(other.fansText, fansText) || other.fansText == fansText)&&(identical(other.videoCountText, videoCountText) || other.videoCountText == videoCountText)&&(identical(other.level, level) || other.level == level)&&(identical(other.officialTitle, officialTitle) || other.officialTitle == officialTitle));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _SearchUserItem&&(identical(other.mid, mid) || other.mid == mid)&&(identical(other.name, name) || other.name == name)&&(identical(other.avatarUrl, avatarUrl) || other.avatarUrl == avatarUrl)&&(identical(other.sign, sign) || other.sign == sign)&&(identical(other.fansText, fansText) || other.fansText == fansText)&&(identical(other.videoCountText, videoCountText) || other.videoCountText == videoCountText)&&(identical(other.level, level) || other.level == level)&&(identical(other.officialType, officialType) || other.officialType == officialType)&&(identical(other.officialTitle, officialTitle) || other.officialTitle == officialTitle));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,mid,name,avatarUrl,sign,fansText,videoCountText,level,officialTitle);
+int get hashCode => Object.hash(runtimeType,mid,name,avatarUrl,sign,fansText,videoCountText,level,officialType,officialTitle);
 
 @override
 String toString() {
-  return 'SearchUserItem(mid: $mid, name: $name, avatarUrl: $avatarUrl, sign: $sign, fansText: $fansText, videoCountText: $videoCountText, level: $level, officialTitle: $officialTitle)';
+  return 'SearchUserItem(mid: $mid, name: $name, avatarUrl: $avatarUrl, sign: $sign, fansText: $fansText, videoCountText: $videoCountText, level: $level, officialType: $officialType, officialTitle: $officialTitle)';
 }
 
 
@@ -255,7 +257,7 @@ abstract mixin class _$SearchUserItemCopyWith<$Res> implements $SearchUserItemCo
   factory _$SearchUserItemCopyWith(_SearchUserItem value, $Res Function(_SearchUserItem) _then) = __$SearchUserItemCopyWithImpl;
 @override @useResult
 $Res call({
- int mid, String name, String avatarUrl, String sign, String fansText, String videoCountText, int level, String? officialTitle
+ int mid, String name, String avatarUrl, String sign, String fansText, String videoCountText, int level, int? officialType, String? officialTitle
 });
 
 
@@ -272,7 +274,7 @@ class __$SearchUserItemCopyWithImpl<$Res>
 
 /// Create a copy of SearchUserItem
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? mid = null,Object? name = null,Object? avatarUrl = null,Object? sign = null,Object? fansText = null,Object? videoCountText = null,Object? level = null,Object? officialTitle = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? mid = null,Object? name = null,Object? avatarUrl = null,Object? sign = null,Object? fansText = null,Object? videoCountText = null,Object? level = null,Object? officialType = freezed,Object? officialTitle = freezed,}) {
   return _then(_SearchUserItem(
 mid: null == mid ? _self.mid : mid // ignore: cast_nullable_to_non_nullable
 as int,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
@@ -281,7 +283,8 @@ as String,sign: null == sign ? _self.sign : sign // ignore: cast_nullable_to_non
 as String,fansText: null == fansText ? _self.fansText : fansText // ignore: cast_nullable_to_non_nullable
 as String,videoCountText: null == videoCountText ? _self.videoCountText : videoCountText // ignore: cast_nullable_to_non_nullable
 as String,level: null == level ? _self.level : level // ignore: cast_nullable_to_non_nullable
-as int,officialTitle: freezed == officialTitle ? _self.officialTitle : officialTitle // ignore: cast_nullable_to_non_nullable
+as int,officialType: freezed == officialType ? _self.officialType : officialType // ignore: cast_nullable_to_non_nullable
+as int?,officialTitle: freezed == officialTitle ? _self.officialTitle : officialTitle // ignore: cast_nullable_to_non_nullable
 as String?,
   ));
 }

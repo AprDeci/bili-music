@@ -12,6 +12,7 @@ abstract class SearchUserItem with _$SearchUserItem {
     required String fansText,
     required String videoCountText,
     required int level,
+    int? officialType,
     String? officialTitle,
   }) = _SearchUserItem;
 }
