@@ -73,6 +73,15 @@ class _MobileShellScaffoldState extends ConsumerState<MobileShellScaffold> {
 
   @override
   Widget build(BuildContext context) {
+    return ValueListenableBuilder<bool>(
+      valueListenable: playerPageVisibilityListenable,
+      builder: (BuildContext context, bool isPlayerPageVisible, _) {
+        return _buildScaffold(context, isPlayerPageVisible);
+      },
+    );
+  }
+
+  Widget _buildScaffold(BuildContext context, bool isPlayerPageVisible) {
     final double screenWidth = MediaQuery.of(context).size.width;
     final double bottomInset = MediaQuery.viewPaddingOf(context).bottom;
     final ThemeData theme = Theme.of(context);
@@ -82,7 +91,8 @@ class _MobileShellScaffoldState extends ConsumerState<MobileShellScaffold> {
     final double bottomBarOffset = BottomHeightHelper.bottomBarOffset(
       bottomInset: bottomInset,
     );
-    final bool usesCollapsedBottomChrome = !widget.chrome.showBottomTabs;
+    final bool usesCollapsedBottomChrome =
+        isPlayerPageVisible || !widget.chrome.showBottomTabs;
     final double miniPlayerVisibleBottomPadding =
         BottomHeightHelper.miniPlayerBottomPaddingWithBottomBar(
           bottomInset: bottomInset,
@@ -96,6 +106,7 @@ class _MobileShellScaffoldState extends ConsumerState<MobileShellScaffold> {
     final Widget content = _buildShellContent(
       context,
       playerState,
+      isPlayerPageVisible,
       usesCollapsedBottomChrome,
       useGlassBar,
       miniPlayerVisibleBottomPadding,
@@ -250,6 +261,7 @@ class _MobileShellScaffoldState extends ConsumerState<MobileShellScaffold> {
   Widget _buildShellContent(
     BuildContext context,
     PlayerState playerState,
+    bool isPlayerPageVisible,
     bool usesCollapsedBottomChrome,
     bool useGlassBar,
     double miniPlayerVisibleBottomPadding,
@@ -259,52 +271,44 @@ class _MobileShellScaffoldState extends ConsumerState<MobileShellScaffold> {
       fit: StackFit.expand,
       children: <Widget>[
         widget.navigationShell,
-        ValueListenableBuilder<bool>(
-          valueListenable: playerPageVisibilityListenable,
-          builder: (BuildContext context, bool isPlayerPageVisible, _) {
-            if (!widget.chrome.showMiniPlayer ||
-                !playerState.hasItem ||
-                isPlayerPageVisible) {
-              return const SizedBox.shrink();
-            }
-
-            return Align(
-              alignment: Alignment.bottomCenter,
-              child: AnimatedSlide(
-                duration: _animationDuration,
-                curve: _animationCurve,
-                offset: usesCollapsedBottomChrome
-                    ? const Offset(0, 0.12)
-                    : Offset.zero,
-                child: useGlassBar
-                    ? MiniPlayerGlassBar(
-                        state: playerState,
-                        bottomPadding: usesCollapsedBottomChrome
-                            ? miniPlayerCollapsedBottomPadding
-                            : miniPlayerVisibleBottomPadding,
-                        onTap: _openMiniPlayer,
-                        onTogglePlayback: () {
-                          ref
-                              .read(playerControllerProvider.notifier)
-                              .togglePlayback();
-                        },
-                      )
-                    : MiniPlayerBar(
-                        state: playerState,
-                        bottomPadding: usesCollapsedBottomChrome
-                            ? miniPlayerCollapsedBottomPadding
-                            : miniPlayerVisibleBottomPadding,
-                        onTap: _openMiniPlayer,
-                        onTogglePlayback: () {
-                          ref
-                              .read(playerControllerProvider.notifier)
-                              .togglePlayback();
-                        },
-                      ),
-              ),
-            );
-          },
-        ),
+        if (widget.chrome.showMiniPlayer &&
+            playerState.hasItem &&
+            !isPlayerPageVisible)
+          Align(
+            alignment: Alignment.bottomCenter,
+            child: AnimatedSlide(
+              duration: _animationDuration,
+              curve: _animationCurve,
+              offset: usesCollapsedBottomChrome
+                  ? const Offset(0, 0.12)
+                  : Offset.zero,
+              child: useGlassBar
+                  ? MiniPlayerGlassBar(
+                      state: playerState,
+                      bottomPadding: usesCollapsedBottomChrome
+                          ? miniPlayerCollapsedBottomPadding
+                          : miniPlayerVisibleBottomPadding,
+                      onTap: _openMiniPlayer,
+                      onTogglePlayback: () {
+                        ref
+                            .read(playerControllerProvider.notifier)
+                            .togglePlayback();
+                      },
+                    )
+                  : MiniPlayerBar(
+                      state: playerState,
+                      bottomPadding: usesCollapsedBottomChrome
+                          ? miniPlayerCollapsedBottomPadding
+                          : miniPlayerVisibleBottomPadding,
+                      onTap: _openMiniPlayer,
+                      onTogglePlayback: () {
+                        ref
+                            .read(playerControllerProvider.notifier)
+                            .togglePlayback();
+                      },
+                    ),
+            ),
+          ),
       ],
     );
   }
