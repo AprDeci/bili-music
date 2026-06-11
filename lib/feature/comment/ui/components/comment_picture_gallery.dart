@@ -1,10 +1,12 @@
 import 'dart:math' as math;
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:bilimusic/common/components/cached_image.dart';
+import 'package:bilimusic/core/cache/cache_util.dart';
 import 'package:bilimusic/feature/comment/domain/comment_item.dart';
 import 'package:flutter/material.dart';
 
-class CommentPictureGallery extends StatelessWidget {
+class CommentPictureGallery extends StatefulWidget {
   const CommentPictureGallery({super.key, required this.pictures});
 
   static const double _spacing = 8;
@@ -14,8 +16,47 @@ class CommentPictureGallery extends StatelessWidget {
   final List<CommentPicture> pictures;
 
   @override
+  State<CommentPictureGallery> createState() => _CommentPictureGalleryState();
+}
+
+class _CommentPictureGalleryState extends State<CommentPictureGallery> {
+  static final Set<String> _preloadedUrls = <String>{};
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _preloadPictures();
+  }
+
+  @override
+  void didUpdateWidget(covariant CommentPictureGallery oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.pictures != widget.pictures) {
+      _preloadPictures();
+    }
+  }
+
+  void _preloadPictures() {
+    for (final CommentPicture picture in widget.pictures.take(3)) {
+      final String imageUrl = picture.imageUrl.trim();
+      if (imageUrl.isEmpty || _preloadedUrls.contains(imageUrl)) {
+        continue;
+      }
+
+      _preloadedUrls.add(imageUrl);
+      precacheImage(
+        CachedNetworkImageProvider(
+          imageUrl,
+          cacheManager: CacheUtil.imageCacheManager,
+        ),
+        context,
+      );
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    if (pictures.isEmpty) {
+    if (widget.pictures.isEmpty) {
       return const SizedBox.shrink();
     }
 
@@ -26,24 +67,28 @@ class CommentPictureGallery extends StatelessWidget {
       builder: (BuildContext context, BoxConstraints constraints) {
         final double maxWidth = constraints.maxWidth.isFinite
             ? constraints.maxWidth
-            : _singleImageMaxWidth;
+            : CommentPictureGallery._singleImageMaxWidth;
 
-        if (pictures.length == 1) {
+        if (widget.pictures.length == 1) {
           return _SingleCommentPicture(
-            picture: pictures.first,
-            maxWidth: math.min(maxWidth, _singleImageMaxWidth),
+            picture: widget.pictures.first,
+            maxWidth: math.min(
+              maxWidth,
+              CommentPictureGallery._singleImageMaxWidth,
+            ),
             borderColor: colorScheme.outlineVariant,
           );
         }
 
-        final int columnCount = pictures.length > 2 ? 3 : 2;
+        final int columnCount = widget.pictures.length > 2 ? 3 : 2;
         final double itemWidth =
-            (maxWidth - (_spacing * (columnCount - 1))) / columnCount;
+            (maxWidth - (CommentPictureGallery._spacing * (columnCount - 1))) /
+            columnCount;
 
         return Wrap(
-          spacing: _spacing,
-          runSpacing: _spacing,
-          children: pictures.map((CommentPicture picture) {
+          spacing: CommentPictureGallery._spacing,
+          runSpacing: CommentPictureGallery._spacing,
+          children: widget.pictures.map((CommentPicture picture) {
             return SizedBox(
               width: itemWidth,
               height: itemWidth,
@@ -115,6 +160,10 @@ class _PictureTile extends StatelessWidget {
         fit: BoxFit.cover,
         borderRadius: BorderRadius.circular(12),
         backgroundColor: Theme.of(context).colorScheme.surfaceContainerHigh,
+        memCacheWidth: 360,
+        memCacheHeight: 360,
+        maxDiskCacheWidth: 720,
+        maxDiskCacheHeight: 720,
       ),
     );
   }
