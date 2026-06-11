@@ -6,6 +6,9 @@ import 'package:dio/dio.dart';
 import 'package:bilimusic/feature/search/domain/search_page_result.dart';
 import 'package:bilimusic/feature/search/domain/search_result_item.dart';
 import 'package:bilimusic/feature/search/domain/search_sort.dart';
+import 'package:bilimusic/feature/search/domain/search_type.dart';
+import 'package:bilimusic/feature/search/domain/search_user_item.dart';
+import 'package:bilimusic/feature/search/domain/search_user_page_result.dart';
 
 class BiliSearchRepository {
   const BiliSearchRepository(this._client);
@@ -42,6 +45,17 @@ class BiliSearchRepository {
     );
   }
 
+  Future<SearchUserPageResult> searchUsers(
+    String keyword, {
+    int page = 1,
+  }) async {
+    return _searchUsers(
+      keyword,
+      page: page,
+      mode: BiliRequestMode.defaultCookie,
+    );
+  }
+
   Future<SearchPageResult> _searchVideos(
     String keyword, {
     required int page,
@@ -51,7 +65,7 @@ class BiliSearchRepository {
     final Map<String, dynamic> json = await _client.getJson(
       '/x/web-interface/wbi/search/type',
       queryParameters: <String, dynamic>{
-        'search_type': 'video',
+        'search_type': SearchType.video.apiValue,
         'keyword': keyword,
         'order': sort.apiValue,
         'page': page,
@@ -78,6 +92,54 @@ class BiliSearchRepository {
     final int pageSize = _readPositiveInt(data['pagesize']) ?? _defaultPageSize;
 
     return SearchPageResult(
+      items: items,
+      page: resolvedPage,
+      totalPages: totalPages,
+      hasMore: _hasMoreItems(
+        currentPage: resolvedPage,
+        totalPages: totalPages,
+        itemCount: items.length,
+        pageSize: pageSize,
+      ),
+    );
+  }
+
+  Future<SearchUserPageResult> _searchUsers(
+    String keyword, {
+    required int page,
+    required BiliRequestMode mode,
+  }) async {
+    final Map<String, dynamic> json = await _client.getJson(
+      '/x/web-interface/wbi/search/type',
+      queryParameters: <String, dynamic>{
+        'search_type': SearchType.up.apiValue,
+        'keyword': keyword,
+        'page': page,
+        'user_type': 0,
+      },
+      requiresWbi: true,
+      mode: mode,
+    );
+
+    final Map<String, dynamic> data = asStringKeyedMap(json['data']);
+    final List<dynamic> rawResults =
+        data['result'] as List<dynamic>? ?? <dynamic>[];
+    final List<SearchUserItem> items = rawResults
+        .whereType<Map>()
+        .map(
+          (Map rawItem) => _mapUserItem(
+            rawItem.map(
+              (dynamic key, dynamic value) => MapEntry(key.toString(), value),
+            ),
+          ),
+        )
+        .where((SearchUserItem item) => item.mid > 0)
+        .toList();
+    final int resolvedPage = _readPositiveInt(data['page']) ?? page;
+    final int? totalPages = _readTotalPages(data);
+    final int pageSize = _readPositiveInt(data['pagesize']) ?? _defaultPageSize;
+
+    return SearchUserPageResult(
       items: items,
       page: resolvedPage,
       totalPages: totalPages,
@@ -137,6 +199,26 @@ class BiliSearchRepository {
           formatYyyyMmDdFromUnixSeconds(publishTimestamp) ?? '时间未知',
       tagText: json['typename'] as String? ?? '视频',
       description: _cleanDescription(json['description'] as String?),
+    );
+  }
+
+  SearchUserItem _mapUserItem(Map<String, dynamic> json) {
+    final int fans = (json['fans'] as num? ?? 0).toInt();
+    final int videos = (json['videos'] as num? ?? 0).toInt();
+    final Map<String, dynamic>? officialVerify = _asNullableMap(
+      json['official_verify'],
+    );
+
+    return SearchUserItem(
+      mid: _readInt(json['mid']) ?? 0,
+      name: _stripKeywordTag(json['uname'] as String? ?? '未知UP主'),
+      avatarUrl: normalizeHttpUrl(json['upic'] as String? ?? ''),
+      sign: _cleanDescription(json['usign'] as String?) ?? '',
+      fansText: formatCompactCount(fans),
+      videoCountText: formatCompactCount(videos),
+      level: _readInt(json['level']) ?? 0,
+      officialType: _readInt(officialVerify?['type']),
+      officialTitle: _cleanDescription(officialVerify?['desc'] as String?),
     );
   }
 

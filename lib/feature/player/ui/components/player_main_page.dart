@@ -192,7 +192,11 @@ class _PlayerHeroAndTitle extends StatelessWidget {
     if (ownerMid == null || ownerMid <= 0) {
       return null;
     }
-    return () => context.push('/up/$ownerMid');
+    return () {
+      final GoRouter router = GoRouter.of(context);
+      Navigator.of(context).pop();
+      router.push('/up/$ownerMid');
+    };
   }
 }
 

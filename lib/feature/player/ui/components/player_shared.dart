@@ -51,9 +51,7 @@ class PlayerTrackHeader extends StatelessWidget {
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: theme.textTheme.bodyLarge?.copyWith(
-                    color: onSubtitleTap == null
-                        ? colorScheme.onSurface.withValues(alpha: 0.62)
-                        : colorScheme.primary,
+                    color: colorScheme.onSurface.withValues(alpha: 0.62),
                     fontWeight: FontWeight.w500,
                     fontSize: 14,
                     height: 1.35,

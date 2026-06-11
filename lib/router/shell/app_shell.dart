@@ -1,7 +1,7 @@
 import 'package:bilimusic/common/util/screen_util.dart';
-import 'package:bilimusic/router/desktop_shell_scaffold.dart';
-import 'package:bilimusic/router/mobile_chrome_config.dart';
-import 'package:bilimusic/router/mobile_shell_scaffold.dart';
+import 'package:bilimusic/router/shell/desktop_shell_scaffold.dart';
+import 'package:bilimusic/router/util/mobile_chrome_config.dart';
+import 'package:bilimusic/router/shell/mobile_shell_scaffold.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 

@@ -818,6 +818,7 @@ class _PlaylistTabButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTap: onTap,
@@ -827,8 +828,8 @@ class _PlaylistTabButton extends StatelessWidget {
           label,
           style: theme.textTheme.titleMedium?.copyWith(
             color: selected
-                ? Colors.black
-                : Colors.black.withValues(alpha: 0.45),
+                ? colorScheme.onSurface
+                : colorScheme.onSurfaceVariant,
             fontWeight: selected ? FontWeight.w900 : FontWeight.w600,
           ),
         ),

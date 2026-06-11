@@ -155,7 +155,7 @@ class _PlayerCollectionSheetState
       final bool added = await ref
           .read(favoritesControllerProvider.notifier)
           .addToCollection(collectionId: collection.id, item: widget.item);
-      message = added ? '已添加到“${collection.name}”歌单' : '添加失败';
+      message = added ? '添加成功' : '添加失败';
     }
 
     if (!context.mounted) {

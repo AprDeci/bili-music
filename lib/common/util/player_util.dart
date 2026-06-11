@@ -1,7 +1,7 @@
 import 'package:bilimusic/common/util/platform_util.dart';
 import 'package:bilimusic/feature/player/domain/playable_item.dart';
 import 'package:bilimusic/feature/player/logic/player_controller.dart';
-import 'package:bilimusic/router/player_navigation.dart';
+import 'package:bilimusic/router/util/player_navigation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_lyric/utils/lyric_lrc_to_qrc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';

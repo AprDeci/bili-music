@@ -30,7 +30,7 @@ class MobileChromeConfig {
       return fullScreen;
     }
 
-    if (path == '/comments' || path == '/search') {
+    if (path == '/comments' || path == '/search' || path.startsWith('/up')) {
       return detail;
     }
 

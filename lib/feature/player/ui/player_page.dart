@@ -1,5 +1,6 @@
 import 'package:bilimusic/common/util/toast_util.dart';
 import 'package:bilimusic/feature/comment/domain/comment_target.dart';
+import 'package:bilimusic/feature/comment/ui/comment_page.dart';
 import 'package:bilimusic/feature/favorites/logic/favorites_controller.dart';
 import 'package:bilimusic/feature/metadata/domain/metadata_state.dart';
 import 'package:bilimusic/feature/metadata/logic/metadata_controller.dart';
@@ -16,7 +17,6 @@ import 'package:bilimusic/feature/player/ui/components/player_meta_page.dart';
 import 'package:bilimusic/feature/player/ui/components/player_part_selector.dart';
 import 'package:bilimusic/feature/player/ui/components/player_queue_sheet.dart';
 import 'package:bilimusic/feature/player/ui/components/player_top_bar.dart';
-import 'package:bilimusic/router/player_navigation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -38,7 +38,6 @@ class _PlayerPageState extends ConsumerState<PlayerPage> {
   @override
   void initState() {
     super.initState();
-    markPlayerPageVisible();
     _pageController = PageController(initialPage: 1);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadInitialItem();
@@ -47,7 +46,6 @@ class _PlayerPageState extends ConsumerState<PlayerPage> {
 
   @override
   void dispose() {
-    markPlayerPageHidden();
     _pageController.dispose();
     super.dispose();
   }
@@ -248,7 +246,10 @@ class _PlayerPageState extends ConsumerState<PlayerPage> {
       title: item.title,
       coverUrl: item.coverUrl,
     );
-    await context.push('/comments', extra: target);
+    // 适用navigator进入 不用gorouter 使评论区压在播放器上
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (context) => CommentPage(target: target)),
+    );
   }
 }
 

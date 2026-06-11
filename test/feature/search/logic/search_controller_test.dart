@@ -5,6 +5,9 @@ import 'package:bilimusic/feature/search/data/search_history_store.dart';
 import 'package:bilimusic/feature/search/domain/search_page_result.dart';
 import 'package:bilimusic/feature/search/domain/search_state.dart';
 import 'package:bilimusic/feature/search/domain/search_sort.dart';
+import 'package:bilimusic/feature/search/domain/search_type.dart';
+import 'package:bilimusic/feature/search/domain/search_user_item.dart';
+import 'package:bilimusic/feature/search/domain/search_user_page_result.dart';
 import 'package:bilimusic/feature/search/logic/search_controller.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -80,6 +83,89 @@ void main() {
     );
   });
 
+  test('changeType reloads submitted query with user search', () async {
+    final _FakeBiliSearchRepository repository = _FakeBiliSearchRepository(
+      userResultsByKeyword: <String, SearchUserPageResult>{
+        '洛天依': SearchUserPageResult(
+          items: <SearchUserItem>[
+            SearchUserItem(
+              mid: 36081646,
+              name: '洛天依',
+              avatarUrl: '',
+              sign: '虚拟歌手',
+              fansText: '198.3万',
+              videoCountText: '45',
+              level: 6,
+            ),
+          ],
+        ),
+      },
+    );
+    final ProviderContainer container = ProviderContainer(
+      overrides: [
+        biliSearchRepositoryProvider.overrideWithValue(repository),
+        searchHistoryStoreProvider.overrideWithValue(_FakeSearchHistoryStore()),
+      ],
+    );
+    addTearDown(container.dispose);
+    final ProviderSubscription<SearchState> subscription = container.listen(
+      searchPageControllerProvider,
+      (_, _) {},
+      fireImmediately: true,
+    );
+    addTearDown(subscription.close);
+
+    final SearchPageController controller = container.read(
+      searchPageControllerProvider.notifier,
+    );
+
+    await controller.submitSearch('洛天依');
+    await controller.changeType(SearchType.up);
+
+    final SearchState state = container.read(searchPageControllerProvider);
+    expect(repository.searchRequests.length, 1);
+    expect(repository.userSearchRequests, <String>['洛天依']);
+    expect(state.type, SearchType.up);
+    expect(state.results, isEmpty);
+    expect(state.userResults.single.mid, 36081646);
+  });
+
+  test('changeType keeps cached tab results without reloading', () async {
+    final _FakeBiliSearchRepository repository = _FakeBiliSearchRepository(
+      searchResultsByKeyword: <String, SearchPageResult>{
+        '洛天依': const SearchPageResult(page: 1, hasMore: false),
+      },
+      userResultsByKeyword: <String, SearchUserPageResult>{
+        '洛天依': const SearchUserPageResult(page: 1, hasMore: false),
+      },
+    );
+    final ProviderContainer container = ProviderContainer(
+      overrides: [
+        biliSearchRepositoryProvider.overrideWithValue(repository),
+        searchHistoryStoreProvider.overrideWithValue(_FakeSearchHistoryStore()),
+      ],
+    );
+    addTearDown(container.dispose);
+    final ProviderSubscription<SearchState> subscription = container.listen(
+      searchPageControllerProvider,
+      (_, _) {},
+      fireImmediately: true,
+    );
+    addTearDown(subscription.close);
+
+    final SearchPageController controller = container.read(
+      searchPageControllerProvider.notifier,
+    );
+
+    await controller.submitSearch('洛天依');
+    await controller.changeType(SearchType.up);
+    await controller.changeType(SearchType.video);
+    await controller.changeType(SearchType.up);
+
+    expect(repository.searchRequests.length, 1);
+    expect(repository.userSearchRequests, <String>['洛天依']);
+  });
+
   test('ignores stale suggestion responses after newer query', () async {
     final _DeferredSuggestionsRepository repository =
         _DeferredSuggestionsRepository();
@@ -149,12 +235,15 @@ class _SearchRequest {
 class _FakeBiliSearchRepository implements BiliSearchRepository {
   _FakeBiliSearchRepository({
     this.searchResultsByKeyword = const <String, SearchPageResult>{},
+    this.userResultsByKeyword = const <String, SearchUserPageResult>{},
     this.suggestionsByTerm = const <String, List<String>>{},
   });
 
   final Map<String, SearchPageResult> searchResultsByKeyword;
+  final Map<String, SearchUserPageResult> userResultsByKeyword;
   final Map<String, List<String>> suggestionsByTerm;
   final List<_SearchRequest> searchRequests = <_SearchRequest>[];
+  final List<String> userSearchRequests = <String>[];
 
   @override
   Future<SearchPageResult> searchVideos(
@@ -176,6 +265,16 @@ class _FakeBiliSearchRepository implements BiliSearchRepository {
     SearchSort sort = SearchSort.comprehensive,
   }) async {
     return searchVideos(keyword, page: page, sort: sort);
+  }
+
+  @override
+  Future<SearchUserPageResult> searchUsers(
+    String keyword, {
+    int page = 1,
+  }) async {
+    userSearchRequests.add(keyword);
+    return userResultsByKeyword[keyword] ??
+        SearchUserPageResult(page: page, hasMore: false);
   }
 
   @override

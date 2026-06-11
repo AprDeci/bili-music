@@ -31,7 +31,7 @@ types:
         index: 10
   FavoriteEntry:
     typeId: 2
-    nextIndex: 12
+    nextIndex: 13
     fields:
       itemId:
         index: 0
@@ -57,6 +57,8 @@ types:
         index: 10
       pageTitle:
         index: 11
+      ownerMid:
+        index: 12
   FavoriteMembership:
     typeId: 3
     nextIndex: 4

@@ -1,3 +1,4 @@
+import 'package:bilimusic/common/components/error_page.dart';
 import 'package:bilimusic/common/util/platform_util.dart';
 import 'package:bilimusic/feature/comment/domain/comment_target.dart';
 import 'package:bilimusic/feature/comment/ui/comment_page.dart';
@@ -7,7 +8,6 @@ import 'package:bilimusic/feature/favorites/ui/favorite_collection_page.dart';
 import 'package:bilimusic/feature/home/ui/home_page.dart';
 import 'package:bilimusic/feature/player/domain/playable_item.dart';
 import 'package:bilimusic/feature/player/ui/desktop_player_page.dart';
-import 'package:bilimusic/feature/player/ui/player_page.dart';
 import 'package:bilimusic/feature/favorites/ui/import/import_page.dart';
 import 'package:bilimusic/feature/profile/ui/profile_page.dart';
 import 'package:bilimusic/feature/search/ui/search_page.dart';
@@ -18,7 +18,11 @@ import 'package:bilimusic/feature/setting/ui/hotkey_settings_page.dart';
 import 'package:bilimusic/feature/setting/ui/player_settings_page.dart';
 import 'package:bilimusic/feature/setting/ui/setting_page.dart';
 import 'package:bilimusic/feature/setting/ui/theme_settings_page.dart';
-import 'package:bilimusic/router/app_shell.dart';
+import 'package:bilimusic/feature/up/ui/collection_detail_page.dart';
+import 'package:bilimusic/feature/up/ui/desktop_up_page.dart';
+import 'package:bilimusic/feature/up/ui/up_page.dart';
+import 'package:bilimusic/router/shell/app_shell.dart';
+import 'package:bilimusic/router/util/mobile_branch_navigator_keys.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hugeicons/hugeicons.dart';
@@ -67,11 +71,28 @@ final List<Map<String, dynamic>> mobileTabs = [
 final List<Map<String, dynamic>> mobileHiddenBranches = [
   {'path': '/search', 'builder': (context, state) => const SearchPage()},
   {
-    'path': '/player',
-    'builder': (context, state) {
-      final PlayableItem? item = state.extra as PlayableItem?;
-      return PlayerPage(initialItem: item);
-    },
+    'path': '/up',
+    'builder': (context, state) =>
+        const ErrorPageStatefulWidget(message: 'Up Page Not Found'),
+    'routes': [
+      GoRoute(
+        path: ':mid',
+        builder: (context, state) {
+          final mid = int.parse(state.pathParameters['mid']!);
+          return UpPage(mid: mid);
+        },
+        routes: [
+          GoRoute(
+            path: 'collection/:seasonId', // 完整路径 /up/:mid/collection/:seasonId
+            builder: (context, state) {
+              final mid = int.parse(state.pathParameters['mid']!);
+              final seasonId = int.parse(state.pathParameters['seasonId']!);
+              return CollectionDetailPage(mid: mid, seasonId: seasonId);
+            },
+          ),
+        ],
+      ),
+    ],
   },
   {
     'path': '/comments',
@@ -161,6 +182,33 @@ final List<Map<String, dynamic>> desktopTabs = [
   },
 ];
 
+final List<Map<String, dynamic>> desktopHiddenBranches = [
+  {
+    'path': '/up',
+    'builder': (context, state) =>
+        const ErrorPageStatefulWidget(message: 'Up Page Not Found'),
+    'routes': [
+      GoRoute(
+        path: ':mid',
+        builder: (context, state) {
+          final mid = int.parse(state.pathParameters['mid']!);
+          return DesktopUpPage(mid: mid);
+        },
+        routes: [
+          GoRoute(
+            path: 'collection/:seasonId',
+            builder: (context, state) {
+              final mid = int.parse(state.pathParameters['mid']!);
+              final seasonId = int.parse(state.pathParameters['seasonId']!);
+              return CollectionDetailPage(mid: mid, seasonId: seasonId);
+            },
+          ),
+        ],
+      ),
+    ],
+  },
+];
+
 final List<RouteBase> mobileRoutes = [
   GoRoute(path: '/auth', builder: (context, state) => const AuthPage()),
   StatefulShellRoute.indexedStack(
@@ -172,13 +220,19 @@ final List<RouteBase> mobileRoutes = [
       );
     },
     branches: [
-      ...<Map<String, dynamic>>[...mobileTabs, ...mobileHiddenBranches].map(
-        (tab) => StatefulShellBranch(
+      ...<Map<String, dynamic>>[
+        ...mobileTabs,
+        ...mobileHiddenBranches,
+      ].asMap().entries.map(
+        (entry) => StatefulShellBranch(
+          navigatorKey: mobileBranchNavigatorKeys[entry.key],
           routes: [
             GoRoute(
-              path: tab['path'] as String,
-              builder: tab['builder'] as GoRouterWidgetBuilder,
-              routes: tab['routes'] as List<RouteBase>? ?? const <RouteBase>[],
+              path: entry.value['path'] as String,
+              builder: entry.value['builder'] as GoRouterWidgetBuilder,
+              routes:
+                  entry.value['routes'] as List<RouteBase>? ??
+                  const <RouteBase>[],
             ),
           ],
         ),
@@ -226,7 +280,7 @@ final List<RouteBase> desktopRoutes = [
       );
     },
     branches: [
-      ...desktopTabs.map(
+      ...<Map<String, dynamic>>[...desktopTabs, ...desktopHiddenBranches].map(
         (tab) => StatefulShellBranch(
           routes: [
             GoRoute(

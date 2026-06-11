@@ -227,6 +227,7 @@ class BiliFavoritesRemoteRepository {
       title: _readString(json['title']),
       author: _readString(upper['name']),
       coverUrl: _readString(json['cover']),
+      ownerMid: _readInt(upper['mid']),
       page: 1,
       durationText: _formatDuration((json['duration'] as num?)?.toInt()),
     );
@@ -270,6 +271,16 @@ class BiliFavoritesRemoteRepository {
   }
 
   String _readString(dynamic value) => _readNullableString(value) ?? '';
+
+  int? _readInt(dynamic value) {
+    if (value is num) {
+      return value.toInt();
+    }
+    if (value is String) {
+      return int.tryParse(value);
+    }
+    return null;
+  }
 
   String? _readNullableString(dynamic value) {
     final String? text = value?.toString().trim();

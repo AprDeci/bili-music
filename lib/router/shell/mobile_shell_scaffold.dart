@@ -6,8 +6,9 @@ import 'package:bilimusic/feature/player/logic/player_controller.dart';
 import 'package:bilimusic/feature/player/ui/mini_player_bar.dart';
 import 'package:bilimusic/feature/player/ui/mini_player_glass_bar.dart';
 import 'package:bilimusic/feature/setting/logic/appearance_setting_logic.dart';
-import 'package:bilimusic/router/mobile_chrome_config.dart';
-import 'package:bilimusic/router/player_navigation.dart';
+import 'package:bilimusic/router/util/mobile_branch_navigator_keys.dart';
+import 'package:bilimusic/router/util/mobile_chrome_config.dart';
+import 'package:bilimusic/router/util/player_navigation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_floating_bottom_bar/flutter_floating_bottom_bar.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -72,6 +73,15 @@ class _MobileShellScaffoldState extends ConsumerState<MobileShellScaffold> {
 
   @override
   Widget build(BuildContext context) {
+    return ValueListenableBuilder<bool>(
+      valueListenable: playerPageVisibilityListenable,
+      builder: (BuildContext context, bool isPlayerPageVisible, _) {
+        return _buildScaffold(context, isPlayerPageVisible);
+      },
+    );
+  }
+
+  Widget _buildScaffold(BuildContext context, bool isPlayerPageVisible) {
     final double screenWidth = MediaQuery.of(context).size.width;
     final double bottomInset = MediaQuery.viewPaddingOf(context).bottom;
     final ThemeData theme = Theme.of(context);
@@ -81,7 +91,8 @@ class _MobileShellScaffoldState extends ConsumerState<MobileShellScaffold> {
     final double bottomBarOffset = BottomHeightHelper.bottomBarOffset(
       bottomInset: bottomInset,
     );
-    final bool usesCollapsedBottomChrome = !widget.chrome.showBottomTabs;
+    final bool usesCollapsedBottomChrome =
+        isPlayerPageVisible || !widget.chrome.showBottomTabs;
     final double miniPlayerVisibleBottomPadding =
         BottomHeightHelper.miniPlayerBottomPaddingWithBottomBar(
           bottomInset: bottomInset,
@@ -95,6 +106,7 @@ class _MobileShellScaffoldState extends ConsumerState<MobileShellScaffold> {
     final Widget content = _buildShellContent(
       context,
       playerState,
+      isPlayerPageVisible,
       usesCollapsedBottomChrome,
       useGlassBar,
       miniPlayerVisibleBottomPadding,
@@ -236,9 +248,20 @@ class _MobileShellScaffoldState extends ConsumerState<MobileShellScaffold> {
     );
   }
 
+  Future<void> _openMiniPlayer() {
+    final int currentIndex = widget.navigationShell.currentIndex;
+    final NavigatorState? branchNavigator =
+        currentIndex >= 0 && currentIndex < mobileBranchNavigatorKeys.length
+        ? mobileBranchNavigatorKeys[currentIndex].currentState
+        : null;
+
+    return openPlayerPage(context, navigator: branchNavigator);
+  }
+
   Widget _buildShellContent(
     BuildContext context,
     PlayerState playerState,
+    bool isPlayerPageVisible,
     bool usesCollapsedBottomChrome,
     bool useGlassBar,
     double miniPlayerVisibleBottomPadding,
@@ -248,52 +271,44 @@ class _MobileShellScaffoldState extends ConsumerState<MobileShellScaffold> {
       fit: StackFit.expand,
       children: <Widget>[
         widget.navigationShell,
-        ValueListenableBuilder<bool>(
-          valueListenable: playerPageVisibilityListenable,
-          builder: (BuildContext context, bool isPlayerPageVisible, _) {
-            if (!widget.chrome.showMiniPlayer ||
-                !playerState.hasItem ||
-                isPlayerPageVisible) {
-              return const SizedBox.shrink();
-            }
-
-            return Align(
-              alignment: Alignment.bottomCenter,
-              child: AnimatedSlide(
-                duration: _animationDuration,
-                curve: _animationCurve,
-                offset: usesCollapsedBottomChrome
-                    ? const Offset(0, 0.12)
-                    : Offset.zero,
-                child: useGlassBar
-                    ? MiniPlayerGlassBar(
-                        state: playerState,
-                        bottomPadding: usesCollapsedBottomChrome
-                            ? miniPlayerCollapsedBottomPadding
-                            : miniPlayerVisibleBottomPadding,
-                        onTap: () => openPlayerPage(context),
-                        onTogglePlayback: () {
-                          ref
-                              .read(playerControllerProvider.notifier)
-                              .togglePlayback();
-                        },
-                      )
-                    : MiniPlayerBar(
-                        state: playerState,
-                        bottomPadding: usesCollapsedBottomChrome
-                            ? miniPlayerCollapsedBottomPadding
-                            : miniPlayerVisibleBottomPadding,
-                        onTap: () => openPlayerPage(context),
-                        onTogglePlayback: () {
-                          ref
-                              .read(playerControllerProvider.notifier)
-                              .togglePlayback();
-                        },
-                      ),
-              ),
-            );
-          },
-        ),
+        if (widget.chrome.showMiniPlayer &&
+            playerState.hasItem &&
+            !isPlayerPageVisible)
+          Align(
+            alignment: Alignment.bottomCenter,
+            child: AnimatedSlide(
+              duration: _animationDuration,
+              curve: _animationCurve,
+              offset: usesCollapsedBottomChrome
+                  ? const Offset(0, 0.12)
+                  : Offset.zero,
+              child: useGlassBar
+                  ? MiniPlayerGlassBar(
+                      state: playerState,
+                      bottomPadding: usesCollapsedBottomChrome
+                          ? miniPlayerCollapsedBottomPadding
+                          : miniPlayerVisibleBottomPadding,
+                      onTap: _openMiniPlayer,
+                      onTogglePlayback: () {
+                        ref
+                            .read(playerControllerProvider.notifier)
+                            .togglePlayback();
+                      },
+                    )
+                  : MiniPlayerBar(
+                      state: playerState,
+                      bottomPadding: usesCollapsedBottomChrome
+                          ? miniPlayerCollapsedBottomPadding
+                          : miniPlayerVisibleBottomPadding,
+                      onTap: _openMiniPlayer,
+                      onTogglePlayback: () {
+                        ref
+                            .read(playerControllerProvider.notifier)
+                            .togglePlayback();
+                      },
+                    ),
+            ),
+          ),
       ],
     );
   }

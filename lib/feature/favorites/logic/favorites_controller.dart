@@ -506,6 +506,7 @@ class FavoritesController extends _$FavoritesController {
             title: item.title,
             author: item.author,
             coverUrl: item.coverUrl,
+            ownerMid: item.ownerMid,
             cid: item.cid,
             page: item.page,
             pageTitle: item.pageTitle,

@@ -16,7 +16,7 @@ import 'package:bilimusic/feature/favorites/logic/import/favorites_import_contro
 import 'package:bilimusic/feature/favorites/logic/import/favorites_import_state.dart';
 import 'package:bilimusic/feature/favorites/ui/import/manual_match_sheet.dart';
 import 'package:bilimusic/feature/player/domain/playable_item.dart';
-import 'package:bilimusic/router/player_navigation.dart';
+import 'package:bilimusic/router/util/player_navigation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 

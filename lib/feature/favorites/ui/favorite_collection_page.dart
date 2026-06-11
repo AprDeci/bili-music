@@ -604,6 +604,14 @@ class _FavoriteCollectionPageState
                     },
                   ),
                   _FavoriteActionTile(
+                    icon: Icons.person_rounded,
+                    title: '查看UP主',
+                    onTap: () {
+                      Navigator.of(sheetContext).pop();
+                      _openOwnerPage(context, item);
+                    },
+                  ),
+                  _FavoriteActionTile(
                     icon: Icons.skip_next_rounded,
                     title: '下一首播放',
                     onTap: () async {
@@ -632,6 +640,15 @@ class _FavoriteCollectionPageState
         );
       },
     );
+  }
+
+  void _openOwnerPage(BuildContext context, FavoriteEntry item) {
+    final int? ownerMid = item.ownerMid;
+    if (ownerMid == null || ownerMid <= 0) {
+      ToastUtil.show('暂无UP主信息');
+      return;
+    }
+    context.push('/up/$ownerMid');
   }
 }
 
