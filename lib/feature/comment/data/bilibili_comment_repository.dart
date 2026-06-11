@@ -351,11 +351,23 @@ class BiliCommentRepository {
       action: _readNonNegativeInt(json['action']) ?? 0,
       publishedAt: DateTime.fromMillisecondsSinceEpoch(timestamp * 1000),
       message: content['message'] as String? ?? '',
+      pictures: _asListOfMaps(
+        content['pictures'],
+      ).map(_mapCommentPicture).toList(),
       memberName: member['uname'] as String? ?? '未知用户',
       memberAvatarUrl: normalizeHttpUrl(member['avatar'] as String? ?? ''),
       isTop: isTop,
       isHidden: _readBoolLike(json['invisible']) ?? false,
       replies: previewReplies,
+    );
+  }
+
+  CommentPicture _mapCommentPicture(Map<String, dynamic> json) {
+    return CommentPicture(
+      imageUrl: normalizeHttpUrl(json['img_src'] as String? ?? ''),
+      width: _readPositiveInt(json['img_width']),
+      height: _readPositiveInt(json['img_height']),
+      sizeKb: _readPositiveInt(json['img_size']),
     );
   }
 

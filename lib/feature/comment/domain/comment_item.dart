@@ -3,6 +3,16 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 part 'comment_item.freezed.dart';
 
 @freezed
+abstract class CommentPicture with _$CommentPicture {
+  const factory CommentPicture({
+    required String imageUrl,
+    int? width,
+    int? height,
+    int? sizeKb,
+  }) = _CommentPicture;
+}
+
+@freezed
 abstract class CommentItem with _$CommentItem {
   const CommentItem._();
 
@@ -17,6 +27,7 @@ abstract class CommentItem with _$CommentItem {
     required int action,
     required DateTime publishedAt,
     required String message,
+    @Default(<CommentPicture>[]) List<CommentPicture> pictures,
     required String memberName,
     required String memberAvatarUrl,
     @Default(false) bool isTop,

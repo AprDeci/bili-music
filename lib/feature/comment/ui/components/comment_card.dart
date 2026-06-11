@@ -1,5 +1,6 @@
 import 'package:bilimusic/common/components/cached_avatar.dart';
 import 'package:bilimusic/feature/comment/domain/comment_item.dart';
+import 'package:bilimusic/feature/comment/ui/components/comment_picture_gallery.dart';
 import 'package:flutter/material.dart';
 
 class CommentCard extends StatelessWidget {
@@ -69,13 +70,26 @@ class CommentCard extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 10),
-                  Text(
-                    item.message.isEmpty ? '该评论没有文本内容' : item.message,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: colorScheme.onSurface,
-                      height: 1.55,
+                  if (item.message.isNotEmpty)
+                    Text(
+                      item.message,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: colorScheme.onSurface,
+                        height: 1.55,
+                      ),
                     ),
-                  ),
+                  if (item.message.isEmpty && item.pictures.isEmpty)
+                    Text(
+                      '该评论没有文本内容',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: colorScheme.onSurface,
+                        height: 1.55,
+                      ),
+                    ),
+                  if (item.pictures.isNotEmpty) ...<Widget>[
+                    if (item.message.isNotEmpty) const SizedBox(height: 12),
+                    CommentPictureGallery(pictures: item.pictures),
+                  ],
                   const SizedBox(height: 12),
                   Wrap(
                     spacing: 12,
@@ -118,11 +132,7 @@ class CommentCard extends StatelessWidget {
                             fontWeight: FontWeight.w700,
                           ),
                         ),
-                        TextSpan(
-                          text: reply.message.length > 20
-                              ? '${reply.message.substring(0, 20)}...'
-                              : reply.message,
-                        ),
+                        TextSpan(text: _buildReplyPreviewText(reply)),
                       ],
                     ),
                   ),
@@ -159,6 +169,25 @@ class CommentCard extends StatelessWidget {
     final String hour = value.hour.toString().padLeft(2, '0');
     final String minute = value.minute.toString().padLeft(2, '0');
     return '$year-$month-$day $hour:$minute';
+  }
+
+  String _buildReplyPreviewText(CommentItem reply) {
+    final String trimmedMessage = reply.message.trim();
+    final bool hasMessage = trimmedMessage.isNotEmpty;
+    final bool hasPictures = reply.pictures.isNotEmpty;
+
+    String text;
+    if (hasMessage && hasPictures) {
+      text = '$trimmedMessage [图片]';
+    } else if (hasMessage) {
+      text = trimmedMessage;
+    } else if (hasPictures) {
+      text = '[图片]';
+    } else {
+      text = '该回复没有文本内容';
+    }
+
+    return text.length > 20 ? '${text.substring(0, 20)}...' : text;
   }
 }
 
