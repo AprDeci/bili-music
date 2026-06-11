@@ -5,6 +5,8 @@ import 'package:bilimusic/common/components/cached_image.dart';
 import 'package:bilimusic/core/cache/cache_util.dart';
 import 'package:bilimusic/feature/comment/domain/comment_item.dart';
 import 'package:flutter/material.dart';
+import 'package:photo_view/photo_view.dart';
+import 'package:photo_view/photo_view_gallery.dart';
 
 class CommentPictureGallery extends StatefulWidget {
   const CommentPictureGallery({super.key, required this.pictures});
@@ -39,9 +41,7 @@ class _CommentPictureGalleryState extends State<CommentPictureGallery> {
   void _preloadPictures() {
     for (final CommentPicture picture in widget.pictures.take(3)) {
       final String imageUrl = picture.imageUrl.trim();
-      if (imageUrl.isEmpty || _preloadedUrls.contains(imageUrl)) {
-        continue;
-      }
+      if (imageUrl.isEmpty || _preloadedUrls.contains(imageUrl)) continue;
 
       _preloadedUrls.add(imageUrl);
       precacheImage(
@@ -54,11 +54,30 @@ class _CommentPictureGalleryState extends State<CommentPictureGallery> {
     }
   }
 
+  void _openGallery(int initialIndex) {
+    Navigator.push(
+      context,
+      PageRouteBuilder(
+        opaque: false,
+        barrierDismissible: true,
+        barrierColor: Colors.black.withValues(alpha: 0.8),
+        transitionDuration: const Duration(milliseconds: 180),
+        pageBuilder: (context, animation, secondaryAnimation) {
+          return CommentPictureGalleryPage(
+            pictures: widget.pictures,
+            initialIndex: initialIndex,
+          );
+        },
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          return FadeTransition(opacity: animation, child: child);
+        },
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    if (widget.pictures.isEmpty) {
-      return const SizedBox.shrink();
-    }
+    if (widget.pictures.isEmpty) return const SizedBox.shrink();
 
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
@@ -77,6 +96,7 @@ class _CommentPictureGalleryState extends State<CommentPictureGallery> {
               CommentPictureGallery._singleImageMaxWidth,
             ),
             borderColor: colorScheme.outlineVariant,
+            onTap: () => _openGallery(0),
           );
         }
 
@@ -88,13 +108,16 @@ class _CommentPictureGalleryState extends State<CommentPictureGallery> {
         return Wrap(
           spacing: CommentPictureGallery._spacing,
           runSpacing: CommentPictureGallery._spacing,
-          children: widget.pictures.map((CommentPicture picture) {
+          children: widget.pictures.asMap().entries.map((entry) {
+            final int index = entry.key;
+            final CommentPicture picture = entry.value;
             return SizedBox(
               width: itemWidth,
               height: itemWidth,
               child: _PictureTile(
                 picture: picture,
                 borderColor: colorScheme.outlineVariant,
+                onTap: () => _openGallery(index),
               ),
             );
           }).toList(),
@@ -104,27 +127,98 @@ class _CommentPictureGalleryState extends State<CommentPictureGallery> {
   }
 }
 
+class CommentPictureGalleryPage extends StatefulWidget {
+  final List<CommentPicture> pictures;
+  final int initialIndex;
+
+  const CommentPictureGalleryPage({
+    super.key,
+    required this.pictures,
+    this.initialIndex = 0,
+  });
+
+  @override
+  State<CommentPictureGalleryPage> createState() =>
+      _CommentPictureGalleryPageState();
+}
+
+class _CommentPictureGalleryPageState extends State<CommentPictureGalleryPage> {
+  late PageController _pageController;
+  late int currentIndex;
+
+  @override
+  void initState() {
+    super.initState();
+    currentIndex = widget.initialIndex;
+    _pageController = PageController(initialPage: currentIndex);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.transparent,
+      extendBodyBehindAppBar: true,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        title: Text("${currentIndex + 1} / ${widget.pictures.length}"),
+        titleTextStyle: const TextStyle(color: Colors.white),
+        iconTheme: const IconThemeData(color: Colors.white),
+      ),
+      body: PhotoViewGallery.builder(
+        backgroundDecoration: BoxDecoration(color: Colors.transparent),
+        scrollPhysics: const BouncingScrollPhysics(),
+        pageController: _pageController,
+        itemCount: widget.pictures.length,
+        onPageChanged: (index) => setState(() => currentIndex = index),
+        builder: (BuildContext context, int index) {
+          final String url = widget.pictures[index].imageUrl;
+          return PhotoViewGalleryPageOptions(
+            imageProvider: CachedNetworkImageProvider(
+              url,
+              cacheManager: CacheUtil.imageCacheManager,
+            ),
+            initialScale: PhotoViewComputedScale.contained,
+            minScale: PhotoViewComputedScale.contained,
+            maxScale: PhotoViewComputedScale.covered * 3.0,
+            heroAttributes: PhotoViewHeroAttributes(tag: "comment_pic_$index"),
+            errorBuilder: (_, __, ___) => const Center(
+              child: Icon(Icons.broken_image, color: Colors.white, size: 80),
+            ),
+          );
+        },
+        loadingBuilder: (context, event) =>
+            const Center(child: CircularProgressIndicator(color: Colors.white)),
+      ),
+    );
+  }
+}
+
 class _SingleCommentPicture extends StatelessWidget {
   const _SingleCommentPicture({
     required this.picture,
     required this.maxWidth,
     required this.borderColor,
+    required this.onTap,
   });
 
   final CommentPicture picture;
   final double maxWidth;
   final Color borderColor;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     final double aspectRatio = _resolveAspectRatio(picture);
-    final double imageWidth = maxWidth;
-    final double imageHeight = math.min(imageWidth / aspectRatio, 320);
+    final double imageHeight = math.min(maxWidth / aspectRatio, 320);
 
     return SizedBox(
-      width: imageWidth,
+      width: maxWidth,
       height: imageHeight,
-      child: _PictureTile(picture: picture, borderColor: borderColor),
+      child: _PictureTile(
+        picture: picture,
+        borderColor: borderColor,
+        onTap: onTap,
+      ),
     );
   }
 
@@ -132,7 +226,7 @@ class _SingleCommentPicture extends StatelessWidget {
     final int? width = picture.width;
     final int? height = picture.height;
     if (width == null || height == null || width <= 0 || height <= 0) {
-      return 1;
+      return 1.0;
     }
 
     return (width / height).clamp(
@@ -143,27 +237,38 @@ class _SingleCommentPicture extends StatelessWidget {
 }
 
 class _PictureTile extends StatelessWidget {
-  const _PictureTile({required this.picture, required this.borderColor});
+  const _PictureTile({
+    required this.picture,
+    required this.borderColor,
+    required this.onTap,
+  });
 
   final CommentPicture picture;
   final Color borderColor;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: borderColor.withValues(alpha: 0.7)),
-      ),
-      child: CommonCachedImage(
-        imageUrl: picture.imageUrl,
-        fit: BoxFit.cover,
-        borderRadius: BorderRadius.circular(12),
-        backgroundColor: Theme.of(context).colorScheme.surfaceContainerHigh,
-        memCacheWidth: 360,
-        memCacheHeight: 360,
-        maxDiskCacheWidth: 720,
-        maxDiskCacheHeight: 720,
+    return GestureDetector(
+      onTap: onTap,
+      child: Hero(
+        tag: "comment_pic_${picture.imageUrl.hashCode}",
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: borderColor.withValues(alpha: 0.7)),
+          ),
+          child: CommonCachedImage(
+            imageUrl: picture.imageUrl,
+            fit: BoxFit.cover,
+            borderRadius: BorderRadius.circular(12),
+            backgroundColor: Theme.of(context).colorScheme.surfaceContainerHigh,
+            memCacheWidth: 360,
+            memCacheHeight: 360,
+            maxDiskCacheWidth: 720,
+            maxDiskCacheHeight: 720,
+          ),
+        ),
       ),
     );
   }
