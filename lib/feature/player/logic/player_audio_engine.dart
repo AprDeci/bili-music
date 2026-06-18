@@ -40,7 +40,6 @@ class PlayerAudioEngine {
   Future<Duration?> setRemoteSource({
     required Uri uri,
     Map<String, String>? headers,
-    dynamic tag,
     Duration? initialPosition,
   }) async {
     await _openMedia(
@@ -52,7 +51,6 @@ class PlayerAudioEngine {
 
   Future<Duration?> setFileSource({
     required String filePath,
-    dynamic tag,
     Duration? initialPosition,
   }) async {
     await _openMedia(

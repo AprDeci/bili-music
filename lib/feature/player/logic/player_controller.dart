@@ -796,7 +796,6 @@ class PlayerController extends Notifier<PlayerState>
 
       final Duration? loadedDuration = await _playbackLoader.setSourceForEntry(
         entry: entry,
-        queueSourceLabel: state.queueSourceLabel,
         initialPosition: initialPosition,
         onStatusHint: (PlayerStatusHint hint) {
           state = state.copyWith(statusHint: hint);

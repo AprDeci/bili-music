@@ -1,6 +1,5 @@
 import 'dart:io';
 
-import 'package:audio_service/audio_service.dart';
 import 'package:bilimusic/core/bili/session/bili_session.dart';
 import 'package:bilimusic/feature/player/data/audio_cache_repository.dart';
 import 'package:bilimusic/feature/player/data/bili_player_repository.dart';
@@ -9,7 +8,6 @@ import 'package:bilimusic/feature/player/domain/player_audio_quality_preference.
 import 'package:bilimusic/feature/player/domain/playable_item.dart';
 import 'package:bilimusic/feature/player/domain/player_state.dart';
 import 'package:bilimusic/feature/player/logic/player_audio_engine.dart';
-import 'package:bilimusic/feature/player/logic/player_media_item_mapper.dart';
 
 typedef PlayerControllerLogger =
     void Function(String event, {Map<String, Object?>? details});
@@ -108,16 +106,9 @@ class PlayerPlaybackLoader {
 
   Future<Duration?> setSourceForEntry({
     required ResolvedQueueEntry entry,
-    required String? queueSourceLabel,
     required Duration initialPosition,
     required void Function(PlayerStatusHint hint) onStatusHint,
   }) async {
-    final MediaItem mediaItem = buildPlayerMediaItem(
-      entry.item,
-      audioStream: entry.audioStream,
-      queueSourceLabel: queueSourceLabel,
-      duration: entry.audioStream.duration,
-    );
     onStatusHint(PlayerStatusHint.connectingStream);
     final Duration? effectiveInitialPosition = initialPosition > Duration.zero
         ? initialPosition
@@ -139,7 +130,6 @@ class PlayerPlaybackLoader {
         );
         return await _audioEngine.setFileSource(
           filePath: cachedFile.path,
-          tag: mediaItem,
           initialPosition: effectiveInitialPosition,
         );
       } on Object catch (error) {
@@ -166,7 +156,6 @@ class PlayerPlaybackLoader {
       headers: entry.audioStream.headers.isEmpty
           ? null
           : entry.audioStream.headers,
-      tag: mediaItem,
       initialPosition: effectiveInitialPosition,
     );
   }
