@@ -756,6 +756,15 @@ class PlayerController extends Notifier<PlayerState>
       },
     );
 
+    try {
+      await _audioEngine.stop();
+    } on Object catch (error) {
+      _logPlayerEvent(
+        'loadQueueIndex:stop-before-load-failed',
+        details: <String, Object?>{'error': error},
+      );
+    }
+
     _resetEnginePlaybackSnapshot(
       processingState: PlayerEngineProcessingState.loading,
     );
