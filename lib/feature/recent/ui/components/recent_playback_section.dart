@@ -4,6 +4,7 @@ import 'package:bilimusic/feature/recent/domain/recent_playback_entry.dart';
 import 'package:bilimusic/feature/recent/logic/recent_playback_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 class RecentPlaybackSection extends ConsumerWidget {
   const RecentPlaybackSection({super.key});
@@ -41,13 +42,19 @@ class RecentPlaybackSection extends ConsumerWidget {
             height: 156,
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
-              itemCount: items.length,
+              itemCount: items.length + 1,
               physics: const BouncingScrollPhysics(),
               separatorBuilder: (BuildContext context, int index) {
                 return const SizedBox(width: 12);
               },
               itemBuilder: (BuildContext context, int index) {
-                final RecentPlaybackEntry item = items[index];
+                if (index == 0) {
+                  return _RecentPlaybackEntryTile(
+                    onTap: () => context.push('/profile/recent'),
+                  );
+                }
+
+                final RecentPlaybackEntry item = items[index - 1];
 
                 return _RecentPlaybackTile(
                   item: item,
@@ -64,6 +71,55 @@ class RecentPlaybackSection extends ConsumerWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _RecentPlaybackEntryTile extends StatelessWidget {
+  const _RecentPlaybackEntryTile({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+    final Color primary = colorScheme.primary;
+
+    return SizedBox(
+      width: 108,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: onTap,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Container(
+                width: 108,
+                height: 108,
+                decoration: BoxDecoration(
+                  color: primary.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(Icons.history_rounded, color: primary, size: 34),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                '已播歌曲',
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.w400,
+                  height: 1.2,
+                  color: colorScheme.onSurface,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -109,7 +165,7 @@ class _RecentPlaybackTile extends StatelessWidget {
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
                 style: theme.textTheme.bodyMedium?.copyWith(
-                  fontWeight: FontWeight.w700,
+                  fontWeight: FontWeight.w400,
                   height: 1.2,
                 ),
               ),

@@ -11,6 +11,7 @@ import 'package:bilimusic/feature/player/ui/desktop_player_page.dart';
 import 'package:bilimusic/feature/favorites/ui/import/import_page.dart';
 import 'package:bilimusic/feature/profile/ui/profile_page.dart';
 import 'package:bilimusic/feature/recent/ui/desktop/desktop_recent_playback_page.dart';
+import 'package:bilimusic/feature/recent/ui/recent_playback_page.dart';
 import 'package:bilimusic/feature/search/ui/search_page.dart';
 import 'package:bilimusic/feature/setting/ui/about_settings_page.dart';
 import 'package:bilimusic/feature/setting/ui/cache_settings_page.dart';
@@ -54,6 +55,14 @@ final List<Map<String, dynamic>> mobileTabs = [
     'builder': (context, state) => const ProfilePage(),
     'routes': <RouteBase>[
       GoRoute(path: 'import', builder: (context, state) => const ImportPage()),
+      GoRoute(
+        path: 'recent',
+        builder: (context, state) {
+          return PlatformUtil.isDesktop
+              ? const DesktopRecentPlaybackPage()
+              : const RecentPlaybackPage();
+        },
+      ),
       GoRoute(
         path: 'favorites/:collectionId',
         builder: (context, state) {
@@ -135,17 +144,7 @@ final List<Map<String, dynamic>> mobileHiddenBranches = [
 ];
 
 final List<Map<String, dynamic>> desktopTabs = [
-  mobileTabs[0],
-  {
-    ...mobileTabs[1],
-    'routes': <RouteBase>[
-      ...(mobileTabs[1]['routes'] as List<RouteBase>),
-      GoRoute(
-        path: 'recent',
-        builder: (context, state) => const DesktopRecentPlaybackPage(),
-      ),
-    ],
-  },
+  ...mobileTabs,
   {
     'path': '/search',
     'builder': (context, state) => const SearchPage(),
