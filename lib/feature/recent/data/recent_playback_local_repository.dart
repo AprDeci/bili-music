@@ -16,7 +16,7 @@ RecentPlaybackLocalRepository recentPlaybackLocalRepository(Ref ref) {
 class RecentPlaybackLocalRepository {
   const RecentPlaybackLocalRepository(this._box);
 
-  static const int maxEntries = 10;
+  static const int maxEntries = 100;
 
   final Box<RecentPlaybackEntry> _box;
 
