@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:bilimusic/common/bm_icons.dart';
 import 'package:bilimusic/common/components/bottom_page_spacer.dart';
 import 'package:bilimusic/common/components/cached_image.dart';
 import 'package:bilimusic/common/logger.dart';
@@ -12,7 +11,9 @@ import 'package:bilimusic/feature/favorites/domain/favorite_entry.dart';
 import 'package:bilimusic/feature/favorites/domain/favorites_state.dart';
 import 'package:bilimusic/feature/favorites/logic/favorite_entry_search.dart';
 import 'package:bilimusic/feature/favorites/logic/favorites_controller.dart';
+import 'package:bilimusic/feature/favorites/ui/components/favorite_collection_items_list.dart';
 import 'package:bilimusic/feature/favorites/ui/components/favorite_collection_search_field.dart';
+import 'package:bilimusic/feature/favorites/ui/components/favorite_entry_subtitle.dart';
 import 'package:bilimusic/feature/favorites/ui/components/favorite_search_empty_state.dart';
 import 'package:bilimusic/feature/player/domain/playable_item.dart';
 import 'package:bilimusic/feature/player/logic/player_controller.dart';
@@ -334,112 +335,45 @@ class _FavoriteCollectionPageState
                 const BottomPageSpacer.overlay(),
               ],
             )
-          : NotificationListener<ScrollNotification>(
-              onNotification: _handleScrollNotification,
-              child: ListView.builder(
-                padding: EdgeInsets.zero,
-                itemCount: visibleItems.length + 2,
-                itemBuilder: (BuildContext context, int index) {
-                  if (index == 0) {
-                    return Padding(
-                      padding: const EdgeInsets.fromLTRB(14, 10, 14, 8),
-                      child: FavoriteCollectionSearchField(
-                        controller: _searchController,
-                        query: _searchQuery,
-                        onChanged: _updateSearchQuery,
-                        onClear: _clearSearchQuery,
-                      ),
-                    );
-                  }
-
-                  if (index == visibleItems.length + 1) {
-                    return _buildListFooter(theme);
-                  }
-
-                  final int itemIndex = index - 1;
-                  final FavoriteEntry item = visibleItems[itemIndex];
-                  return Material(
-                    child: ListTile(
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 0,
-                      ),
-                      leading: CommonCachedImage(
-                        imageUrl: item.coverUrl,
-                        width: 44,
-                        height: 44,
-                        fit: BoxFit.cover,
-                        borderRadius: BorderRadius.circular(8),
-                        fallbackIcon: Icons.music_note_rounded,
-                        iconColor: primary,
-                        backgroundColor: primary.withValues(alpha: 0.14),
-                      ),
-                      title: Text(
-                        item.title,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: theme.textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                      subtitle: Text(
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: colorScheme.onSurfaceVariant,
-                          height: 1.5,
-                        ),
-                        _buildSubtitle(item),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      trailing: Row(
-                        spacing: 0,
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        mainAxisSize: MainAxisSize.min,
-                        children: <Widget>[
-                          IconButton(
-                            padding: EdgeInsets.zero,
-                            visualDensity: VisualDensity.compact,
-                            tooltip: '播放',
-                            onPressed: () async {
-                              await _playCollectionItem(
-                                context,
-                                ref,
-                                collectionName: resolvedCollection.name,
-                                queueItems: queueItems,
-                                index: itemIndex,
-                              );
-                            },
-                            icon: const Icon(BmIcons.addPlaylist),
-                          ),
-                          IconButton(
-                            padding: EdgeInsets.zero,
-                            visualDensity: VisualDensity.compact,
-                            tooltip: '更多',
-                            onPressed: () async {
-                              await _showItemActionSheet(
-                                context,
-                                ref,
-                                collection: resolvedCollection,
-                                item: item,
-                              );
-                            },
-                            icon: const Icon(Icons.more_vert_outlined),
-                          ),
-                        ],
-                      ),
-                      onTap: () async {
-                        await _playCollectionItem(
-                          context,
-                          ref,
-                          collectionName: resolvedCollection.name,
-                          queueItems: queueItems,
-                          index: itemIndex,
-                        );
-                      },
-                    ),
-                  );
-                },
+          : FavoriteCollectionItemsList(
+              items: visibleItems,
+              header: Padding(
+                padding: const EdgeInsets.fromLTRB(14, 10, 14, 8),
+                child: FavoriteCollectionSearchField(
+                  controller: _searchController,
+                  query: _searchQuery,
+                  onChanged: _updateSearchQuery,
+                  onClear: _clearSearchQuery,
+                ),
               ),
+              footer: _buildListFooter(theme),
+              onNotification: _handleScrollNotification,
+              onTapItem: (int itemIndex, FavoriteEntry item) async {
+                await _playCollectionItem(
+                  context,
+                  ref,
+                  collectionName: resolvedCollection.name,
+                  queueItems: queueItems,
+                  index: itemIndex,
+                );
+              },
+              onPlayItem: (int itemIndex, FavoriteEntry item) async {
+                await _playCollectionItem(
+                  context,
+                  ref,
+                  collectionName: resolvedCollection.name,
+                  queueItems: queueItems,
+                  index: itemIndex,
+                );
+              },
+              onMoreItem: (int itemIndex, FavoriteEntry item) async {
+                await _showItemActionSheet(
+                  context,
+                  ref,
+                  collection: resolvedCollection,
+                  item: item,
+                );
+              },
             ),
     );
   }
@@ -474,24 +408,6 @@ class _FavoriteCollectionPageState
       );
     }
     return const BottomPageSpacer.overlay();
-  }
-
-  String _buildSubtitle(FavoriteEntry item) {
-    final List<String> segments = <String>[item.author];
-    final int? page = item.page;
-    final String pageTitle = item.pageTitle?.trim() ?? '';
-
-    if (page != null && page > 0) {
-      segments.add('P$page');
-    }
-    if (pageTitle.isNotEmpty) {
-      segments.add(pageTitle);
-    }
-    if (item.durationText != null && item.durationText!.isNotEmpty) {
-      segments.add(item.durationText!);
-    }
-
-    return segments.join(' · ');
   }
 
   Future<void> _playCollectionItem(
@@ -567,7 +483,7 @@ class _FavoriteCollectionPageState
                       ),
                     ),
                     subtitle: Text(
-                      _buildSubtitle(item),
+                      buildFavoriteEntrySubtitle(item),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
