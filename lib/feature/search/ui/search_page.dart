@@ -1,8 +1,5 @@
 import 'package:bilimusic/common/util/player_util.dart';
 import 'package:bilimusic/common/util/screen_util.dart';
-import 'package:bilimusic/feature/player/data/bili_player_repository.dart';
-import 'package:bilimusic/feature/player/domain/playable_item.dart';
-import 'package:bilimusic/feature/player/logic/player_controller.dart';
 import 'package:bilimusic/feature/search/domain/search_result_item.dart';
 import 'package:bilimusic/feature/search/domain/search_state.dart';
 import 'package:bilimusic/feature/search/domain/search_type.dart';
@@ -69,7 +66,6 @@ class _SearchPageState extends ConsumerState<SearchPage>
     SearchPageController controller, [
     String? value,
   ]) async {
-
     FocusManager.instance.primaryFocus?.unfocus();
 
     await controller.submitSearch(value);
@@ -127,26 +123,18 @@ class _SearchPageState extends ConsumerState<SearchPage>
                         );
                       },
                       onPlayNext: (SearchResultItem item) async {
-                        final PlayableItem resolvedItem = await ref
-                            .read(biliPlayerRepositoryProvider)
-                            .resolvePreferredPart(
-                              item.toPlayableItem(),
-                              preferredPage: 1,
-                            );
-                        await ref
-                            .read(playerControllerProvider.notifier)
-                            .playNext(resolvedItem);
+                        await PlayerUtil.playItemNextWithMultiPart(
+                          context,
+                          ref,
+                          item: item.toPlayableItem(),
+                        );
                       },
                       onEnqueue: (SearchResultItem item) async {
-                        final PlayableItem resolvedItem = await ref
-                            .read(biliPlayerRepositoryProvider)
-                            .resolvePreferredPart(
-                              item.toPlayableItem(),
-                              preferredPage: 1,
-                            );
-                        await ref
-                            .read(playerControllerProvider.notifier)
-                            .enqueue(<PlayableItem>[resolvedItem]);
+                        await PlayerUtil.enqueueItemWithMultiPart(
+                          context,
+                          ref,
+                          item: item.toPlayableItem(),
+                        );
                       },
                       onTapUser: (SearchUserItem item) {
                         context.push('/up/${item.mid}');

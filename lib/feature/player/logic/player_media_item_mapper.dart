@@ -37,24 +37,36 @@ MediaItem buildPlayerQueueMediaItem(
 }) {
   final String album = _resolveAlbumLabel(queueSourceLabel);
   final String pageTitle = item.pageTitle?.trim() ?? '';
+  final String displayTitle = pageTitle.isEmpty
+      ? item.title
+      : _buildPageDisplayTitle(item, pageTitle);
+  final String displaySubtitle = pageTitle.isEmpty ? item.author : item.title;
   final Uri? artUri = _tryParseUri(item.coverUrl);
 
   return MediaItem(
     id: item.stableId,
     album: album,
-    title: item.title,
+    title: displayTitle,
     artist: item.author,
     artUri: artUri,
     duration: duration,
-    displayTitle: item.title,
-    displaySubtitle: item.author,
-    displayDescription: pageTitle,
+    displayTitle: displayTitle,
+    displaySubtitle: displaySubtitle,
+    displayDescription: pageTitle.isEmpty ? '' : item.author,
   );
 }
 
 String _resolveAlbumLabel(String? queueSourceLabel) {
   final String trimmed = queueSourceLabel?.trim() ?? '';
   return trimmed.isEmpty ? 'Bilibili' : trimmed;
+}
+
+String _buildPageDisplayTitle(PlayableItem item, String pageTitle) {
+  final int? page = item.page;
+  if (page == null || page <= 0) {
+    return pageTitle;
+  }
+  return 'P$page · $pageTitle';
 }
 
 Uri? _tryParseUri(String value) {

@@ -49,6 +49,14 @@ class AppTransferRepository {
       key: HiveKeys.playerAudioQualityPreference,
       defaultValue: 'auto',
     ),
+    _TransferSettingKey(
+      key: HiveKeys.playerMultiPartQueuePreference,
+      defaultValue: 'current_part',
+    ),
+    _TransferSettingKey(
+      key: HiveKeys.playerMultiPartTipShown,
+      defaultValue: 'false',
+    ),
   ];
 
   Future<String> buildExportJson() async {

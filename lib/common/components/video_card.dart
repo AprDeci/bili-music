@@ -1,11 +1,11 @@
 import 'dart:async';
 
 import 'package:bilimusic/common/components/cached_image.dart';
+import 'package:bilimusic/common/util/player_util.dart';
 import 'package:bilimusic/common/util/toast_util.dart';
 import 'package:bilimusic/feature/favorites/logic/favorites_controller.dart';
 import 'package:bilimusic/feature/player/data/bili_player_repository.dart';
 import 'package:bilimusic/feature/player/domain/playable_item.dart';
-import 'package:bilimusic/feature/player/logic/player_controller.dart';
 import 'package:bilimusic/feature/player/ui/components/player_collection_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -245,10 +245,11 @@ class _VideoCardActions extends StatelessWidget {
     }
 
     try {
-      final PlayableItem resolvedItem = await ref
-          .read(biliPlayerRepositoryProvider)
-          .resolvePreferredPart(actions.playableItem, preferredPage: 1);
-      await ref.read(playerControllerProvider.notifier).playNext(resolvedItem);
+      await PlayerUtil.playItemNextWithMultiPart(
+        context,
+        ref,
+        item: actions.playableItem,
+      );
       if (context.mounted) {
         ToastUtil.show('已加入下一首');
       }
@@ -270,12 +271,11 @@ class _VideoCardActions extends StatelessWidget {
     }
 
     try {
-      final PlayableItem resolvedItem = await ref
-          .read(biliPlayerRepositoryProvider)
-          .resolvePreferredPart(actions.playableItem, preferredPage: 1);
-      await ref.read(playerControllerProvider.notifier).enqueue(<PlayableItem>[
-        resolvedItem,
-      ]);
+      await PlayerUtil.enqueueItemWithMultiPart(
+        context,
+        ref,
+        item: actions.playableItem,
+      );
       if (context.mounted) {
         ToastUtil.show('已加入播放队列');
       }

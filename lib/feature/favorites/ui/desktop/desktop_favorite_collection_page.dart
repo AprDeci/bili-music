@@ -16,7 +16,6 @@ import 'package:bilimusic/feature/favorites/ui/components/favorite_search_empty_
 import 'package:bilimusic/feature/favorites/ui/components/desktop/desktop_favorite_collection_items_list.dart';
 import 'package:bilimusic/feature/favorites/ui/components/favorite_entry_subtitle.dart';
 import 'package:bilimusic/feature/player/domain/playable_item.dart';
-import 'package:bilimusic/feature/player/logic/player_controller.dart';
 import 'package:bilimusic/feature/player/ui/components/player_collection_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -529,9 +528,11 @@ class _DesktopFavoriteCollectionPageState
                     title: '下一首播放',
                     onTap: () async {
                       Navigator.of(sheetContext).pop();
-                      await ref
-                          .read(playerControllerProvider.notifier)
-                          .playNext(playableItem);
+                      await PlayerUtil.playItemNextWithMultiPart(
+                        context,
+                        ref,
+                        item: playableItem,
+                      );
                       if (!context.mounted) {
                         return;
                       }

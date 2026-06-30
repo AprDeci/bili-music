@@ -1,7 +1,9 @@
 import 'package:bilimusic/common/util/platform_util.dart';
+import 'package:bilimusic/feature/player/domain/multi_part_queue_preference.dart';
 import 'package:bilimusic/feature/player/domain/player_audio_quality_preference.dart';
 import 'package:bilimusic/feature/player/logic/player_audio_quality_preference_logic.dart';
 import 'package:bilimusic/feature/player/logic/player_controller.dart';
+import 'package:bilimusic/feature/player/logic/player_multi_part_queue_preference_logic.dart';
 import 'package:bilimusic/feature/player/logic/player_settings_logic.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -15,6 +17,9 @@ class PlayerSettingsPage extends ConsumerWidget {
     final bool allowMixWithOthers = ref.watch(playerSettingsLogicProvider);
     final PlayerAudioQualityPreference audioQualityPreference = ref.watch(
       playerAudioQualityPreferenceLogicProvider,
+    );
+    final MultiPartQueuePreference multiPartQueuePreference = ref.watch(
+      playerMultiPartQueuePreferenceLogicProvider,
     );
 
     return Scaffold(
@@ -46,6 +51,17 @@ class PlayerSettingsPage extends ConsumerWidget {
             ),
             trailing: const Icon(Icons.chevron_right_rounded),
             onTap: () => _showAudioQualitySheet(context, ref),
+          ),
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: const Icon(Icons.video_collection_rounded),
+            title: const Text('分段视频默认添加方式'),
+            subtitle: Text(
+              multiPartQueuePreference.title,
+              style: theme.textTheme.bodySmall,
+            ),
+            trailing: const Icon(Icons.chevron_right_rounded),
+            onTap: () => _showMultiPartPreferenceSheet(context, ref),
           ),
         ],
       ),
@@ -92,6 +108,54 @@ Future<void> _showAudioQualitySheet(BuildContext context, WidgetRef ref) async {
                 await ref
                     .read(playerControllerProvider.notifier)
                     .setAudioQualityPreference(preference);
+              },
+            );
+          },
+        ),
+      );
+    },
+  );
+}
+
+Future<void> _showMultiPartPreferenceSheet(
+  BuildContext context,
+  WidgetRef ref,
+) async {
+  final ThemeData theme = Theme.of(context);
+  final MultiPartQueuePreference currentPreference = ref.read(
+    playerMultiPartQueuePreferenceLogicProvider,
+  );
+  const List<MultiPartQueuePreference> preferences = <MultiPartQueuePreference>[
+    MultiPartQueuePreference.currentPart,
+    MultiPartQueuePreference.allParts,
+  ];
+
+  await showModalBottomSheet<void>(
+    context: context,
+    showDragHandle: true,
+    builder: (BuildContext context) {
+      return SafeArea(
+        child: ListView.separated(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+          itemCount: preferences.length,
+          separatorBuilder: (_, _) => const SizedBox(height: 8),
+          itemBuilder: (BuildContext context, int index) {
+            final MultiPartQueuePreference preference = preferences[index];
+            final bool isSelected = preference == currentPreference;
+            return ListTile(
+              tileColor: isSelected
+                  ? theme.colorScheme.primary.withValues(alpha: 0.1)
+                  : null,
+              title: Text(preference.title),
+              subtitle: Text(preference.description),
+              trailing: isSelected
+                  ? Icon(Icons.check_rounded, color: theme.colorScheme.primary)
+                  : null,
+              onTap: () async {
+                Navigator.of(context).pop();
+                await ref
+                    .read(playerMultiPartQueuePreferenceLogicProvider.notifier)
+                    .setPreference(preference);
               },
             );
           },
