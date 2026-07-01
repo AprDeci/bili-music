@@ -181,7 +181,7 @@ class _CommentPictureGalleryPageState extends State<CommentPictureGalleryPage> {
             minScale: PhotoViewComputedScale.contained,
             maxScale: PhotoViewComputedScale.covered * 3.0,
             heroAttributes: PhotoViewHeroAttributes(tag: "comment_pic_$index"),
-            errorBuilder: (_, __, ___) => const Center(
+            errorBuilder: (_, _, _) => const Center(
               child: Icon(Icons.broken_image, color: Colors.white, size: 80),
             ),
           );
