@@ -13,6 +13,7 @@ import 'package:bilimusic/feature/favorites/domain/favorites_state.dart';
 import 'package:bilimusic/feature/favorites/logic/favorites_controller.dart';
 import 'package:bilimusic/feature/profile/ui/components/remote_collection_import_dialog.dart';
 import 'package:bilimusic/feature/profile/ui/components/user_card.dart';
+import 'package:bilimusic/feature/up/logic/favorite_up_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -56,6 +57,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
     final int likedCount = favoritesState.itemCountForCollection(
       FavoriteCollection.likedCollectionId,
     );
+    final int favoriteUpCount = ref.watch(favoriteUpControllerProvider).length;
     final List<FavoriteCollection> remoteCollections = favoritesState
         .collections
         .where((FavoriteCollection collection) => collection.isRemote)
@@ -96,9 +98,11 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
           const SizedBox(height: 18),
           _ProfileQuickActions(
             likedCount: likedCount,
+            favoriteUpCount: favoriteUpCount,
             onLikedTap: () => context.push(
               '/profile/favorites/${FavoriteCollection.likedCollectionId}',
             ),
+            onFavoriteUpTap: () => context.push('/profile/favorite-ups'),
           ),
           const SizedBox(height: 16),
           _ProfileSectionHeader(
@@ -650,11 +654,15 @@ class _CollectionNameDialogState extends State<_CollectionNameDialog> {
 class _ProfileQuickActions extends StatelessWidget {
   const _ProfileQuickActions({
     required this.likedCount,
+    required this.favoriteUpCount,
     required this.onLikedTap,
+    required this.onFavoriteUpTap,
   });
 
   final int likedCount;
+  final int favoriteUpCount;
   final VoidCallback onLikedTap;
+  final VoidCallback onFavoriteUpTap;
 
   @override
   Widget build(BuildContext context) {
@@ -666,6 +674,15 @@ class _ProfileQuickActions extends StatelessWidget {
             title: '收藏',
             count: likedCount,
             onTap: onLikedTap,
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: _ProfileQuickActionCard(
+            icon: Icons.person_add_alt_1_rounded,
+            title: 'UP主',
+            count: favoriteUpCount,
+            onTap: onFavoriteUpTap,
           ),
         ),
         const SizedBox(width: 12),

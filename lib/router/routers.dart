@@ -22,6 +22,7 @@ import 'package:bilimusic/feature/setting/ui/setting_page.dart';
 import 'package:bilimusic/feature/setting/ui/theme_settings_page.dart';
 import 'package:bilimusic/feature/up/ui/collection_detail_page.dart';
 import 'package:bilimusic/feature/up/ui/desktop_up_page.dart';
+import 'package:bilimusic/feature/up/ui/favorite_up_list_page.dart';
 import 'package:bilimusic/feature/up/ui/up_page.dart';
 import 'package:bilimusic/router/shell/app_shell.dart';
 import 'package:bilimusic/router/util/mobile_branch_navigator_keys.dart';
@@ -55,6 +56,10 @@ final List<Map<String, dynamic>> mobileTabs = [
     'builder': (context, state) => const ProfilePage(),
     'routes': <RouteBase>[
       GoRoute(path: 'import', builder: (context, state) => const ImportPage()),
+      GoRoute(
+        path: 'favorite-ups',
+        builder: (context, state) => const FavoriteUpListPage(),
+      ),
       GoRoute(
         path: 'recent',
         builder: (context, state) {

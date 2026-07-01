@@ -10,6 +10,7 @@ import 'package:bilimusic/feature/favorites/logic/favorites_controller.dart';
 import 'package:bilimusic/feature/metadata/logic/metadata_controller.dart';
 import 'package:bilimusic/feature/player/logic/app_audio_handler.dart';
 import 'package:bilimusic/feature/player/logic/player_controller.dart';
+import 'package:bilimusic/feature/up/logic/favorite_up_controller.dart';
 import 'package:bilimusic/myApp.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -90,6 +91,7 @@ class _AppBootstrapState extends ConsumerState<_AppBootstrap> {
       }
       _didBootstrap = true;
       await ref.read(favoritesControllerProvider.notifier).initialize();
+      await ref.read(favoriteUpControllerProvider.notifier).initialize();
       await ref.read(biliSessionControllerProvider.notifier).bootstrap();
       await ref
           .read(playerControllerProvider.notifier)
