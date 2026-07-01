@@ -1,16 +1,19 @@
 import 'package:bilimusic/common/components/user_avatar.dart';
 import 'package:bilimusic/common/util/format_util.dart';
+import 'package:bilimusic/feature/up/domain/favorite_up.dart';
 import 'package:bilimusic/feature/up/domain/up_profile.dart';
+import 'package:bilimusic/feature/up/logic/favorite_up_controller.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class UpProfileHeader extends StatelessWidget {
+class UpProfileHeader extends ConsumerWidget {
   const UpProfileHeader({super.key, required this.profile, this.error});
 
   final UpProfile? profile;
   final String? error;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
     final UpProfile? value = profile;
@@ -67,8 +70,36 @@ class UpProfileHeader extends StatelessWidget {
               ],
             ),
           ),
+          const SizedBox(width: 12),
+          _FavoriteUpButton(profile: value),
         ],
       ),
+    );
+  }
+}
+
+class _FavoriteUpButton extends ConsumerWidget {
+  const _FavoriteUpButton({required this.profile});
+
+  final UpProfile profile;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final bool isFavorited = ref.watch(
+      favoriteUpControllerProvider.select(
+        (List<FavoriteUp> ups) =>
+            ups.any((FavoriteUp up) => up.mid == profile.mid),
+      ),
+    );
+
+    return IconButton.filledTonal(
+      tooltip: isFavorited ? '取消收藏' : '收藏UP主',
+      icon: Icon(
+        isFavorited ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+      ),
+      onPressed: () {
+        ref.read(favoriteUpControllerProvider.notifier).toggle(profile);
+      },
     );
   }
 }
