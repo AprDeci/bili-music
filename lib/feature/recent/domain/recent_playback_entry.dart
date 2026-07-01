@@ -14,6 +14,7 @@ abstract class RecentPlaybackEntry with _$RecentPlaybackEntry {
     required String author,
     required String coverUrl,
     int? cid,
+    int? page,
     String? pageTitle,
     required int playedAtEpochMs,
   }) = _RecentPlaybackEntry;
@@ -29,6 +30,7 @@ abstract class RecentPlaybackEntry with _$RecentPlaybackEntry {
       author: item.author,
       coverUrl: item.coverUrl,
       cid: item.cid,
+      page: item.page,
       pageTitle: item.pageTitle,
       playedAtEpochMs: playedAtEpochMs,
     );
@@ -56,6 +58,7 @@ abstract class RecentPlaybackEntry with _$RecentPlaybackEntry {
       author: author,
       coverUrl: coverUrl,
       cid: cid,
+      page: page,
       pageTitle: pageTitle,
     );
   }

@@ -39,17 +39,30 @@ void main() {
     );
 
     final List<RecentPlaybackEntry> result = await repository.saveEntry(
-      _entry(aid: 1, cid: 101, title: 'first updated', playedAt: 3),
+      _entry(
+        aid: 1,
+        cid: 101,
+        page: 2,
+        title: 'first updated',
+        pageTitle: 'part two',
+        playedAt: 3,
+      ),
     );
 
     expect(result, hasLength(2));
     expect(result.first.title, 'first updated');
+    expect(result.first.page, 2);
+    expect(result.first.pageTitle, 'part two');
     expect(result.first.stableId, 'aid:1:cid:101');
     expect(result.last.stableId, 'aid:2:cid:201');
   });
 
-  test('saveEntry truncates to recent 10 items', () async {
-    for (int index = 0; index < 12; index++) {
+  test('saveEntry truncates to max recent items', () async {
+    for (
+      int index = 0;
+      index < RecentPlaybackLocalRepository.maxEntries + 2;
+      index++
+    ) {
       await repository.saveEntry(
         _entry(
           aid: index + 1,
@@ -62,8 +75,8 @@ void main() {
 
     final List<RecentPlaybackEntry> result = repository.load();
 
-    expect(result, hasLength(10));
-    expect(result.first.title, 'item 11');
+    expect(result, hasLength(RecentPlaybackLocalRepository.maxEntries));
+    expect(result.first.title, 'item 101');
     expect(result.last.title, 'item 2');
   });
 }
@@ -71,6 +84,8 @@ void main() {
 RecentPlaybackEntry _entry({
   required int aid,
   required int cid,
+  int? page,
+  String? pageTitle,
   required String title,
   required int playedAt,
 }) {
@@ -81,6 +96,8 @@ RecentPlaybackEntry _entry({
     author: 'tester',
     coverUrl: 'https://example.com/$aid.jpg',
     cid: cid,
+    page: page,
+    pageTitle: pageTitle,
     playedAtEpochMs: playedAt,
   );
 }

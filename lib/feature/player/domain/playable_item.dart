@@ -31,6 +31,28 @@ abstract class PlayableItem with _$PlayableItem {
 
   bool get hasIdentity => aid > 0 || bvid.isNotEmpty;
 
+  bool get hasPageTitle => (pageTitle?.trim() ?? '').isNotEmpty;
+
+  String get displayTitle {
+    final String trimmedPageTitle = pageTitle?.trim() ?? '';
+    if (trimmedPageTitle.isEmpty) {
+      return title;
+    }
+
+    final int? resolvedPage = page;
+    if (resolvedPage == null || resolvedPage <= 0) {
+      return trimmedPageTitle;
+    }
+    return 'P$resolvedPage · $trimmedPageTitle';
+  }
+
+  String get displaySubtitle {
+    if (hasPageTitle) {
+      return title;
+    }
+    return author;
+  }
+
   List<String> get lyricSearchTitles {
     final List<String> titles = <String>[];
     final String partTitle = pageTitle?.trim() ?? '';

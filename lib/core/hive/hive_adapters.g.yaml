@@ -143,7 +143,7 @@ types:
         index: 5
   RecentPlaybackEntry:
     typeId: 7
-    nextIndex: 8
+    nextIndex: 9
     fields:
       aid:
         index: 0
@@ -161,6 +161,8 @@ types:
         index: 6
       playedAtEpochMs:
         index: 7
+      page:
+        index: 8
   MetaLyrics:
     typeId: 8
     nextIndex: 5

@@ -388,6 +388,7 @@ class RecentPlaybackEntryAdapter extends TypeAdapter<RecentPlaybackEntry> {
       author: fields[3] as String,
       coverUrl: fields[4] as String,
       cid: (fields[5] as num?)?.toInt(),
+      page: (fields[8] as num?)?.toInt(),
       pageTitle: fields[6] as String?,
       playedAtEpochMs: (fields[7] as num).toInt(),
     );
@@ -396,7 +397,7 @@ class RecentPlaybackEntryAdapter extends TypeAdapter<RecentPlaybackEntry> {
   @override
   void write(BinaryWriter writer, RecentPlaybackEntry obj) {
     writer
-      ..writeByte(8)
+      ..writeByte(9)
       ..writeByte(0)
       ..write(obj.aid)
       ..writeByte(1)
@@ -412,7 +413,9 @@ class RecentPlaybackEntryAdapter extends TypeAdapter<RecentPlaybackEntry> {
       ..writeByte(6)
       ..write(obj.pageTitle)
       ..writeByte(7)
-      ..write(obj.playedAtEpochMs);
+      ..write(obj.playedAtEpochMs)
+      ..writeByte(8)
+      ..write(obj.page);
   }
 
   @override

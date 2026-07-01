@@ -19,7 +19,6 @@ import 'package:bilimusic/feature/player/ui/components/player_queue_sheet.dart';
 import 'package:bilimusic/feature/player/ui/components/player_top_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class PlayerPage extends ConsumerStatefulWidget {
@@ -243,10 +242,10 @@ class _PlayerPageState extends ConsumerState<PlayerPage> {
     final CommentTarget target = CommentTarget.video(
       aid: item.aid,
       bvid: item.bvid,
-      title: item.title,
+      title: item.displayTitle,
       coverUrl: item.coverUrl,
     );
-    // 适用navigator进入 不用gorouter 使评论区压在播放器上
+    // 适用 navigator 进入，不用 go_router，使评论区压在播放器上。
     Navigator.of(context).push(
       MaterialPageRoute(builder: (context) => CommentPage(target: target)),
     );

@@ -1,18 +1,17 @@
 import 'package:bilimusic/feature/favorites/domain/favorite_entry.dart';
+import 'package:bilimusic/feature/player/domain/playable_item.dart';
+
+String buildFavoriteEntryTitle(FavoriteEntry item) {
+  return item.toPlayableItem().displayTitle;
+}
 
 String buildFavoriteEntrySubtitle(FavoriteEntry item) {
-  final List<String> segments = <String>[item.author];
-  final int? page = item.page;
-  final String pageTitle = item.pageTitle?.trim() ?? '';
+  final PlayableItem playableItem = item.toPlayableItem();
+  final List<String> segments = <String>[playableItem.displaySubtitle];
+  final String durationText = item.durationText?.trim() ?? '';
 
-  if (page != null && page > 0) {
-    segments.add('P$page');
-  }
-  if (pageTitle.isNotEmpty) {
-    segments.add(pageTitle);
-  }
-  if (item.durationText != null && item.durationText!.isNotEmpty) {
-    segments.add(item.durationText!);
+  if (durationText.isNotEmpty) {
+    segments.add(durationText);
   }
 
   return segments.join(' · ');

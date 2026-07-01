@@ -88,7 +88,7 @@ class DesktopPlayerBar extends ConsumerWidget {
                           extra: CommentTarget.video(
                             aid: item.aid,
                             bvid: item.bvid,
-                            title: item.title,
+                            title: item.displayTitle,
                             coverUrl: item.coverUrl,
                           ),
                         );
@@ -181,7 +181,7 @@ class _TrackSection extends StatelessWidget {
               Semantics(
                 child: ExcludeSemantics(
                   child: PingPongMarqueePlus(
-                    text: item?.title ?? '未选择播放内容',
+                    text: item?.displayTitle ?? '未选择播放内容',
                     style: theme.textTheme.titleSmall?.copyWith(
                       fontWeight: FontWeight.w600,
                     ),

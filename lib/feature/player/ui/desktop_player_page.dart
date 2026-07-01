@@ -214,7 +214,7 @@ class _DesktopPlayerPageState extends ConsumerState<DesktopPlayerPage> {
         target: CommentTarget.video(
           aid: item.aid,
           bvid: item.bvid,
-          title: item.title,
+          title: item.displayTitle,
           coverUrl: item.coverUrl,
         ),
       ),

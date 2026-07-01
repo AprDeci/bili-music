@@ -172,8 +172,10 @@ class _PlayerHeroAndTitle extends StatelessWidget {
         ),
         const SizedBox(height: 28),
         PlayerTrackHeader(
-          title: item?.title ?? '还没有选择播放内容',
-          subtitle: item == null ? '从搜索页选一条视频或音频后，这里会显示当前播放信息。' : item!.author,
+          title: item?.displayTitle ?? '还没有选择播放内容',
+          subtitle: item == null
+              ? '从搜索页选一条视频或音频后，这里会显示当前播放信息。'
+              : item!.displaySubtitle,
           isFavoriteEnabled: item != null,
           isFavorite: isFavorite,
           onFavoriteToggle: onFavoriteToggle,

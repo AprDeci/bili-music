@@ -47,7 +47,7 @@ class MiniPlayerContent extends ConsumerWidget {
               mainAxisSize: MainAxisSize.min,
               children: <Widget>[
                 Text(
-                  state.currentItem?.title ?? '未选择播放内容',
+                  state.currentItem?.displayTitle ?? '未选择播放内容',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: theme.textTheme.titleSmall?.copyWith(
@@ -86,7 +86,10 @@ String buildMiniPlayerSubtitle(PlayerState state) {
     PlayerStatusHint.loadingCache => '正在加载缓存音频...',
     PlayerStatusHint.buffering => '缓冲中...',
     PlayerStatusHint.error => state.errorMessage ?? '播放失败，请稍后重试',
-    null => state.audioStream?.qualityLabel ?? state.currentItem?.author ?? '',
+    null =>
+      state.audioStream?.qualityLabel ??
+          state.currentItem?.displaySubtitle ??
+          '',
   };
 }
 

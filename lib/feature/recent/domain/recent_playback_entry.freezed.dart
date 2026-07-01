@@ -14,7 +14,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$RecentPlaybackEntry {
 
- int get aid; String get bvid; String get title; String get author; String get coverUrl; int? get cid; String? get pageTitle; int get playedAtEpochMs;
+ int get aid; String get bvid; String get title; String get author; String get coverUrl; int? get cid; int? get page; String? get pageTitle; int get playedAtEpochMs;
 /// Create a copy of RecentPlaybackEntry
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -25,16 +25,16 @@ $RecentPlaybackEntryCopyWith<RecentPlaybackEntry> get copyWith => _$RecentPlayba
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is RecentPlaybackEntry&&(identical(other.aid, aid) || other.aid == aid)&&(identical(other.bvid, bvid) || other.bvid == bvid)&&(identical(other.title, title) || other.title == title)&&(identical(other.author, author) || other.author == author)&&(identical(other.coverUrl, coverUrl) || other.coverUrl == coverUrl)&&(identical(other.cid, cid) || other.cid == cid)&&(identical(other.pageTitle, pageTitle) || other.pageTitle == pageTitle)&&(identical(other.playedAtEpochMs, playedAtEpochMs) || other.playedAtEpochMs == playedAtEpochMs));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is RecentPlaybackEntry&&(identical(other.aid, aid) || other.aid == aid)&&(identical(other.bvid, bvid) || other.bvid == bvid)&&(identical(other.title, title) || other.title == title)&&(identical(other.author, author) || other.author == author)&&(identical(other.coverUrl, coverUrl) || other.coverUrl == coverUrl)&&(identical(other.cid, cid) || other.cid == cid)&&(identical(other.page, page) || other.page == page)&&(identical(other.pageTitle, pageTitle) || other.pageTitle == pageTitle)&&(identical(other.playedAtEpochMs, playedAtEpochMs) || other.playedAtEpochMs == playedAtEpochMs));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,aid,bvid,title,author,coverUrl,cid,pageTitle,playedAtEpochMs);
+int get hashCode => Object.hash(runtimeType,aid,bvid,title,author,coverUrl,cid,page,pageTitle,playedAtEpochMs);
 
 @override
 String toString() {
-  return 'RecentPlaybackEntry(aid: $aid, bvid: $bvid, title: $title, author: $author, coverUrl: $coverUrl, cid: $cid, pageTitle: $pageTitle, playedAtEpochMs: $playedAtEpochMs)';
+  return 'RecentPlaybackEntry(aid: $aid, bvid: $bvid, title: $title, author: $author, coverUrl: $coverUrl, cid: $cid, page: $page, pageTitle: $pageTitle, playedAtEpochMs: $playedAtEpochMs)';
 }
 
 
@@ -45,7 +45,7 @@ abstract mixin class $RecentPlaybackEntryCopyWith<$Res>  {
   factory $RecentPlaybackEntryCopyWith(RecentPlaybackEntry value, $Res Function(RecentPlaybackEntry) _then) = _$RecentPlaybackEntryCopyWithImpl;
 @useResult
 $Res call({
- int aid, String bvid, String title, String author, String coverUrl, int? cid, String? pageTitle, int playedAtEpochMs
+ int aid, String bvid, String title, String author, String coverUrl, int? cid, int? page, String? pageTitle, int playedAtEpochMs
 });
 
 
@@ -62,7 +62,7 @@ class _$RecentPlaybackEntryCopyWithImpl<$Res>
 
 /// Create a copy of RecentPlaybackEntry
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? aid = null,Object? bvid = null,Object? title = null,Object? author = null,Object? coverUrl = null,Object? cid = freezed,Object? pageTitle = freezed,Object? playedAtEpochMs = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? aid = null,Object? bvid = null,Object? title = null,Object? author = null,Object? coverUrl = null,Object? cid = freezed,Object? page = freezed,Object? pageTitle = freezed,Object? playedAtEpochMs = null,}) {
   return _then(_self.copyWith(
 aid: null == aid ? _self.aid : aid // ignore: cast_nullable_to_non_nullable
 as int,bvid: null == bvid ? _self.bvid : bvid // ignore: cast_nullable_to_non_nullable
@@ -70,6 +70,7 @@ as String,title: null == title ? _self.title : title // ignore: cast_nullable_to
 as String,author: null == author ? _self.author : author // ignore: cast_nullable_to_non_nullable
 as String,coverUrl: null == coverUrl ? _self.coverUrl : coverUrl // ignore: cast_nullable_to_non_nullable
 as String,cid: freezed == cid ? _self.cid : cid // ignore: cast_nullable_to_non_nullable
+as int?,page: freezed == page ? _self.page : page // ignore: cast_nullable_to_non_nullable
 as int?,pageTitle: freezed == pageTitle ? _self.pageTitle : pageTitle // ignore: cast_nullable_to_non_nullable
 as String?,playedAtEpochMs: null == playedAtEpochMs ? _self.playedAtEpochMs : playedAtEpochMs // ignore: cast_nullable_to_non_nullable
 as int,
@@ -157,10 +158,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int aid,  String bvid,  String title,  String author,  String coverUrl,  int? cid,  String? pageTitle,  int playedAtEpochMs)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int aid,  String bvid,  String title,  String author,  String coverUrl,  int? cid,  int? page,  String? pageTitle,  int playedAtEpochMs)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _RecentPlaybackEntry() when $default != null:
-return $default(_that.aid,_that.bvid,_that.title,_that.author,_that.coverUrl,_that.cid,_that.pageTitle,_that.playedAtEpochMs);case _:
+return $default(_that.aid,_that.bvid,_that.title,_that.author,_that.coverUrl,_that.cid,_that.page,_that.pageTitle,_that.playedAtEpochMs);case _:
   return orElse();
 
 }
@@ -178,10 +179,10 @@ return $default(_that.aid,_that.bvid,_that.title,_that.author,_that.coverUrl,_th
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int aid,  String bvid,  String title,  String author,  String coverUrl,  int? cid,  String? pageTitle,  int playedAtEpochMs)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int aid,  String bvid,  String title,  String author,  String coverUrl,  int? cid,  int? page,  String? pageTitle,  int playedAtEpochMs)  $default,) {final _that = this;
 switch (_that) {
 case _RecentPlaybackEntry():
-return $default(_that.aid,_that.bvid,_that.title,_that.author,_that.coverUrl,_that.cid,_that.pageTitle,_that.playedAtEpochMs);case _:
+return $default(_that.aid,_that.bvid,_that.title,_that.author,_that.coverUrl,_that.cid,_that.page,_that.pageTitle,_that.playedAtEpochMs);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -198,10 +199,10 @@ return $default(_that.aid,_that.bvid,_that.title,_that.author,_that.coverUrl,_th
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int aid,  String bvid,  String title,  String author,  String coverUrl,  int? cid,  String? pageTitle,  int playedAtEpochMs)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int aid,  String bvid,  String title,  String author,  String coverUrl,  int? cid,  int? page,  String? pageTitle,  int playedAtEpochMs)?  $default,) {final _that = this;
 switch (_that) {
 case _RecentPlaybackEntry() when $default != null:
-return $default(_that.aid,_that.bvid,_that.title,_that.author,_that.coverUrl,_that.cid,_that.pageTitle,_that.playedAtEpochMs);case _:
+return $default(_that.aid,_that.bvid,_that.title,_that.author,_that.coverUrl,_that.cid,_that.page,_that.pageTitle,_that.playedAtEpochMs);case _:
   return null;
 
 }
@@ -213,7 +214,7 @@ return $default(_that.aid,_that.bvid,_that.title,_that.author,_that.coverUrl,_th
 
 
 class _RecentPlaybackEntry extends RecentPlaybackEntry {
-  const _RecentPlaybackEntry({required this.aid, required this.bvid, required this.title, required this.author, required this.coverUrl, this.cid, this.pageTitle, required this.playedAtEpochMs}): super._();
+  const _RecentPlaybackEntry({required this.aid, required this.bvid, required this.title, required this.author, required this.coverUrl, this.cid, this.page, this.pageTitle, required this.playedAtEpochMs}): super._();
   
 
 @override final  int aid;
@@ -222,6 +223,7 @@ class _RecentPlaybackEntry extends RecentPlaybackEntry {
 @override final  String author;
 @override final  String coverUrl;
 @override final  int? cid;
+@override final  int? page;
 @override final  String? pageTitle;
 @override final  int playedAtEpochMs;
 
@@ -235,16 +237,16 @@ _$RecentPlaybackEntryCopyWith<_RecentPlaybackEntry> get copyWith => __$RecentPla
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _RecentPlaybackEntry&&(identical(other.aid, aid) || other.aid == aid)&&(identical(other.bvid, bvid) || other.bvid == bvid)&&(identical(other.title, title) || other.title == title)&&(identical(other.author, author) || other.author == author)&&(identical(other.coverUrl, coverUrl) || other.coverUrl == coverUrl)&&(identical(other.cid, cid) || other.cid == cid)&&(identical(other.pageTitle, pageTitle) || other.pageTitle == pageTitle)&&(identical(other.playedAtEpochMs, playedAtEpochMs) || other.playedAtEpochMs == playedAtEpochMs));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _RecentPlaybackEntry&&(identical(other.aid, aid) || other.aid == aid)&&(identical(other.bvid, bvid) || other.bvid == bvid)&&(identical(other.title, title) || other.title == title)&&(identical(other.author, author) || other.author == author)&&(identical(other.coverUrl, coverUrl) || other.coverUrl == coverUrl)&&(identical(other.cid, cid) || other.cid == cid)&&(identical(other.page, page) || other.page == page)&&(identical(other.pageTitle, pageTitle) || other.pageTitle == pageTitle)&&(identical(other.playedAtEpochMs, playedAtEpochMs) || other.playedAtEpochMs == playedAtEpochMs));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,aid,bvid,title,author,coverUrl,cid,pageTitle,playedAtEpochMs);
+int get hashCode => Object.hash(runtimeType,aid,bvid,title,author,coverUrl,cid,page,pageTitle,playedAtEpochMs);
 
 @override
 String toString() {
-  return 'RecentPlaybackEntry(aid: $aid, bvid: $bvid, title: $title, author: $author, coverUrl: $coverUrl, cid: $cid, pageTitle: $pageTitle, playedAtEpochMs: $playedAtEpochMs)';
+  return 'RecentPlaybackEntry(aid: $aid, bvid: $bvid, title: $title, author: $author, coverUrl: $coverUrl, cid: $cid, page: $page, pageTitle: $pageTitle, playedAtEpochMs: $playedAtEpochMs)';
 }
 
 
@@ -255,7 +257,7 @@ abstract mixin class _$RecentPlaybackEntryCopyWith<$Res> implements $RecentPlayb
   factory _$RecentPlaybackEntryCopyWith(_RecentPlaybackEntry value, $Res Function(_RecentPlaybackEntry) _then) = __$RecentPlaybackEntryCopyWithImpl;
 @override @useResult
 $Res call({
- int aid, String bvid, String title, String author, String coverUrl, int? cid, String? pageTitle, int playedAtEpochMs
+ int aid, String bvid, String title, String author, String coverUrl, int? cid, int? page, String? pageTitle, int playedAtEpochMs
 });
 
 
@@ -272,7 +274,7 @@ class __$RecentPlaybackEntryCopyWithImpl<$Res>
 
 /// Create a copy of RecentPlaybackEntry
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? aid = null,Object? bvid = null,Object? title = null,Object? author = null,Object? coverUrl = null,Object? cid = freezed,Object? pageTitle = freezed,Object? playedAtEpochMs = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? aid = null,Object? bvid = null,Object? title = null,Object? author = null,Object? coverUrl = null,Object? cid = freezed,Object? page = freezed,Object? pageTitle = freezed,Object? playedAtEpochMs = null,}) {
   return _then(_RecentPlaybackEntry(
 aid: null == aid ? _self.aid : aid // ignore: cast_nullable_to_non_nullable
 as int,bvid: null == bvid ? _self.bvid : bvid // ignore: cast_nullable_to_non_nullable
@@ -280,6 +282,7 @@ as String,title: null == title ? _self.title : title // ignore: cast_nullable_to
 as String,author: null == author ? _self.author : author // ignore: cast_nullable_to_non_nullable
 as String,coverUrl: null == coverUrl ? _self.coverUrl : coverUrl // ignore: cast_nullable_to_non_nullable
 as String,cid: freezed == cid ? _self.cid : cid // ignore: cast_nullable_to_non_nullable
+as int?,page: freezed == page ? _self.page : page // ignore: cast_nullable_to_non_nullable
 as int?,pageTitle: freezed == pageTitle ? _self.pageTitle : pageTitle // ignore: cast_nullable_to_non_nullable
 as String?,playedAtEpochMs: null == playedAtEpochMs ? _self.playedAtEpochMs : playedAtEpochMs // ignore: cast_nullable_to_non_nullable
 as int,

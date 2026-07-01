@@ -26,16 +26,35 @@ void main() {
 
       expect(item.lyricSearchTitles, <String>['Same Title']);
     });
+
+    test('displayTitle prefers page title when available', () {
+      final PlayableItem item = _item(
+        title: 'Video Title',
+        pageTitle: 'Part Title',
+        page: 2,
+      );
+
+      expect(item.displayTitle, 'P2 · Part Title');
+      expect(item.displaySubtitle, 'Video Title');
+    });
+
+    test('displayTitle falls back to video title without page title', () {
+      final PlayableItem item = _item(title: 'Video Title', pageTitle: ' ');
+
+      expect(item.displayTitle, 'Video Title');
+      expect(item.displaySubtitle, 'author');
+    });
   });
 }
 
-PlayableItem _item({required String title, String? pageTitle}) {
+PlayableItem _item({required String title, String? pageTitle, int? page}) {
   return PlayableItem(
     aid: 1,
     bvid: 'BVTEST123',
     title: title,
     author: 'author',
     coverUrl: 'https://example.com/cover.jpg',
+    page: page,
     pageTitle: pageTitle,
   );
 }

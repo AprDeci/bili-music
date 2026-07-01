@@ -1,5 +1,6 @@
 import 'package:bilimusic/common/components/cached_image.dart';
 import 'package:bilimusic/common/util/player_util.dart';
+import 'package:bilimusic/feature/player/domain/playable_item.dart';
 import 'package:bilimusic/feature/recent/domain/recent_playback_entry.dart';
 import 'package:bilimusic/feature/recent/logic/recent_playback_controller.dart';
 import 'package:flutter/material.dart';
@@ -8,6 +9,8 @@ import 'package:go_router/go_router.dart';
 
 class RecentPlaybackSection extends ConsumerWidget {
   const RecentPlaybackSection({super.key});
+
+  static const String _sourceLabel = '最近播放';
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -38,7 +41,7 @@ class RecentPlaybackSection extends ConsumerWidget {
                   children: <Widget>[
                     Expanded(
                       child: Text(
-                        '最近播放',
+                        _sourceLabel,
                         style: theme.textTheme.displaySmall?.copyWith(
                           fontWeight: FontWeight.w900,
                           color: colorScheme.onSurface,
@@ -77,7 +80,7 @@ class RecentPlaybackSection extends ConsumerWidget {
                       context,
                       ref,
                       item: item.toPlayableItem(),
-                      sourceLabel: '最近播放',
+                      sourceLabel: _sourceLabel,
                     );
                   },
                 );
@@ -100,6 +103,7 @@ class _RecentPlaybackTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
+    final PlayableItem playableItem = item.toPlayableItem();
 
     return SizedBox(
       width: 108,
@@ -126,7 +130,7 @@ class _RecentPlaybackTile extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               Text(
-                item.title,
+                playableItem.displayTitle,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
                 style: theme.textTheme.bodyMedium?.copyWith(

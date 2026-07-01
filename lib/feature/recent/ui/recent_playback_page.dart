@@ -73,6 +73,7 @@ class RecentPlaybackPage extends ConsumerWidget {
                 }
 
                 final RecentPlaybackEntry item = items[index];
+                final PlayableItem playableItem = item.toPlayableItem();
                 return Material(
                   child: ListTile(
                     contentPadding: const EdgeInsets.symmetric(
@@ -90,7 +91,7 @@ class RecentPlaybackPage extends ConsumerWidget {
                       backgroundColor: primary.withValues(alpha: 0.14),
                     ),
                     title: Text(
-                      item.title,
+                      playableItem.displayTitle,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: theme.textTheme.titleSmall?.copyWith(
@@ -98,7 +99,7 @@ class RecentPlaybackPage extends ConsumerWidget {
                       ),
                     ),
                     subtitle: Text(
-                      _buildSubtitle(item),
+                      playableItem.displaySubtitle,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: theme.textTheme.bodySmall?.copyWith(
@@ -123,17 +124,6 @@ class RecentPlaybackPage extends ConsumerWidget {
               },
             ),
     );
-  }
-
-  String _buildSubtitle(RecentPlaybackEntry item) {
-    final List<String> segments = <String>[item.author];
-    final String pageTitle = item.pageTitle?.trim() ?? '';
-
-    if (pageTitle.isNotEmpty) {
-      segments.add(pageTitle);
-    }
-
-    return segments.join(' · ');
   }
 
   Future<void> _playRecentItem(

@@ -171,14 +171,6 @@ class _PlayerQueueContentState extends ConsumerState<_PlayerQueueContent> {
             itemBuilder: (BuildContext context, int index) {
               final PlayableItem queuedItem = liveState.queue[index];
               final bool isCurrent = liveState.currentQueueIndex == index;
-              final String partTitle = queuedItem.pageTitle?.trim() ?? '';
-              final int page = queuedItem.page ?? 1;
-              final String title = partTitle.isEmpty
-                  ? queuedItem.title
-                  : 'P$page · $partTitle';
-              final String subtitle = partTitle.isEmpty
-                  ? queuedItem.author
-                  : queuedItem.title;
 
               return AutoScrollTag(
                 key: ValueKey<String>('queue-${queuedItem.stableId}'),
@@ -224,7 +216,7 @@ class _PlayerQueueContentState extends ConsumerState<_PlayerQueueContent> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: <Widget>[
                                   Text(
-                                    title,
+                                    queuedItem.displayTitle,
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                     style: theme.textTheme.titleSmall?.copyWith(
@@ -233,7 +225,7 @@ class _PlayerQueueContentState extends ConsumerState<_PlayerQueueContent> {
                                   ),
                                   const SizedBox(height: 4),
                                   Text(
-                                    subtitle,
+                                    queuedItem.displaySubtitle,
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                     style: theme.textTheme.bodySmall?.copyWith(

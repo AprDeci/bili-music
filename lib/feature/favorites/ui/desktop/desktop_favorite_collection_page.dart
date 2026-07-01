@@ -471,7 +471,7 @@ class _DesktopFavoriteCollectionPageState
                       ),
                     ),
                     title: Text(
-                      item.title,
+                      buildFavoriteEntryTitle(item),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: theme.textTheme.titleSmall?.copyWith(
