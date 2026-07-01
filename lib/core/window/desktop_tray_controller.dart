@@ -46,7 +46,7 @@ class DesktopTrayController with TrayListener, WindowListener {
       return;
     }
 
-    unawaited(windowManager.hide());
+    unawaited(_exitApp());
   }
 
   @override
@@ -82,6 +82,7 @@ class DesktopTrayController with TrayListener, WindowListener {
       return;
     }
     _isExitRequested = true;
+    await windowManager.hide();
     await onExitRequested();
     detach();
     await trayManager.destroy();

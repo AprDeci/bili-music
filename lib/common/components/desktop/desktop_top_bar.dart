@@ -231,7 +231,7 @@ class _DesktopTopBarState extends ConsumerState<DesktopTopBar>
                 child: BarIconButton(
                   icon: Icons.close_rounded,
                   iconSize: 18,
-                  onPressed: () => windowManager.close(),
+                  onPressed: () => windowManager.hide(),
                 ),
               ),
               const SizedBox(width: 8),
@@ -646,4 +646,3 @@ class _DesktopHistoryPane extends StatelessWidget {
     );
   }
 }
-

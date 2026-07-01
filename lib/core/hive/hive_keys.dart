@@ -13,6 +13,9 @@ class HiveKeys {
   static const String playerAllowMixWithOthers = 'player.allow_mix_with_others';
   static const String playerAudioQualityPreference =
       'player.audio_quality_preference';
+  static const String playerMultiPartQueuePreference =
+      'player.multi_part_queue_preference';
+  static const String playerMultiPartTipShown = 'player.multi_part_tip_shown';
   static const String playerVolume = 'player.volume';
   static const String searchHistory = 'search.history';
   static const String updateDismissedTag = 'app.update.dismissed_tag';

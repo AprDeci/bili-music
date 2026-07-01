@@ -474,6 +474,39 @@ class PlayerController extends Notifier<PlayerState>
     await _persistQueueSnapshot();
   }
 
+  Future<void> playNextMany(List<PlayableItem> items) async {
+    if (items.isEmpty) {
+      return;
+    }
+    if (items.length == 1) {
+      await playNext(items.first);
+      return;
+    }
+
+    final List<PlayableItem> uniqueItems = _dedupeQueueItems(items);
+    if (!state.hasActiveQueueIndex) {
+      await setQueue(uniqueItems);
+      return;
+    }
+
+    final Set<String> queuedIds = state.queue
+        .map((PlayableItem item) => item.stableId)
+        .toSet();
+    final List<PlayableItem> insertItems = uniqueItems
+        .where((PlayableItem item) => queuedIds.add(item.stableId))
+        .toList(growable: false);
+    if (insertItems.isEmpty) {
+      return;
+    }
+
+    final int insertIndex = state.currentQueueIndex! + 1;
+    final List<PlayableItem> nextQueue = List<PlayableItem>.of(state.queue)
+      ..insertAll(insertIndex, insertItems);
+    state = state.copyWith(queue: List<PlayableItem>.unmodifiable(nextQueue));
+    _publishMediaSession();
+    await _persistQueueSnapshot();
+  }
+
   Future<void> reorderQueueItem(int oldIndex, int newIndex) async {
     if (oldIndex < 0 || oldIndex >= state.queue.length) {
       return;

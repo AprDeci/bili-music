@@ -67,10 +67,30 @@ class BiliPlayerRepository {
       throw const BiliPlayerException('Missing video identity for playback.');
     }
 
+    final List<PlayableItem> parts = await resolvePlayableParts(
+      item.copyWith(page: preferredPage),
+    );
+    final int? targetCid = item.cid;
+    if (targetCid != null && targetCid > 0) {
+      for (final PlayableItem part in parts) {
+        if (part.cid == targetCid) {
+          return part;
+        }
+      }
+    }
+    return parts.firstWhere(
+      (PlayableItem part) => part.page == preferredPage,
+      orElse: () => parts.first,
+    );
+  }
+
+  Future<List<PlayableItem>> resolvePlayableParts(PlayableItem item) async {
+    if (!item.hasIdentity) {
+      throw const BiliPlayerException('Missing video identity for playback.');
+    }
+
     final _VideoViewInfo viewInfo = await _fetchVideoView(item);
-    final PlayableItem preferredItem = item.copyWith(page: preferredPage);
-    final _VideoPageInfo pageInfo = viewInfo.resolvePage(preferredItem);
-    return viewInfo.enrich(item, pageInfo);
+    return viewInfo.buildPlayableItems(item);
   }
 
   Future<PlayerLoadResult> resolveAudioStream(
