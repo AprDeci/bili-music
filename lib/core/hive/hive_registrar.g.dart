@@ -11,6 +11,7 @@ extension HiveRegistrar on HiveInterface {
     registerAdapter(FavoriteCollectionSourceAdapter());
     registerAdapter(FavoriteEntryAdapter());
     registerAdapter(FavoriteMembershipAdapter());
+    registerAdapter(FavoriteUpAdapter());
     registerAdapter(MetaLyricsAdapter());
     registerAdapter(MetadataAdapter());
     registerAdapter(PersistedPlayableItemAdapter());
@@ -26,6 +27,7 @@ extension IsolatedHiveRegistrar on IsolatedHiveInterface {
     registerAdapter(FavoriteCollectionSourceAdapter());
     registerAdapter(FavoriteEntryAdapter());
     registerAdapter(FavoriteMembershipAdapter());
+    registerAdapter(FavoriteUpAdapter());
     registerAdapter(MetaLyricsAdapter());
     registerAdapter(MetadataAdapter());
     registerAdapter(PersistedPlayableItemAdapter());

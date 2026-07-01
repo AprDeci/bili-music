@@ -564,3 +564,52 @@ class FavoriteCollectionSourceAdapter
           runtimeType == other.runtimeType &&
           typeId == other.typeId;
 }
+
+class FavoriteUpAdapter extends TypeAdapter<FavoriteUp> {
+  @override
+  final typeId = 11;
+
+  @override
+  FavoriteUp read(BinaryReader reader) {
+    final numOfFields = reader.readByte();
+    final fields = <int, dynamic>{
+      for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
+    };
+    return FavoriteUp(
+      mid: (fields[0] as num).toInt(),
+      name: fields[1] as String,
+      avatarUrl: fields[2] as String,
+      officialType: (fields[3] as num?)?.toInt(),
+      favoritedAtEpochMs: (fields[4] as num).toInt(),
+      updatedAtEpochMs: (fields[5] as num).toInt(),
+    );
+  }
+
+  @override
+  void write(BinaryWriter writer, FavoriteUp obj) {
+    writer
+      ..writeByte(6)
+      ..writeByte(0)
+      ..write(obj.mid)
+      ..writeByte(1)
+      ..write(obj.name)
+      ..writeByte(2)
+      ..write(obj.avatarUrl)
+      ..writeByte(3)
+      ..write(obj.officialType)
+      ..writeByte(4)
+      ..write(obj.favoritedAtEpochMs)
+      ..writeByte(5)
+      ..write(obj.updatedAtEpochMs);
+  }
+
+  @override
+  int get hashCode => typeId.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is FavoriteUpAdapter &&
+          runtimeType == other.runtimeType &&
+          typeId == other.typeId;
+}
