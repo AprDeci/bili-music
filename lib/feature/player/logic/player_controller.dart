@@ -19,6 +19,7 @@ import 'package:bilimusic/feature/player/logic/controller/player_queue_manager.d
 import 'package:bilimusic/feature/player/logic/player_audio_engine.dart';
 import 'package:bilimusic/feature/player/logic/player_audio_quality_preference_logic.dart';
 import 'package:bilimusic/feature/player/logic/player_audio_session_coordinator.dart';
+import 'package:bilimusic/feature/player/logic/player_blacklist_controller.dart';
 import 'package:bilimusic/feature/player/logic/player_media_item_mapper.dart';
 import 'package:bilimusic/feature/player/logic/player_settings_logic.dart';
 import 'package:bilimusic/feature/recent/logic/recent_playback_controller.dart';
@@ -328,17 +329,26 @@ class PlayerController extends Notifier<PlayerState>
       return;
     }
 
-    final int generation = _nextGeneration();
-    final PlayableItem startItem = items[startIndex.clamp(0, items.length - 1)];
+    final int requestedStartIndex = startIndex.clamp(0, items.length - 1);
     final List<PlayableItem> uniqueItems = _dedupeQueueItems(items);
-    final int resolvedIndex = uniqueItems.indexWhere(
-      (PlayableItem item) => item.stableId == startItem.stableId,
+    final List<PlayableItem> allowedItems = _filterBlacklistedQueueItems(
+      uniqueItems,
+      showToast: true,
+    );
+    if (allowedItems.isEmpty) {
+      return;
+    }
+    final int resolvedIndex = _resolveAllowedStartIndex(
+      originalItems: items,
+      requestedStartIndex: requestedStartIndex,
+      allowedItems: allowedItems,
     );
     if (resolvedIndex < 0) {
       return;
     }
+    final int generation = _nextGeneration();
     final List<PlayableItem> queue = List<PlayableItem>.unmodifiable(
-      uniqueItems,
+      allowedItems,
     );
     _qualityOverrides.clear();
     _queueManager.resetForQueue(currentIndex: resolvedIndex);
@@ -372,6 +382,11 @@ class PlayerController extends Notifier<PlayerState>
     PlayableItem item, {
     bool autoplay = true,
   }) async {
+    if (_isBlacklisted(item)) {
+      _showBlacklistFilteredToast(1);
+      return;
+    }
+
     if (!state.hasActiveQueueIndex) {
       await setQueue(
         <PlayableItem>[item],
@@ -425,12 +440,16 @@ class PlayerController extends Notifier<PlayerState>
     final List<PlayableItem> appendItems = items
         .where((PlayableItem item) => queuedIds.add(item.stableId))
         .toList(growable: false);
-    if (appendItems.isEmpty) {
+    final List<PlayableItem> allowedAppendItems = _filterBlacklistedQueueItems(
+      appendItems,
+      showToast: true,
+    );
+    if (allowedAppendItems.isEmpty) {
       return;
     }
 
     final List<PlayableItem> queue = List<PlayableItem>.unmodifiable(
-      <PlayableItem>[...state.queue, ...appendItems],
+      <PlayableItem>[...state.queue, ...allowedAppendItems],
     );
 
     if (!state.hasActiveQueueIndex) {
@@ -449,6 +468,11 @@ class PlayerController extends Notifier<PlayerState>
   }
 
   Future<void> playNext(PlayableItem item) async {
+    if (_isBlacklisted(item)) {
+      _showBlacklistFilteredToast(1);
+      return;
+    }
+
     final int existingIndex = state.queue.indexWhere(
       (PlayableItem queuedItem) => queuedItem.stableId == item.stableId,
     );
@@ -483,7 +507,13 @@ class PlayerController extends Notifier<PlayerState>
       return;
     }
 
-    final List<PlayableItem> uniqueItems = _dedupeQueueItems(items);
+    final List<PlayableItem> uniqueItems = _filterBlacklistedQueueItems(
+      _dedupeQueueItems(items),
+      showToast: true,
+    );
+    if (uniqueItems.isEmpty) {
+      return;
+    }
     if (!state.hasActiveQueueIndex) {
       await setQueue(uniqueItems);
       return;
@@ -505,6 +535,27 @@ class PlayerController extends Notifier<PlayerState>
     state = state.copyWith(queue: List<PlayableItem>.unmodifiable(nextQueue));
     _publishMediaSession();
     await _persistQueueSnapshot();
+  }
+
+  Future<bool> blacklistCurrentItem() async {
+    final PlayableItem? item = state.currentItem;
+    if (item == null) {
+      return false;
+    }
+    return blacklistItem(item);
+  }
+
+  Future<bool> blacklistItem(PlayableItem item) async {
+    final bool added = await ref
+        .read(playerBlacklistControllerProvider.notifier)
+        .addItem(item);
+    final int queueIndex = state.queue.indexWhere(
+      (PlayableItem queuedItem) => queuedItem.stableId == item.stableId,
+    );
+    if (queueIndex >= 0) {
+      await removeQueueItemAt(queueIndex);
+    }
+    return added;
   }
 
   Future<void> reorderQueueItem(int oldIndex, int newIndex) async {
@@ -707,24 +758,38 @@ class PlayerController extends Notifier<PlayerState>
     }
 
     final int? restoredIndex = snapshot.sanitizedCurrentQueueIndex;
-    final List<PlayableItem> restoredQueue = snapshot.queue
+    final List<PlayableItem> rawRestoredQueue = snapshot.queue
         .map((PersistedPlayableItem item) => item.toPlayableItem())
         .toList(growable: false);
+    final List<PlayableItem> restoredQueue = _filterBlacklistedQueueItems(
+      rawRestoredQueue,
+    );
     if (restoredQueue.isEmpty || restoredIndex == null) {
       await _queueRepository.clear();
       return;
     }
+    final int allowedRestoredIndex = _resolveAllowedStartIndex(
+      originalItems: rawRestoredQueue,
+      requestedStartIndex: restoredIndex,
+      allowedItems: restoredQueue,
+    );
+    final String restoredStableId = rawRestoredQueue[restoredIndex].stableId;
+    final bool canResumeOriginalItem =
+        restoredQueue[allowedRestoredIndex].stableId == restoredStableId;
+    final Duration initialPosition = canResumeOriginalItem
+        ? Duration(milliseconds: snapshot.resumePositionMs)
+        : Duration.zero;
 
     final int generation = _nextGeneration();
     _queueManager.resetForMode(
       mode: snapshot.queueMode,
-      currentIndex: restoredIndex,
+      currentIndex: allowedRestoredIndex,
     );
     _resetEnginePlaybackSnapshot();
     state = state.copyWith(
       queue: List<PlayableItem>.unmodifiable(restoredQueue),
-      currentQueueIndex: restoredIndex,
-      currentItem: restoredQueue[restoredIndex],
+      currentQueueIndex: allowedRestoredIndex,
+      currentItem: restoredQueue[allowedRestoredIndex],
       queueMode: snapshot.queueMode,
       queueSourceLabel: snapshot.queueSourceLabel,
       availableParts: const <PlayableItem>[],
@@ -742,9 +807,9 @@ class PlayerController extends Notifier<PlayerState>
     _publishMediaSession();
 
     final bool restored = await _loadQueueIndex(
-      restoredIndex,
+      allowedRestoredIndex,
       autoplay: false,
-      initialPosition: Duration(milliseconds: snapshot.resumePositionMs),
+      initialPosition: initialPosition,
       generation: generation,
       persistAfterLoad: false,
     );
@@ -769,7 +834,9 @@ class PlayerController extends Notifier<PlayerState>
     int? generation,
     bool persistAfterLoad = true,
     Set<String> skippedUnavailableStableIds = const <String>{},
+    Set<String> skippedBlacklistedStableIds = const <String>{},
     bool hasShownUnavailableToast = false,
+    bool hasShownBlacklistToast = false,
   }) async {
     if (queueIndex < 0 || queueIndex >= state.queue.length) {
       return false;
@@ -777,6 +844,19 @@ class PlayerController extends Notifier<PlayerState>
 
     final int effectiveGeneration = generation ?? _nextGeneration();
     final PlayableItem targetItem = state.queue[queueIndex];
+    if (_isBlacklisted(targetItem)) {
+      return _skipBlacklistedQueueItem(
+        failedIndex: queueIndex,
+        failedStableId: targetItem.stableId,
+        autoplay: autoplay,
+        generation: effectiveGeneration,
+        persistAfterLoad: persistAfterLoad,
+        skippedUnavailableStableIds: skippedUnavailableStableIds,
+        skippedBlacklistedStableIds: skippedBlacklistedStableIds,
+        hasShownBlacklistToast: hasShownBlacklistToast,
+      );
+    }
+
     _logPlayerEvent(
       'loadQueueIndex:start',
       details: <String, Object?>{
@@ -887,7 +967,9 @@ class PlayerController extends Notifier<PlayerState>
           persistAfterLoad: persistAfterLoad,
           error: error,
           skippedUnavailableStableIds: skippedUnavailableStableIds,
+          skippedBlacklistedStableIds: skippedBlacklistedStableIds,
           hasShownUnavailableToast: hasShownUnavailableToast,
+          hasShownBlacklistToast: hasShownBlacklistToast,
         );
       }
 
@@ -909,7 +991,9 @@ class PlayerController extends Notifier<PlayerState>
     required bool persistAfterLoad,
     required BiliPlayerException error,
     required Set<String> skippedUnavailableStableIds,
+    required Set<String> skippedBlacklistedStableIds,
     required bool hasShownUnavailableToast,
+    required bool hasShownBlacklistToast,
   }) async {
     if (!hasShownUnavailableToast) {
       ToastUtil.show(error.message);
@@ -921,7 +1005,10 @@ class PlayerController extends Notifier<PlayerState>
     };
     final int? nextIndex = _resolveNextAvailableQueueIndex(
       failedIndex: failedIndex,
-      skippedStableIds: nextSkippedUnavailableStableIds,
+      skippedStableIds: <String>{
+        ...nextSkippedUnavailableStableIds,
+        ...skippedBlacklistedStableIds,
+      },
     );
 
     if (nextIndex == null) {
@@ -935,7 +1022,54 @@ class PlayerController extends Notifier<PlayerState>
       generation: generation,
       persistAfterLoad: persistAfterLoad,
       skippedUnavailableStableIds: nextSkippedUnavailableStableIds,
+      skippedBlacklistedStableIds: skippedBlacklistedStableIds,
       hasShownUnavailableToast: true,
+      hasShownBlacklistToast: hasShownBlacklistToast,
+    );
+  }
+
+  Future<bool> _skipBlacklistedQueueItem({
+    required int failedIndex,
+    required String failedStableId,
+    required bool autoplay,
+    required int generation,
+    required bool persistAfterLoad,
+    required Set<String> skippedUnavailableStableIds,
+    required Set<String> skippedBlacklistedStableIds,
+    required bool hasShownBlacklistToast,
+  }) async {
+    if (!hasShownBlacklistToast) {
+      ToastUtil.show('已跳过黑名单歌曲');
+    }
+
+    final Set<String> nextSkippedBlacklistedStableIds = <String>{
+      ...skippedBlacklistedStableIds,
+      failedStableId,
+    };
+    final int? nextIndex = _resolveNextAvailableQueueIndex(
+      failedIndex: failedIndex,
+      skippedStableIds: <String>{
+        ...skippedUnavailableStableIds,
+        ...nextSkippedBlacklistedStableIds,
+      },
+    );
+
+    if (nextIndex == null) {
+      return _failCurrentLoad(
+        '当前队列中的歌曲均已加入黑名单。',
+        persistAfterLoad: persistAfterLoad,
+      );
+    }
+
+    return _loadQueueIndex(
+      nextIndex,
+      autoplay: autoplay,
+      initialPosition: Duration.zero,
+      generation: generation,
+      persistAfterLoad: persistAfterLoad,
+      skippedUnavailableStableIds: skippedUnavailableStableIds,
+      skippedBlacklistedStableIds: nextSkippedBlacklistedStableIds,
+      hasShownBlacklistToast: true,
     );
   }
 
@@ -1346,6 +1480,87 @@ class PlayerController extends Notifier<PlayerState>
       detailText.isEmpty
           ? '[PlayerDebug] $event'
           : '[PlayerDebug] $event | $detailText',
+    );
+  }
+
+  bool _isBlacklisted(PlayableItem item) {
+    return ref
+        .read(playerBlacklistControllerProvider.notifier)
+        .containsItem(item);
+  }
+
+  List<PlayableItem> _filterBlacklistedQueueItems(
+    List<PlayableItem> items, {
+    bool showToast = false,
+  }) {
+    if (items.isEmpty) {
+      return items;
+    }
+
+    final List<PlayableItem> allowedItems = ref
+        .read(playerBlacklistControllerProvider.notifier)
+        .filterAllowedItems(items);
+    final int filteredCount = items.length - allowedItems.length;
+    if (showToast && filteredCount > 0) {
+      _showBlacklistFilteredToast(filteredCount);
+    }
+    return allowedItems;
+  }
+
+  int _resolveAllowedStartIndex({
+    required List<PlayableItem> originalItems,
+    required int requestedStartIndex,
+    required List<PlayableItem> allowedItems,
+  }) {
+    if (allowedItems.isEmpty) {
+      return -1;
+    }
+
+    final int clampedStartIndex = requestedStartIndex.clamp(
+      0,
+      originalItems.length - 1,
+    );
+    final String requestedStableId = originalItems[clampedStartIndex].stableId;
+    final int requestedAllowedIndex = allowedItems.indexWhere(
+      (PlayableItem item) => item.stableId == requestedStableId,
+    );
+    if (requestedAllowedIndex >= 0) {
+      return requestedAllowedIndex;
+    }
+
+    for (
+      int index = clampedStartIndex + 1;
+      index < originalItems.length;
+      index += 1
+    ) {
+      final String stableId = originalItems[index].stableId;
+      final int allowedIndex = allowedItems.indexWhere(
+        (PlayableItem item) => item.stableId == stableId,
+      );
+      if (allowedIndex >= 0) {
+        return allowedIndex;
+      }
+    }
+
+    for (int index = 0; index < clampedStartIndex; index += 1) {
+      final String stableId = originalItems[index].stableId;
+      final int allowedIndex = allowedItems.indexWhere(
+        (PlayableItem item) => item.stableId == stableId,
+      );
+      if (allowedIndex >= 0) {
+        return allowedIndex;
+      }
+    }
+
+    return 0;
+  }
+
+  void _showBlacklistFilteredToast(int filteredCount) {
+    if (filteredCount <= 0) {
+      return;
+    }
+    ToastUtil.show(
+      filteredCount == 1 ? '已过滤黑名单歌曲' : '已过滤 $filteredCount 首黑名单歌曲',
     );
   }
 

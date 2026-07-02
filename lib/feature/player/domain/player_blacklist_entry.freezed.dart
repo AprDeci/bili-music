@@ -1,0 +1,307 @@
+// GENERATED CODE - DO NOT MODIFY BY HAND
+// coverage:ignore-file
+// ignore_for_file: type=lint
+// ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
+
+part of 'player_blacklist_entry.dart';
+
+// **************************************************************************
+// FreezedGenerator
+// **************************************************************************
+
+// dart format off
+T _$identity<T>(T value) => value;
+
+/// @nodoc
+mixin _$PlayerBlacklistEntry {
+
+ String get stableId; int get aid; String get bvid; String get title; String get author; String get coverUrl; int? get ownerMid; int? get cid; int? get page; String? get pageTitle; int get addedAtEpochMs;
+/// Create a copy of PlayerBlacklistEntry
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$PlayerBlacklistEntryCopyWith<PlayerBlacklistEntry> get copyWith => _$PlayerBlacklistEntryCopyWithImpl<PlayerBlacklistEntry>(this as PlayerBlacklistEntry, _$identity);
+
+  /// Serializes this PlayerBlacklistEntry to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is PlayerBlacklistEntry&&(identical(other.stableId, stableId) || other.stableId == stableId)&&(identical(other.aid, aid) || other.aid == aid)&&(identical(other.bvid, bvid) || other.bvid == bvid)&&(identical(other.title, title) || other.title == title)&&(identical(other.author, author) || other.author == author)&&(identical(other.coverUrl, coverUrl) || other.coverUrl == coverUrl)&&(identical(other.ownerMid, ownerMid) || other.ownerMid == ownerMid)&&(identical(other.cid, cid) || other.cid == cid)&&(identical(other.page, page) || other.page == page)&&(identical(other.pageTitle, pageTitle) || other.pageTitle == pageTitle)&&(identical(other.addedAtEpochMs, addedAtEpochMs) || other.addedAtEpochMs == addedAtEpochMs));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,stableId,aid,bvid,title,author,coverUrl,ownerMid,cid,page,pageTitle,addedAtEpochMs);
+
+@override
+String toString() {
+  return 'PlayerBlacklistEntry(stableId: $stableId, aid: $aid, bvid: $bvid, title: $title, author: $author, coverUrl: $coverUrl, ownerMid: $ownerMid, cid: $cid, page: $page, pageTitle: $pageTitle, addedAtEpochMs: $addedAtEpochMs)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $PlayerBlacklistEntryCopyWith<$Res>  {
+  factory $PlayerBlacklistEntryCopyWith(PlayerBlacklistEntry value, $Res Function(PlayerBlacklistEntry) _then) = _$PlayerBlacklistEntryCopyWithImpl;
+@useResult
+$Res call({
+ String stableId, int aid, String bvid, String title, String author, String coverUrl, int? ownerMid, int? cid, int? page, String? pageTitle, int addedAtEpochMs
+});
+
+
+
+
+}
+/// @nodoc
+class _$PlayerBlacklistEntryCopyWithImpl<$Res>
+    implements $PlayerBlacklistEntryCopyWith<$Res> {
+  _$PlayerBlacklistEntryCopyWithImpl(this._self, this._then);
+
+  final PlayerBlacklistEntry _self;
+  final $Res Function(PlayerBlacklistEntry) _then;
+
+/// Create a copy of PlayerBlacklistEntry
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? stableId = null,Object? aid = null,Object? bvid = null,Object? title = null,Object? author = null,Object? coverUrl = null,Object? ownerMid = freezed,Object? cid = freezed,Object? page = freezed,Object? pageTitle = freezed,Object? addedAtEpochMs = null,}) {
+  return _then(_self.copyWith(
+stableId: null == stableId ? _self.stableId : stableId // ignore: cast_nullable_to_non_nullable
+as String,aid: null == aid ? _self.aid : aid // ignore: cast_nullable_to_non_nullable
+as int,bvid: null == bvid ? _self.bvid : bvid // ignore: cast_nullable_to_non_nullable
+as String,title: null == title ? _self.title : title // ignore: cast_nullable_to_non_nullable
+as String,author: null == author ? _self.author : author // ignore: cast_nullable_to_non_nullable
+as String,coverUrl: null == coverUrl ? _self.coverUrl : coverUrl // ignore: cast_nullable_to_non_nullable
+as String,ownerMid: freezed == ownerMid ? _self.ownerMid : ownerMid // ignore: cast_nullable_to_non_nullable
+as int?,cid: freezed == cid ? _self.cid : cid // ignore: cast_nullable_to_non_nullable
+as int?,page: freezed == page ? _self.page : page // ignore: cast_nullable_to_non_nullable
+as int?,pageTitle: freezed == pageTitle ? _self.pageTitle : pageTitle // ignore: cast_nullable_to_non_nullable
+as String?,addedAtEpochMs: null == addedAtEpochMs ? _self.addedAtEpochMs : addedAtEpochMs // ignore: cast_nullable_to_non_nullable
+as int,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [PlayerBlacklistEntry].
+extension PlayerBlacklistEntryPatterns on PlayerBlacklistEntry {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _PlayerBlacklistEntry value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _PlayerBlacklistEntry() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _PlayerBlacklistEntry value)  $default,){
+final _that = this;
+switch (_that) {
+case _PlayerBlacklistEntry():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _PlayerBlacklistEntry value)?  $default,){
+final _that = this;
+switch (_that) {
+case _PlayerBlacklistEntry() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String stableId,  int aid,  String bvid,  String title,  String author,  String coverUrl,  int? ownerMid,  int? cid,  int? page,  String? pageTitle,  int addedAtEpochMs)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _PlayerBlacklistEntry() when $default != null:
+return $default(_that.stableId,_that.aid,_that.bvid,_that.title,_that.author,_that.coverUrl,_that.ownerMid,_that.cid,_that.page,_that.pageTitle,_that.addedAtEpochMs);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String stableId,  int aid,  String bvid,  String title,  String author,  String coverUrl,  int? ownerMid,  int? cid,  int? page,  String? pageTitle,  int addedAtEpochMs)  $default,) {final _that = this;
+switch (_that) {
+case _PlayerBlacklistEntry():
+return $default(_that.stableId,_that.aid,_that.bvid,_that.title,_that.author,_that.coverUrl,_that.ownerMid,_that.cid,_that.page,_that.pageTitle,_that.addedAtEpochMs);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String stableId,  int aid,  String bvid,  String title,  String author,  String coverUrl,  int? ownerMid,  int? cid,  int? page,  String? pageTitle,  int addedAtEpochMs)?  $default,) {final _that = this;
+switch (_that) {
+case _PlayerBlacklistEntry() when $default != null:
+return $default(_that.stableId,_that.aid,_that.bvid,_that.title,_that.author,_that.coverUrl,_that.ownerMid,_that.cid,_that.page,_that.pageTitle,_that.addedAtEpochMs);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _PlayerBlacklistEntry extends PlayerBlacklistEntry {
+  const _PlayerBlacklistEntry({required this.stableId, required this.aid, required this.bvid, required this.title, required this.author, required this.coverUrl, this.ownerMid, this.cid, this.page, this.pageTitle, required this.addedAtEpochMs}): super._();
+  factory _PlayerBlacklistEntry.fromJson(Map<String, dynamic> json) => _$PlayerBlacklistEntryFromJson(json);
+
+@override final  String stableId;
+@override final  int aid;
+@override final  String bvid;
+@override final  String title;
+@override final  String author;
+@override final  String coverUrl;
+@override final  int? ownerMid;
+@override final  int? cid;
+@override final  int? page;
+@override final  String? pageTitle;
+@override final  int addedAtEpochMs;
+
+/// Create a copy of PlayerBlacklistEntry
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$PlayerBlacklistEntryCopyWith<_PlayerBlacklistEntry> get copyWith => __$PlayerBlacklistEntryCopyWithImpl<_PlayerBlacklistEntry>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$PlayerBlacklistEntryToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _PlayerBlacklistEntry&&(identical(other.stableId, stableId) || other.stableId == stableId)&&(identical(other.aid, aid) || other.aid == aid)&&(identical(other.bvid, bvid) || other.bvid == bvid)&&(identical(other.title, title) || other.title == title)&&(identical(other.author, author) || other.author == author)&&(identical(other.coverUrl, coverUrl) || other.coverUrl == coverUrl)&&(identical(other.ownerMid, ownerMid) || other.ownerMid == ownerMid)&&(identical(other.cid, cid) || other.cid == cid)&&(identical(other.page, page) || other.page == page)&&(identical(other.pageTitle, pageTitle) || other.pageTitle == pageTitle)&&(identical(other.addedAtEpochMs, addedAtEpochMs) || other.addedAtEpochMs == addedAtEpochMs));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,stableId,aid,bvid,title,author,coverUrl,ownerMid,cid,page,pageTitle,addedAtEpochMs);
+
+@override
+String toString() {
+  return 'PlayerBlacklistEntry(stableId: $stableId, aid: $aid, bvid: $bvid, title: $title, author: $author, coverUrl: $coverUrl, ownerMid: $ownerMid, cid: $cid, page: $page, pageTitle: $pageTitle, addedAtEpochMs: $addedAtEpochMs)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$PlayerBlacklistEntryCopyWith<$Res> implements $PlayerBlacklistEntryCopyWith<$Res> {
+  factory _$PlayerBlacklistEntryCopyWith(_PlayerBlacklistEntry value, $Res Function(_PlayerBlacklistEntry) _then) = __$PlayerBlacklistEntryCopyWithImpl;
+@override @useResult
+$Res call({
+ String stableId, int aid, String bvid, String title, String author, String coverUrl, int? ownerMid, int? cid, int? page, String? pageTitle, int addedAtEpochMs
+});
+
+
+
+
+}
+/// @nodoc
+class __$PlayerBlacklistEntryCopyWithImpl<$Res>
+    implements _$PlayerBlacklistEntryCopyWith<$Res> {
+  __$PlayerBlacklistEntryCopyWithImpl(this._self, this._then);
+
+  final _PlayerBlacklistEntry _self;
+  final $Res Function(_PlayerBlacklistEntry) _then;
+
+/// Create a copy of PlayerBlacklistEntry
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? stableId = null,Object? aid = null,Object? bvid = null,Object? title = null,Object? author = null,Object? coverUrl = null,Object? ownerMid = freezed,Object? cid = freezed,Object? page = freezed,Object? pageTitle = freezed,Object? addedAtEpochMs = null,}) {
+  return _then(_PlayerBlacklistEntry(
+stableId: null == stableId ? _self.stableId : stableId // ignore: cast_nullable_to_non_nullable
+as String,aid: null == aid ? _self.aid : aid // ignore: cast_nullable_to_non_nullable
+as int,bvid: null == bvid ? _self.bvid : bvid // ignore: cast_nullable_to_non_nullable
+as String,title: null == title ? _self.title : title // ignore: cast_nullable_to_non_nullable
+as String,author: null == author ? _self.author : author // ignore: cast_nullable_to_non_nullable
+as String,coverUrl: null == coverUrl ? _self.coverUrl : coverUrl // ignore: cast_nullable_to_non_nullable
+as String,ownerMid: freezed == ownerMid ? _self.ownerMid : ownerMid // ignore: cast_nullable_to_non_nullable
+as int?,cid: freezed == cid ? _self.cid : cid // ignore: cast_nullable_to_non_nullable
+as int?,page: freezed == page ? _self.page : page // ignore: cast_nullable_to_non_nullable
+as int?,pageTitle: freezed == pageTitle ? _self.pageTitle : pageTitle // ignore: cast_nullable_to_non_nullable
+as String?,addedAtEpochMs: null == addedAtEpochMs ? _self.addedAtEpochMs : addedAtEpochMs // ignore: cast_nullable_to_non_nullable
+as int,
+  ));
+}
+
+
+}
+
+// dart format on

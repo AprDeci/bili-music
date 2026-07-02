@@ -17,6 +17,7 @@ import 'package:bilimusic/feature/setting/ui/about_settings_page.dart';
 import 'package:bilimusic/feature/setting/ui/cache_settings_page.dart';
 import 'package:bilimusic/feature/setting/ui/app_transfer_page.dart';
 import 'package:bilimusic/feature/setting/ui/hotkey_settings_page.dart';
+import 'package:bilimusic/feature/setting/ui/player_blacklist_settings_page.dart';
 import 'package:bilimusic/feature/setting/ui/player_settings_page.dart';
 import 'package:bilimusic/feature/setting/ui/setting_page.dart';
 import 'package:bilimusic/feature/setting/ui/theme_settings_page.dart';
@@ -126,6 +127,12 @@ final List<Map<String, dynamic>> mobileHiddenBranches = [
       GoRoute(
         path: 'player',
         builder: (context, state) => const PlayerSettingsPage(),
+        routes: <RouteBase>[
+          GoRoute(
+            path: 'blacklist',
+            builder: (context, state) => const PlayerBlacklistSettingsPage(),
+          ),
+        ],
       ),
       GoRoute(
         path: 'app-transfer',
@@ -166,6 +173,12 @@ final List<Map<String, dynamic>> desktopTabs = [
       GoRoute(
         path: 'player',
         builder: (context, state) => const PlayerSettingsPage(),
+        routes: <RouteBase>[
+          GoRoute(
+            path: 'blacklist',
+            builder: (context, state) => const PlayerBlacklistSettingsPage(),
+          ),
+        ],
       ),
       GoRoute(
         path: 'app-transfer',

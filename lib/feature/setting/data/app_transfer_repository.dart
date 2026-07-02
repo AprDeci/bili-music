@@ -65,6 +65,10 @@ class AppTransferRepository {
       key: HiveKeys.playerLyricFontSizePreference,
       defaultValue: 'normal',
     ),
+    _TransferSettingKey(
+      key: HiveKeys.playerBlacklistEntries,
+      defaultValue: '[]',
+    ),
   ];
 
   Future<String> buildExportJson() async {

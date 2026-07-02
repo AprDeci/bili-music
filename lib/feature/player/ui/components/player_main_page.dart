@@ -28,6 +28,7 @@ class PlayerMainPage extends ConsumerWidget {
     required this.availableParts,
     required this.onPartTap,
     required this.onOpenCollectionSheet,
+    required this.onAddToBlacklist,
     required this.isFavorite,
     required this.onFavoriteToggle,
     required this.onSeek,
@@ -46,6 +47,7 @@ class PlayerMainPage extends ConsumerWidget {
   final List<PlayableItem> availableParts;
   final VoidCallback? onPartTap;
   final VoidCallback? onOpenCollectionSheet;
+  final VoidCallback? onAddToBlacklist;
   final bool isFavorite;
   final VoidCallback? onFavoriteToggle;
   final ValueChanged<double> onSeek;
@@ -100,6 +102,7 @@ class PlayerMainPage extends ConsumerWidget {
                 canOpenPartSelector: canOpenPartSelector,
                 onPartTap: onPartTap,
                 onOpenCollectionSheet: onOpenCollectionSheet,
+                onAddToBlacklist: onAddToBlacklist,
                 onOpenComments: onOpenComments,
               ),
             ),
@@ -210,6 +213,7 @@ class _PlayerStatusAndTools extends StatelessWidget {
     required this.canOpenPartSelector,
     required this.onPartTap,
     required this.onOpenCollectionSheet,
+    required this.onAddToBlacklist,
     required this.onOpenComments,
   });
 
@@ -219,6 +223,7 @@ class _PlayerStatusAndTools extends StatelessWidget {
   final bool canOpenPartSelector;
   final VoidCallback? onPartTap;
   final VoidCallback? onOpenCollectionSheet;
+  final VoidCallback? onAddToBlacklist;
   final VoidCallback? onOpenComments;
 
   @override
@@ -236,6 +241,7 @@ class _PlayerStatusAndTools extends StatelessWidget {
           canOpenPartSelector: canOpenPartSelector,
           onPartTap: onPartTap,
           onOpenCollectionSheet: onOpenCollectionSheet,
+          onAddToBlacklist: onAddToBlacklist,
           onOpenComments: onOpenComments,
         ),
       ],
@@ -300,6 +306,7 @@ class _PlayerToolBar extends StatelessWidget {
     required this.canOpenPartSelector,
     required this.onPartTap,
     required this.onOpenCollectionSheet,
+    required this.onAddToBlacklist,
     required this.onOpenComments,
   });
 
@@ -310,6 +317,7 @@ class _PlayerToolBar extends StatelessWidget {
   final bool canOpenPartSelector;
   final VoidCallback? onPartTap;
   final VoidCallback? onOpenCollectionSheet;
+  final VoidCallback? onAddToBlacklist;
   final VoidCallback? onOpenComments;
 
   @override
@@ -328,7 +336,14 @@ class _PlayerToolBar extends StatelessWidget {
         _PlayerToolButton(
           icon: HugeIcon(icon: HugeIcons.strokeRoundedFolder01),
           isEnabled: hasItem,
+          tooltip: '加入歌单',
           onTap: onOpenCollectionSheet,
+        ),
+        _PlayerToolButton(
+          icon: const Icon(Icons.block_rounded),
+          isEnabled: hasItem,
+          tooltip: '加入黑名单',
+          onTap: onAddToBlacklist,
         ),
         _PlayerQualityToolButton(
           qualities: availableQualities,
@@ -470,11 +485,13 @@ class _PlayerToolButton extends StatelessWidget {
   const _PlayerToolButton({
     required this.icon,
     required this.isEnabled,
+    this.tooltip,
     this.onTap,
   });
 
   final Widget icon;
   final bool isEnabled;
+  final String? tooltip;
   final VoidCallback? onTap;
 
   @override
@@ -484,7 +501,7 @@ class _PlayerToolButton extends StatelessWidget {
     final Color foregroundColor = isEnabled
         ? colorScheme.onSurface
         : colorScheme.onSurface.withValues(alpha: 0.38);
-    return SizedBox(
+    final Widget button = SizedBox(
       width: 40,
       height: 40,
       child: InkResponse(
@@ -502,5 +519,10 @@ class _PlayerToolButton extends StatelessWidget {
         ),
       ),
     );
+    final String? resolvedTooltip = tooltip;
+    if (resolvedTooltip == null) {
+      return button;
+    }
+    return Tooltip(message: resolvedTooltip, child: button);
   }
 }

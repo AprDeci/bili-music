@@ -149,6 +149,9 @@ class _DesktopPlayerPageState extends ConsumerState<DesktopPlayerPage> {
                   onFavoriteToggle: item == null
                       ? null
                       : () => _toggleFavorite(item),
+                  onAddToBlacklist: item == null
+                      ? null
+                      : () => _addToBlacklist(item),
                   onOpenComments: item == null || item.aid <= 0
                       ? null
                       : () => _openComments(item),
@@ -203,6 +206,44 @@ class _DesktopPlayerPageState extends ConsumerState<DesktopPlayerPage> {
       return;
     }
     ToastUtil.show(isLiked ? '已加入“我喜欢”' : '已从“我喜欢”移除');
+  }
+
+  Future<void> _addToBlacklist(PlayableItem item) async {
+    final bool confirmed =
+        await showDialog<bool>(
+          context: context,
+          builder: (BuildContext context) {
+            return AlertDialog(
+              title: const Text('加入黑名单'),
+              content: Text(
+                '将“${item.displayTitle}”加入黑名单，并从播放队列中移除。'
+                '后续可在播放器设置中管理。',
+              ),
+              actions: <Widget>[
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(false),
+                  child: const Text('取消'),
+                ),
+                FilledButton(
+                  onPressed: () => Navigator.of(context).pop(true),
+                  child: const Text('加入黑名单'),
+                ),
+              ],
+            );
+          },
+        ) ??
+        false;
+    if (!confirmed) {
+      return;
+    }
+
+    final bool added = await ref
+        .read(playerControllerProvider.notifier)
+        .blacklistItem(item);
+    if (!mounted) {
+      return;
+    }
+    ToastUtil.show(added ? '已加入黑名单' : '已在黑名单中');
   }
 
   Future<void> _openComments(PlayableItem item) async {
@@ -503,6 +544,7 @@ class _DesktopPlayerControlDeck extends StatelessWidget {
     required this.item,
     required this.isFavorite,
     required this.onFavoriteToggle,
+    required this.onAddToBlacklist,
     required this.onOpenComments,
     required this.onOpenCollectionSheet,
     required this.onPartTap,
@@ -521,6 +563,7 @@ class _DesktopPlayerControlDeck extends StatelessWidget {
   final PlayableItem? item;
   final bool isFavorite;
   final VoidCallback? onFavoriteToggle;
+  final VoidCallback? onAddToBlacklist;
   final VoidCallback? onOpenComments;
   final VoidCallback? onOpenCollectionSheet;
   final VoidCallback? onPartTap;
@@ -563,7 +606,7 @@ class _DesktopPlayerControlDeck extends StatelessWidget {
               child: Row(
                 children: <Widget>[
                   SizedBox(
-                    width: 190,
+                    width: 230,
                     child: Row(
                       children: <Widget>[
                         BarIconButton(
@@ -579,6 +622,12 @@ class _DesktopPlayerControlDeck extends StatelessWidget {
                         FavoriteLikeBarButton(
                           isLiked: isFavorite,
                           onPressed: onFavoriteToggle,
+                        ),
+                        const SizedBox(width: 8),
+                        BarIconButton(
+                          icon: const Icon(Icons.block_rounded, size: 20),
+                          tooltip: '加入黑名单',
+                          onPressed: onAddToBlacklist,
                         ),
                         const SizedBox(width: 8),
                         BadgedIconButton(

@@ -165,6 +165,9 @@ class _PlayerPageState extends ConsumerState<PlayerPage> {
                                         context: context,
                                         item: item,
                                       ),
+                                onAddToBlacklist: item == null
+                                    ? null
+                                    : () => _addToBlacklist(item),
                                 isFavorite: isFavorite,
                                 onFavoriteToggle: item == null
                                     ? null
@@ -232,6 +235,44 @@ class _PlayerPageState extends ConsumerState<PlayerPage> {
       return;
     }
     ToastUtil.show(isLiked ? '已加入“我喜欢”' : '已从“我喜欢”移除');
+  }
+
+  Future<void> _addToBlacklist(PlayableItem item) async {
+    final bool confirmed =
+        await showDialog<bool>(
+          context: context,
+          builder: (BuildContext context) {
+            return AlertDialog(
+              title: const Text('加入黑名单'),
+              content: Text(
+                '将“${item.displayTitle}”加入黑名单，并从播放队列中移除。'
+                '后续可在播放器设置中管理。',
+              ),
+              actions: <Widget>[
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(false),
+                  child: const Text('取消'),
+                ),
+                FilledButton(
+                  onPressed: () => Navigator.of(context).pop(true),
+                  child: const Text('加入黑名单'),
+                ),
+              ],
+            );
+          },
+        ) ??
+        false;
+    if (!confirmed) {
+      return;
+    }
+
+    final bool added = await ref
+        .read(playerControllerProvider.notifier)
+        .blacklistItem(item);
+    if (!mounted) {
+      return;
+    }
+    ToastUtil.show(added ? '已加入黑名单' : '已在黑名单中');
   }
 
   Future<void> _openComments(PlayableItem item) async {

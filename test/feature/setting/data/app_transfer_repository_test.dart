@@ -138,6 +138,23 @@ void main() {
     );
   });
 
+  test('buildExportJson includes player blacklist settings', () async {
+    await prefsBox.put(
+      HiveKeys.playerBlacklistEntries,
+      '[{"stableId":"bvid:BV100:cid:111"}]',
+    );
+
+    final String exported = await transferRepository.buildExportJson();
+    final AppTransferBundle appBundle = AppTransferBundle.fromJson(
+      jsonDecode(exported) as Map<String, dynamic>,
+    );
+
+    expect(
+      appBundle.settings[HiveKeys.playerBlacklistEntries],
+      '[{"stableId":"bvid:BV100:cid:111"}]',
+    );
+  });
+
   test(
     'importBytes merges liked items and creates copy for same-name playlist',
     () async {

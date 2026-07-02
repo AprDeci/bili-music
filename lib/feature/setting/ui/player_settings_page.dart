@@ -4,6 +4,7 @@ import 'package:bilimusic/feature/player/domain/player_audio_quality_preference.
 import 'package:bilimusic/feature/player/domain/player_lyric_font_preference.dart';
 import 'package:bilimusic/feature/player/domain/player_lyric_font_size_preference.dart';
 import 'package:bilimusic/feature/player/logic/player_audio_quality_preference_logic.dart';
+import 'package:bilimusic/feature/player/logic/player_blacklist_controller.dart';
 import 'package:bilimusic/feature/player/logic/player_controller.dart';
 import 'package:bilimusic/feature/player/logic/player_lyric_font_preference_logic.dart';
 import 'package:bilimusic/feature/player/logic/player_lyric_font_size_preference_logic.dart';
@@ -11,6 +12,7 @@ import 'package:bilimusic/feature/player/logic/player_multi_part_queue_preferenc
 import 'package:bilimusic/feature/player/logic/player_settings_logic.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 class PlayerSettingsPage extends ConsumerWidget {
   const PlayerSettingsPage({super.key});
@@ -31,6 +33,9 @@ class PlayerSettingsPage extends ConsumerWidget {
     final PlayerLyricFontSizePreference lyricFontSizePreference = ref.watch(
       playerLyricFontSizePreferenceLogicProvider,
     );
+    final int blacklistCount = ref
+        .watch(playerBlacklistControllerProvider)
+        .length;
 
     return Scaffold(
       appBar: AppBar(title: const Text('播放器设置')),
@@ -94,6 +99,17 @@ class PlayerSettingsPage extends ConsumerWidget {
             ),
             trailing: const Icon(Icons.chevron_right_rounded),
             onTap: () => _showLyricFontSizePreferenceSheet(context, ref),
+          ),
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: const Icon(Icons.block_rounded),
+            title: const Text('歌曲黑名单'),
+            subtitle: Text(
+              blacklistCount == 0 ? '暂无黑名单歌曲' : '$blacklistCount 首歌曲',
+              style: theme.textTheme.bodySmall,
+            ),
+            trailing: const Icon(Icons.chevron_right_rounded),
+            onTap: () => context.push('/settings/player/blacklist'),
           ),
         ],
       ),
