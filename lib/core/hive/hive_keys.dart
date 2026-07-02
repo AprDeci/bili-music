@@ -16,6 +16,10 @@ class HiveKeys {
   static const String playerMultiPartQueuePreference =
       'player.multi_part_queue_preference';
   static const String playerMultiPartTipShown = 'player.multi_part_tip_shown';
+  static const String playerLyricFontPreference =
+      'player.lyric_font_preference';
+  static const String playerLyricFontSizePreference =
+      'player.lyric_font_size_preference';
   static const String playerVolume = 'player.volume';
   static const String searchHistory = 'search.history';
   static const String updateDismissedTag = 'app.update.dismissed_tag';

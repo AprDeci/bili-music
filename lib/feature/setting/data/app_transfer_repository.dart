@@ -57,6 +57,14 @@ class AppTransferRepository {
       key: HiveKeys.playerMultiPartTipShown,
       defaultValue: 'false',
     ),
+    _TransferSettingKey(
+      key: HiveKeys.playerLyricFontPreference,
+      defaultValue: 'app_default',
+    ),
+    _TransferSettingKey(
+      key: HiveKeys.playerLyricFontSizePreference,
+      defaultValue: 'normal',
+    ),
   ];
 
   Future<String> buildExportJson() async {

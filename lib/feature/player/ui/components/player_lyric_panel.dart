@@ -4,7 +4,11 @@ import 'package:bilimusic/common/util/player_util.dart';
 import 'package:bilimusic/feature/metadata/domain/metadata_state.dart';
 import 'package:bilimusic/feature/metadata/logic/metadata_controller.dart';
 import 'package:bilimusic/feature/player/domain/playable_item.dart';
+import 'package:bilimusic/feature/player/domain/player_lyric_font_preference.dart';
+import 'package:bilimusic/feature/player/domain/player_lyric_font_size_preference.dart';
 import 'package:bilimusic/feature/player/domain/player_state.dart';
+import 'package:bilimusic/feature/player/logic/player_lyric_font_preference_logic.dart';
+import 'package:bilimusic/feature/player/logic/player_lyric_font_size_preference_logic.dart';
 import 'package:bilimusic/feature/player/ui/components/player_display_metadata.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_lyric/flutter_lyric.dart';
@@ -43,6 +47,7 @@ class _PlayerLyricPanelState extends ConsumerState<PlayerLyricPanel> {
   String? _loadedStableId;
   String? _loadedRenderableLyrics;
   String? _loadedTranslationLyrics;
+  String? _loadedLyricStyleKey;
   Duration? _lastInactiveSyncedPosition;
 
   bool get _isDesktop => widget.variant == PlayerLyricPanelVariant.desktop;
@@ -92,9 +97,24 @@ class _PlayerLyricPanelState extends ConsumerState<PlayerLyricPanel> {
   @override
   Widget build(BuildContext context) {
     final MetadataState metadataState = ref.watch(metadataControllerProvider);
-    _syncLyrics(metadataState);
+    final PlayerLyricFontPreference lyricFontPreference = ref.watch(
+      playerLyricFontPreferenceLogicProvider,
+    );
+    final PlayerLyricFontSizePreference lyricFontSizePreference = ref.watch(
+      playerLyricFontSizePreferenceLogicProvider,
+    );
+    final String lyricStyleKey = _buildLyricStyleKey(
+      lyricFontPreference,
+      lyricFontSizePreference,
+    );
+    _syncLyrics(metadataState, lyricStyleKey);
 
-    final Widget content = _buildContent(context, metadataState);
+    final Widget content = _buildContent(
+      context,
+      metadataState,
+      lyricFontPreference,
+      lyricFontSizePreference,
+    );
     if (!_isDesktop) {
       return content;
     }
@@ -105,7 +125,12 @@ class _PlayerLyricPanelState extends ConsumerState<PlayerLyricPanel> {
     );
   }
 
-  Widget _buildContent(BuildContext context, MetadataState metadataState) {
+  Widget _buildContent(
+    BuildContext context,
+    MetadataState metadataState,
+    PlayerLyricFontPreference lyricFontPreference,
+    PlayerLyricFontSizePreference lyricFontSizePreference,
+  ) {
     final PlayableItem? item = widget.item;
     if (item == null) {
       return _PlayerLyricPanelStatus(
@@ -146,7 +171,11 @@ class _PlayerLyricPanelState extends ConsumerState<PlayerLyricPanel> {
       return LayoutBuilder(
         key: ValueKey<String>('lyrics-$itemKey'),
         builder: (BuildContext context, BoxConstraints constraints) {
-          final LyricStyle style = _buildLyricStyle(context);
+          final LyricStyle style = _buildLyricStyle(
+            context,
+            lyricFontPreference,
+            lyricFontSizePreference,
+          );
           final EdgeInsets lyricPadding = _isDesktop
               ? const EdgeInsets.symmetric(horizontal: 30)
               : EdgeInsets.zero;
@@ -155,6 +184,9 @@ class _PlayerLyricPanelState extends ConsumerState<PlayerLyricPanel> {
               Padding(
                 padding: lyricPadding,
                 child: LyricView(
+                  key: ValueKey<String>(
+                    'lyric-${lyricFontPreference.storageValue}-${lyricFontSizePreference.storageValue}',
+                  ),
                   controller: _lyricController,
                   style: style,
                   width: constraints.maxWidth,
@@ -198,7 +230,7 @@ class _PlayerLyricPanelState extends ConsumerState<PlayerLyricPanel> {
     );
   }
 
-  void _syncLyrics(MetadataState metadataState) {
+  void _syncLyrics(MetadataState metadataState, String lyricStyleKey) {
     _lyricController.lyricOffset = resolveDisplayLyricOffsetMs(
       metadataState.metadata,
     );
@@ -215,10 +247,12 @@ class _PlayerLyricPanelState extends ConsumerState<PlayerLyricPanel> {
     if (renderableLyrics == null || stableId == null) {
       if (_loadedStableId != null ||
           _loadedRenderableLyrics != null ||
-          _loadedTranslationLyrics != null) {
+          _loadedTranslationLyrics != null ||
+          _loadedLyricStyleKey != null) {
         _loadedStableId = null;
         _loadedRenderableLyrics = null;
         _loadedTranslationLyrics = null;
+        _loadedLyricStyleKey = null;
         _lyricController.loadLyric('');
       }
       return;
@@ -226,7 +260,8 @@ class _PlayerLyricPanelState extends ConsumerState<PlayerLyricPanel> {
 
     if (_loadedStableId == stableId &&
         _loadedRenderableLyrics == renderableLyrics &&
-        _loadedTranslationLyrics == translationLyrics) {
+        _loadedTranslationLyrics == translationLyrics &&
+        _loadedLyricStyleKey == lyricStyleKey) {
       _syncProgressIfNeeded();
       return;
     }
@@ -234,11 +269,20 @@ class _PlayerLyricPanelState extends ConsumerState<PlayerLyricPanel> {
     _loadedStableId = stableId;
     _loadedRenderableLyrics = renderableLyrics;
     _loadedTranslationLyrics = translationLyrics;
+    _loadedLyricStyleKey = lyricStyleKey;
     _lyricController.loadLyric(
       renderableLyrics,
       translationLyric: translationLyrics,
     );
     _syncProgressIfNeeded();
+  }
+
+  String _buildLyricStyleKey(
+    PlayerLyricFontPreference lyricFontPreference,
+    PlayerLyricFontSizePreference lyricFontSizePreference,
+  ) {
+    return '${lyricFontPreference.storageValue}-'
+        '${lyricFontSizePreference.storageValue}';
   }
 
   void _syncProgress() {
@@ -248,7 +292,11 @@ class _PlayerLyricPanelState extends ConsumerState<PlayerLyricPanel> {
     _lyricController.setProgress(widget.state.position);
   }
 
-  LyricStyle _buildLyricStyle(BuildContext context) {
+  LyricStyle _buildLyricStyle(
+    BuildContext context,
+    PlayerLyricFontPreference lyricFontPreference,
+    PlayerLyricFontSizePreference lyricFontSizePreference,
+  ) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
     final TextTheme textTheme = theme.textTheme;
@@ -258,22 +306,32 @@ class _PlayerLyricPanelState extends ConsumerState<PlayerLyricPanel> {
     )[600]!.withValues(alpha: 0.8);
     final Color normalColor = colorScheme.onSurface;
     final bool isDesktop = PlatformUtil.isDesktop;
+    final String? fontFamily = lyricFontPreference.fontFamily;
+    final List<String>? fontFamilyFallback =
+        lyricFontPreference.fontFamilyFallback;
+    final double fontScale = lyricFontSizePreference.scale;
     return LyricStyles.default1.copyWith(
       textStyle: (textTheme.bodyLarge ?? const TextStyle()).copyWith(
         color: normalColor.withValues(alpha: 0.7),
-        fontSize: isDesktop ? 20 : 24,
+        fontSize: (isDesktop ? 20 : 24) * fontScale,
+        fontFamily: fontFamily,
+        fontFamilyFallback: fontFamilyFallback,
         height: 1.25,
         fontWeight: FontWeight.w500,
       ),
       activeStyle: (textTheme.titleLarge ?? const TextStyle()).copyWith(
         color: const Color.fromARGB(255, 168, 168, 168),
-        fontSize: isDesktop ? 20 : 30,
+        fontSize: (isDesktop ? 20 : 30) * fontScale,
+        fontFamily: fontFamily,
+        fontFamilyFallback: fontFamilyFallback,
         height: 1.2,
         fontWeight: FontWeight.w800,
       ),
       translationStyle: (textTheme.bodyMedium ?? const TextStyle()).copyWith(
         color: colorScheme.onSurfaceVariant.withValues(alpha: 0.62),
-        fontSize: 14,
+        fontSize: 14 * fontScale,
+        fontFamily: fontFamily,
+        fontFamilyFallback: fontFamilyFallback,
         height: 1.2,
       ),
       textAlign: isDesktop ? TextAlign.center : TextAlign.left,
