@@ -9,6 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 Future<void> showPlayerCollectionSheet({
   required BuildContext context,
   required PlayableItem item,
+  List<PlayableItem>? items,
 }) async {
   await showModalBottomSheet<void>(
     useRootNavigator: true,
@@ -17,15 +18,21 @@ Future<void> showPlayerCollectionSheet({
     isScrollControlled: true,
     backgroundColor: Theme.of(context).colorScheme.surface,
     builder: (BuildContext context) {
-      return SafeArea(child: _PlayerCollectionSheet(item: item));
+      return SafeArea(
+        child: _PlayerCollectionSheet(
+          item: item,
+          items: items ?? <PlayableItem>[item],
+        ),
+      );
     },
   );
 }
 
 class _PlayerCollectionSheet extends ConsumerStatefulWidget {
-  const _PlayerCollectionSheet({required this.item});
+  const _PlayerCollectionSheet({required this.item, required this.items});
 
   final PlayableItem item;
+  final List<PlayableItem> items;
 
   @override
   ConsumerState<_PlayerCollectionSheet> createState() =>
@@ -87,11 +94,12 @@ class _PlayerCollectionSheetState
                       itemBuilder: (BuildContext context, int index) {
                         final FavoriteCollection collection =
                             collections[index];
-                        final bool alreadyAdded = favoritesState
-                            .containsItemInCollection(
-                              collectionId: collection.id,
-                              item: widget.item,
-                            );
+                        final int addedItemCount = _addedItemCount(
+                          favoritesState,
+                          collection.id,
+                        );
+                        final bool alreadyAdded =
+                            addedItemCount == widget.items.length;
                         final int count = favoritesState.itemCountForCollection(
                           collection.id,
                         );
@@ -99,6 +107,8 @@ class _PlayerCollectionSheetState
                         return _CollectionTile(
                           collection: collection,
                           count: count,
+                          selectedCount: widget.items.length,
+                          addedItemCount: addedItemCount,
                           alreadyAdded: alreadyAdded,
                           onTap: () => _handleCollectionTap(
                             context: context,
@@ -113,6 +123,19 @@ class _PlayerCollectionSheetState
         );
       },
     );
+  }
+
+  int _addedItemCount(FavoritesState state, String collectionId) {
+    int count = 0;
+    for (final PlayableItem item in widget.items) {
+      if (state.containsItemInCollection(
+        collectionId: collectionId,
+        item: item,
+      )) {
+        count++;
+      }
+    }
+    return count;
   }
 
   List<FavoriteCollection> _collectionsForSelectedTab(FavoritesState state) {
@@ -152,10 +175,13 @@ class _PlayerCollectionSheetState
     if (alreadyAdded) {
       message = '已在“${collection.name}”歌单中';
     } else {
-      final bool added = await ref
+      final int addedCount = await ref
           .read(favoritesControllerProvider.notifier)
-          .addToCollection(collectionId: collection.id, item: widget.item);
-      message = added ? '添加成功' : '添加失败';
+          .addItemsToCollection(
+            collectionId: collection.id,
+            items: widget.items,
+          );
+      message = addedCount > 0 ? '已添加 $addedCount 个分段' : '添加失败';
     }
 
     if (!context.mounted) {
@@ -225,12 +251,16 @@ class _CollectionTile extends StatelessWidget {
   const _CollectionTile({
     required this.collection,
     required this.count,
+    required this.selectedCount,
+    required this.addedItemCount,
     required this.alreadyAdded,
     required this.onTap,
   });
 
   final FavoriteCollection collection;
   final int count;
+  final int selectedCount;
+  final int addedItemCount;
   final bool alreadyAdded;
   final VoidCallback onTap;
 
@@ -279,7 +309,7 @@ class _CollectionTile extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      alreadyAdded ? '$count 首 · 已收藏' : '$count 首',
+                      _subtitle,
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: colorScheme.onSurface.withValues(alpha: 0.64),
                       ),
@@ -300,5 +330,18 @@ class _CollectionTile extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  String get _subtitle {
+    if (alreadyAdded) {
+      return '$count 首 · 已收藏';
+    }
+    if (addedItemCount > 0) {
+      return '$count 首 · 已收藏 $addedItemCount/$selectedCount';
+    }
+    if (selectedCount > 1) {
+      return '$count 首 · 将添加 $selectedCount 个分段';
+    }
+    return '$count 首';
   }
 }

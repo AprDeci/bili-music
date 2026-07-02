@@ -8,6 +8,7 @@ import 'package:bilimusic/common/util/toast_util.dart';
 import 'package:bilimusic/feature/favorites/domain/bili_favorite_collection_page.dart';
 import 'package:bilimusic/feature/favorites/domain/favorite_collection.dart';
 import 'package:bilimusic/feature/favorites/domain/favorite_entry.dart';
+import 'package:bilimusic/feature/favorites/domain/favorite_entry_group.dart';
 import 'package:bilimusic/feature/favorites/domain/favorites_state.dart';
 import 'package:bilimusic/feature/favorites/logic/favorite_entry_search.dart';
 import 'package:bilimusic/feature/favorites/logic/favorites_controller.dart';
@@ -48,6 +49,7 @@ class _FavoriteCollectionPageState
   void initState() {
     super.initState();
     _refreshRemoteCollectionItems();
+    _expandMultipartEntries();
   }
 
   @override
@@ -57,7 +59,19 @@ class _FavoriteCollectionPageState
       _resetSearchState();
       _resetRemotePagingState();
       _refreshRemoteCollectionItems();
+      _expandMultipartEntries();
     }
+  }
+
+  void _expandMultipartEntries() {
+    final String collectionId = widget.collectionId;
+    unawaited(
+      Future<void>.microtask(() async {
+        await ref
+            .read(favoritesControllerProvider.notifier)
+            .expandCollectionMultipartEntries(collectionId);
+      }),
+    );
   }
 
   void _refreshRemoteCollectionItems() {
@@ -262,9 +276,8 @@ class _FavoriteCollectionPageState
     final List<FavoriteEntry> items = state.itemsForCollection(
       resolvedCollection.id,
     );
-    final List<FavoriteEntry> visibleItems = filterFavoriteEntries(
-      items,
-      _searchQuery,
+    final List<FavoriteEntry> visibleItems = orderFavoriteEntriesForDisplay(
+      filterFavoriteEntries(items, _searchQuery),
     );
     final List<PlayableItem> queueItems = visibleItems
         .map((FavoriteEntry item) => item.toPlayableItem())

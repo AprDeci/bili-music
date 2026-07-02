@@ -11,6 +11,7 @@ import 'package:bilimusic/feature/favorites/domain/favorite_entry.dart';
 import 'package:bilimusic/feature/favorites/domain/favorite_membership.dart';
 import 'package:bilimusic/feature/favorites/domain/favorites_state.dart';
 import 'package:bilimusic/feature/favorites/logic/remote_favorites_repositories.dart';
+import 'package:bilimusic/feature/player/data/bili_player_repository.dart';
 import 'package:bilimusic/feature/player/domain/playable_item.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
@@ -26,6 +27,9 @@ class FavoritesController extends _$FavoritesController {
   );
   late final BiliFavoritesRemoteRepository _remoteRepository = ref.read(
     biliFavoritesRemoteRepositoryProvider,
+  );
+  late final BiliPlayerRepository _playerRepository = ref.read(
+    biliPlayerRepositoryProvider,
   );
   final Random _remoteImportRandom = Random();
 
@@ -152,19 +156,52 @@ class FavoritesController extends _$FavoritesController {
     final FavoriteCollection remoteCollection = page.collection.copyWith(
       isManagedByApp: true,
     );
+    final List<FavoriteEntry> expandedItems = await _expandFavoriteEntries(
+      page.items,
+    );
     if (replaceExistingItems) {
       await _remoteCache.replaceCollectionItems(
         collection: remoteCollection,
-        items: page.items,
+        items: expandedItems,
       );
     } else {
       await _remoteCache.appendCollectionItems(
         collection: remoteCollection,
-        items: page.items,
+        items: expandedItems,
       );
     }
     state = _loadState();
     return page;
+  }
+
+  Future<List<FavoriteEntry>> _expandFavoriteEntries(
+    Iterable<FavoriteEntry> entries,
+  ) async {
+    final List<FavoriteEntry> expandedEntries = <FavoriteEntry>[];
+    for (final FavoriteEntry entry in entries) {
+      expandedEntries.addAll(await _expandFavoriteEntry(entry));
+    }
+    return expandedEntries;
+  }
+
+  Future<List<FavoriteEntry>> _expandFavoriteEntry(FavoriteEntry entry) async {
+    try {
+      final List<PlayableItem> parts = await _playerRepository
+          .resolvePlayableParts(entry.toPlayableItem());
+      if (parts.length <= 1) {
+        return <FavoriteEntry>[entry];
+      }
+      return parts
+          .map(
+            (PlayableItem part) => FavoriteEntry.fromPlayableItem(
+              part,
+              now: entry.createdAt,
+            ).copyWith(updatedAt: entry.updatedAt),
+          )
+          .toList(growable: false);
+    } on Object {
+      return <FavoriteEntry>[entry];
+    }
   }
 
   Future<bool> toggleLiked(PlayableItem item) async {
@@ -199,6 +236,36 @@ class FavoritesController extends _$FavoritesController {
     );
     state = _loadState();
     return true;
+  }
+
+  Future<int> addLikedItems(Iterable<PlayableItem> items) async {
+    final DateTime now = DateTime.now();
+    final Map<String, PlayableItem> uniqueItems = _uniquePlayableItems(items);
+    int addedCount = 0;
+
+    for (final PlayableItem item in uniqueItems.values) {
+      final String itemId = item.stableId;
+      await _upsertEntry(item: item, now: now);
+      if (!state.isItemInCollection(
+        collectionId: FavoriteCollection.likedCollectionId,
+        itemId: itemId,
+      )) {
+        await _repository.saveMembership(
+          FavoriteMembership.create(
+            collectionId: FavoriteCollection.likedCollectionId,
+            itemId: itemId,
+            addedAt: now,
+          ),
+        );
+        addedCount++;
+      }
+    }
+
+    await _repository.saveCollection(
+      state.likedCollection.copyWith(updatedAt: now),
+    );
+    state = _loadState();
+    return addedCount;
   }
 
   Future<bool> addToCollection({
@@ -353,10 +420,7 @@ class FavoritesController extends _$FavoritesController {
     }
 
     final DateTime now = DateTime.now();
-    final Map<String, PlayableItem> uniqueItems = <String, PlayableItem>{};
-    for (final PlayableItem item in items) {
-      uniqueItems[item.stableId] = item;
-    }
+    final Map<String, PlayableItem> uniqueItems = _uniquePlayableItems(items);
 
     int addedCount = 0;
     for (final PlayableItem item in uniqueItems.values) {
@@ -382,14 +446,42 @@ class FavoritesController extends _$FavoritesController {
     return addedCount;
   }
 
+  Future<int> expandCollectionMultipartEntries(String collectionId) async {
+    final FavoriteCollection? collection = _collectionById(collectionId);
+    if (collection == null) {
+      return 0;
+    }
+
+    final List<FavoriteEntry> entries = state.itemsForCollection(collectionId);
+    int expandedCount = 0;
+    for (final FavoriteEntry entry in entries) {
+      if (entry.cid != null && entry.cid! > 0 && entry.pageTitle != null) {
+        continue;
+      }
+      final List<FavoriteEntry> expandedEntries = await _expandFavoriteEntry(
+        entry,
+      );
+      if (expandedEntries.length <= 1) {
+        continue;
+      }
+      expandedCount += await _replaceCollectionEntryWithParts(
+        collection: collection,
+        entry: entry,
+        parts: expandedEntries,
+      );
+    }
+    if (expandedCount > 0) {
+      state = _loadState();
+    }
+    return expandedCount;
+  }
+
   Future<int> _addItemsToRemoteCollection({
     required FavoriteCollection collection,
     required Iterable<PlayableItem> items,
   }) async {
-    final Map<String, PlayableItem> uniqueItems = <String, PlayableItem>{};
-    for (final PlayableItem item in items) {
-      uniqueItems[item.stableId] = item;
-    }
+    final Map<String, PlayableItem> uniqueItems = _uniquePlayableItems(items);
+    final Set<String> addedVideoKeys = _videoKeysInCollection(collection.id);
 
     int addedCount = 0;
     for (final PlayableItem item in uniqueItems.values) {
@@ -405,8 +497,10 @@ class FavoritesController extends _$FavoritesController {
       final bool added = await _addToRemoteCollection(
         collection: collection,
         item: item,
+        skipRemoteRequest: addedVideoKeys.contains(_videoKeyForItem(item)),
       );
       if (added) {
+        addedVideoKeys.add(_videoKeyForItem(item));
         addedCount++;
       }
     }
@@ -520,17 +614,20 @@ class FavoritesController extends _$FavoritesController {
   Future<bool> _addToRemoteCollection({
     required FavoriteCollection collection,
     required PlayableItem item,
+    bool skipRemoteRequest = false,
   }) async {
     final String? remoteId = collection.remoteId;
     if (remoteId == null) {
       return false;
     }
 
-    await _remoteRepository.addVideoToCollection(
-      session: _getSession(),
-      remoteId: remoteId,
-      item: item,
-    );
+    if (!skipRemoteRequest) {
+      await _remoteRepository.addVideoToCollection(
+        session: _getSession(),
+        remoteId: remoteId,
+        item: item,
+      );
+    }
     final DateTime now = DateTime.now();
     await _remoteCache.saveEntryToCollection(
       collectionId: collection.id,
@@ -554,17 +651,96 @@ class FavoritesController extends _$FavoritesController {
       return false;
     }
 
-    await _remoteRepository.removeVideoFromCollection(
-      session: _getSession(),
-      remoteId: remoteId,
-      aid: entry.aid,
-    );
+    if (!_hasAnotherEntryInCollectionForVideo(
+      collectionId: collection.id,
+      itemId: itemId,
+      entry: entry,
+    )) {
+      await _remoteRepository.removeVideoFromCollection(
+        session: _getSession(),
+        remoteId: remoteId,
+        aid: entry.aid,
+      );
+    }
     await _remoteCache.removeEntryFromCollection(
       collectionId: collection.id,
       itemId: itemId,
     );
     state = _loadState();
     return true;
+  }
+
+  Future<int> _replaceCollectionEntryWithParts({
+    required FavoriteCollection collection,
+    required FavoriteEntry entry,
+    required List<FavoriteEntry> parts,
+  }) async {
+    final FavoriteMembership? existingMembership = _membershipForEntry(
+      collectionId: collection.id,
+      itemId: entry.itemId,
+    );
+    final DateTime addedAt = existingMembership?.addedAt ?? entry.createdAt;
+
+    if (collection.isRemote) {
+      int addedCount = 0;
+      for (final FavoriteEntry part in parts) {
+        if (!state.isItemInCollection(
+          collectionId: collection.id,
+          itemId: part.itemId,
+        )) {
+          await _remoteCache.saveEntryToCollection(
+            collectionId: collection.id,
+            entry: part,
+            addedAt: addedAt,
+          );
+          addedCount++;
+        }
+      }
+      await _remoteCache.removeEntryFromCollection(
+        collectionId: collection.id,
+        itemId: entry.itemId,
+      );
+      return addedCount;
+    }
+
+    int addedCount = 0;
+    for (final FavoriteEntry part in parts) {
+      await _repository.saveEntry(part);
+      if (!state.isItemInCollection(
+        collectionId: collection.id,
+        itemId: part.itemId,
+      )) {
+        await _repository.saveMembership(
+          FavoriteMembership.create(
+            collectionId: collection.id,
+            itemId: part.itemId,
+            addedAt: addedAt,
+          ),
+        );
+        addedCount++;
+      }
+    }
+    await _repository.deleteMembership(
+      FavoriteMembership.membershipId(
+        collectionId: collection.id,
+        itemId: entry.itemId,
+      ),
+    );
+    await _repository.pruneOrphanEntries();
+    return addedCount;
+  }
+
+  FavoriteMembership? _membershipForEntry({
+    required String collectionId,
+    required String itemId,
+  }) {
+    for (final FavoriteMembership membership in state.memberships) {
+      if (membership.collectionId == collectionId &&
+          membership.itemId == itemId) {
+        return membership;
+      }
+    }
+    return null;
   }
 
   FavoriteCollection? _collectionById(String collectionId) {
@@ -643,6 +819,74 @@ class FavoritesController extends _$FavoritesController {
         continue;
       }
       if (collection.name.trim() == normalizedName) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  Map<String, PlayableItem> _uniquePlayableItems(Iterable<PlayableItem> items) {
+    final Map<String, PlayableItem> uniqueItems = <String, PlayableItem>{};
+    for (final PlayableItem item in items) {
+      uniqueItems[item.stableId] = item;
+    }
+    return uniqueItems;
+  }
+
+  String _videoKeyForItem(PlayableItem item) {
+    if (item.bvid.isNotEmpty) {
+      return 'bvid:${item.bvid}';
+    }
+    if (item.aid > 0) {
+      return 'aid:${item.aid}';
+    }
+    return item.stableId;
+  }
+
+  Set<String> _videoKeysInCollection(String collectionId) {
+    final Map<String, FavoriteEntry> entriesById = <String, FavoriteEntry>{
+      for (final FavoriteEntry entry in state.entries) entry.itemId: entry,
+    };
+    final Set<String> videoKeys = <String>{};
+    for (final FavoriteMembership membership in state.memberships) {
+      if (membership.collectionId != collectionId) {
+        continue;
+      }
+      final FavoriteEntry? entry = entriesById[membership.itemId];
+      if (entry == null) {
+        continue;
+      }
+      videoKeys.add(_videoKeyForEntry(entry));
+    }
+    return videoKeys;
+  }
+
+  String _videoKeyForEntry(FavoriteEntry entry) {
+    if (entry.bvid.isNotEmpty) {
+      return 'bvid:${entry.bvid}';
+    }
+    if (entry.aid > 0) {
+      return 'aid:${entry.aid}';
+    }
+    return entry.itemId;
+  }
+
+  bool _hasAnotherEntryInCollectionForVideo({
+    required String collectionId,
+    required String itemId,
+    required FavoriteEntry entry,
+  }) {
+    final String videoKey = _videoKeyForEntry(entry);
+    final Map<String, FavoriteEntry> entriesById = <String, FavoriteEntry>{
+      for (final FavoriteEntry entry in state.entries) entry.itemId: entry,
+    };
+    for (final FavoriteMembership membership in state.memberships) {
+      if (membership.collectionId != collectionId ||
+          membership.itemId == itemId) {
+        continue;
+      }
+      final FavoriteEntry? siblingEntry = entriesById[membership.itemId];
+      if (siblingEntry != null && _videoKeyForEntry(siblingEntry) == videoKey) {
         return true;
       }
     }

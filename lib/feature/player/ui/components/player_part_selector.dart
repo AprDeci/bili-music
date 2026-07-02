@@ -1,5 +1,4 @@
 import 'package:bilimusic/common/components/desktop/desktop_side_panel.dart';
-import 'package:bilimusic/common/util/toast_util.dart';
 import 'package:bilimusic/feature/player/domain/playable_item.dart';
 import 'package:bilimusic/feature/player/domain/player_state.dart';
 import 'package:bilimusic/feature/player/logic/player_controller.dart';
@@ -137,74 +136,17 @@ class _PlayerPartSelectorContentState
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
-    final Set<String> queuedIds = widget.state.queue
-        .map((PlayableItem item) => item.stableId)
-        .toSet();
-    final List<PlayableItem> partsToEnqueue = widget.parts
-        .where((PlayableItem part) => part != widget.currentItem)
-        .where((PlayableItem part) => !queuedIds.contains(part.stableId))
-        .toList();
     _focusInitialItem();
 
     return ListView.separated(
       controller: _scrollController,
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-      itemCount: widget.parts.length + 1,
+      itemCount: widget.parts.length,
       itemBuilder: (BuildContext context, int index) {
-        if (index == 0) {
-          return AutoScrollTag(
-            key: const ValueKey<String>('part-selector-add-all'),
-            controller: _scrollController,
-            index: index,
-            child: Material(
-              color: Colors.transparent,
-              child: ListTile(
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 14,
-                  vertical: 4,
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                leading: CircleAvatar(
-                  backgroundColor: colorScheme.primary,
-                  foregroundColor: colorScheme.onPrimary,
-                  child: const Icon(Icons.queue_music_rounded),
-                ),
-                title: Text(
-                  '全部加入队列',
-                  style: theme.textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                subtitle: Text(
-                  partsToEnqueue.isEmpty
-                      ? '其余分P已全部在队列中'
-                      : '将 ${partsToEnqueue.length} 个其余分P追加到当前队列',
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: colorScheme.onSurface.withValues(alpha: 0.68),
-                  ),
-                ),
-                trailing: const Icon(Icons.add_rounded),
-                onTap: partsToEnqueue.isEmpty
-                    ? null
-                    : () async {
-                        await _close(context);
-                        await widget.controller.enqueue(partsToEnqueue);
-                        if (!context.mounted) {
-                          return;
-                        }
-                        ToastUtil.show('已将 ${partsToEnqueue.length} 个分P加入队列');
-                      },
-              ),
-            ),
-          );
-        }
-
-        final PlayableItem part = widget.parts[index - 1];
+        final PlayableItem part = widget.parts[index];
         final bool isSelected = part == widget.currentItem;
         final String title = part.pageTitle?.trim() ?? '';
-        final int page = part.page ?? index;
+        final int page = part.page ?? (index + 1);
         final String label = title.isEmpty ? 'P$page' : 'P$page · $title';
 
         return AutoScrollTag(
@@ -276,7 +218,7 @@ class _PlayerPartSelectorContentState
       }
 
       await _scrollController.scrollToIndex(
-        selectedIndex + 1,
+        selectedIndex,
         preferPosition: AutoScrollPosition.middle,
       );
     });
