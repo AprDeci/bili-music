@@ -50,11 +50,7 @@ abstract class PlayerBlacklistEntry with _$PlayerBlacklistEntry {
       return title;
     }
 
-    final int? resolvedPage = page;
-    if (resolvedPage == null || resolvedPage <= 0) {
-      return trimmedPageTitle;
-    }
-    return 'P$resolvedPage · $trimmedPageTitle';
+    return trimmedPageTitle;
   }
 
   String get displaySubtitle {

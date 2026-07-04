@@ -1,7 +1,7 @@
-import 'package:bilimusic/common/components/desktop/desktop_top_bar.dart';
 import 'package:bilimusic/common/components/desktop/desktop_side_panel.dart';
-import 'package:bilimusic/feature/profile/ui/desktop_profile_sidebar.dart';
+import 'package:bilimusic/common/components/desktop/desktop_top_bar.dart';
 import 'package:bilimusic/feature/player/ui/desktop_player_bar.dart';
+import 'package:bilimusic/feature/profile/ui/desktop_profile_sidebar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -18,7 +18,6 @@ class DesktopShellScaffold extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-
     return Scaffold(
       body: SafeArea(
         child: Padding(
@@ -28,7 +27,6 @@ class DesktopShellScaffold extends ConsumerWidget {
             children: <Widget>[
               DesktopProfileSidebar(currentLocation: currentLocation),
               const SizedBox(width: 16),
-              // 内容区
               Expanded(
                 child: Column(
                   children: <Widget>[
@@ -39,11 +37,9 @@ class DesktopShellScaffold extends ConsumerWidget {
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Column(
-                          children: [
+                          children: <Widget>[
                             const DesktopTopBar(),
-                            Expanded(
-                                child: Container(child: navigationShell),
-                              ),
+                            Expanded(child: navigationShell),
                           ],
                         ),
                       ),

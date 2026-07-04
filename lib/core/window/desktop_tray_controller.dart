@@ -5,9 +5,17 @@ import 'package:tray_manager/tray_manager.dart';
 import 'package:window_manager/window_manager.dart';
 
 class DesktopTrayController with TrayListener, WindowListener {
-  DesktopTrayController({required this.onExitRequested});
+  DesktopTrayController({
+    required this.onExitRequested,
+    required this.onMainWindowClosedRequested,
+    required this.onMainWindowShownRequested,
+    required this.onOpenDesktopLyricsRequested,
+  });
 
   final Future<void> Function() onExitRequested;
+  final Future<void> Function() onMainWindowClosedRequested;
+  final Future<void> Function() onMainWindowShownRequested;
+  final Future<void> Function() onOpenDesktopLyricsRequested;
 
   bool _isExitRequested = false;
 
@@ -26,6 +34,7 @@ class DesktopTrayController with TrayListener, WindowListener {
       Menu(
         items: <MenuItem>[
           MenuItem(key: 'show_window', label: '显示窗口'),
+          MenuItem(key: 'open_desktop_lyrics', label: '打开桌面歌词'),
           MenuItem.separator(),
           MenuItem(key: 'exit_app', label: '退出'),
         ],
@@ -46,7 +55,7 @@ class DesktopTrayController with TrayListener, WindowListener {
       return;
     }
 
-    unawaited(_exitApp());
+    unawaited(_closeMainWindow());
   }
 
   @override
@@ -56,7 +65,7 @@ class DesktopTrayController with TrayListener, WindowListener {
 
   @override
   void onTrayIconRightMouseDown() {
-    unawaited(trayManager.popUpContextMenu(bringAppToFront: true));
+    unawaited(trayManager.popUpContextMenu());
   }
 
   @override
@@ -64,6 +73,8 @@ class DesktopTrayController with TrayListener, WindowListener {
     switch (menuItem.key) {
       case 'show_window':
         unawaited(_showWindow());
+      case 'open_desktop_lyrics':
+        unawaited(onOpenDesktopLyricsRequested());
       case 'exit_app':
         unawaited(_exitApp());
     }
@@ -75,6 +86,12 @@ class DesktopTrayController with TrayListener, WindowListener {
       await windowManager.restore();
     }
     await windowManager.focus();
+    await onMainWindowShownRequested();
+  }
+
+  Future<void> _closeMainWindow() async {
+    await windowManager.hide();
+    await onMainWindowClosedRequested();
   }
 
   Future<void> _exitApp() async {

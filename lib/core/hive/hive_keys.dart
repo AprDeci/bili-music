@@ -20,6 +20,12 @@ class HiveKeys {
       'player.lyric_font_preference';
   static const String playerLyricFontSizePreference =
       'player.lyric_font_size_preference';
+  static const String playerDesktopLyricsEnabled =
+      'player.desktop_lyrics.enabled';
+  static const String playerDesktopLyricsAlwaysOnTop =
+      'player.desktop_lyrics.always_on_top';
+  static const String playerDesktopLyricsOpacity =
+      'player.desktop_lyrics.opacity';
   static const String playerBlacklistEntries = 'player.blacklist_entries';
   static const String playerVolume = 'player.volume';
   static const String searchHistory = 'search.history';

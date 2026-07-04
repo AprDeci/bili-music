@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:bilimusic/common/components/cached_image.dart';
+import 'package:bilimusic/feature/metadata/domain/metadata.dart';
 import 'package:bilimusic/feature/metadata/domain/metadata_state.dart';
 import 'package:bilimusic/feature/metadata/logic/metadata_controller.dart';
 import 'package:bilimusic/feature/player/domain/player_state.dart';
@@ -25,7 +26,14 @@ class MiniPlayerContent extends ConsumerWidget {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
     final MetadataState metadataState = ref.watch(metadataControllerProvider);
-    final String subtitle = buildMiniPlayerSubtitle(state);
+    final String subtitle = buildMiniPlayerSubtitle(
+      state,
+      metadata: metadataState.metadata,
+    );
+    final String title = resolveDisplayTitle(
+      item: state.currentItem,
+      metadata: metadataState.metadata,
+    );
     final double progress = buildMiniPlayerProgress(state);
     final String? displayCoverUrl = resolveDisplayCoverUrl(
       item: state.currentItem,
@@ -47,7 +55,7 @@ class MiniPlayerContent extends ConsumerWidget {
               mainAxisSize: MainAxisSize.min,
               children: <Widget>[
                 Text(
-                  state.currentItem?.displayTitle ?? '未选择播放内容',
+                  title,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: theme.textTheme.titleSmall?.copyWith(
@@ -79,7 +87,7 @@ class MiniPlayerContent extends ConsumerWidget {
   }
 }
 
-String buildMiniPlayerSubtitle(PlayerState state) {
+String buildMiniPlayerSubtitle(PlayerState state, {Metadata? metadata}) {
   return switch (state.statusHint) {
     PlayerStatusHint.resolvingAudio => '正在解析音频...',
     PlayerStatusHint.connectingStream => '正在连接播放流...',
@@ -88,8 +96,7 @@ String buildMiniPlayerSubtitle(PlayerState state) {
     PlayerStatusHint.error => state.errorMessage ?? '播放失败，请稍后重试',
     null =>
       state.audioStream?.qualityLabel ??
-          state.currentItem?.displaySubtitle ??
-          '',
+          resolveDisplaySubtitle(item: state.currentItem, metadata: metadata),
   };
 }
 

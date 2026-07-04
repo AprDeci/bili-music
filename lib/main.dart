@@ -10,7 +10,9 @@ import 'package:bilimusic/feature/favorites/logic/favorites_controller.dart';
 import 'package:bilimusic/feature/metadata/logic/metadata_controller.dart';
 import 'package:bilimusic/feature/player/logic/app_audio_handler.dart';
 import 'package:bilimusic/feature/player/logic/player_controller.dart';
+import 'package:bilimusic/feature/player/ui/desktop_lyrics_window_app.dart';
 import 'package:bilimusic/feature/setting/logic/clipboard_sync_controller.dart';
+import 'package:desktop_multi_window/desktop_multi_window.dart';
 import 'package:bilimusic/myApp.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -36,8 +38,19 @@ Future<DesktopAppLifecycle?> bootstrap(ProviderContainer container) async {
   return null;
 }
 
-void main() async {
+void main(List<String> args) async {
   WidgetsFlutterBinding.ensureInitialized();
+  if (_isDesktopLyricsWindow(args)) {
+    await DesktopChineseFont.load();
+    runApp(
+      DesktopLyricsWindowApp(
+        windowController: WindowController.fromWindowId(int.parse(args[1])),
+        initialPayload: parseDesktopLyricsInitialPayload(args[2]),
+      ),
+    );
+    return;
+  }
+
   await DesktopChineseFont.load();
   final ProviderContainer container = ProviderContainer();
   final DesktopAppLifecycle? desktopLifecycle = await bootstrap(container);
@@ -66,6 +79,14 @@ void main() async {
       ),
     ),
   );
+}
+
+bool _isDesktopLyricsWindow(List<String> args) {
+  if (args.length < 3 || args.first != 'multi_window') {
+    return false;
+  }
+  final String rawPayload = args[2];
+  return rawPayload.contains('"window":"desktopLyrics"');
 }
 
 class _AppBootstrap extends ConsumerStatefulWidget {

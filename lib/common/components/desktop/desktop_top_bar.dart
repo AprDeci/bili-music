@@ -231,7 +231,7 @@ class _DesktopTopBarState extends ConsumerState<DesktopTopBar>
                 child: BarIconButton(
                   icon: Icons.close_rounded,
                   iconSize: 18,
-                  onPressed: () => windowManager.hide(),
+                  onPressed: () => windowManager.close(),
                 ),
               ),
               const SizedBox(width: 8),

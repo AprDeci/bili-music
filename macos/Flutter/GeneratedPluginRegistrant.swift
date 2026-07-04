@@ -7,6 +7,7 @@ import Foundation
 
 import audio_service
 import audio_session
+import desktop_multi_window
 import file_picker
 import hotkey_manager_macos
 import media_kit_libs_macos_audio
@@ -20,6 +21,7 @@ import window_manager
 func RegisterGeneratedPlugins(registry: FlutterPluginRegistry) {
   AudioServicePlugin.register(with: registry.registrar(forPlugin: "AudioServicePlugin"))
   AudioSessionPlugin.register(with: registry.registrar(forPlugin: "AudioSessionPlugin"))
+  FlutterMultiWindowPlugin.register(with: registry.registrar(forPlugin: "FlutterMultiWindowPlugin"))
   FilePickerPlugin.register(with: registry.registrar(forPlugin: "FilePickerPlugin"))
   HotkeyManagerMacosPlugin.register(with: registry.registrar(forPlugin: "HotkeyManagerMacosPlugin"))
   MediaKitLibsMacosAudioPlugin.register(with: registry.registrar(forPlugin: "MediaKitLibsMacosAudioPlugin"))

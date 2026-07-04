@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:bilimusic/common/bm_icons.dart';
 import 'package:bilimusic/common/components/badged_icon_button.dart';
 import 'package:bilimusic/common/components/bar_icon_button.dart';
@@ -10,8 +12,10 @@ import 'package:bilimusic/feature/favorites/logic/favorites_controller.dart';
 import 'package:bilimusic/feature/metadata/domain/metadata_state.dart';
 import 'package:bilimusic/feature/metadata/logic/metadata_controller.dart';
 import 'package:bilimusic/feature/player/domain/audio_stream_info.dart';
+import 'package:bilimusic/feature/player/domain/desktop_lyrics_settings.dart';
 import 'package:bilimusic/feature/player/domain/playable_item.dart';
 import 'package:bilimusic/feature/player/domain/player_state.dart';
+import 'package:bilimusic/feature/player/logic/desktop_lyrics_settings_controller.dart';
 import 'package:bilimusic/feature/player/logic/player_controller.dart';
 import 'package:bilimusic/feature/player/ui/components/desktop/quality_attach.dart';
 import 'package:bilimusic/feature/player/ui/components/desktop/play_pause_button.dart';
@@ -37,6 +41,9 @@ class DesktopPlayerBar extends ConsumerWidget {
     final MetadataState metadataState = ref.watch(metadataControllerProvider);
     final PlayerController controller = ref.read(
       playerControllerProvider.notifier,
+    );
+    final DesktopLyricsSettings desktopLyricsSettings = ref.watch(
+      desktopLyricsSettingsControllerProvider,
     );
     final PlayableItem? item = state.currentItem;
     final bool isFavorite = item != null
@@ -128,6 +135,7 @@ class DesktopPlayerBar extends ConsumerWidget {
               child: _ActionSection(
                 item: item,
                 state: state,
+                isDesktopLyricsEnabled: desktopLyricsSettings.enabled,
                 onOpenParts: item == null || state.availableParts.length < 2
                     ? null
                     : () => showDesktopPlayerPartSelectorPanel(
@@ -139,6 +147,13 @@ class DesktopPlayerBar extends ConsumerWidget {
                       ),
                 onOpenQueue: () =>
                     showDesktopPlayerQueuePanel(context: context, state: state),
+                onToggleDesktopLyrics: () {
+                  unawaited(
+                    ref
+                        .read(desktopLyricsSettingsControllerProvider.notifier)
+                        .setEnabled(!desktopLyricsSettings.enabled),
+                  );
+                },
                 onSelectQuality: (int? qualityId) {
                   controller.switchCurrentAudioQuality(qualityId);
                 },
@@ -449,15 +464,19 @@ class _ActionSection extends StatelessWidget {
   const _ActionSection({
     required this.item,
     required this.state,
+    required this.isDesktopLyricsEnabled,
     required this.onOpenParts,
     required this.onOpenQueue,
+    required this.onToggleDesktopLyrics,
     required this.onSelectQuality,
   });
 
   final PlayableItem? item;
   final PlayerState state;
+  final bool isDesktopLyricsEnabled;
   final VoidCallback? onOpenParts;
   final VoidCallback onOpenQueue;
+  final VoidCallback onToggleDesktopLyrics;
   final ValueChanged<int?> onSelectQuality;
 
   @override
@@ -484,6 +503,13 @@ class _ActionSection extends StatelessWidget {
         BarIconButton(
           onPressed: state.hasQueue ? onOpenQueue : null,
           icon: HugeIcon(icon: HugeIcons.strokeRoundedListMusic, size: 22),
+        ),
+        const SizedBox(width: 10),
+        BarIconButton(
+          tooltip: isDesktopLyricsEnabled ? '关闭桌面歌词' : '打开桌面歌词',
+          onPressed: onToggleDesktopLyrics,
+          isActive: isDesktopLyricsEnabled,
+          icon: Icons.lyrics_rounded,
         ),
       ],
     );

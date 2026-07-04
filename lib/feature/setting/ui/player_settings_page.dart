@@ -1,8 +1,10 @@
 import 'package:bilimusic/common/util/platform_util.dart';
+import 'package:bilimusic/feature/player/domain/desktop_lyrics_settings.dart';
 import 'package:bilimusic/feature/player/domain/multi_part_queue_preference.dart';
 import 'package:bilimusic/feature/player/domain/player_audio_quality_preference.dart';
 import 'package:bilimusic/feature/player/domain/player_lyric_font_preference.dart';
 import 'package:bilimusic/feature/player/domain/player_lyric_font_size_preference.dart';
+import 'package:bilimusic/feature/player/logic/desktop_lyrics_settings_controller.dart';
 import 'package:bilimusic/feature/player/logic/player_audio_quality_preference_logic.dart';
 import 'package:bilimusic/feature/player/logic/player_blacklist_controller.dart';
 import 'package:bilimusic/feature/player/logic/player_controller.dart';
@@ -32,6 +34,9 @@ class PlayerSettingsPage extends ConsumerWidget {
     );
     final PlayerLyricFontSizePreference lyricFontSizePreference = ref.watch(
       playerLyricFontSizePreferenceLogicProvider,
+    );
+    final DesktopLyricsSettings desktopLyricsSettings = ref.watch(
+      desktopLyricsSettingsControllerProvider,
     );
     final int blacklistCount = ref
         .watch(playerBlacklistControllerProvider)
@@ -100,6 +105,58 @@ class PlayerSettingsPage extends ConsumerWidget {
             trailing: const Icon(Icons.chevron_right_rounded),
             onTap: () => _showLyricFontSizePreferenceSheet(context, ref),
           ),
+          if (PlatformUtil.isDesktop) ...<Widget>[
+            SwitchListTile.adaptive(
+              contentPadding: EdgeInsets.zero,
+              secondary: const Icon(Icons.lyrics_rounded),
+              title: const Text('桌面歌词'),
+              subtitle: Text(
+                desktopLyricsSettings.enabled ? '已开启，关闭主窗口时显示' : '已关闭',
+                style: theme.textTheme.bodySmall,
+              ),
+              value: desktopLyricsSettings.enabled,
+              onChanged: (bool value) async {
+                await ref
+                    .read(desktopLyricsSettingsControllerProvider.notifier)
+                    .setEnabled(value);
+              },
+            ),
+            SwitchListTile.adaptive(
+              contentPadding: EdgeInsets.zero,
+              secondary: const Icon(Icons.vertical_align_top_rounded),
+              title: const Text('桌面歌词置顶'),
+              subtitle: Text(
+                '开启后歌词窗口会保持在其他窗口上方',
+                style: theme.textTheme.bodySmall,
+              ),
+              value: desktopLyricsSettings.alwaysOnTop,
+              onChanged: (bool value) async {
+                await ref
+                    .read(desktopLyricsSettingsControllerProvider.notifier)
+                    .setAlwaysOnTop(value);
+              },
+            ),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.opacity_rounded),
+              title: const Text('桌面歌词透明度'),
+              subtitle: Slider(
+                value: desktopLyricsSettings.opacity,
+                min: DesktopLyricsSettings.minOpacity,
+                max: DesktopLyricsSettings.maxOpacity,
+                divisions: 8,
+                label: '${(desktopLyricsSettings.opacity * 100).round()}%',
+                onChanged: (double value) async {
+                  await ref
+                      .read(desktopLyricsSettingsControllerProvider.notifier)
+                      .setOpacity(value);
+                },
+              ),
+              trailing: Text(
+                '${(desktopLyricsSettings.opacity * 100).round()}%',
+              ),
+            ),
+          ],
           ListTile(
             contentPadding: EdgeInsets.zero,
             leading: const Icon(Icons.block_rounded),
