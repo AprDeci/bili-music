@@ -56,8 +56,12 @@ jobs:
 
       - name: Setup keystore
         run: |
+          test -n '${{ secrets.KEYSTORE }}'
+          test -n '${{ secrets.KEY_PROPERTIES }}'
           echo '${{ secrets.KEYSTORE }}' | base64 --decode > android/app/apr-release-key.jks
           echo '${{ secrets.KEY_PROPERTIES }}' > android/key.properties
+          test -s android/app/apr-release-key.jks
+          grep -q '^storeFile=' android/key.properties
 
       - name: Build Android Split APKs
         run: flutter build apk --release --split-per-abi --flavor production --obfuscate --split-debug-info=./build/app/intermediates
