@@ -42,7 +42,7 @@ void main() {
     );
 
     expect(encoded, startsWith('BM3\n'));
-    expect(encoded, contains('L:BV1#11'));
+    expect(encoded, contains('L:1#11'));
     expect(encoded, isNot(contains('投稿')));
     expect(encoded, isNot(contains('作者')));
     expect(encoded, isNot(contains('cover')));
@@ -94,6 +94,15 @@ void main() {
       '歌单,一=换\n行',
     );
     expect(decoded.favoritesState.entries.single.itemId, 'aid:123:cid:456');
+    expect(
+      ClipboardSyncPayload(
+        userId: '123',
+        updatedAtEpochMs: now.millisecondsSinceEpoch,
+        favoritesState: favoritesState,
+        settings: const <String, String>{},
+      ).toJsonString(),
+      contains('a123#456'),
+    );
   });
 
   test('decodes legacy json payload', () {
@@ -137,6 +146,81 @@ void main() {
     expect(decoded.favoritesState.entries.single.pageTitle, '分段名');
     expect(decoded.favoritesState.memberships.single.addedAt, now);
     expect(decoded.settings['player.blacklist_entries'], '[]');
+  });
+
+  test('decodes previous BM3 refs with BV and av prefixes', () {
+    final ClipboardSyncPayload decoded = ClipboardSyncPayload.fromJsonString(
+      'BM3\nL:BV1#11,av123#456',
+    );
+
+    expect(
+      decoded.favoritesState.entries.map((FavoriteEntry entry) => entry.itemId),
+      containsAll(<String>['bvid:BV1:cid:11', 'aid:123:cid:456']),
+    );
+  });
+
+  test('groups repeated BV ids and merges same-name playlists', () {
+    final DateTime now = DateTime.fromMillisecondsSinceEpoch(1710000000000);
+    final FavoritesState favoritesState = FavoritesState(
+      collections: <FavoriteCollection>[
+        FavoriteCollection(
+          id: 'custom_1',
+          name: 'music',
+          createdAt: now,
+          updatedAt: now,
+        ),
+        FavoriteCollection(
+          id: 'custom_2',
+          name: 'music',
+          createdAt: now,
+          updatedAt: now,
+        ),
+      ],
+      entries: <FavoriteEntry>[
+        _entry('bvid:BV1az4ceJEhk:cid:101', now),
+        _entry('bvid:BV1az4ceJEhk:cid:102', now),
+        _entry('bvid:BV1az4ceJEhk:cid:103', now),
+      ],
+      memberships: <FavoriteMembership>[
+        FavoriteMembership.create(
+          collectionId: 'custom_1',
+          itemId: 'bvid:BV1az4ceJEhk:cid:101',
+          addedAt: now,
+        ),
+        FavoriteMembership.create(
+          collectionId: 'custom_1',
+          itemId: 'bvid:BV1az4ceJEhk:cid:102',
+          addedAt: now,
+        ),
+        FavoriteMembership.create(
+          collectionId: 'custom_2',
+          itemId: 'bvid:BV1az4ceJEhk:cid:103',
+          addedAt: now,
+        ),
+      ],
+    );
+
+    final String encoded = ClipboardSyncPayload(
+      userId: '123',
+      updatedAtEpochMs: now.millisecondsSinceEpoch,
+      favoritesState: favoritesState,
+      settings: const <String, String>{},
+    ).toJsonString();
+    final ClipboardSyncPayload decoded = ClipboardSyncPayload.fromJsonString(
+      encoded,
+    );
+
+    expect(_occurrences(encoded, 'P:music='), 1);
+    expect(encoded, contains('P:music=1az4ceJEhk#101.102.103'));
+    expect(_occurrences(encoded, '1az4ceJEhk'), 1);
+    expect(
+      decoded.favoritesState.entries.map((FavoriteEntry entry) => entry.itemId),
+      containsAll(<String>[
+        'bvid:BV1az4ceJEhk:cid:101',
+        'bvid:BV1az4ceJEhk:cid:102',
+        'bvid:BV1az4ceJEhk:cid:103',
+      ]),
+    );
   });
 
   test('merge keeps local duplicate entries and imports remote-only items', () {
@@ -237,4 +321,8 @@ List<dynamic> _entryToLegacyRow(FavoriteEntry entry) {
     entry.createdAt.millisecondsSinceEpoch,
     entry.updatedAt.millisecondsSinceEpoch,
   ];
+}
+
+int _occurrences(String value, String pattern) {
+  return RegExp(RegExp.escape(pattern)).allMatches(value).length;
 }

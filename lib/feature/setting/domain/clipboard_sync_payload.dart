@@ -1,3 +1,4 @@
+import 'dart:collection';
 import 'dart:convert';
 
 import 'package:bilimusic/feature/favorites/domain/favorite_collection.dart';
@@ -63,6 +64,8 @@ class ClipboardSyncPayload {
       lines.add('L:${likedRefs.join(',')}');
     }
 
+    final Map<String, List<FavoriteEntry>> playlistItemsByName =
+        <String, List<FavoriteEntry>>{};
     for (final FavoriteCollection collection in favoritesState.collections) {
       if (collection.isLikedCollection) {
         continue;
@@ -71,14 +74,24 @@ class ClipboardSyncPayload {
       if (name.isEmpty) {
         continue;
       }
-      final List<String> refs = _itemRefsForCollection(
-        favoritesState,
+      final List<FavoriteEntry> items = favoritesState.itemsForCollection(
         collection.id,
       );
+      if (items.isEmpty) {
+        continue;
+      }
+      playlistItemsByName
+          .putIfAbsent(name, () => <FavoriteEntry>[])
+          .addAll(items);
+    }
+
+    for (final MapEntry<String, List<FavoriteEntry>> entry
+        in playlistItemsByName.entries) {
+      final List<String> refs = _itemRefsForItems(entry.value);
       if (refs.isEmpty) {
         continue;
       }
-      lines.add('P:${_escapeCollectionName(name)}=${refs.join(',')}');
+      lines.add('P:${_escapeCollectionName(entry.key)}=${refs.join(',')}');
     }
 
     return lines.join('\n');
@@ -163,40 +176,61 @@ void _addBm3Refs({
   required DateTime now,
 }) {
   for (final String ref in refs) {
-    final _DecodedItemRef? decodedRef = _decodeItemRef(ref);
-    if (decodedRef == null) {
-      continue;
-    }
-    entries.putIfAbsent(
-      decodedRef.stableId,
-      () => FavoriteEntry(
+    for (final _DecodedItemRef decodedRef in _decodeItemRefs(ref)) {
+      entries.putIfAbsent(
+        decodedRef.stableId,
+        () => FavoriteEntry(
+          itemId: decodedRef.stableId,
+          aid: decodedRef.aid ?? 0,
+          bvid: decodedRef.bvid ?? '',
+          title: ref,
+          author: '',
+          coverUrl: '',
+          cid: decodedRef.cid,
+          createdAt: now,
+          updatedAt: now,
+        ),
+      );
+      final FavoriteMembership membership = FavoriteMembership.create(
+        collectionId: collectionId,
         itemId: decodedRef.stableId,
-        aid: decodedRef.aid ?? 0,
-        bvid: decodedRef.bvid ?? '',
-        title: ref,
-        author: '',
-        coverUrl: '',
-        cid: decodedRef.cid,
-        createdAt: now,
-        updatedAt: now,
-      ),
-    );
-    final FavoriteMembership membership = FavoriteMembership.create(
-      collectionId: collectionId,
-      itemId: decodedRef.stableId,
-      addedAt: now,
-    );
-    memberships[membership.id] = membership;
+        addedAt: now,
+      );
+      memberships[membership.id] = membership;
+    }
   }
 }
 
 List<String> _itemRefsForCollection(FavoritesState state, String collectionId) {
-  return state
-      .itemsForCollection(collectionId)
-      .map((FavoriteEntry entry) => _encodeItemRef(entry.itemId))
-      .where((String ref) => ref.trim().isNotEmpty)
-      .toSet()
-      .toList(growable: false);
+  return _itemRefsForItems(state.itemsForCollection(collectionId));
+}
+
+List<String> _itemRefsForItems(List<FavoriteEntry> items) {
+  final Map<String, LinkedHashSet<int>> groupedCids =
+      <String, LinkedHashSet<int>>{};
+  final LinkedHashSet<String> refs = LinkedHashSet<String>();
+
+  for (final FavoriteEntry entry in items) {
+    final _EncodedItemRef? encodedRef = _encodeItemRef(entry.itemId);
+    if (encodedRef == null) {
+      continue;
+    }
+    final int? cid = encodedRef.cid;
+    if (cid == null || cid <= 0) {
+      refs.add(encodedRef.base);
+      continue;
+    }
+    groupedCids
+        .putIfAbsent(encodedRef.base, () => LinkedHashSet<int>())
+        .add(cid);
+  }
+
+  for (final MapEntry<String, LinkedHashSet<int>> entry
+      in groupedCids.entries) {
+    refs.add('${entry.key}#${entry.value.join('.')}');
+  }
+
+  return refs.toList(growable: false);
 }
 
 FavoritesState mergeClipboardFavorites({
@@ -305,24 +339,59 @@ String _collectionIdForBm3Name(String name) {
   return 'sync:$encoded';
 }
 
-String _encodeItemRef(String stableId) {
+_EncodedItemRef? _encodeItemRef(String stableId) {
   RegExpMatch? match = RegExp(r'^bvid:([^:]+):cid:(\d+)$').firstMatch(stableId);
   if (match != null) {
-    return '${match.group(1)}#${match.group(2)}';
+    return _EncodedItemRef(
+      base: _trimBvPrefix(match.group(1) ?? ''),
+      cid: int.tryParse(match.group(2) ?? ''),
+    );
   }
   match = RegExp(r'^bvid:([^:]+)$').firstMatch(stableId);
   if (match != null) {
-    return match.group(1) ?? '';
+    return _EncodedItemRef(base: _trimBvPrefix(match.group(1) ?? ''));
   }
   match = RegExp(r'^aid:(\d+):cid:(\d+)$').firstMatch(stableId);
   if (match != null) {
-    return 'av${match.group(1)}#${match.group(2)}';
+    return _EncodedItemRef(
+      base: 'a${match.group(1)}',
+      cid: int.tryParse(match.group(2) ?? ''),
+    );
   }
   match = RegExp(r'^aid:(\d+)$').firstMatch(stableId);
   if (match != null) {
-    return 'av${match.group(1)}';
+    return _EncodedItemRef(base: 'a${match.group(1)}');
   }
-  return stableId;
+  return _EncodedItemRef(base: stableId);
+}
+
+List<_DecodedItemRef> _decodeItemRefs(String rawRef) {
+  final String ref = rawRef.trim();
+  final int separatorIndex = ref.indexOf('#');
+  if (separatorIndex <= 0 || separatorIndex >= ref.length - 1) {
+    final _DecodedItemRef? decodedRef = _decodeItemRef(ref);
+    return decodedRef == null
+        ? const <_DecodedItemRef>[]
+        : <_DecodedItemRef>[decodedRef];
+  }
+
+  final String base = ref.substring(0, separatorIndex);
+  final List<String> cidParts = ref
+      .substring(separatorIndex + 1)
+      .split('.')
+      .where((String value) => value.trim().isNotEmpty)
+      .toList(growable: false);
+  if (cidParts.length <= 1) {
+    final _DecodedItemRef? decodedRef = _decodeItemRef(ref);
+    return decodedRef == null
+        ? const <_DecodedItemRef>[]
+        : <_DecodedItemRef>[decodedRef];
+  }
+
+  return cidParts
+      .map((String cid) => _decodeItemRef('$base#$cid'))
+      .whereType<_DecodedItemRef>()
+      .toList(growable: false);
 }
 
 _DecodedItemRef? _decodeItemRef(String rawRef) {
@@ -351,7 +420,7 @@ _DecodedItemRef? _decodeItemRef(String rawRef) {
     return _DecodedItemRef(stableId: 'bvid:$bvid', bvid: bvid);
   }
 
-  match = RegExp(r'^av(\d+)#(\d+)$').firstMatch(ref);
+  match = RegExp(r'^(?:av|a)(\d+)#(\d+)$').firstMatch(ref);
   if (match != null) {
     final int aid = int.tryParse(match.group(1) ?? '') ?? 0;
     final int cid = int.tryParse(match.group(2) ?? '') ?? 0;
@@ -361,7 +430,7 @@ _DecodedItemRef? _decodeItemRef(String rawRef) {
     return _DecodedItemRef(stableId: 'aid:$aid:cid:$cid', aid: aid, cid: cid);
   }
 
-  match = RegExp(r'^av(\d+)$').firstMatch(ref);
+  match = RegExp(r'^(?:av|a)(\d+)$').firstMatch(ref);
   if (match != null) {
     final int aid = int.tryParse(match.group(1) ?? '') ?? 0;
     if (aid <= 0) {
@@ -373,7 +442,35 @@ _DecodedItemRef? _decodeItemRef(String rawRef) {
   if (ref.startsWith('bvid:') || ref.startsWith('aid:')) {
     return _DecodedItemRef(stableId: ref);
   }
+
+  match = RegExp(r'^([^#,\s]+)#(\d+)$').firstMatch(ref);
+  if (match != null) {
+    final String bvid = _restoreBvPrefix(match.group(1) ?? '');
+    final int cid = int.tryParse(match.group(2) ?? '') ?? 0;
+    if (bvid.isEmpty || cid <= 0) {
+      return null;
+    }
+    return _DecodedItemRef(
+      stableId: 'bvid:$bvid:cid:$cid',
+      bvid: bvid,
+      cid: cid,
+    );
+  }
+
+  match = RegExp(r'^([^#,\s]+)$').firstMatch(ref);
+  if (match != null) {
+    final String bvid = _restoreBvPrefix(match.group(1) ?? '');
+    return _DecodedItemRef(stableId: 'bvid:$bvid', bvid: bvid);
+  }
   return null;
+}
+
+String _trimBvPrefix(String bvid) {
+  return bvid.startsWith('BV') ? bvid.substring(2) : bvid;
+}
+
+String _restoreBvPrefix(String value) {
+  return value.startsWith('BV') ? value : 'BV$value';
 }
 
 List<String> _readBm3Refs(String value) {
@@ -460,6 +557,13 @@ class _Bm3PlaylistLine {
 
   final String name;
   final List<String> refs;
+}
+
+class _EncodedItemRef {
+  const _EncodedItemRef({required this.base, this.cid});
+
+  final String base;
+  final int? cid;
 }
 
 class _DecodedItemRef {
