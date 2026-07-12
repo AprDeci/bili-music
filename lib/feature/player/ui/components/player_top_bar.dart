@@ -28,6 +28,7 @@ class PlayerTopBar extends StatelessWidget {
             child: Center(child: PlayerPageIndicator(currentPage: currentPage)),
           ),
           IconButton(
+            key: const Key('playerMenuButton'),
             onPressed: onOpenMenu,
             icon: const HugeIcon(icon: HugeIcons.strokeRoundedMenu01, size: 20),
           ),

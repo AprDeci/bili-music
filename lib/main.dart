@@ -10,6 +10,7 @@ import 'package:bilimusic/feature/favorites/logic/favorites_controller.dart';
 import 'package:bilimusic/feature/metadata/logic/metadata_controller.dart';
 import 'package:bilimusic/feature/player/logic/app_audio_handler.dart';
 import 'package:bilimusic/feature/player/logic/player_controller.dart';
+import 'package:bilimusic/feature/player/logic/sleep_timer_controller.dart';
 import 'package:bilimusic/feature/up/logic/favorite_up_controller.dart';
 import 'package:bilimusic/myApp.dart';
 import 'package:flutter/widgets.dart';
@@ -78,13 +79,15 @@ class _AppBootstrap extends ConsumerStatefulWidget {
   ConsumerState<_AppBootstrap> createState() => _AppBootstrapState();
 }
 
-class _AppBootstrapState extends ConsumerState<_AppBootstrap> {
+class _AppBootstrapState extends ConsumerState<_AppBootstrap>
+    with WidgetsBindingObserver {
   bool _didBootstrap = false;
   DesktopHotkeyController? _desktopHotkeyController;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     Future<void>.microtask(() async {
       if (!mounted || _didBootstrap) {
         return;
@@ -108,6 +111,7 @@ class _AppBootstrapState extends ConsumerState<_AppBootstrap> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     final DesktopHotkeyController? desktopHotkeyController =
         _desktopHotkeyController;
     if (desktopHotkeyController != null) {
@@ -119,6 +123,13 @@ class _AppBootstrapState extends ConsumerState<_AppBootstrap> {
       );
     }
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      unawaited(ref.read(sleepTimerControllerProvider.notifier).expireIfDue());
+    }
   }
 
   @override

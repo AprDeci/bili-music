@@ -17,6 +17,7 @@ import 'package:bilimusic/feature/player/ui/components/player_meta_page.dart';
 import 'package:bilimusic/feature/player/ui/components/player_part_selector.dart';
 import 'package:bilimusic/feature/player/ui/components/player_queue_sheet.dart';
 import 'package:bilimusic/feature/player/ui/components/player_top_bar.dart';
+import 'package:bilimusic/feature/player/ui/sleep_timer_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -102,124 +103,110 @@ class _PlayerPageState extends ConsumerState<PlayerPage> {
 
     return Scaffold(
       backgroundColor: colorScheme.surface,
-      body: DecoratedBox(
-        decoration: BoxDecoration(),
-        child: Stack(
-          children: <Widget>[
-            Positioned.fill(
-              child: PlayerDynamicBackdrop(baseColor: coverColor),
-            ),
-            SafeArea(
-              child: Center(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 520),
+      body: Stack(
+        children: <Widget>[
+          Positioned.fill(child: PlayerDynamicBackdrop(baseColor: coverColor)),
+          SafeArea(
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 520),
 
-                  child: Column(
-                    children: <Widget>[
-                      PlayerTopBar(
-                        currentPage: _currentPage,
-                        onBack: () => Navigator.of(context).maybePop(),
-                        onOpenMenu: item == null
-                            ? null
-                            : () => _showPlayerMenu(item),
-                      ),
-                      const SizedBox(height: 18),
-                      Expanded(
-                        child: PageView(
-                          controller: _pageController,
-                          onPageChanged: (int index) {
-                            setState(() {
-                              _currentPage = index;
-                            });
-                          },
-                          children: <Widget>[
-                            Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                              ),
-                              child: PlayerMetaPage(state: state, item: item),
-                            ),
-                            Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                              ),
-                              child: PlayerMainPage(
+                child: Column(
+                  children: <Widget>[
+                    PlayerTopBar(
+                      currentPage: _currentPage,
+                      onBack: () => Navigator.of(context).maybePop(),
+                      onOpenMenu: item == null
+                          ? null
+                          : () => _showPlayerMenu(item),
+                    ),
+                    const SizedBox(height: 18),
+                    Expanded(
+                      child: PageView(
+                        controller: _pageController,
+                        onPageChanged: (int index) {
+                          setState(() {
+                            _currentPage = index;
+                          });
+                        },
+                        children: <Widget>[
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            child: PlayerMetaPage(state: state, item: item),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            child: PlayerMainPage(
+                              state: state,
+                              item: item,
+                              displayCoverUrl: displayCoverUrl,
+                              commentCount: item?.replyCount,
+                              availableParts: availableParts,
+                              onPartTap:
+                                  item == null || availableParts.length < 2
+                                  ? null
+                                  : () => showPlayerPartSelector(
+                                      context: context,
+                                      parts: availableParts,
+                                      currentItem: item,
+                                      state: state,
+                                      controller: playerController,
+                                    ),
+                              onOpenCollectionSheet: item == null
+                                  ? null
+                                  : () => showPlayerCollectionSheet(
+                                      context: context,
+                                      item: item,
+                                    ),
+                              isFavorite: isFavorite,
+                              onFavoriteToggle: item == null
+                                  ? null
+                                  : () => _toggleFavorite(item),
+                              onSeek: (double value) {
+                                final int totalMs =
+                                    (ref
+                                                .read(playerControllerProvider)
+                                                .duration ??
+                                            Duration.zero)
+                                        .inMilliseconds;
+                                final Duration position = Duration(
+                                  milliseconds: (totalMs * value).round(),
+                                );
+                                playerController.seek(position);
+                              },
+                              onToggleQueueMode:
+                                  playerController.toggleQueueMode,
+                              onBackward: playerController.skipToPrevious,
+                              onTogglePlayback: playerController.togglePlayback,
+                              onForward: playerController.skipToNext,
+                              onOpenQueue: () => showPlayerQueueSheet(
+                                context: context,
                                 state: state,
-                                item: item,
-                                displayCoverUrl: displayCoverUrl,
-                                commentCount: item?.replyCount,
-                                availableParts: availableParts,
-                                onPartTap:
-                                    item == null || availableParts.length < 2
-                                    ? null
-                                    : () => showPlayerPartSelector(
-                                        context: context,
-                                        parts: availableParts,
-                                        currentItem: item,
-                                        state: state,
-                                        controller: playerController,
-                                      ),
-                                onOpenCollectionSheet: item == null
-                                    ? null
-                                    : () => showPlayerCollectionSheet(
-                                        context: context,
-                                        item: item,
-                                      ),
-                                isFavorite: isFavorite,
-                                onFavoriteToggle: item == null
-                                    ? null
-                                    : () => _toggleFavorite(item),
-                                onSeek: (double value) {
-                                  final int totalMs =
-                                      (ref
-                                                  .read(
-                                                    playerControllerProvider,
-                                                  )
-                                                  .duration ??
-                                              Duration.zero)
-                                          .inMilliseconds;
-                                  final Duration position = Duration(
-                                    milliseconds: (totalMs * value).round(),
-                                  );
-                                  playerController.seek(position);
-                                },
-                                onToggleQueueMode:
-                                    playerController.toggleQueueMode,
-                                onBackward: playerController.skipToPrevious,
-                                onTogglePlayback:
-                                    playerController.togglePlayback,
-                                onForward: playerController.skipToNext,
-                                onOpenQueue: () => showPlayerQueueSheet(
-                                  context: context,
-                                  state: state,
-                                ),
-                                onOpenComments: item == null
-                                    ? null
-                                    : () => _openComments(item),
                               ),
+                              onOpenComments: item == null
+                                  ? null
+                                  : () => _openComments(item),
                             ),
-                            Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                              ),
-                              child: PlayerLyricPage(
-                                state: state,
-                                item: item,
-                                isActive: isLyricPageActive,
-                                onSeek: playerController.seek,
-                                activeColor: coverColor,
-                              ),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            child: PlayerLyricPage(
+                              state: state,
+                              item: item,
+                              isActive: isLyricPageActive,
+                              onSeek: playerController.seek,
+                              activeColor: coverColor,
                             ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -263,6 +250,19 @@ class _PlayerPageState extends ConsumerState<PlayerPage> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
+                ListTile(
+                  key: const Key('sleepTimerMenuEntry'),
+                  leading: const Icon(Icons.timer_outlined),
+                  title: const Text('定时关闭'),
+                  onTap: () {
+                    Navigator.of(context).pop();
+                    Navigator.of(this.context).push(
+                      MaterialPageRoute<void>(
+                        builder: (_) => const SleepTimerPage(),
+                      ),
+                    );
+                  },
+                ),
                 ListTile(
                   leading: const Icon(Icons.open_in_new_rounded),
                   title: const Text('外部应用打开'),
