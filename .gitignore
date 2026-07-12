@@ -49,7 +49,6 @@ docs/
 apr-release-key.jks
 .tool-versions
 .mindfs/
-.trae/
 
 # Flutter Demon user preferences (not tracked)
 .fdemon/settings.local.toml
