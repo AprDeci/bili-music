@@ -221,6 +221,7 @@ class _CountdownCard extends StatelessWidget {
     final ColorScheme colorScheme = theme.colorScheme;
 
     return Card(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 26),
         child: Column(
@@ -258,6 +259,7 @@ class _OptionsCard extends StatelessWidget {
     final ThemeData theme = Theme.of(context);
 
     return Card(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       child: Column(
         children: List<Widget>.generate(_fixedSleepOptions.length, (int index) {
           final _FixedSleepOption option = _fixedSleepOptions[index];
