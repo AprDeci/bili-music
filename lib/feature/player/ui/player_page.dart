@@ -19,7 +19,6 @@ import 'package:bilimusic/feature/player/ui/components/player_queue_sheet.dart';
 import 'package:bilimusic/feature/player/ui/components/player_top_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class PlayerPage extends ConsumerStatefulWidget {
@@ -120,9 +119,9 @@ class _PlayerPageState extends ConsumerState<PlayerPage> {
                       PlayerTopBar(
                         currentPage: _currentPage,
                         onBack: () => Navigator.of(context).maybePop(),
-                        onOpenInBrowser: item == null
+                        onOpenMenu: item == null
                             ? null
-                            : () => _openInBrowser(item),
+                            : () => _showPlayerMenu(item),
                       ),
                       const SizedBox(height: 18),
                       Expanded(
@@ -249,6 +248,34 @@ class _PlayerPageState extends ConsumerState<PlayerPage> {
     // 适用navigator进入 不用gorouter 使评论区压在播放器上
     Navigator.of(context).push(
       MaterialPageRoute(builder: (context) => CommentPage(target: target)),
+    );
+  }
+
+  Future<void> _showPlayerMenu(PlayableItem item) async {
+    await showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (BuildContext context) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                ListTile(
+                  leading: const Icon(Icons.open_in_new_rounded),
+                  title: const Text('外部应用打开'),
+                  onTap: () {
+                    Navigator.of(context).pop();
+                    _openInBrowser(item);
+                  },
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }

@@ -7,16 +7,15 @@ class PlayerTopBar extends StatelessWidget {
     super.key,
     required this.currentPage,
     required this.onBack,
-    required this.onOpenInBrowser,
+    required this.onOpenMenu,
   });
 
   final int currentPage;
   final VoidCallback onBack;
-  final VoidCallback? onOpenInBrowser;
+  final VoidCallback? onOpenMenu;
 
   @override
   Widget build(BuildContext context) {
-
     return SizedBox(
       height: 48,
       child: Row(
@@ -29,11 +28,8 @@ class PlayerTopBar extends StatelessWidget {
             child: Center(child: PlayerPageIndicator(currentPage: currentPage)),
           ),
           IconButton(
-            onPressed: onOpenInBrowser,
-            icon: const HugeIcon(
-              icon: HugeIcons.strokeRoundedShare04,
-              size: 20,
-            ),
+            onPressed: onOpenMenu,
+            icon: const HugeIcon(icon: HugeIcons.strokeRoundedMenu01, size: 20),
           ),
         ],
       ),
