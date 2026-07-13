@@ -18,6 +18,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:hugeicons/hugeicons.dart';
 
 class ProfilePage extends ConsumerStatefulWidget {
   const ProfilePage({super.key});
@@ -679,7 +680,7 @@ class _ProfileQuickActions extends StatelessWidget {
         const SizedBox(width: 12),
         Expanded(
           child: _ProfileQuickActionCard(
-            icon: Icons.person_add_alt_1_rounded,
+            icon: BmIcons.bilier,
             title: 'UP主',
             count: favoriteUpCount,
             onTap: onFavoriteUpTap,
@@ -731,7 +732,7 @@ class _ProfileQuickActionCard extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: 8),
         child: Column(
           children: <Widget>[
-            Icon(icon, color: accentColor, size: 24),
+            Icon(icon, color: accentColor, size: 26),
             const SizedBox(height: 4),
             Text(
               title,
