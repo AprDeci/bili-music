@@ -20,20 +20,3 @@ class PlayerSettingsLogic extends _$PlayerSettingsLogic {
         .writeBool(HiveKeys.playerAllowMixWithOthers, value);
   }
 }
-
-@riverpod
-class PlayerAutoEnqueueAllPartsLogic extends _$PlayerAutoEnqueueAllPartsLogic {
-  @override
-  bool build() {
-    return ref
-        .read(appSettingsStoreProvider)
-        .readBool(HiveKeys.playerAutoEnqueueAllParts, defaultValue: false);
-  }
-
-  Future<void> setAutoEnqueueAllParts(bool value) async {
-    state = value;
-    await ref
-        .read(appSettingsStoreProvider)
-        .writeBool(HiveKeys.playerAutoEnqueueAllParts, value);
-  }
-}
