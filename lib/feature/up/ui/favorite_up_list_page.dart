@@ -1,5 +1,6 @@
 import 'package:bilimusic/common/components/bottom_page_spacer.dart';
 import 'package:bilimusic/common/components/user_avatar.dart';
+import 'package:bilimusic/common/util/platform_util.dart';
 import 'package:bilimusic/feature/up/domain/favorite_up.dart';
 import 'package:bilimusic/feature/up/logic/favorite_up_controller.dart';
 import 'package:flutter/material.dart';
@@ -14,7 +15,7 @@ class FavoriteUpListPage extends ConsumerWidget {
     final List<FavoriteUp> ups = ref.watch(favoriteUpControllerProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('收藏UP主')),
+      appBar: PlatformUtil.isMobile ? AppBar(title: const Text('收藏UP主')) : null,
       body: ups.isEmpty
           ? const Center(child: Text('还没有收藏UP主'))
           : ListView.separated(
