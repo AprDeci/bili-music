@@ -13,6 +13,9 @@ class PlayerSettingsPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final ThemeData theme = Theme.of(context);
     final bool allowMixWithOthers = ref.watch(playerSettingsLogicProvider);
+    final bool autoEnqueueAllParts = ref.watch(
+      playerAutoEnqueueAllPartsLogicProvider,
+    );
     final PlayerAudioQualityPreference audioQualityPreference = ref.watch(
       playerAudioQualityPreferenceLogicProvider,
     );
@@ -36,6 +39,21 @@ class PlayerSettingsPage extends ConsumerWidget {
                   },
                 )
               : Container(),
+          SwitchListTile.adaptive(
+            contentPadding: EdgeInsets.zero,
+            secondary: const Icon(Icons.queue_music_rounded),
+            title: const Text('多P视频默认加入全部分P'),
+            subtitle: Text(
+              '开启后，点“加入队列”会按顺序添加该视频的所有分P',
+              style: theme.textTheme.bodySmall,
+            ),
+            value: autoEnqueueAllParts,
+            onChanged: (bool value) async {
+              await ref
+                  .read(playerAutoEnqueueAllPartsLogicProvider.notifier)
+                  .setAutoEnqueueAllParts(value);
+            },
+          ),
           ListTile(
             contentPadding: EdgeInsets.zero,
             leading: const Icon(Icons.graphic_eq_rounded),

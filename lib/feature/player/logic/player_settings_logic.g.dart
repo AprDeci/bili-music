@@ -61,3 +61,57 @@ abstract class _$PlayerSettingsLogic extends $Notifier<bool> {
     element.handleCreate(ref, build);
   }
 }
+
+@ProviderFor(PlayerAutoEnqueueAllPartsLogic)
+final playerAutoEnqueueAllPartsLogicProvider =
+    PlayerAutoEnqueueAllPartsLogicProvider._();
+
+final class PlayerAutoEnqueueAllPartsLogicProvider
+    extends $NotifierProvider<PlayerAutoEnqueueAllPartsLogic, bool> {
+  PlayerAutoEnqueueAllPartsLogicProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'playerAutoEnqueueAllPartsLogicProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$playerAutoEnqueueAllPartsLogicHash();
+
+  @$internal
+  @override
+  PlayerAutoEnqueueAllPartsLogic create() => PlayerAutoEnqueueAllPartsLogic();
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(bool value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<bool>(value),
+    );
+  }
+}
+
+String _$playerAutoEnqueueAllPartsLogicHash() =>
+    r'17576078e7c97ebcef61ef3513506f54727c60bc';
+
+abstract class _$PlayerAutoEnqueueAllPartsLogic extends $Notifier<bool> {
+  bool build();
+  @$mustCallSuper
+  @override
+  void runBuild() {
+    final ref = this.ref as $Ref<bool, bool>;
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<bool, bool>,
+              bool,
+              Object?,
+              Object?
+            >;
+    element.handleCreate(ref, build);
+  }
+}

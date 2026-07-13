@@ -11,6 +11,8 @@ class HiveKeys {
   static const String themeVariant = 'themeVariant';
   static const String lightThemeVariant = 'lightThemeVariant';
   static const String playerAllowMixWithOthers = 'player.allow_mix_with_others';
+  static const String playerAutoEnqueueAllParts =
+      'player.auto_enqueue_all_parts';
   static const String playerAudioQualityPreference =
       'player.audio_quality_preference';
   static const String playerVolume = 'player.volume';
