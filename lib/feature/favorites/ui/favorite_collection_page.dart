@@ -542,6 +542,18 @@ class _FavoriteCollectionPageState
                     },
                   ),
                   _FavoriteActionTile(
+                    icon: Icons.library_add_rounded,
+                    title: '添加全部分P',
+                    onTap: () async {
+                      Navigator.of(sheetContext).pop();
+                      await _enqueueAllParts(
+                        context,
+                        ref,
+                        playableItem: playableItem,
+                      );
+                    },
+                  ),
+                  _FavoriteActionTile(
                     icon: Icons.share_rounded,
                     title: '分享',
                     onTap: () {
@@ -556,6 +568,28 @@ class _FavoriteCollectionPageState
         );
       },
     );
+  }
+
+  Future<void> _enqueueAllParts(
+    BuildContext context,
+    WidgetRef ref, {
+    required PlayableItem playableItem,
+  }) async {
+    try {
+      final int addedCount = await PlayerUtil.enqueueAllParts(
+        ref,
+        playableItem,
+      );
+      if (!context.mounted) {
+        return;
+      }
+      ToastUtil.show(addedCount > 0 ? '已加入 $addedCount 个分P' : '全部分P已在播放队列中');
+    } on Object catch (error) {
+      if (!context.mounted) {
+        return;
+      }
+      ToastUtil.show('操作失败: $error');
+    }
   }
 
   void _openOwnerPage(BuildContext context, FavoriteEntry item) {

@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:bilimusic/common/components/cached_image.dart';
+import 'package:bilimusic/common/util/player_util.dart';
 import 'package:bilimusic/common/util/toast_util.dart';
 import 'package:bilimusic/feature/favorites/logic/favorites_controller.dart';
 import 'package:bilimusic/feature/player/data/bili_player_repository.dart';
@@ -286,6 +287,27 @@ class _VideoCardActions extends StatelessWidget {
     }
   }
 
+  Future<void> _enqueueAllParts(BuildContext context) async {
+    final VideoCardPlayableActions? actions = playableActions;
+    if (actions == null) {
+      return;
+    }
+
+    try {
+      final int addedCount = await PlayerUtil.enqueueAllParts(
+        ref,
+        actions.playableItem,
+      );
+      if (context.mounted) {
+        ToastUtil.show(addedCount > 0 ? '已加入 $addedCount 个分P' : '全部分P已在播放队列中');
+      }
+    } on Object catch (error) {
+      if (context.mounted) {
+        ToastUtil.show('操作失败: $error');
+      }
+    }
+  }
+
   Future<void> _addToCollection(BuildContext context) async {
     final VideoCardPlayableActions? actions = playableActions;
     if (actions == null) {
@@ -335,6 +357,8 @@ class _VideoCardActions extends StatelessWidget {
                   unawaited(_playNext(context));
                 case _VideoCardQueueAction.enqueue:
                   unawaited(_enqueue(context));
+                case _VideoCardQueueAction.enqueueAllParts:
+                  unawaited(_enqueueAllParts(context));
                 case _VideoCardQueueAction.addToCollection:
                   unawaited(_addToCollection(context));
               }
@@ -359,6 +383,15 @@ class _VideoCardActions extends StatelessWidget {
                         contentPadding: EdgeInsets.zero,
                       ),
                     ),
+                  if (playableActions != null)
+                    const PopupMenuItem<_VideoCardQueueAction>(
+                      value: _VideoCardQueueAction.enqueueAllParts,
+                      child: ListTile(
+                        leading: Icon(Icons.library_add_rounded),
+                        title: Text('添加全部分P'),
+                        contentPadding: EdgeInsets.zero,
+                      ),
+                    ),
                   if (onAddToCollection != null || playableActions != null)
                     const PopupMenuItem<_VideoCardQueueAction>(
                       value: _VideoCardQueueAction.addToCollection,
@@ -380,7 +413,12 @@ class _VideoCardActions extends StatelessWidget {
   }
 }
 
-enum _VideoCardQueueAction { playNext, enqueue, addToCollection }
+enum _VideoCardQueueAction {
+  playNext,
+  enqueue,
+  enqueueAllParts,
+  addToCollection,
+}
 
 class VideoCardIconAction extends StatelessWidget {
   const VideoCardIconAction({
