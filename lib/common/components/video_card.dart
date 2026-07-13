@@ -209,12 +209,14 @@ class _VideoCardActions extends StatelessWidget {
   final VideoCardPlayableActions? playableActions;
 
   Future<void> _toggleFavorite(BuildContext context) async {
+    final FutureOr<void> Function()? callback = onFavoriteToggle;
+    if (callback != null) {
+      await Future<void>.sync(callback);
+      return;
+    }
+
     final VideoCardPlayableActions? actions = playableActions;
     if (actions == null) {
-      final FutureOr<void> Function()? callback = onFavoriteToggle;
-      if (callback != null) {
-        await Future<void>.sync(callback);
-      }
       return;
     }
 
@@ -236,12 +238,14 @@ class _VideoCardActions extends StatelessWidget {
   }
 
   Future<void> _playNext(BuildContext context) async {
+    final FutureOr<void> Function()? callback = onPlayNext;
+    if (callback != null) {
+      await Future<void>.sync(callback);
+      return;
+    }
+
     final VideoCardPlayableActions? actions = playableActions;
     if (actions == null) {
-      final FutureOr<void> Function()? callback = onPlayNext;
-      if (callback != null) {
-        await Future<void>.sync(callback);
-      }
       return;
     }
 
@@ -261,12 +265,14 @@ class _VideoCardActions extends StatelessWidget {
   }
 
   Future<void> _enqueue(BuildContext context) async {
+    final FutureOr<void> Function()? callback = onEnqueue;
+    if (callback != null) {
+      await Future<void>.sync(callback);
+      return;
+    }
+
     final VideoCardPlayableActions? actions = playableActions;
     if (actions == null) {
-      final FutureOr<void> Function()? callback = onEnqueue;
-      if (callback != null) {
-        await Future<void>.sync(callback);
-      }
       return;
     }
 
@@ -309,12 +315,14 @@ class _VideoCardActions extends StatelessWidget {
   }
 
   Future<void> _addToCollection(BuildContext context) async {
+    final FutureOr<void> Function()? callback = onAddToCollection;
+    if (callback != null) {
+      await Future<void>.sync(callback);
+      return;
+    }
+
     final VideoCardPlayableActions? actions = playableActions;
     if (actions == null) {
-      final FutureOr<void> Function()? callback = onAddToCollection;
-      if (callback != null) {
-        await Future<void>.sync(callback);
-      }
       return;
     }
 
@@ -332,6 +340,7 @@ class _VideoCardActions extends StatelessWidget {
         onPlayNext != null || onEnqueue != null || playableActions != null;
     final bool hasCollectionAction =
         onAddToCollection != null || playableActions != null;
+    final bool hasEnqueueAllPartsAction = playableActions != null;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -383,7 +392,7 @@ class _VideoCardActions extends StatelessWidget {
                         contentPadding: EdgeInsets.zero,
                       ),
                     ),
-                  if (playableActions != null)
+                  if (hasEnqueueAllPartsAction)
                     const PopupMenuItem<_VideoCardQueueAction>(
                       value: _VideoCardQueueAction.enqueueAllParts,
                       child: ListTile(

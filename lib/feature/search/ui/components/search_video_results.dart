@@ -112,6 +112,10 @@ class SearchVideoResults extends StatelessWidget {
                 ),
                 onTap: () => onPlayItem(item),
                 isFavorite: isFavorite,
+                playableActions: VideoCardPlayableActions(
+                  playableItem: playableItem,
+                  isFavorite: isFavorite,
+                ),
                 onFavoriteToggle: () async {
                   try {
                     final PlayableItem resolvedItem = await ref

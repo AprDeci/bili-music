@@ -69,7 +69,6 @@ class _SearchPageState extends ConsumerState<SearchPage>
     SearchPageController controller, [
     String? value,
   ]) async {
-
     FocusManager.instance.primaryFocus?.unfocus();
 
     await controller.submitSearch(value);
