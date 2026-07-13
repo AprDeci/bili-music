@@ -82,6 +82,7 @@ class DesktopTrayController with TrayListener, WindowListener {
       return;
     }
     _isExitRequested = true;
+    await windowManager.hide();
     await onExitRequested();
     detach();
     await trayManager.destroy();
