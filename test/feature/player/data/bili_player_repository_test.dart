@@ -36,6 +36,41 @@ void main() {
       expect(apiClient.requests.single.queryParameters['aid'], 1001);
     });
 
+    test('resolveAllParts returns ordered enriched parts', () async {
+      final _FakeBiliHttpClient apiClient = _FakeBiliHttpClient(
+        responses: <String, Map<String, dynamic>>{
+          '/x/web-interface/view': _viewResponse(),
+        },
+      );
+      final BiliPlayerRepository repository = BiliPlayerRepository(apiClient);
+
+      final List<PlayableItem> parts = await repository.resolveAllParts(
+        _baseItem(),
+      );
+
+      expect(parts, hasLength(2));
+      expect(parts.map((PlayableItem item) => item.page), <int?>[1, 2]);
+      expect(parts.map((PlayableItem item) => item.cid), <int?>[111, 222]);
+      expect(parts.map((PlayableItem item) => item.pageTitle), <String?>[
+        'Part 1',
+        'Part 2',
+      ]);
+      expect(
+        parts.every((PlayableItem item) => item.title == 'View Title'),
+        isTrue,
+      );
+      expect(
+        parts.every((PlayableItem item) => item.author == 'Owner Name'),
+        isTrue,
+      );
+      expect(
+        parts.every(
+          (PlayableItem item) => item.description == 'View description',
+        ),
+        isTrue,
+      );
+    });
+
     test(
       'resolveAudioStream parses dash audio and selects auto highest',
       () async {

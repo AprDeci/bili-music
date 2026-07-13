@@ -1,4 +1,5 @@
 import 'package:bilimusic/common/util/platform_util.dart';
+import 'package:bilimusic/feature/player/data/bili_player_repository.dart';
 import 'package:bilimusic/feature/player/domain/playable_item.dart';
 import 'package:bilimusic/feature/player/logic/player_controller.dart';
 import 'package:bilimusic/router/util/player_navigation.dart';
@@ -45,6 +46,22 @@ class PlayerUtil {
       startIndex: 0,
       sourceLabel: sourceLabel,
     );
+  }
+
+  static Future<int> enqueueAllParts(WidgetRef ref, PlayableItem item) async {
+    final List<PlayableItem> parts = await ref
+        .read(biliPlayerRepositoryProvider)
+        .resolveAllParts(item);
+    final Set<String> queuedIds = ref
+        .read(playerControllerProvider)
+        .queue
+        .map((PlayableItem item) => item.stableId)
+        .toSet();
+    final int addedCount = parts
+        .where((PlayableItem item) => !queuedIds.contains(item.stableId))
+        .length;
+    await ref.read(playerControllerProvider.notifier).enqueue(parts);
+    return addedCount;
   }
 
   static String? buildRenderableLyrics(String? rawLyrics, Duration? duration) {

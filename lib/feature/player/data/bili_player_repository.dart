@@ -73,6 +73,15 @@ class BiliPlayerRepository {
     return viewInfo.enrich(item, pageInfo);
   }
 
+  Future<List<PlayableItem>> resolveAllParts(PlayableItem item) async {
+    if (!item.hasIdentity) {
+      throw const BiliPlayerException('Missing video identity for playback.');
+    }
+
+    final _VideoViewInfo viewInfo = await _fetchVideoView(item);
+    return viewInfo.buildPlayableItems(item);
+  }
+
   Future<PlayerLoadResult> resolveAudioStream(
     PlayableItem item, {
     required BiliSession? session,
