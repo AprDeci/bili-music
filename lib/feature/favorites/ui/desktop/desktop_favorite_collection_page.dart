@@ -38,6 +38,8 @@ class _DesktopFavoriteCollectionPageState
     extends ConsumerState<DesktopFavoriteCollectionPage> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
+  Set<String> _selectedItemIds = <String>{};
+  bool _selectionMode = false;
   int _nextRemotePageNumber = 2;
   int _remoteRefreshRequestId = 0;
   bool _remoteHasMore = false;
@@ -57,6 +59,8 @@ class _DesktopFavoriteCollectionPageState
     if (oldWidget.collectionId != widget.collectionId) {
       _resetSearchState();
       _resetRemotePagingState();
+      _selectedItemIds = <String>{};
+      _selectionMode = false;
       _refreshRemoteCollectionItems();
     }
   }
@@ -237,6 +241,14 @@ class _DesktopFavoriteCollectionPageState
     });
   }
 
+  void _setSelectionMode(bool enabled) {
+    setState(() => _selectionMode = enabled);
+  }
+
+  void _setSelectedItemIds(Set<String> itemIds) {
+    setState(() => _selectedItemIds = itemIds);
+  }
+
   @override
   Widget build(BuildContext context) {
     final FavoritesState state = ref.watch(favoritesControllerProvider);
@@ -340,6 +352,10 @@ class _DesktopFavoriteCollectionPageState
                           items: visibleItems,
                           footer: _buildListFooter(theme),
                           onNotification: _handleScrollNotification,
+                          selectedItemIds: _selectedItemIds,
+                          selectionMode: _selectionMode,
+                          onSelectionModeChanged: _setSelectionMode,
+                          onSelectionChanged: _setSelectedItemIds,
                           onTapItem: (int itemIndex, FavoriteEntry item) async {
                             await _playCollectionItem(
                               context,

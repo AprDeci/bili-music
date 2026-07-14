@@ -38,6 +38,8 @@ class _FavoriteCollectionPageState
     extends ConsumerState<FavoriteCollectionPage> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
+  Set<String> _selectedItemIds = <String>{};
+  bool _selectionMode = false;
   int _nextRemotePageNumber = 2;
   int _remoteRefreshRequestId = 0;
   bool _remoteHasMore = false;
@@ -57,6 +59,8 @@ class _FavoriteCollectionPageState
     if (oldWidget.collectionId != widget.collectionId) {
       _resetSearchState();
       _resetRemotePagingState();
+      _selectedItemIds = <String>{};
+      _selectionMode = false;
       _refreshRemoteCollectionItems();
     }
   }
@@ -237,6 +241,14 @@ class _FavoriteCollectionPageState
     });
   }
 
+  void _setSelectionMode(bool enabled) {
+    setState(() => _selectionMode = enabled);
+  }
+
+  void _setSelectedItemIds(Set<String> itemIds) {
+    setState(() => _selectedItemIds = itemIds);
+  }
+
   @override
   Widget build(BuildContext context) {
     final FavoritesState state = ref.watch(favoritesControllerProvider);
@@ -316,9 +328,7 @@ class _FavoriteCollectionPageState
                 ),
               ),
             )
-          : visibleItems.isEmpty
-          ? ListView(
-              padding: EdgeInsets.zero,
+          : Column(
               children: <Widget>[
                 Padding(
                   padding: const EdgeInsets.fromLTRB(14, 10, 14, 8),
@@ -329,51 +339,56 @@ class _FavoriteCollectionPageState
                     onClear: _clearSearchQuery,
                   ),
                 ),
-                FavoriteSearchEmptyState(
-                  onSearchOnline: () => context.go('/search'),
+                Expanded(
+                  child: visibleItems.isEmpty
+                      ? ListView(
+                          padding: EdgeInsets.zero,
+                          children: <Widget>[
+                            FavoriteSearchEmptyState(
+                              onSearchOnline: () => context.go('/search'),
+                            ),
+                            const BottomPageSpacer.overlay(),
+                          ],
+                        )
+                      : FavoriteCollectionItemsList(
+                          items: visibleItems,
+                          footer: _buildListFooter(theme),
+                          onNotification: _handleScrollNotification,
+                          selectedItemIds: _selectedItemIds,
+                          selectionMode: _selectionMode,
+                          onSelectionModeChanged: _setSelectionMode,
+                          onSelectionChanged: _setSelectedItemIds,
+                          onTapItem: (int itemIndex, FavoriteEntry item) async {
+                            await _playCollectionItem(
+                              context,
+                              ref,
+                              collectionName: resolvedCollection.name,
+                              queueItems: queueItems,
+                              index: itemIndex,
+                            );
+                          },
+                          onPlayItem:
+                              (int itemIndex, FavoriteEntry item) async {
+                                await _playCollectionItem(
+                                  context,
+                                  ref,
+                                  collectionName: resolvedCollection.name,
+                                  queueItems: queueItems,
+                                  index: itemIndex,
+                                );
+                              },
+                          onMoreItem:
+                              (int itemIndex, FavoriteEntry item) async {
+                                await _showItemActionSheet(
+                                  context,
+                                  ref,
+                                  collection: resolvedCollection,
+                                  item: item,
+                                );
+                              },
+                        ),
                 ),
-                const BottomPageSpacer.overlay(),
               ],
-            )
-          : FavoriteCollectionItemsList(
-              items: visibleItems,
-              header: Padding(
-                padding: const EdgeInsets.fromLTRB(14, 10, 14, 8),
-                child: FavoriteCollectionSearchField(
-                  controller: _searchController,
-                  query: _searchQuery,
-                  onChanged: _updateSearchQuery,
-                  onClear: _clearSearchQuery,
-                ),
-              ),
-              footer: _buildListFooter(theme),
-              onNotification: _handleScrollNotification,
-              onTapItem: (int itemIndex, FavoriteEntry item) async {
-                await _playCollectionItem(
-                  context,
-                  ref,
-                  collectionName: resolvedCollection.name,
-                  queueItems: queueItems,
-                  index: itemIndex,
-                );
-              },
-              onPlayItem: (int itemIndex, FavoriteEntry item) async {
-                await _playCollectionItem(
-                  context,
-                  ref,
-                  collectionName: resolvedCollection.name,
-                  queueItems: queueItems,
-                  index: itemIndex,
-                );
-              },
-              onMoreItem: (int itemIndex, FavoriteEntry item) async {
-                await _showItemActionSheet(
-                  context,
-                  ref,
-                  collection: resolvedCollection,
-                  item: item,
-                );
-              },
             ),
     );
   }

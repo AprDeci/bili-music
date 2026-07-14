@@ -8,12 +8,16 @@ import 'package:flutter/material.dart';
 typedef DesktopFavoriteCollectionItemCallback =
     void Function(int index, FavoriteEntry item);
 
-class DesktopFavoriteCollectionItemsList extends StatefulWidget {
+class DesktopFavoriteCollectionItemsList extends StatelessWidget {
   const DesktopFavoriteCollectionItemsList({
     super.key,
     required this.items,
     required this.footer,
     required this.onNotification,
+    required this.selectedItemIds,
+    required this.selectionMode,
+    required this.onSelectionModeChanged,
+    required this.onSelectionChanged,
     required this.onTapItem,
     required this.onPlayItem,
     required this.onMoreItem,
@@ -22,72 +26,34 @@ class DesktopFavoriteCollectionItemsList extends StatefulWidget {
   final List<FavoriteEntry> items;
   final Widget footer;
   final NotificationListenerCallback<ScrollNotification> onNotification;
+  final Set<String> selectedItemIds;
+  final bool selectionMode;
+  final ValueChanged<bool> onSelectionModeChanged;
+  final ValueChanged<Set<String>> onSelectionChanged;
   final DesktopFavoriteCollectionItemCallback onTapItem;
   final DesktopFavoriteCollectionItemCallback onPlayItem;
   final DesktopFavoriteCollectionItemCallback onMoreItem;
 
   @override
-  State<DesktopFavoriteCollectionItemsList> createState() =>
-      _DesktopFavoriteCollectionItemsListState();
-}
-
-class _DesktopFavoriteCollectionItemsListState
-    extends State<DesktopFavoriteCollectionItemsList> {
-  Set<String> _selectedItemIds = <String>{};
-  bool _selectionMode = false;
-
-  @override
-  void didUpdateWidget(covariant DesktopFavoriteCollectionItemsList oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.items == widget.items) {
-      return;
-    }
-
-    final Set<String> visibleItemIds = widget.items
-        .map((FavoriteEntry item) => item.itemId)
-        .toSet();
-    final Set<String> nextSelectedItemIds = _selectedItemIds
-        .where(visibleItemIds.contains)
-        .toSet();
-    if (nextSelectedItemIds.length == _selectedItemIds.length) {
-      return;
-    }
-
-    setState(() {
-      _selectedItemIds = nextSelectedItemIds;
-      if (_selectedItemIds.isEmpty) {
-        _selectionMode = false;
-      }
-    });
-  }
-
-  @override
   Widget build(BuildContext context) {
     return NotificationListener<ScrollNotification>(
-      onNotification: widget.onNotification,
+      onNotification: onNotification,
       child: SelectableAutoScrollListView<FavoriteEntry, String>(
-        items: widget.items,
+        items: items,
         itemKeyOf: (FavoriteEntry item) => item.itemId,
-        selectedKeys: _selectedItemIds,
-        multiSelectEnabled: _selectionMode,
-        onMultiSelectModeChanged: (bool enabled) {
-          setState(() => _selectionMode = enabled);
-        },
-        onSelectionChanged: (Set<String> selectedItemIds) {
-          setState(() {
-            _selectedItemIds = selectedItemIds;
-            _selectionMode = selectedItemIds.isNotEmpty;
-          });
-        },
+        selectedKeys: selectedItemIds,
+        multiSelectEnabled: selectionMode,
+        onMultiSelectModeChanged: onSelectionModeChanged,
+        onSelectionChanged: onSelectionChanged,
         onItemTap: (FavoriteEntry item) {
-          final int index = widget.items.indexOf(item);
+          final int index = items.indexOf(item);
           if (index < 0) {
             return;
           }
-          widget.onTapItem(index, item);
+          onTapItem(index, item);
         },
         padding: EdgeInsets.zero,
-        footer: widget.footer,
+        footer: footer,
         separatorBuilder: (_, _) => const SizedBox.shrink(),
         checkboxControlAffinity: ListTileControlAffinity.trailing,
         itemBuilder: _buildNormalItem,
@@ -182,7 +148,7 @@ class _DesktopFavoriteCollectionItemsListState
     FavoriteEntry item,
     SelectableListItemState<FavoriteEntry, String> state,
   ) {
-    final int index = widget.items.indexOf(item);
+    final int index = items.indexOf(item);
 
     return Row(
       spacing: 0,
@@ -193,14 +159,14 @@ class _DesktopFavoriteCollectionItemsListState
           padding: EdgeInsets.zero,
           visualDensity: VisualDensity.compact,
           tooltip: '播放',
-          onPressed: index < 0 ? null : () => widget.onPlayItem(index, item),
+          onPressed: index < 0 ? null : () => onPlayItem(index, item),
           icon: const Icon(BmIcons.addPlaylist),
         ),
         IconButton(
           padding: EdgeInsets.zero,
           visualDensity: VisualDensity.compact,
           tooltip: '更多',
-          onPressed: index < 0 ? null : () => widget.onMoreItem(index, item),
+          onPressed: index < 0 ? null : () => onMoreItem(index, item),
           icon: const Icon(Icons.more_vert_outlined),
         ),
       ],

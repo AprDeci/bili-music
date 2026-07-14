@@ -51,12 +51,12 @@ class SelectableAutoScrollListView<T, K> extends StatefulWidget {
     this.leadingBuilder,
     this.trailingBuilder,
     this.checkboxControlAffinity = ListTileControlAffinity.leading,
-    this.multiSelectEnabled,
-    this.initialMultiSelectEnabled = false,
-    this.onMultiSelectModeChanged,
+    required this.multiSelectEnabled,
+    required this.onMultiSelectModeChanged,
     this.initialScrollKey,
     this.scrollToKey,
     this.onItemTap,
+    this.header,
     this.footer,
     this.padding,
     this.separatorBuilder,
@@ -76,12 +76,12 @@ class SelectableAutoScrollListView<T, K> extends StatefulWidget {
   final ListTileControlAffinity checkboxControlAffinity;
   final Set<K> selectedKeys;
   final ValueChanged<Set<K>> onSelectionChanged;
-  final bool? multiSelectEnabled;
-  final bool initialMultiSelectEnabled;
-  final ValueChanged<bool>? onMultiSelectModeChanged;
+  final bool multiSelectEnabled;
+  final ValueChanged<bool> onMultiSelectModeChanged;
   final K? initialScrollKey;
   final K? scrollToKey;
   final ValueChanged<T>? onItemTap;
+  final Widget? header;
   final Widget? footer;
   final EdgeInsetsGeometry? padding;
   final IndexedWidgetBuilder? separatorBuilder;
@@ -97,11 +97,7 @@ class SelectableAutoScrollListView<T, K> extends StatefulWidget {
 class _SelectableAutoScrollListViewState<T, K>
     extends State<SelectableAutoScrollListView<T, K>> {
   late final AutoScrollController _scrollController;
-  late bool _internalMultiSelectEnabled;
   bool _didFocusInitialItem = false;
-
-  bool get _multiSelectEnabled =>
-      widget.multiSelectEnabled ?? _internalMultiSelectEnabled;
 
   @override
   void initState() {
@@ -109,7 +105,6 @@ class _SelectableAutoScrollListViewState<T, K>
     _scrollController = AutoScrollController(
       suggestedRowHeight: widget.estimatedItemExtent,
     );
-    _internalMultiSelectEnabled = widget.initialMultiSelectEnabled;
     _focusInitialItem();
   }
 
@@ -157,23 +152,32 @@ class _SelectableAutoScrollListViewState<T, K>
     );
   }
 
-  int get _itemCount => widget.items.length + (widget.footer == null ? 0 : 1);
+  int get _itemCount {
+    return widget.items.length +
+        (widget.header == null ? 0 : 1) +
+        (widget.footer == null ? 0 : 1);
+  }
 
   Widget _buildItem(BuildContext context, int index) {
-    if (index == widget.items.length) {
+    if (index == 0 && widget.header != null) {
+      return widget.header!;
+    }
+
+    final int itemIndex = index - (widget.header == null ? 0 : 1);
+    if (itemIndex == widget.items.length) {
       return widget.footer!;
     }
 
-    final T item = widget.items[index];
+    final T item = widget.items[itemIndex];
     final K itemKey = widget.itemKeyOf(item);
     final bool selected = widget.selectedKeys.contains(itemKey);
     final SelectableListItemState<T, K> itemState =
         SelectableListItemState<T, K>(
           item: item,
           key: itemKey,
-          index: index,
+          index: itemIndex,
           selected: selected,
-          multiSelectEnabled: _multiSelectEnabled,
+          multiSelectEnabled: widget.multiSelectEnabled,
           toggleSelected: () => _toggleSelected(itemKey),
           handleTap: () => _handleTap(item, itemKey),
           enterMultiSelectAndToggle: () => _enterMultiSelectAndToggle(itemKey),
@@ -182,7 +186,7 @@ class _SelectableAutoScrollListViewState<T, K>
     return AutoScrollTag(
       key: ValueKey<K>(itemKey),
       controller: _scrollController,
-      index: index,
+      index: itemIndex,
       child: _buildItemContent(context, item, itemState),
     );
   }
@@ -249,7 +253,7 @@ class _SelectableAutoScrollListViewState<T, K>
   }
 
   void _handleTap(T item, K itemKey) {
-    if (_multiSelectEnabled) {
+    if (widget.multiSelectEnabled) {
       _toggleSelected(itemKey);
       return;
     }
@@ -258,17 +262,10 @@ class _SelectableAutoScrollListViewState<T, K>
   }
 
   void _enterMultiSelectAndToggle(K itemKey) {
-    if (!_multiSelectEnabled) {
-      _setMultiSelectEnabled(true);
+    if (!widget.multiSelectEnabled) {
+      widget.onMultiSelectModeChanged(true);
     }
     _toggleSelected(itemKey);
-  }
-
-  void _setMultiSelectEnabled(bool enabled) {
-    if (widget.multiSelectEnabled == null) {
-      setState(() => _internalMultiSelectEnabled = enabled);
-    }
-    widget.onMultiSelectModeChanged?.call(enabled);
   }
 
   void _toggleSelected(K itemKey) {
