@@ -21,7 +21,9 @@ class DesktopTrayController with TrayListener, WindowListener {
           ? 'assets/icons/tray_icon.ico'
           : 'assets/icons/tray_icon.png',
     );
-    await trayManager.setToolTip('BiliMusic');
+    if (!PlatformUtil.isLinux) {
+      await trayManager.setToolTip('BiliMusic');
+    }
     await trayManager.setContextMenu(
       Menu(
         items: <MenuItem>[
