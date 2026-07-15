@@ -10,6 +10,20 @@ Future<void> showPlayerCollectionSheet({
   required BuildContext context,
   required PlayableItem item,
 }) async {
+  await showPlayerCollectionItemsSheet(
+    context: context,
+    items: <PlayableItem>[item],
+  );
+}
+
+Future<void> showPlayerCollectionItemsSheet({
+  required BuildContext context,
+  required List<PlayableItem> items,
+}) async {
+  if (items.isEmpty) {
+    return;
+  }
+
   await showModalBottomSheet<void>(
     useRootNavigator: true,
     context: context,
@@ -17,15 +31,15 @@ Future<void> showPlayerCollectionSheet({
     isScrollControlled: true,
     backgroundColor: Theme.of(context).colorScheme.surface,
     builder: (BuildContext context) {
-      return SafeArea(child: _PlayerCollectionSheet(item: item));
+      return SafeArea(child: _PlayerCollectionSheet(items: items));
     },
   );
 }
 
 class _PlayerCollectionSheet extends ConsumerStatefulWidget {
-  const _PlayerCollectionSheet({required this.item});
+  const _PlayerCollectionSheet({required this.items});
 
-  final PlayableItem item;
+  final List<PlayableItem> items;
 
   @override
   ConsumerState<_PlayerCollectionSheet> createState() =>
@@ -87,11 +101,15 @@ class _PlayerCollectionSheetState
                       itemBuilder: (BuildContext context, int index) {
                         final FavoriteCollection collection =
                             collections[index];
-                        final bool alreadyAdded = favoritesState
-                            .containsItemInCollection(
-                              collectionId: collection.id,
-                              item: widget.item,
-                            );
+                        final int addedItemCount = widget.items
+                            .where(
+                              (PlayableItem item) =>
+                                  favoritesState.containsItemInCollection(
+                                    collectionId: collection.id,
+                                    item: item,
+                                  ),
+                            )
+                            .length;
                         final int count = favoritesState.itemCountForCollection(
                           collection.id,
                         );
@@ -99,11 +117,11 @@ class _PlayerCollectionSheetState
                         return _CollectionTile(
                           collection: collection,
                           count: count,
-                          alreadyAdded: alreadyAdded,
+                          addedItemCount: addedItemCount,
+                          totalItemCount: widget.items.length,
                           onTap: () => _handleCollectionTap(
                             context: context,
                             collection: collection,
-                            alreadyAdded: alreadyAdded,
                           ),
                         );
                       },
@@ -144,24 +162,34 @@ class _PlayerCollectionSheetState
   Future<void> _handleCollectionTap({
     required BuildContext context,
     required FavoriteCollection collection,
-    required bool alreadyAdded,
   }) async {
     Navigator.of(context).pop();
 
-    final String message;
-    if (alreadyAdded) {
-      message = '已在“${collection.name}”歌单中';
-    } else {
+    final FavoritesState favoritesState = ref.read(favoritesControllerProvider);
+    final List<PlayableItem> itemsToAdd = widget.items
+        .where(
+          (PlayableItem item) => !favoritesState.containsItemInCollection(
+            collectionId: collection.id,
+            item: item,
+          ),
+        )
+        .toList(growable: false);
+    int addedCount = 0;
+    for (final PlayableItem item in itemsToAdd) {
       final bool added = await ref
           .read(favoritesControllerProvider.notifier)
-          .addToCollection(collectionId: collection.id, item: widget.item);
-      message = added ? '添加成功' : '添加失败';
+          .addToCollection(collectionId: collection.id, item: item);
+      if (added) {
+        addedCount++;
+      }
     }
 
     if (!context.mounted) {
       return;
     }
-    ToastUtil.show(message);
+    ToastUtil.show(
+      '已新增 $addedCount / ${itemsToAdd.length} 项到“${collection.name}”',
+    );
   }
 }
 
@@ -225,21 +253,24 @@ class _CollectionTile extends StatelessWidget {
   const _CollectionTile({
     required this.collection,
     required this.count,
-    required this.alreadyAdded,
+    required this.addedItemCount,
+    required this.totalItemCount,
     required this.onTap,
   });
 
   final FavoriteCollection collection;
   final int count;
-  final bool alreadyAdded;
+  final int addedItemCount;
+  final int totalItemCount;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
+    final bool allAdded = addedItemCount == totalItemCount;
     return Material(
-      color: alreadyAdded
+      color: allAdded
           ? colorScheme.primary.withValues(alpha: 0.1)
           : colorScheme.surfaceContainerHighest.withValues(alpha: 0.45),
       borderRadius: BorderRadius.circular(8),
@@ -252,10 +283,10 @@ class _CollectionTile extends StatelessWidget {
             children: <Widget>[
               CircleAvatar(
                 radius: 22,
-                backgroundColor: alreadyAdded
+                backgroundColor: allAdded
                     ? colorScheme.primary
                     : colorScheme.primary.withValues(alpha: 0.12),
-                foregroundColor: alreadyAdded
+                foregroundColor: allAdded
                     ? colorScheme.onPrimary
                     : colorScheme.primary,
                 child: Icon(
@@ -279,7 +310,7 @@ class _CollectionTile extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      alreadyAdded ? '$count 首 · 已收藏' : '$count 首',
+                      '$count 首 · 已添加 $addedItemCount / $totalItemCount 项',
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: colorScheme.onSurface.withValues(alpha: 0.64),
                       ),
@@ -288,10 +319,10 @@ class _CollectionTile extends StatelessWidget {
                 ),
               ),
               Icon(
-                alreadyAdded
+                allAdded
                     ? Icons.check_circle_rounded
                     : Icons.add_circle_outline_rounded,
-                color: alreadyAdded
+                color: allAdded
                     ? colorScheme.primary
                     : colorScheme.onSurface.withValues(alpha: 0.7),
               ),
