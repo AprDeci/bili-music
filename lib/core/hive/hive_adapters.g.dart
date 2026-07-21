@@ -613,3 +613,61 @@ class FavoriteUpAdapter extends TypeAdapter<FavoriteUp> {
           runtimeType == other.runtimeType &&
           typeId == other.typeId;
 }
+
+class FavoritedSeasonAdapter extends TypeAdapter<FavoritedSeason> {
+  @override
+  final typeId = 12;
+
+  @override
+  FavoritedSeason read(BinaryReader reader) {
+    final numOfFields = reader.readByte();
+    final fields = <int, dynamic>{
+      for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
+    };
+    return FavoritedSeason(
+      seasonId: (fields[0] as num).toInt(),
+      mid: (fields[1] as num).toInt(),
+      title: fields[2] as String,
+      coverUrl: fields[3] as String,
+      description: fields[4] as String?,
+      total: (fields[5] as num).toInt(),
+      favoritedAtEpochMs: (fields[6] as num).toInt(),
+      updatedAtEpochMs: (fields[7] as num).toInt(),
+      lastSyncedAtEpochMs: (fields[8] as num).toInt(),
+    );
+  }
+
+  @override
+  void write(BinaryWriter writer, FavoritedSeason obj) {
+    writer
+      ..writeByte(9)
+      ..writeByte(0)
+      ..write(obj.seasonId)
+      ..writeByte(1)
+      ..write(obj.mid)
+      ..writeByte(2)
+      ..write(obj.title)
+      ..writeByte(3)
+      ..write(obj.coverUrl)
+      ..writeByte(4)
+      ..write(obj.description)
+      ..writeByte(5)
+      ..write(obj.total)
+      ..writeByte(6)
+      ..write(obj.favoritedAtEpochMs)
+      ..writeByte(7)
+      ..write(obj.updatedAtEpochMs)
+      ..writeByte(8)
+      ..write(obj.lastSyncedAtEpochMs);
+  }
+
+  @override
+  int get hashCode => typeId.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is FavoritedSeasonAdapter &&
+          runtimeType == other.runtimeType &&
+          typeId == other.typeId;
+}

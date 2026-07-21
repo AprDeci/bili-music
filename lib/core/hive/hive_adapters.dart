@@ -7,6 +7,7 @@ import 'package:bilimusic/feature/player/domain/persisted_playback_queue.dart';
 import 'package:bilimusic/feature/player/domain/player_state.dart';
 import 'package:bilimusic/feature/recent/domain/recent_playback_entry.dart';
 import 'package:bilimusic/feature/up/domain/favorite_up.dart';
+import 'package:bilimusic/feature/favorites/domain/favorited_season.dart';
 import 'package:hive_ce/hive.dart';
 
 @GenerateAdapters(<AdapterSpec<dynamic>>[
@@ -19,6 +20,7 @@ import 'package:hive_ce/hive.dart';
   AdapterSpec<PersistedPlaybackQueue>(),
   AdapterSpec<RecentPlaybackEntry>(),
   AdapterSpec<FavoriteUp>(),
+  AdapterSpec<FavoritedSeason>(),
   AdapterSpec<MetaLyrics>(),
   AdapterSpec<Metadata>(),
 ])
