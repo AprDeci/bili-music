@@ -242,11 +242,97 @@ class _FavoriteCollectionPageState
   }
 
   void _setSelectionMode(bool enabled) {
-    setState(() => _selectionMode = enabled);
+    setState(() {
+      _selectionMode = enabled;
+      if (!enabled) {
+        _selectedItemIds = <String>{};
+      }
+    });
   }
 
   void _setSelectedItemIds(Set<String> itemIds) {
     setState(() => _selectedItemIds = itemIds);
+  }
+
+  List<FavoriteEntry> _selectedItems(List<FavoriteEntry> items) {
+    return items
+        .where((FavoriteEntry item) => _selectedItemIds.contains(item.itemId))
+        .toList(growable: false);
+  }
+
+  Future<void> _addSelectedItems(List<FavoriteEntry> items) async {
+    final List<PlayableItem> selectedItems = _selectedItems(items)
+        .map((FavoriteEntry item) => item.toPlayableItem())
+        .toList(growable: false);
+    if (selectedItems.isEmpty) {
+      return;
+    }
+
+    await showPlayerCollectionItemsSheet(
+      context: context,
+      items: selectedItems,
+    );
+    if (mounted) {
+      _setSelectionMode(false);
+    }
+  }
+
+  Future<void> _deleteSelectedItems({
+    required FavoriteCollection collection,
+    required List<FavoriteEntry> items,
+  }) async {
+    final List<FavoriteEntry> selectedItems = _selectedItems(items);
+    if (selectedItems.isEmpty) {
+      return;
+    }
+
+    final bool? confirmed = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('删除收藏'),
+          content: Text(
+            '确定从“${collection.name}”移除 ${selectedItems.length} 项吗？',
+          ),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('取消'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text('删除'),
+            ),
+          ],
+        );
+      },
+    );
+    if (confirmed != true || !mounted) {
+      return;
+    }
+
+    int removedCount = 0;
+    for (final FavoriteEntry item in selectedItems) {
+      final bool removed = await ref
+          .read(favoritesControllerProvider.notifier)
+          .removeFromCollection(
+            collectionId: collection.id,
+            itemId: item.itemId,
+          );
+      if (removed) {
+        removedCount++;
+      }
+    }
+
+    if (!mounted) {
+      return;
+    }
+    _setSelectionMode(false);
+    ToastUtil.show(
+      removedCount == selectedItems.length
+          ? '已移除 $removedCount 项'
+          : '已移除 $removedCount / ${selectedItems.length} 项',
+    );
   }
 
   @override
@@ -332,12 +418,22 @@ class _FavoriteCollectionPageState
               children: <Widget>[
                 Padding(
                   padding: const EdgeInsets.fromLTRB(14, 10, 14, 8),
-                  child: FavoriteCollectionSearchField(
-                    controller: _searchController,
-                    query: _searchQuery,
-                    onChanged: _updateSearchQuery,
-                    onClear: _clearSearchQuery,
-                  ),
+                  child: _selectionMode
+                      ? _FavoriteBatchActionBar(
+                          selectedCount: _selectedItemIds.length,
+                          onAdd: () => _addSelectedItems(visibleItems),
+                          onDelete: () => _deleteSelectedItems(
+                            collection: resolvedCollection,
+                            items: visibleItems,
+                          ),
+                          onExit: () => _setSelectionMode(false),
+                        )
+                      : FavoriteCollectionSearchField(
+                          controller: _searchController,
+                          query: _searchQuery,
+                          onChanged: _updateSearchQuery,
+                          onClear: _clearSearchQuery,
+                        ),
                 ),
                 Expanded(
                   child: visibleItems.isEmpty
@@ -668,6 +764,54 @@ class _RemoteCollectionErrorState extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _FavoriteBatchActionBar extends StatelessWidget {
+  const _FavoriteBatchActionBar({
+    required this.selectedCount,
+    required this.onAdd,
+    required this.onDelete,
+    required this.onExit,
+  });
+
+  final int selectedCount;
+  final VoidCallback onAdd;
+  final VoidCallback onDelete;
+  final VoidCallback onExit;
+
+  @override
+  Widget build(BuildContext context) {
+    final ColorScheme colorScheme = Theme.of(context).colorScheme;
+    final bool hasSelection = selectedCount > 0;
+
+    return Row(
+      children: <Widget>[
+        Text(
+          '已选 $selectedCount 项',
+          style: Theme.of(
+            context,
+          ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+        ),
+        const Spacer(),
+        IconButton(
+          tooltip: '添加到歌单',
+          onPressed: hasSelection ? onAdd : null,
+          icon: const Icon(Icons.playlist_add_rounded),
+        ),
+        IconButton(
+          tooltip: '删除',
+          onPressed: hasSelection ? onDelete : null,
+          color: colorScheme.error,
+          icon: const Icon(Icons.delete_outline_rounded),
+        ),
+        IconButton(
+          tooltip: '退出批量操作',
+          onPressed: onExit,
+          icon: const Icon(Icons.close_rounded),
+        ),
+      ],
     );
   }
 }
