@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:bilimusic/common/components/bottom_page_spacer.dart';
 import 'package:bilimusic/common/components/cached_image.dart';
+import 'package:bilimusic/common/components/desktop/desktop_tab_switcher.dart';
 import 'package:bilimusic/common/logger.dart';
 import 'package:bilimusic/common/util/player_util.dart';
 import 'package:bilimusic/common/util/toast_util.dart';
@@ -15,6 +16,7 @@ import 'package:bilimusic/feature/favorites/ui/components/favorite_collection_se
 import 'package:bilimusic/feature/favorites/ui/components/favorite_search_empty_state.dart';
 import 'package:bilimusic/feature/favorites/ui/components/desktop/desktop_favorite_collection_items_list.dart';
 import 'package:bilimusic/feature/favorites/ui/components/favorite_entry_subtitle.dart';
+import 'package:bilimusic/feature/favorites/ui/components/favorited_seasons_list.dart';
 import 'package:bilimusic/feature/player/domain/playable_item.dart';
 import 'package:bilimusic/feature/player/logic/player_controller.dart';
 import 'package:bilimusic/feature/player/ui/components/player_collection_sheet.dart';
@@ -46,6 +48,7 @@ class _DesktopFavoriteCollectionPageState
   bool _isLoadingRemotePage = false;
   bool _remoteRefreshFailed = false;
   bool _remoteLoadMoreFailed = false;
+  bool _showFavoritedSeasons = false;
 
   @override
   void initState() {
@@ -66,7 +69,7 @@ class _DesktopFavoriteCollectionPageState
   }
 
   void _refreshRemoteCollectionItems() {
-    if (_isLoadingRemotePage) {
+    if (_isLoadingRemotePage || !_isRemoteCollection()) {
       return;
     }
 
@@ -115,6 +118,16 @@ class _DesktopFavoriteCollectionPageState
         }
       }),
     );
+  }
+
+  bool _isRemoteCollection() {
+    return ref
+        .read(favoritesControllerProvider)
+        .collections
+        .any(
+          (FavoriteCollection collection) =>
+              collection.id == widget.collectionId && collection.isRemote,
+        );
   }
 
   void _resetRemotePagingState() {
@@ -368,122 +381,143 @@ class _DesktopFavoriteCollectionPageState
     final List<PlayableItem> queueItems = visibleItems
         .map((FavoriteEntry item) => item.toPlayableItem())
         .toList(growable: false);
-    return Scaffold(
-      body: items.isEmpty && _remoteRefreshFailed
-          ? _RemoteCollectionErrorState(
-              isRetrying: _isLoadingRemotePage,
-              onRetry: _refreshRemoteCollectionItems,
-            )
-          : items.isEmpty
-          ? Center(
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: <Widget>[
-                    SizedBox(
-                      width: 72,
-                      height: 72,
-                      child: Icon(
-                        resolvedCollection.isLikedCollection
-                            ? Icons.favorite_border_rounded
-                            : Icons.folder_open_rounded,
-                        color: primary,
-                        size: 34,
-                      ),
+    final Widget songsBody = items.isEmpty && _remoteRefreshFailed
+        ? _RemoteCollectionErrorState(
+            isRetrying: _isLoadingRemotePage,
+            onRetry: _refreshRemoteCollectionItems,
+          )
+        : items.isEmpty
+        ? Center(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  SizedBox(
+                    width: 72,
+                    height: 72,
+                    child: Icon(
+                      resolvedCollection.isLikedCollection
+                          ? Icons.favorite_border_rounded
+                          : Icons.folder_open_rounded,
+                      color: primary,
+                      size: 34,
                     ),
-                    const SizedBox(height: 18),
-                    Text(
-                      '这个歌单还是空的',
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w800,
-                      ),
+                  ),
+                  const SizedBox(height: 18),
+                  Text(
+                    '这个歌单还是空的',
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w800,
                     ),
-                    const SizedBox(height: 8),
-                    Text(
-                      '先去搜索页或者播放器点亮爱心，喜欢的内容会出现在这里。',
-                      textAlign: TextAlign.center,
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: colorScheme.onSurfaceVariant,
-                        height: 1.5,
-                      ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    '先去搜索页或者播放器点亮爱心，喜欢的内容会出现在这里。',
+                    textAlign: TextAlign.center,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                      height: 1.5,
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-            )
-          : Column(
-              children: <Widget>[
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(14, 10, 14, 8),
-                  child: _selectionMode
-                      ? _DesktopFavoriteBatchActionBar(
-                          selectedCount: _selectedItemIds.length,
-                          onAdd: () => _addSelectedItems(visibleItems),
-                          onDelete: () => _deleteSelectedItems(
-                            collection: resolvedCollection,
-                            items: visibleItems,
-                          ),
-                          onExit: () => _setSelectionMode(false),
-                        )
-                      : FavoriteCollectionSearchField(
-                          controller: _searchController,
-                          query: _searchQuery,
-                          onChanged: _updateSearchQuery,
-                          onClear: _clearSearchQuery,
-                        ),
-                ),
-                Expanded(
-                  child: visibleItems.isEmpty
-                      ? ListView(
-                          padding: EdgeInsets.zero,
-                          children: <Widget>[
-                            FavoriteSearchEmptyState(
-                              onSearchOnline: () => context.go('/search'),
-                            ),
-                            const BottomPageSpacer.overlay(),
-                          ],
-                        )
-                      : DesktopFavoriteCollectionItemsList(
-                          items: visibleItems,
-                          footer: _buildListFooter(theme),
-                          onNotification: _handleScrollNotification,
-                          selectedItemIds: _selectedItemIds,
-                          selectionMode: _selectionMode,
-                          onSelectionModeChanged: _setSelectionMode,
-                          onSelectionChanged: _setSelectedItemIds,
-                          onTapItem: (int itemIndex, FavoriteEntry item) async {
-                            await _playCollectionItem(
-                              context,
-                              ref,
-                              collectionName: resolvedCollection.name,
-                              queueItems: queueItems,
-                              index: itemIndex,
-                            );
-                          },
-                          onPlayItem:
-                              (int itemIndex, FavoriteEntry item) async {
-                                await _playCollectionItem(
-                                  context,
-                                  ref,
-                                  collectionName: resolvedCollection.name,
-                                  queueItems: queueItems,
-                                  index: itemIndex,
-                                );
-                              },
-                          onMoreItem:
-                              (int itemIndex, FavoriteEntry item) async {
-                                await _showItemActionSheet(
-                                  context,
-                                  ref,
-                                  collection: resolvedCollection,
-                                  item: item,
-                                );
-                              },
-                        ),
-                ),
-              ],
             ),
+          )
+        : Column(
+            children: <Widget>[
+              Padding(
+                padding: const EdgeInsets.fromLTRB(14, 10, 14, 8),
+                child: _selectionMode
+                    ? _DesktopFavoriteBatchActionBar(
+                        selectedCount: _selectedItemIds.length,
+                        onAdd: () => _addSelectedItems(visibleItems),
+                        onDelete: () => _deleteSelectedItems(
+                          collection: resolvedCollection,
+                          items: visibleItems,
+                        ),
+                        onExit: () => _setSelectionMode(false),
+                      )
+                    : FavoriteCollectionSearchField(
+                        controller: _searchController,
+                        query: _searchQuery,
+                        onChanged: _updateSearchQuery,
+                        onClear: _clearSearchQuery,
+                      ),
+              ),
+              Expanded(
+                child: visibleItems.isEmpty
+                    ? ListView(
+                        padding: EdgeInsets.zero,
+                        children: <Widget>[
+                          FavoriteSearchEmptyState(
+                            onSearchOnline: () => context.go('/search'),
+                          ),
+                          const BottomPageSpacer.overlay(),
+                        ],
+                      )
+                    : DesktopFavoriteCollectionItemsList(
+                        items: visibleItems,
+                        footer: _buildListFooter(theme),
+                        onNotification: _handleScrollNotification,
+                        selectedItemIds: _selectedItemIds,
+                        selectionMode: _selectionMode,
+                        onSelectionModeChanged: _setSelectionMode,
+                        onSelectionChanged: _setSelectedItemIds,
+                        onTapItem: (int itemIndex, FavoriteEntry item) async {
+                          await _playCollectionItem(
+                            context,
+                            ref,
+                            collectionName: resolvedCollection.name,
+                            queueItems: queueItems,
+                            index: itemIndex,
+                          );
+                        },
+                        onPlayItem: (int itemIndex, FavoriteEntry item) async {
+                          await _playCollectionItem(
+                            context,
+                            ref,
+                            collectionName: resolvedCollection.name,
+                            queueItems: queueItems,
+                            index: itemIndex,
+                          );
+                        },
+                        onMoreItem: (int itemIndex, FavoriteEntry item) async {
+                          await _showItemActionSheet(
+                            context,
+                            ref,
+                            collection: resolvedCollection,
+                            item: item,
+                          );
+                        },
+                      ),
+              ),
+            ],
+          );
+    if (!resolvedCollection.isLikedCollection) {
+      return Scaffold(body: songsBody);
+    }
+
+    return Scaffold(
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          DesktopTabSwitcher(
+            labels: const <String>['歌曲', '合集'],
+            selectedIndex: _showFavoritedSeasons ? 1 : 0,
+            onChanged: (int index) {
+              setState(() {
+                _showFavoritedSeasons = index == 1;
+              });
+            },
+          ),
+          Expanded(
+            child: _showFavoritedSeasons
+                ? const FavoritedSeasonsList()
+                : songsBody,
+          ),
+        ],
+      ),
     );
   }
 

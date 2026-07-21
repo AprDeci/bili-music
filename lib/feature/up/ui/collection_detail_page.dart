@@ -35,35 +35,7 @@ class CollectionDetailPage extends ConsumerWidget {
         .toSet();
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('合集'),
-        actions: <Widget>[
-          state.when(
-            loading: () => const SizedBox.shrink(),
-            error: (_, _) => const SizedBox.shrink(),
-            data: (CollectionDetailState data) {
-              final UpCollection? collection = data.collection;
-              if (collection == null) {
-                return const SizedBox.shrink();
-              }
-              final bool isFavorited = favoritedSeasonIds.contains(
-                collection.seasonId,
-              );
-              return IconButton(
-                tooltip: isFavorited ? '取消收藏' : '收藏合集',
-                onPressed: () => ref
-                    .read(favoritedSeasonControllerProvider.notifier)
-                    .toggle(collection),
-                icon: Icon(
-                  isFavorited
-                      ? Icons.bookmark_rounded
-                      : Icons.bookmark_add_outlined,
-                ),
-              );
-            },
-          ),
-        ],
-      ),
+      appBar: AppBar(title: const Text('合集')),
       body: state.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (Object error, StackTrace stackTrace) => Center(
@@ -110,6 +82,14 @@ class CollectionDetailPage extends ConsumerWidget {
                     onPlayAll: data.items.isEmpty
                         ? null
                         : () => _playFrom(context, ref, data, 0),
+                    isFavorited:
+                        data.collection != null &&
+                        favoritedSeasonIds.contains(data.collection!.seasonId),
+                    onFavoriteToggle: data.collection == null
+                        ? null
+                        : () => ref
+                              .read(favoritedSeasonControllerProvider.notifier)
+                              .toggle(data.collection!),
                   );
                 }
                 if (index == data.items.length + 1) {
@@ -200,11 +180,15 @@ class _CollectionHeader extends StatelessWidget {
     required this.collection,
     required this.itemCount,
     required this.onPlayAll,
+    required this.isFavorited,
+    required this.onFavoriteToggle,
   });
 
   final UpCollection? collection;
   final int itemCount;
   final VoidCallback? onPlayAll;
+  final bool isFavorited;
+  final VoidCallback? onFavoriteToggle;
 
   @override
   Widget build(BuildContext context) {
@@ -242,6 +226,18 @@ class _CollectionHeader extends StatelessWidget {
                     const SizedBox(height: 8),
                     Text('共 ${value?.total ?? itemCount} 个视频'),
                   ],
+                ),
+              ),
+              IconButton(
+                tooltip: isFavorited ? '取消收藏' : '收藏合集',
+                onPressed: onFavoriteToggle,
+                color: isFavorited
+                    ? Theme.of(context).colorScheme.primary
+                    : Theme.of(context).colorScheme.onSurfaceVariant,
+                icon: Icon(
+                  isFavorited
+                      ? Icons.bookmark_rounded
+                      : Icons.bookmark_add_outlined,
                 ),
               ),
             ],

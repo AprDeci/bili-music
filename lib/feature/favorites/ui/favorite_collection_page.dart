@@ -15,6 +15,7 @@ import 'package:bilimusic/feature/favorites/ui/components/favorite_collection_it
 import 'package:bilimusic/feature/favorites/ui/components/favorite_collection_search_field.dart';
 import 'package:bilimusic/feature/favorites/ui/components/favorite_entry_subtitle.dart';
 import 'package:bilimusic/feature/favorites/ui/components/favorite_search_empty_state.dart';
+import 'package:bilimusic/feature/favorites/ui/components/favorited_seasons_list.dart';
 import 'package:bilimusic/feature/player/domain/playable_item.dart';
 import 'package:bilimusic/feature/player/logic/player_controller.dart';
 import 'package:bilimusic/feature/player/ui/components/player_collection_sheet.dart';
@@ -66,7 +67,7 @@ class _FavoriteCollectionPageState
   }
 
   void _refreshRemoteCollectionItems() {
-    if (_isLoadingRemotePage) {
+    if (_isLoadingRemotePage || !_isRemoteCollection()) {
       return;
     }
 
@@ -115,6 +116,16 @@ class _FavoriteCollectionPageState
         }
       }),
     );
+  }
+
+  bool _isRemoteCollection() {
+    return ref
+        .read(favoritesControllerProvider)
+        .collections
+        .any(
+          (FavoriteCollection collection) =>
+              collection.id == widget.collectionId && collection.isRemote,
+        );
   }
 
   void _resetRemotePagingState() {
@@ -368,124 +379,141 @@ class _FavoriteCollectionPageState
     final List<PlayableItem> queueItems = visibleItems
         .map((FavoriteEntry item) => item.toPlayableItem())
         .toList(growable: false);
-    return Scaffold(
-      backgroundColor: colorScheme.surface.withValues(alpha: 0.4),
-      appBar: AppBar(title: Text(resolvedCollection.name)),
-      body: items.isEmpty && _remoteRefreshFailed
-          ? _RemoteCollectionErrorState(
-              isRetrying: _isLoadingRemotePage,
-              onRetry: _refreshRemoteCollectionItems,
-            )
-          : items.isEmpty
-          ? Center(
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: <Widget>[
-                    SizedBox(
-                      width: 72,
-                      height: 72,
-                      child: Icon(
-                        resolvedCollection.isLikedCollection
-                            ? Icons.favorite_border_rounded
-                            : Icons.folder_open_rounded,
-                        color: primary,
-                        size: 34,
-                      ),
+    final bool showLikedTabs = resolvedCollection.isLikedCollection;
+    final Widget songsBody = items.isEmpty && _remoteRefreshFailed
+        ? _RemoteCollectionErrorState(
+            isRetrying: _isLoadingRemotePage,
+            onRetry: _refreshRemoteCollectionItems,
+          )
+        : items.isEmpty
+        ? Center(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  SizedBox(
+                    width: 72,
+                    height: 72,
+                    child: Icon(
+                      resolvedCollection.isLikedCollection
+                          ? Icons.favorite_border_rounded
+                          : Icons.folder_open_rounded,
+                      color: primary,
+                      size: 34,
                     ),
-                    const SizedBox(height: 18),
-                    Text(
-                      '这个歌单还是空的',
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w800,
-                      ),
+                  ),
+                  const SizedBox(height: 18),
+                  Text(
+                    '这个歌单还是空的',
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w800,
                     ),
-                    const SizedBox(height: 8),
-                    Text(
-                      '先去搜索页或者播放器点亮爱心，喜欢的内容会出现在这里。',
-                      textAlign: TextAlign.center,
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: colorScheme.onSurfaceVariant,
-                        height: 1.5,
-                      ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    '先去搜索页或者播放器点亮爱心，喜欢的内容会出现在这里。',
+                    textAlign: TextAlign.center,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                      height: 1.5,
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-            )
-          : Column(
-              children: <Widget>[
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(14, 10, 14, 8),
-                  child: _selectionMode
-                      ? _FavoriteBatchActionBar(
-                          selectedCount: _selectedItemIds.length,
-                          onAdd: () => _addSelectedItems(visibleItems),
-                          onDelete: () => _deleteSelectedItems(
-                            collection: resolvedCollection,
-                            items: visibleItems,
-                          ),
-                          onExit: () => _setSelectionMode(false),
-                        )
-                      : FavoriteCollectionSearchField(
-                          controller: _searchController,
-                          query: _searchQuery,
-                          onChanged: _updateSearchQuery,
-                          onClear: _clearSearchQuery,
-                        ),
-                ),
-                Expanded(
-                  child: visibleItems.isEmpty
-                      ? ListView(
-                          padding: EdgeInsets.zero,
-                          children: <Widget>[
-                            FavoriteSearchEmptyState(
-                              onSearchOnline: () => context.go('/search'),
-                            ),
-                            const BottomPageSpacer.overlay(),
-                          ],
-                        )
-                      : FavoriteCollectionItemsList(
-                          items: visibleItems,
-                          footer: _buildListFooter(theme),
-                          onNotification: _handleScrollNotification,
-                          selectedItemIds: _selectedItemIds,
-                          selectionMode: _selectionMode,
-                          onSelectionModeChanged: _setSelectionMode,
-                          onSelectionChanged: _setSelectedItemIds,
-                          onTapItem: (int itemIndex, FavoriteEntry item) async {
-                            await _playCollectionItem(
-                              context,
-                              ref,
-                              collectionName: resolvedCollection.name,
-                              queueItems: queueItems,
-                              index: itemIndex,
-                            );
-                          },
-                          onPlayItem:
-                              (int itemIndex, FavoriteEntry item) async {
-                                await _playCollectionItem(
-                                  context,
-                                  ref,
-                                  collectionName: resolvedCollection.name,
-                                  queueItems: queueItems,
-                                  index: itemIndex,
-                                );
-                              },
-                          onMoreItem:
-                              (int itemIndex, FavoriteEntry item) async {
-                                await _showItemActionSheet(
-                                  context,
-                                  ref,
-                                  collection: resolvedCollection,
-                                  item: item,
-                                );
-                              },
-                        ),
-                ),
-              ],
             ),
+          )
+        : Column(
+            children: <Widget>[
+              Padding(
+                padding: const EdgeInsets.fromLTRB(14, 10, 14, 8),
+                child: _selectionMode
+                    ? _FavoriteBatchActionBar(
+                        selectedCount: _selectedItemIds.length,
+                        onAdd: () => _addSelectedItems(visibleItems),
+                        onDelete: () => _deleteSelectedItems(
+                          collection: resolvedCollection,
+                          items: visibleItems,
+                        ),
+                        onExit: () => _setSelectionMode(false),
+                      )
+                    : FavoriteCollectionSearchField(
+                        controller: _searchController,
+                        query: _searchQuery,
+                        onChanged: _updateSearchQuery,
+                        onClear: _clearSearchQuery,
+                      ),
+              ),
+              Expanded(
+                child: visibleItems.isEmpty
+                    ? ListView(
+                        padding: EdgeInsets.zero,
+                        children: <Widget>[
+                          FavoriteSearchEmptyState(
+                            onSearchOnline: () => context.go('/search'),
+                          ),
+                          const BottomPageSpacer.overlay(),
+                        ],
+                      )
+                    : FavoriteCollectionItemsList(
+                        items: visibleItems,
+                        footer: _buildListFooter(theme),
+                        onNotification: _handleScrollNotification,
+                        selectedItemIds: _selectedItemIds,
+                        selectionMode: _selectionMode,
+                        onSelectionModeChanged: _setSelectionMode,
+                        onSelectionChanged: _setSelectedItemIds,
+                        onTapItem: (int itemIndex, FavoriteEntry item) async {
+                          await _playCollectionItem(
+                            context,
+                            ref,
+                            collectionName: resolvedCollection.name,
+                            queueItems: queueItems,
+                            index: itemIndex,
+                          );
+                        },
+                        onPlayItem: (int itemIndex, FavoriteEntry item) async {
+                          await _playCollectionItem(
+                            context,
+                            ref,
+                            collectionName: resolvedCollection.name,
+                            queueItems: queueItems,
+                            index: itemIndex,
+                          );
+                        },
+                        onMoreItem: (int itemIndex, FavoriteEntry item) async {
+                          await _showItemActionSheet(
+                            context,
+                            ref,
+                            collection: resolvedCollection,
+                            item: item,
+                          );
+                        },
+                      ),
+              ),
+            ],
+          );
+    return DefaultTabController(
+      length: showLikedTabs ? 2 : 1,
+      child: Scaffold(
+        backgroundColor: colorScheme.surface.withValues(alpha: 0.4),
+        appBar: AppBar(
+          title: Text(resolvedCollection.name),
+          bottom: showLikedTabs
+              ? const TabBar(
+                  tabs: <Widget>[
+                    Tab(text: '歌曲'),
+                    Tab(text: '合集'),
+                  ],
+                )
+              : null,
+        ),
+        body: showLikedTabs
+            ? TabBarView(
+                children: <Widget>[songsBody, const FavoritedSeasonsList()],
+              )
+            : songsBody,
+      ),
     );
   }
 
