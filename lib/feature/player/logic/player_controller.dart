@@ -73,8 +73,14 @@ class PlayerController extends Notifier<PlayerState>
   bool _isDisposed = false;
   bool _isAdvancingQueue = false;
   bool _isHandlingPlaybackCompleted = false;
+  bool _isRetryingPlayback = false;
+  bool _isWaitingForRetry = false;
   double _lastAudibleVolume = 1.0;
   int _operationGeneration = 0;
+  int _retryGeneration = 0;
+  int _enginePlaybackRetryCount = 0;
+
+  static const int _maxPlaybackRetries = 3;
 
   @override
   PlayerState build() {
@@ -148,6 +154,7 @@ class PlayerController extends Notifier<PlayerState>
     }
 
     final int? queueIndex = state.currentQueueIndex;
+    _enginePlaybackRetryCount = 0;
     if (queueIndex == null) {
       await _loadQueueIndex(0, autoplay: true, initialPosition: state.position);
       return;
@@ -167,7 +174,16 @@ class PlayerController extends Notifier<PlayerState>
 
   @override
   Future<void> pause() async {
+    _retryGeneration += 1;
     await _audioEngine.pause();
+    if (state.isLoading) {
+      state = state.copyWith(
+        isLoading: false,
+        isBuffering: false,
+        statusHint: null,
+      );
+      _publishMediaSession();
+    }
     await _persistQueueSnapshot();
   }
 
@@ -482,6 +498,9 @@ class PlayerController extends Notifier<PlayerState>
       return;
     }
 
+    _retryGeneration += 1;
+    _nextGeneration();
+
     final QueueReorderResult reorder = _queueManager.reorder(
       queue: state.queue,
       currentIndex: state.currentQueueIndex,
@@ -735,6 +754,7 @@ class PlayerController extends Notifier<PlayerState>
     required Duration initialPosition,
     int? generation,
     bool persistAfterLoad = true,
+    int retryCount = 0,
     Set<String> skippedUnavailableStableIds = const <String>{},
     bool hasShownUnavailableToast = false,
   }) async {
@@ -742,6 +762,9 @@ class PlayerController extends Notifier<PlayerState>
       return false;
     }
 
+    if (retryCount == 0) {
+      _enginePlaybackRetryCount = 0;
+    }
     final int effectiveGeneration = generation ?? _nextGeneration();
     final PlayableItem targetItem = state.queue[queueIndex];
     _logPlayerEvent(
@@ -753,6 +776,7 @@ class PlayerController extends Notifier<PlayerState>
         'stableId': targetItem.stableId,
         'title': targetItem.title,
         'positionMs': initialPosition.inMilliseconds,
+        'retryCount': retryCount,
       },
     );
 
@@ -848,7 +872,6 @@ class PlayerController extends Notifier<PlayerState>
       if (error.shouldSkipQueueItem) {
         return _skipUnavailableQueueItem(
           failedIndex: queueIndex,
-          failedStableId: targetItem.stableId,
           autoplay: autoplay,
           generation: effectiveGeneration,
           persistAfterLoad: persistAfterLoad,
@@ -858,19 +881,107 @@ class PlayerController extends Notifier<PlayerState>
         );
       }
 
-      return _failCurrentLoad(error, persistAfterLoad: persistAfterLoad);
+      return _retryOrSkipFailedQueueItem(
+        error: error,
+        failedIndex: queueIndex,
+        autoplay: autoplay,
+        initialPosition: initialPosition,
+        generation: effectiveGeneration,
+        persistAfterLoad: persistAfterLoad,
+        retryCount: retryCount,
+        skippedUnavailableStableIds: skippedUnavailableStableIds,
+      );
     } on Object catch (error) {
       if (!_isCurrentGeneration(effectiveGeneration)) {
         return false;
       }
 
-      return _failCurrentLoad(error, persistAfterLoad: persistAfterLoad);
+      return _retryOrSkipFailedQueueItem(
+        error: error,
+        failedIndex: queueIndex,
+        autoplay: autoplay,
+        initialPosition: initialPosition,
+        generation: effectiveGeneration,
+        persistAfterLoad: persistAfterLoad,
+        retryCount: retryCount,
+        skippedUnavailableStableIds: skippedUnavailableStableIds,
+      );
     }
+  }
+
+  Future<bool> _retryOrSkipFailedQueueItem({
+    required Object error,
+    required int failedIndex,
+    required bool autoplay,
+    required Duration initialPosition,
+    required int generation,
+    required bool persistAfterLoad,
+    required int retryCount,
+    required Set<String> skippedUnavailableStableIds,
+  }) async {
+    if (retryCount < _maxPlaybackRetries) {
+      final int nextRetryCount = retryCount + 1;
+      _enginePlaybackRetryCount = nextRetryCount;
+      final PlayableItem failedItem = state.queue[failedIndex];
+      final PlayerAudioQualityPreference qualityPreference = ref.read(
+        playerAudioQualityPreferenceLogicProvider,
+      );
+      _playbackLoader.clearResolvedEntryCache(
+        item: failedItem,
+        preference: qualityPreference,
+        preferredQualityId: _qualityOverrides[failedItem.stableId],
+      );
+      _logPlayerEvent(
+        'loadQueueIndex:retry',
+        details: <String, Object?>{
+          'generation': generation,
+          'queueIndex': failedIndex,
+          'retryCount': nextRetryCount,
+          'error': error,
+        },
+      );
+      state = state.copyWith(
+        isLoading: true,
+        isPlaying: false,
+        isBuffering: false,
+        statusHint: PlayerStatusHint.connectingStream,
+        errorMessage: null,
+      );
+      _publishMediaSession();
+      final int retryGeneration = _retryGeneration;
+      _isWaitingForRetry = true;
+      try {
+        await Future<void>.delayed(const Duration(seconds: 1));
+        if (!_isCurrentGeneration(generation) ||
+            retryGeneration != _retryGeneration) {
+          return false;
+        }
+      } finally {
+        _isWaitingForRetry = false;
+      }
+      return _loadQueueIndex(
+        failedIndex,
+        autoplay: autoplay,
+        initialPosition: initialPosition,
+        generation: generation,
+        persistAfterLoad: persistAfterLoad,
+        retryCount: nextRetryCount,
+        skippedUnavailableStableIds: skippedUnavailableStableIds,
+      );
+    }
+
+    return _skipFailedQueueItem(
+      error: error,
+      failedIndex: failedIndex,
+      autoplay: autoplay,
+      generation: generation,
+      persistAfterLoad: persistAfterLoad,
+      skippedUnavailableStableIds: skippedUnavailableStableIds,
+    );
   }
 
   Future<bool> _skipUnavailableQueueItem({
     required int failedIndex,
-    required String failedStableId,
     required bool autoplay,
     required int generation,
     required bool persistAfterLoad,
@@ -882,9 +993,28 @@ class PlayerController extends Notifier<PlayerState>
       ToastUtil.show(error.message);
     }
 
+    return _skipFailedQueueItem(
+      error: error,
+      failedIndex: failedIndex,
+      autoplay: autoplay,
+      generation: generation,
+      persistAfterLoad: persistAfterLoad,
+      skippedUnavailableStableIds: skippedUnavailableStableIds,
+    );
+  }
+
+  Future<bool> _skipFailedQueueItem({
+    required Object error,
+    required int failedIndex,
+    required bool autoplay,
+    required int generation,
+    required bool persistAfterLoad,
+    required Set<String> skippedUnavailableStableIds,
+  }) async {
+    _enginePlaybackRetryCount = 0;
     final Set<String> nextSkippedUnavailableStableIds = <String>{
       ...skippedUnavailableStableIds,
-      failedStableId,
+      state.queue[failedIndex].stableId,
     };
     final int? nextIndex = _resolveNextAvailableQueueIndex(
       failedIndex: failedIndex,
@@ -1028,14 +1158,40 @@ class PlayerController extends Notifier<PlayerState>
   }
 
   void _onEnginePlaybackError(PlayerEngineException error) {
-    state = state.copyWith(
-      isLoading: false,
-      isPlaying: false,
-      isBuffering: false,
-      statusHint: PlayerStatusHint.error,
-      errorMessage: '播放器错误: ${error.message}',
-    );
-    _publishMediaSession();
+    if (_isRetryingPlayback ||
+        _isWaitingForRetry ||
+        !state.hasActiveQueueIndex) {
+      return;
+    }
+
+    unawaited(_retryAfterEnginePlaybackError(error));
+  }
+
+  Future<void> _retryAfterEnginePlaybackError(
+    PlayerEngineException error,
+  ) async {
+    if (_isRetryingPlayback || !state.hasActiveQueueIndex) {
+      return;
+    }
+
+    _isRetryingPlayback = true;
+    final int generation = _nextGeneration();
+    final int queueIndex = state.currentQueueIndex!;
+    final Duration position = state.position;
+    try {
+      await _retryOrSkipFailedQueueItem(
+        error: error,
+        failedIndex: queueIndex,
+        autoplay: true,
+        initialPosition: position,
+        generation: generation,
+        persistAfterLoad: true,
+        retryCount: _enginePlaybackRetryCount,
+        skippedUnavailableStableIds: const <String>{},
+      );
+    } finally {
+      _isRetryingPlayback = false;
+    }
   }
 
   void _onEnginePlayerStateChanged(PlayerEngineState playerState) {
