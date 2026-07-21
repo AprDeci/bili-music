@@ -56,7 +56,7 @@ final class CollectionDetailControllerProvider
 }
 
 String _$collectionDetailControllerHash() =>
-    r'9ef30fff6ca78ef1613ac9b428df2adcac884f7c';
+    r'8893e5dfe3709e93df814edabd38260d1e310ba5';
 
 final class CollectionDetailControllerFamily extends $Family
     with

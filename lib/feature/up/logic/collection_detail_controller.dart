@@ -2,6 +2,7 @@ import 'package:bilimusic/feature/up/domain/collection_detail_state.dart';
 import 'package:bilimusic/feature/up/domain/collection_item_page_result.dart';
 import 'package:bilimusic/feature/up/domain/up_collection_item.dart';
 import 'package:bilimusic/feature/up/logic/up_page_controller.dart';
+import 'package:bilimusic/feature/favorites/logic/favorited_season_controller.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'collection_detail_controller.g.dart';
@@ -59,6 +60,9 @@ class CollectionDetailController extends _$CollectionDetailController {
       final CollectionItemPageResult page = await ref
           .read(biliUpRepositoryProvider)
           .fetchCollectionItems(mid: mid, seasonId: seasonId, page: 1);
+      await ref
+          .read(favoritedSeasonControllerProvider.notifier)
+          .syncIfFavorited(page.collection);
       return CollectionDetailState(
         collection: page.collection,
         items: page.items,

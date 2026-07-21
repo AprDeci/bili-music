@@ -7,6 +7,7 @@ import 'package:bilimusic/feature/up/domain/collection_detail_state.dart';
 import 'package:bilimusic/feature/up/domain/up_collection.dart';
 import 'package:bilimusic/feature/up/domain/up_collection_item.dart';
 import 'package:bilimusic/feature/up/logic/collection_detail_controller.dart';
+import 'package:bilimusic/feature/favorites/logic/favorited_season_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -28,9 +29,41 @@ class CollectionDetailPage extends ConsumerWidget {
       collectionDetailControllerProvider(mid, seasonId),
     );
     final favoritesState = ref.watch(favoritesControllerProvider);
+    final Set<int> favoritedSeasonIds = ref
+        .watch(favoritedSeasonControllerProvider)
+        .map((season) => season.seasonId)
+        .toSet();
 
     return Scaffold(
-      appBar: AppBar(title: const Text('合集')),
+      appBar: AppBar(
+        title: const Text('合集'),
+        actions: <Widget>[
+          state.when(
+            loading: () => const SizedBox.shrink(),
+            error: (_, _) => const SizedBox.shrink(),
+            data: (CollectionDetailState data) {
+              final UpCollection? collection = data.collection;
+              if (collection == null) {
+                return const SizedBox.shrink();
+              }
+              final bool isFavorited = favoritedSeasonIds.contains(
+                collection.seasonId,
+              );
+              return IconButton(
+                tooltip: isFavorited ? '取消收藏' : '收藏合集',
+                onPressed: () => ref
+                    .read(favoritedSeasonControllerProvider.notifier)
+                    .toggle(collection),
+                icon: Icon(
+                  isFavorited
+                      ? Icons.bookmark_rounded
+                      : Icons.bookmark_add_outlined,
+                ),
+              );
+            },
+          ),
+        ],
+      ),
       body: state.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (Object error, StackTrace stackTrace) => Center(
