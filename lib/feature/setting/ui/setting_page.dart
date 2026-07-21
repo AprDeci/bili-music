@@ -74,9 +74,9 @@ class _SettingPageState extends State<SettingPage> {
               return ListTile(
                 contentPadding: EdgeInsets.zero,
                 leading: const Icon(Icons.pie_chart_outline),
-                title: const Text('缓存设置'),
+                title: const Text('缓存管理'),
                 subtitle: Text(
-                  '管理图片与音频缓存 · ${formatBytes(snapshot.data ?? 0)}',
+                  '管理图片、音频、歌词与元信息缓存 · ${formatBytes(snapshot.data ?? 0)}',
                   style: theme.textTheme.bodySmall,
                 ),
                 trailing: const Icon(Icons.chevron_right_rounded),

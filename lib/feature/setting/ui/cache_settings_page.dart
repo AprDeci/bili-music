@@ -18,9 +18,11 @@ class _CacheSettingsPageState extends State<CacheSettingsPage>
     with SingleTickerProviderStateMixin {
   int _imageCacheBytes = 0;
   int _audioCacheBytes = 0;
+  int _lyricsCacheBytes = 0;
   int _metadataCacheBytes = 0;
   bool _imageSelected = true;
   bool _audioSelected = true;
+  bool _lyricsSelected = true;
   bool _metadataSelected = true;
   bool _isLoading = true;
   bool _isClearing = false;
@@ -40,7 +42,10 @@ class _CacheSettingsPageState extends State<CacheSettingsPage>
   }
 
   int get _totalCacheBytes =>
-      _imageCacheBytes + _audioCacheBytes + _metadataCacheBytes;
+      _imageCacheBytes +
+      _audioCacheBytes +
+      _lyricsCacheBytes +
+      _metadataCacheBytes;
 
   int get _selectedCacheBytes {
     int total = 0;
@@ -49,6 +54,9 @@ class _CacheSettingsPageState extends State<CacheSettingsPage>
     }
     if (_audioSelected) {
       total += _audioCacheBytes;
+    }
+    if (_lyricsSelected) {
+      total += _lyricsCacheBytes;
     }
     if (_metadataSelected) {
       total += _metadataCacheBytes;
@@ -62,6 +70,7 @@ class _CacheSettingsPageState extends State<CacheSettingsPage>
     final List<int> sizes = await Future.wait<int>(<Future<int>>[
       CacheUtil.getImageCacheSizeBytes(),
       CacheUtil.getAudioCacheSizeBytes(),
+      CacheUtil.getLyricsCacheSizeBytes(),
       CacheUtil.getMetadataCacheSizeBytes(),
     ]);
 
@@ -72,7 +81,8 @@ class _CacheSettingsPageState extends State<CacheSettingsPage>
     setState(() {
       _imageCacheBytes = sizes[0];
       _audioCacheBytes = sizes[1];
-      _metadataCacheBytes = sizes[2];
+      _lyricsCacheBytes = sizes[2];
+      _metadataCacheBytes = sizes[3];
       _isLoading = false;
     });
   }
@@ -103,6 +113,9 @@ class _CacheSettingsPageState extends State<CacheSettingsPage>
       }
       if (_audioSelected) {
         tasks.add(CacheUtil.clearAudioCache());
+      }
+      if (_lyricsSelected) {
+        tasks.add(CacheUtil.clearLyricsCache());
       }
       if (_metadataSelected) {
         tasks.add(CacheUtil.clearMetadataCache());
@@ -141,6 +154,12 @@ class _CacheSettingsPageState extends State<CacheSettingsPage>
     });
   }
 
+  void _toggleLyricsSelected() {
+    setState(() {
+      _lyricsSelected = !_lyricsSelected;
+    });
+  }
+
   void _toggleMetadataSelected() {
     setState(() {
       _metadataSelected = !_metadataSelected;
@@ -152,7 +171,7 @@ class _CacheSettingsPageState extends State<CacheSettingsPage>
     final ThemeData theme = Theme.of(context);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('缓存设置')),
+      appBar: AppBar(title: const Text('缓存管理')),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
         children: <Widget>[
@@ -207,6 +226,25 @@ class _CacheSettingsPageState extends State<CacheSettingsPage>
                                         400,
                                       ),
                                       titleStyle: TextStyle(
+                                        color: Colors.white,
+                                      ),
+                                      radius: 45,
+                                    ),
+                                    PieChartSectionData(
+                                      title: _lyricsCacheBytes > 0
+                                          ? '歌词 ${(_lyricsCacheBytes / _totalCacheBytes * 100).toStringAsFixed(0)}%'
+                                          : null,
+                                      value: _lyricsSelected
+                                          ? (_lyricsCacheBytes /
+                                                    _totalCacheBytes *
+                                                    100)
+                                                .toDouble()
+                                          : 0,
+                                      color: ColorUtil.getShade(
+                                        theme.colorScheme.primary,
+                                        500,
+                                      ),
+                                      titleStyle: const TextStyle(
                                         color: Colors.white,
                                       ),
                                       radius: 45,
@@ -292,6 +330,15 @@ class _CacheSettingsPageState extends State<CacheSettingsPage>
                           selected: _audioSelected,
                           enabled: !_isLoading && !_isClearing,
                           onTap: _toggleAudioSelected,
+                        ),
+                        const Divider(height: 1),
+                        _CacheCategoryTile(
+                          icon: Icons.lyrics_outlined,
+                          title: '歌词',
+                          valueLabel: formatBytes(_lyricsCacheBytes),
+                          selected: _lyricsSelected,
+                          enabled: !_isLoading && !_isClearing,
+                          onTap: _toggleLyricsSelected,
                         ),
                         const Divider(height: 1),
                         _CacheCategoryTile(
@@ -406,7 +453,7 @@ Future<bool?> _showClearCacheDialog(
     builder: (BuildContext context) {
       return AlertDialog(
         title: const Text('确认清空所选缓存吗？'),
-        content: Text('将清理 $cacheSizeLabel 的图片、音频与元信息缓存，后续使用时会重新下载或重新拉取。'),
+        content: Text('将清理 $cacheSizeLabel 的图片、音频、歌词与元信息缓存，后续使用时会重新下载或重新拉取。'),
         actions: <Widget>[
           TextButton(
             onPressed: () => Navigator.pop(context, false),
