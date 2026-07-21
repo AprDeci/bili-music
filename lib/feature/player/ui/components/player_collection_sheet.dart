@@ -6,25 +6,25 @@ import 'package:bilimusic/feature/player/domain/playable_item.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-Future<void> showPlayerCollectionSheet({
+Future<bool?> showPlayerCollectionSheet({
   required BuildContext context,
   required PlayableItem item,
-}) async {
-  await showPlayerCollectionItemsSheet(
+}) {
+  return showPlayerCollectionItemsSheet(
     context: context,
     items: <PlayableItem>[item],
   );
 }
 
-Future<void> showPlayerCollectionItemsSheet({
+Future<bool?> showPlayerCollectionItemsSheet({
   required BuildContext context,
   required List<PlayableItem> items,
 }) async {
   if (items.isEmpty) {
-    return;
+    return false;
   }
 
-  await showModalBottomSheet<void>(
+  return showModalBottomSheet<bool>(
     useRootNavigator: true,
     context: context,
     showDragHandle: true,
@@ -163,7 +163,7 @@ class _PlayerCollectionSheetState
     required BuildContext context,
     required FavoriteCollection collection,
   }) async {
-    Navigator.of(context).pop();
+    Navigator.of(context).pop(true);
 
     final FavoritesState favoritesState = ref.read(favoritesControllerProvider);
     final List<PlayableItem> itemsToAdd = widget.items

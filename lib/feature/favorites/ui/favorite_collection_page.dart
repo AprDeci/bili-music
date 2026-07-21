@@ -268,11 +268,11 @@ class _FavoriteCollectionPageState
       return;
     }
 
-    await showPlayerCollectionItemsSheet(
+    final bool? added = await showPlayerCollectionItemsSheet(
       context: context,
       items: selectedItems,
     );
-    if (mounted) {
+    if (added == true && mounted) {
       _setSelectionMode(false);
     }
   }
