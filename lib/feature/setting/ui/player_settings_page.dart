@@ -1,10 +1,12 @@
 import 'package:bilimusic/common/util/platform_util.dart';
 import 'package:bilimusic/feature/player/domain/player_audio_quality_preference.dart';
 import 'package:bilimusic/feature/player/logic/player_audio_quality_preference_logic.dart';
+import 'package:bilimusic/feature/player/logic/player_cover_settings_logic.dart';
 import 'package:bilimusic/feature/player/logic/player_controller.dart';
 import 'package:bilimusic/feature/player/logic/player_settings_logic.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hugeicons/hugeicons.dart';
 
 class PlayerSettingsPage extends ConsumerWidget {
   const PlayerSettingsPage({super.key});
@@ -13,6 +15,7 @@ class PlayerSettingsPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final ThemeData theme = Theme.of(context);
     final bool allowMixWithOthers = ref.watch(playerSettingsLogicProvider);
+    final bool useMetadataCover = ref.watch(playerCoverSettingsLogicProvider);
     final PlayerAudioQualityPreference audioQualityPreference = ref.watch(
       playerAudioQualityPreferenceLogicProvider,
     );
@@ -36,9 +39,24 @@ class PlayerSettingsPage extends ConsumerWidget {
                   },
                 )
               : Container(),
+          SwitchListTile.adaptive(
+            contentPadding: EdgeInsets.zero,
+            secondary: const HugeIcon(icon: HugeIcons.strokeRoundedScanImage),
+            title: const Text('自动使用元信息封面'),
+            subtitle: Text(
+              '优先显示歌词与歌曲元信息中的专辑封面',
+              style: theme.textTheme.bodySmall,
+            ),
+            value: useMetadataCover,
+            onChanged: (bool value) async {
+              await ref
+                  .read(playerCoverSettingsLogicProvider.notifier)
+                  .setUseMetadataCover(value);
+            },
+          ),
           ListTile(
             contentPadding: EdgeInsets.zero,
-            leading: const Icon(Icons.graphic_eq_rounded),
+            leading: const HugeIcon(icon: HugeIcons.strokeRoundedAudioWave01),
             title: const Text('默认音质'),
             subtitle: Text(
               audioQualityPreference.title,

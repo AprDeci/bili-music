@@ -7,6 +7,9 @@ import 'package:bilimusic/feature/metadata/logic/metadata_controller.dart';
 import 'package:bilimusic/feature/player/domain/playable_item.dart';
 import 'package:bilimusic/feature/player/domain/player_state.dart';
 import 'package:bilimusic/feature/player/logic/player_controller.dart';
+import 'package:bilimusic/feature/player/logic/player_cover_logic.dart';
+import 'package:bilimusic/feature/player/logic/player_cover_settings_logic.dart';
+import 'package:bilimusic/feature/player/ui/components/player_display_metadata.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -45,6 +48,13 @@ class PlayerCoverColorController extends _$PlayerCoverColorController {
       _scheduleUseCurrentCoverUrl();
     }, fireImmediately: true);
 
+    ref.listen<bool>(playerCoverSettingsLogicProvider, (_, _) {
+      _scheduleUseCurrentCoverUrl();
+    });
+    ref.listen<bool?>(playerCoverLogicProvider, (_, _) {
+      _scheduleUseCurrentCoverUrl();
+    });
+
     return null;
   }
 
@@ -69,14 +79,18 @@ class PlayerCoverColorController extends _$PlayerCoverColorController {
     }
 
     final MetadataState metadataState = ref.read(metadataControllerProvider);
-    final String metadataCoverUrl = metadataState.stableId == item.stableId
-        ? metadataState.metadata?.albumArtUrl?.trim() ?? ''
-        : '';
-    if (metadataCoverUrl.isNotEmpty) {
-      return metadataCoverUrl;
-    }
-
-    return item.coverUrl;
+    final bool defaultUseMetadataCover = ref.read(
+      playerCoverSettingsLogicProvider,
+    );
+    final bool useMetadataCover =
+        ref.read(playerCoverLogicProvider) ?? defaultUseMetadataCover;
+    return resolveDisplayCoverUrl(
+      item: item,
+      metadata: metadataState.stableId == item.stableId
+          ? metadataState.metadata
+          : null,
+      useMetadataCover: useMetadataCover,
+    );
   }
 
   void _useCoverUrl(String? coverUrl) {
