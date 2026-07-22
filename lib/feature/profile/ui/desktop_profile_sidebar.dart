@@ -868,24 +868,27 @@ class _SidebarListItem extends StatelessWidget {
         borderRadius: BorderRadius.circular(10),
         onTap: onTap,
         onSecondaryTapDown: onSecondaryTapDown,
-        child: Padding(
-          padding: padding,
-          child: Row(
-            children: <Widget>[
-              leading,
-              const SizedBox(width: 14),
-              Expanded(
-                child: Text(
-                  label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: foregroundColor,
-                    fontWeight: FontWeight.w700,
+        child: MouseRegion(
+          cursor: SystemMouseCursors.click,
+          child: Padding(
+            padding: padding,
+            child: Row(
+              children: <Widget>[
+                leading,
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: foregroundColor,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -977,18 +980,21 @@ class _PlaylistTabButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 6),
-        child: Text(
-          label,
-          style: theme.textTheme.bodyMedium?.copyWith(
-            color: selected
-                ? colorScheme.onSurface
-                : colorScheme.onSurfaceVariant,
-            fontWeight: selected ? FontWeight.w800 : FontWeight.w500,
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 6),
+          child: Text(
+            label,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: selected
+                  ? colorScheme.onSurface
+                  : colorScheme.onSurfaceVariant,
+              fontWeight: selected ? FontWeight.w800 : FontWeight.w500,
+            ),
           ),
         ),
       ),
