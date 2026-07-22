@@ -29,6 +29,7 @@ class BarIconButton extends StatefulWidget {
 
 class _BarIconButtonState extends State<BarIconButton> {
   bool _isHovered = false;
+  bool _isPressed = false;
 
   @override
   Widget build(BuildContext context) {
@@ -47,18 +48,33 @@ class _BarIconButtonState extends State<BarIconButton> {
     final Widget button = MouseRegion(
       cursor: isEnabled ? SystemMouseCursors.click : MouseCursor.defer,
       onEnter: isEnabled ? (_) => setState(() => _isHovered = true) : null,
-      onExit: isEnabled ? (_) => setState(() => _isHovered = false) : null,
+      onExit: isEnabled
+          ? (_) => setState(() {
+              _isHovered = false;
+              _isPressed = false;
+            })
+          : null,
       child: GestureDetector(
         onTap: widget.onPressed,
+        onTapDown: isEnabled ? (_) => setState(() => _isPressed = true) : null,
+        onTapUp: isEnabled ? (_) => setState(() => _isPressed = false) : null,
+        onTapCancel: isEnabled
+            ? () => setState(() => _isPressed = false)
+            : null,
         behavior: HitTestBehavior.opaque,
         child: SizedBox(
           width: widget.width,
           height: widget.height,
           child: Center(
-            child: IconAndWidget(
-              icon: widget.icon,
-              size: widget.iconSize,
-              color: iconColor,
+            child: AnimatedSlide(
+              duration: const Duration(milliseconds: 90),
+              curve: Curves.easeOut,
+              offset: _isPressed ? const Offset(0.05, 0.05) : Offset.zero,
+              child: IconAndWidget(
+                icon: widget.icon,
+                size: widget.iconSize,
+                color: iconColor,
+              ),
             ),
           ),
         ),
