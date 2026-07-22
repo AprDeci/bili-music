@@ -795,7 +795,6 @@ class _SidebarShortcutButton extends StatelessWidget {
   }
 }
 
-
 class _SidebarListItem extends StatelessWidget {
   const _SidebarListItem({
     required this.leading,
@@ -837,23 +836,23 @@ class _SidebarListItem extends StatelessWidget {
         onTap: onTap,
         onSecondaryTapDown: onSecondaryTapDown,
         child: Padding(
-            padding: padding,
-            child: Row(
-              children: <Widget>[
-                leading,
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Text(
-                    label,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: foregroundColor,
-                      fontWeight: FontWeight.w700,
-                    ),
+          padding: padding,
+          child: Row(
+            children: <Widget>[
+              leading,
+              const SizedBox(width: 14),
+              Expanded(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: foregroundColor,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
-              ],
+              ),
+            ],
           ),
         ),
       ),
