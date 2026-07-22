@@ -38,33 +38,41 @@ class DesktopTabSwitcher extends StatelessWidget {
             child: TextButton(
               onPressed: () => onChanged(labelIndex),
               style: TextButton.styleFrom(
-                foregroundColor: color,
+                    foregroundColor: Colors.transparent,
                 padding: const EdgeInsets.symmetric(horizontal: 2),
                 shape: const RoundedRectangleBorder(
                   borderRadius: BorderRadius.zero,
                 ),
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: <Widget>[
-                  Text(
-                    labels[labelIndex],
-                    style: theme.textTheme.titleSmall?.copyWith(
-                      color: color,
-                      fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-                    ),
+                  ).copyWith(
+                    foregroundColor: WidgetStateProperty.all(Colors.blue),
+                    overlayColor: WidgetStateProperty.all(Colors.transparent),
                   ),
-                  const SizedBox(height: 5),
-                  AnimatedContainer(
-                    duration: const Duration(milliseconds: 160),
-                    width: 24,
-                    height: 2,
-                    decoration: BoxDecoration(
-                      color: selected ? color : Colors.transparent,
-                      borderRadius: BorderRadius.circular(1),
+              child: MouseRegion(
+                cursor: SystemMouseCursors.click,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[
+                    Text(
+                      labels[labelIndex],
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        color: color,
+                        fontWeight: selected
+                            ? FontWeight.w700
+                            : FontWeight.w500,
+                      ),
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 5),
+                    AnimatedContainer(
+                      duration: const Duration(milliseconds: 160),
+                      width: 24,
+                      height: 2,
+                      decoration: BoxDecoration(
+                        color: selected ? color : Colors.transparent,
+                        borderRadius: BorderRadius.circular(1),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           );
