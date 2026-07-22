@@ -795,39 +795,6 @@ class _SidebarShortcutButton extends StatelessWidget {
   }
 }
 
-class _CreateCollectionButton extends StatelessWidget {
-  const _CreateCollectionButton({required this.onTap});
-
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final ColorScheme colorScheme = Theme.of(context).colorScheme;
-    return Material(
-      color: Colors.transparent,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(
-          color: colorScheme.outlineVariant,
-          strokeAlign: BorderSide.strokeAlignInside,
-          style: BorderStyle.solid,
-        ),
-      ),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(12),
-        onTap: onTap,
-        child: SizedBox(
-          height: 28,
-          child: Icon(
-            Icons.add_rounded,
-            color: colorScheme.onSurfaceVariant,
-            size: 20,
-          ),
-        ),
-      ),
-    );
-  }
-}
 
 class _SidebarListItem extends StatelessWidget {
   const _SidebarListItem({
@@ -865,12 +832,11 @@ class _SidebarListItem extends StatelessWidget {
           : Colors.transparent,
       borderRadius: BorderRadius.circular(10),
       child: InkWell(
+        mouseCursor: SystemMouseCursors.click,
         borderRadius: BorderRadius.circular(10),
         onTap: onTap,
         onSecondaryTapDown: onSecondaryTapDown,
-        child: MouseRegion(
-          cursor: SystemMouseCursors.click,
-          child: Padding(
+        child: Padding(
             padding: padding,
             child: Row(
               children: <Widget>[
@@ -888,7 +854,6 @@ class _SidebarListItem extends StatelessWidget {
                   ),
                 ),
               ],
-            ),
           ),
         ),
       ),
