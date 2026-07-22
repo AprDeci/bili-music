@@ -7,6 +7,8 @@ import 'package:bilimusic/feature/metadata/logic/metadata_controller.dart';
 import 'package:bilimusic/feature/player/domain/playable_item.dart';
 import 'package:bilimusic/feature/player/domain/player_state.dart';
 import 'package:bilimusic/feature/player/logic/player_controller.dart';
+import 'package:bilimusic/feature/player/logic/player_cover_logic.dart';
+import 'package:bilimusic/feature/player/logic/player_cover_settings_logic.dart';
 import 'package:bilimusic/feature/player/logic/player_cover_color_provider.dart';
 import 'package:bilimusic/feature/player/ui/components/player_display_metadata.dart';
 import 'package:bilimusic/feature/player/ui/components/player_dynamic_backdrop.dart';
@@ -19,6 +21,7 @@ import 'package:bilimusic/feature/player/ui/components/player_queue_sheet.dart';
 import 'package:bilimusic/feature/player/ui/components/player_top_bar.dart';
 import 'package:bilimusic/feature/player/ui/sleep_timer_page.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -96,9 +99,15 @@ class _PlayerPageState extends ConsumerState<PlayerPage> {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
     final Color? coverColor = ref.watch(playerCoverColorControllerProvider);
+    final bool defaultUseMetadataCover = ref.watch(
+      playerCoverSettingsLogicProvider,
+    );
+    final bool useMetadataCover =
+        ref.watch(playerCoverLogicProvider) ?? defaultUseMetadataCover;
     final String? displayCoverUrl = resolveDisplayCoverUrl(
       item: item,
       metadata: metadataState.metadata,
+      useMetadataCover: useMetadataCover,
     );
 
     return Scaffold(
@@ -162,6 +171,19 @@ class _PlayerPageState extends ConsumerState<PlayerPage> {
                               onFavoriteToggle: item == null
                                   ? null
                                   : () => _toggleFavorite(item),
+                              canToggleCover: hasSwitchableCover(
+                                item: item,
+                                metadata: metadataState.metadata,
+                              ),
+                              onToggleCover: () {
+                                HapticFeedback.lightImpact();
+                                ref
+                                    .read(playerCoverLogicProvider.notifier)
+                                    .toggle(
+                                      defaultUseMetadataCover:
+                                          defaultUseMetadataCover,
+                                    );
+                              },
                               onSeek: (double value) {
                                 final int totalMs =
                                     (ref

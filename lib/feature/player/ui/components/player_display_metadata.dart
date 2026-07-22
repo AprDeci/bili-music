@@ -5,10 +5,13 @@ import 'package:bilimusic/feature/player/domain/playable_item.dart';
 String? resolveDisplayCoverUrl({
   required PlayableItem? item,
   required Metadata? metadata,
+  required bool useMetadataCover,
 }) {
-  final String metadataCoverUrl = metadata?.albumArtUrl?.trim() ?? '';
-  if (metadataCoverUrl.isNotEmpty) {
-    return metadataCoverUrl;
+  if (useMetadataCover) {
+    final String metadataCoverUrl = metadata?.albumArtUrl?.trim() ?? '';
+    if (metadataCoverUrl.isNotEmpty) {
+      return metadataCoverUrl;
+    }
   }
 
   final String itemCoverUrl = item?.coverUrl.trim() ?? '';
@@ -17,6 +20,14 @@ String? resolveDisplayCoverUrl({
   }
 
   return null;
+}
+
+bool hasSwitchableCover({
+  required PlayableItem? item,
+  required Metadata? metadata,
+}) {
+  return item?.coverUrl.trim().isNotEmpty == true &&
+      metadata?.albumArtUrl?.trim().isNotEmpty == true;
 }
 
 String? resolveDisplayLyrics(Metadata? metadata) {

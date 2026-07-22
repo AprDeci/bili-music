@@ -18,6 +18,8 @@ import 'package:bilimusic/feature/player/domain/playable_item.dart';
 import 'package:bilimusic/feature/player/domain/player_state.dart';
 import 'package:bilimusic/feature/player/logic/player_controller.dart';
 import 'package:bilimusic/feature/player/logic/player_cover_color_provider.dart';
+import 'package:bilimusic/feature/player/logic/player_cover_logic.dart';
+import 'package:bilimusic/feature/player/logic/player_cover_settings_logic.dart';
 import 'package:bilimusic/feature/player/ui/components/desktop/play_pause_button.dart';
 import 'package:bilimusic/feature/player/ui/components/desktop/quality_attach.dart';
 import 'package:bilimusic/feature/player/ui/components/desktop/queue_mode_attach.dart';
@@ -96,6 +98,11 @@ class _DesktopPlayerPageState extends ConsumerState<DesktopPlayerPage> {
         : false;
     final ColorScheme colorScheme = Theme.of(context).colorScheme;
     final Color? coverColor = ref.watch(playerCoverColorControllerProvider);
+    final bool defaultUseMetadataCover = ref.watch(
+      playerCoverSettingsLogicProvider,
+    );
+    final bool useMetadataCover =
+        ref.watch(playerCoverLogicProvider) ?? defaultUseMetadataCover;
 
     return Scaffold(
       backgroundColor: colorScheme.surface,
@@ -140,6 +147,18 @@ class _DesktopPlayerPageState extends ConsumerState<DesktopPlayerPage> {
                     metadataState: metadataState,
                     onSeek: controller.seek,
                     activeColor: coverColor,
+                    useMetadataCover: useMetadataCover,
+                    canToggleCover: hasSwitchableCover(
+                      item: item,
+                      metadata: metadataState.metadata,
+                    ),
+                    onToggleCover: () {
+                      ref
+                          .read(playerCoverLogicProvider.notifier)
+                          .toggle(
+                            defaultUseMetadataCover: defaultUseMetadataCover,
+                          );
+                    },
                   ),
                 ),
                 _DesktopPlayerControlDeck(
@@ -345,6 +364,9 @@ class _DesktopPlayerHeroSection extends ConsumerWidget {
     required this.item,
     required this.metadataState,
     required this.onSeek,
+    required this.useMetadataCover,
+    required this.canToggleCover,
+    required this.onToggleCover,
     this.activeColor,
   });
 
@@ -352,6 +374,9 @@ class _DesktopPlayerHeroSection extends ConsumerWidget {
   final PlayableItem? item;
   final MetadataState metadataState;
   final ValueChanged<Duration> onSeek;
+  final bool useMetadataCover;
+  final bool canToggleCover;
+  final VoidCallback onToggleCover;
   final Color? activeColor;
 
   @override
@@ -378,10 +403,14 @@ class _DesktopPlayerHeroSection extends ConsumerWidget {
                 SizedBox(
                   width: artworkSize,
                   height: artworkSize,
-                  child: _DesktopArtwork(
-                    coverUrl: resolveDisplayCoverUrl(
-                      item: item,
-                      metadata: metadataState.metadata,
+                  child: GestureDetector(
+                    onDoubleTap: canToggleCover ? onToggleCover : null,
+                    child: _DesktopArtwork(
+                      coverUrl: resolveDisplayCoverUrl(
+                        item: item,
+                        metadata: metadataState.metadata,
+                        useMetadataCover: useMetadataCover,
+                      ),
                     ),
                   ),
                 ),

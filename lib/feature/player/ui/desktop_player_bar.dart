@@ -13,6 +13,8 @@ import 'package:bilimusic/feature/player/domain/audio_stream_info.dart';
 import 'package:bilimusic/feature/player/domain/playable_item.dart';
 import 'package:bilimusic/feature/player/domain/player_state.dart';
 import 'package:bilimusic/feature/player/logic/player_controller.dart';
+import 'package:bilimusic/feature/player/logic/player_cover_logic.dart';
+import 'package:bilimusic/feature/player/logic/player_cover_settings_logic.dart';
 import 'package:bilimusic/feature/player/ui/components/desktop/quality_attach.dart';
 import 'package:bilimusic/feature/player/ui/components/desktop/play_pause_button.dart';
 import 'package:bilimusic/feature/player/ui/components/desktop/queue_mode_attach.dart';
@@ -35,6 +37,11 @@ class DesktopPlayerBar extends ConsumerWidget {
     final ColorScheme colorScheme = theme.colorScheme;
     final PlayerState state = ref.watch(playerControllerProvider);
     final MetadataState metadataState = ref.watch(metadataControllerProvider);
+    final bool defaultUseMetadataCover = ref.watch(
+      playerCoverSettingsLogicProvider,
+    );
+    final bool useMetadataCover =
+        ref.watch(playerCoverLogicProvider) ?? defaultUseMetadataCover;
     final PlayerController controller = ref.read(
       playerControllerProvider.notifier,
     );
@@ -71,6 +78,7 @@ class DesktopPlayerBar extends ConsumerWidget {
               child: _TrackSection(
                 item: item,
                 metadataState: metadataState,
+                useMetadataCover: useMetadataCover,
                 state: state,
                 isFavorite: isFavorite,
                 onFavoritePressed: item == null
@@ -151,6 +159,7 @@ class _TrackSection extends StatelessWidget {
   const _TrackSection({
     required this.item,
     required this.metadataState,
+    required this.useMetadataCover,
     required this.state,
     required this.isFavorite,
     required this.onFavoritePressed,
@@ -159,6 +168,7 @@ class _TrackSection extends StatelessWidget {
 
   final PlayableItem? item;
   final MetadataState metadataState;
+  final bool useMetadataCover;
   final PlayerState state;
   final bool isFavorite;
   final VoidCallback? onFavoritePressed;
@@ -170,7 +180,11 @@ class _TrackSection extends StatelessWidget {
 
     return Row(
       children: <Widget>[
-        _ArtworkHoverButton(item: item, metadataState: metadataState),
+        _ArtworkHoverButton(
+          item: item,
+          metadataState: metadataState,
+          useMetadataCover: useMetadataCover,
+        ),
         const SizedBox(width: 12),
         Expanded(
           child: Column(
@@ -223,10 +237,15 @@ class _TrackSection extends StatelessWidget {
 }
 
 class _ArtworkHoverButton extends StatefulWidget {
-  const _ArtworkHoverButton({required this.item, required this.metadataState});
+  const _ArtworkHoverButton({
+    required this.item,
+    required this.metadataState,
+    required this.useMetadataCover,
+  });
 
   final PlayableItem? item;
   final MetadataState metadataState;
+  final bool useMetadataCover;
 
   @override
   State<_ArtworkHoverButton> createState() => _ArtworkHoverButtonState();
@@ -266,6 +285,7 @@ class _ArtworkHoverButtonState extends State<_ArtworkHoverButton> {
                     imageUrl: resolveDisplayCoverUrl(
                       item: widget.item,
                       metadata: widget.metadataState.metadata,
+                      useMetadataCover: widget.useMetadataCover,
                     ),
                     fit: BoxFit.cover,
                     fallbackIcon: Icons.music_note_rounded,

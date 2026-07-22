@@ -5,6 +5,7 @@ import 'package:bilimusic/feature/metadata/logic/metadata_controller.dart';
 import 'package:bilimusic/feature/player/domain/playable_item.dart';
 import 'package:bilimusic/feature/player/domain/player_state.dart';
 import 'package:bilimusic/feature/player/logic/player_controller.dart';
+import 'package:bilimusic/feature/player/logic/player_cover_settings_logic.dart';
 import 'package:bilimusic/feature/player/logic/sleep_timer_controller.dart';
 import 'package:bilimusic/feature/player/ui/player_page.dart';
 import 'package:bilimusic/feature/player/ui/sleep_timer_page.dart';
@@ -46,6 +47,7 @@ void main() {
           metadataControllerProvider.overrideWith(
             () => _FakeMetadataController(item),
           ),
+          playerCoverSettingsLogicProvider.overrideWithValue(true),
         ],
         child: MaterialApp(home: PlayerPage(initialItem: item)),
       ),
@@ -94,6 +96,7 @@ void main() {
           metadataControllerProvider.overrideWith(
             () => _FakeMetadataController(item),
           ),
+          playerCoverSettingsLogicProvider.overrideWithValue(true),
         ],
         child: MaterialApp(home: PlayerPage(initialItem: item)),
       ),
@@ -122,7 +125,6 @@ void main() {
       ],
     );
     addTearDown(container.dispose);
-
     await tester.pumpWidget(
       UncontrolledProviderScope(
         container: container,

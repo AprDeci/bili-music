@@ -4,6 +4,8 @@ import 'package:bilimusic/common/components/cached_image.dart';
 import 'package:bilimusic/feature/metadata/domain/metadata_state.dart';
 import 'package:bilimusic/feature/metadata/logic/metadata_controller.dart';
 import 'package:bilimusic/feature/player/domain/player_state.dart';
+import 'package:bilimusic/feature/player/logic/player_cover_logic.dart';
+import 'package:bilimusic/feature/player/logic/player_cover_settings_logic.dart';
 import 'package:bilimusic/feature/player/ui/components/player_display_metadata.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -25,11 +27,17 @@ class MiniPlayerContent extends ConsumerWidget {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
     final MetadataState metadataState = ref.watch(metadataControllerProvider);
+    final bool defaultUseMetadataCover = ref.watch(
+      playerCoverSettingsLogicProvider,
+    );
+    final bool useMetadataCover =
+        ref.watch(playerCoverLogicProvider) ?? defaultUseMetadataCover;
     final String subtitle = buildMiniPlayerSubtitle(state);
     final double progress = buildMiniPlayerProgress(state);
     final String? displayCoverUrl = resolveDisplayCoverUrl(
       item: state.currentItem,
       metadata: metadataState.metadata,
+      useMetadataCover: useMetadataCover,
     );
 
     return Padding(

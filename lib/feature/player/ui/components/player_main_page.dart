@@ -30,6 +30,8 @@ class PlayerMainPage extends ConsumerWidget {
     required this.onOpenCollectionSheet,
     required this.isFavorite,
     required this.onFavoriteToggle,
+    required this.canToggleCover,
+    required this.onToggleCover,
     required this.onSeek,
     required this.onToggleQueueMode,
     required this.onBackward,
@@ -48,6 +50,8 @@ class PlayerMainPage extends ConsumerWidget {
   final VoidCallback? onOpenCollectionSheet;
   final bool isFavorite;
   final VoidCallback? onFavoriteToggle;
+  final bool canToggleCover;
+  final VoidCallback onToggleCover;
   final ValueChanged<double> onSeek;
   final VoidCallback onToggleQueueMode;
   final VoidCallback onBackward;
@@ -85,6 +89,8 @@ class PlayerMainPage extends ConsumerWidget {
             isFavorite: isFavorite,
             onlineAudienceLabel: onlineAudienceLabel,
             onFavoriteToggle: onFavoriteToggle,
+            canToggleCover: canToggleCover,
+            onToggleCover: onToggleCover,
           ),
         ),
         const Spacer(),
@@ -145,6 +151,8 @@ class _PlayerHeroAndTitle extends StatelessWidget {
     required this.isFavorite,
     required this.onlineAudienceLabel,
     required this.onFavoriteToggle,
+    required this.canToggleCover,
+    required this.onToggleCover,
   });
 
   final double artworkSize;
@@ -153,6 +161,8 @@ class _PlayerHeroAndTitle extends StatelessWidget {
   final bool isFavorite;
   final String? onlineAudienceLabel;
   final VoidCallback? onFavoriteToggle;
+  final bool canToggleCover;
+  final VoidCallback onToggleCover;
 
   @override
   Widget build(BuildContext context) {
@@ -160,13 +170,20 @@ class _PlayerHeroAndTitle extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
         const SizedBox(height: 12),
-        Hero(
-          tag: "artwork",
-          child: Center(
-            child: SizedBox(
-              width: artworkSize,
-              height: artworkSize,
-              child: PlayerArtworkFrame(coverUrl: displayCoverUrl ?? ''),
+        Center(
+          child: SizedBox(
+            width: artworkSize,
+            height: artworkSize,
+            child: Stack(
+              children: <Widget>[
+                GestureDetector(
+                  onDoubleTap: canToggleCover ? onToggleCover : null,
+                  child: Hero(
+                    tag: 'artwork',
+                    child: PlayerArtworkFrame(coverUrl: displayCoverUrl ?? ''),
+                  ),
+                ),
+              ],
             ),
           ),
         ),
