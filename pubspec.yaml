@@ -101,6 +101,10 @@ dependency_overrides:
        git:
         url: https://github.com/AprDeci/flutter_lyric.git
         ref: main
+  audio_service_win:
+      git:
+        url: https://github.com/Predidit/audio_service_win.git
+        ref: main
 
 
 dev_dependencies:
