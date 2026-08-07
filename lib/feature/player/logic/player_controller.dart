@@ -1232,7 +1232,15 @@ class PlayerController extends Notifier<PlayerState>
     // 先更新 PlayerState，再执行依赖它的发布和完成处理。
     state = reduction.nextState;
     if (reduction.shouldPublishMediaSession) {
-      _publishMediaSession(processingState: reduction.mediaProcessingState);
+      switch (change) {
+        case _EnginePlaybackChange.position ||
+            _EnginePlaybackChange.bufferedPosition:
+          _publishPlaybackState(
+            processingState: reduction.mediaProcessingState,
+          );
+        default:
+          _publishMediaSession(processingState: reduction.mediaProcessingState);
+      }
     }
     if (reduction.shouldHandleCompleted) {
       unawaited(_handlePlaybackCompleted(_operationGeneration));
@@ -1436,6 +1444,10 @@ class PlayerController extends Notifier<PlayerState>
       );
     }
 
+    _publishPlaybackState(processingState: processingState);
+  }
+
+  void _publishPlaybackState({AudioProcessingState? processingState}) {
     _audioHandler.updatePlaybackSnapshot(
       isPlaying: state.isPlaying,
       isBuffering: state.isBuffering,
