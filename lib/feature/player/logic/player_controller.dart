@@ -10,6 +10,7 @@ import 'package:bilimusic/feature/player/data/audio_cache_repository.dart';
 import 'package:bilimusic/feature/player/data/bili_player_repository.dart';
 import 'package:bilimusic/feature/player/data/player_queue_local_repository.dart';
 import 'package:bilimusic/feature/player/domain/player_audio_quality_preference.dart';
+import 'package:bilimusic/feature/player/domain/player_event.dart';
 import 'package:bilimusic/feature/player/domain/playable_item.dart';
 import 'package:bilimusic/feature/player/domain/persisted_playback_queue.dart';
 import 'package:bilimusic/feature/player/domain/player_state.dart';
@@ -19,6 +20,7 @@ import 'package:bilimusic/feature/player/logic/controller/player_queue_manager.d
 import 'package:bilimusic/feature/player/logic/player_audio_engine.dart';
 import 'package:bilimusic/feature/player/logic/player_audio_quality_preference_logic.dart';
 import 'package:bilimusic/feature/player/logic/player_audio_session_coordinator.dart';
+import 'package:bilimusic/feature/player/logic/player_event_hub.dart';
 import 'package:bilimusic/feature/player/logic/player_media_item_mapper.dart';
 import 'package:bilimusic/feature/player/logic/player_settings_logic.dart';
 import 'package:bilimusic/feature/recent/logic/recent_playback_controller.dart';
@@ -61,6 +63,7 @@ class PlayerController extends Notifier<PlayerState>
         play: play,
         pause: pause,
       );
+  late final PlayerEventHub _eventHub = ref.read(playerEventHubProvider);
 
   final Map<String, int?> _qualityOverrides = <String, int?>{};
   final List<StreamSubscription<dynamic>> _subscriptions =
@@ -279,6 +282,7 @@ class PlayerController extends Notifier<PlayerState>
 
   @override
   Future<void> seek(Duration position) {
+    _emitPlayerEvent(PlayerEventType.seek, position: position);
     return _audioEngine.seek(position);
   }
 
@@ -330,6 +334,7 @@ class PlayerController extends Notifier<PlayerState>
       position: Duration.zero,
       bufferedPosition: Duration.zero,
     );
+    _emitPlayerEvent(PlayerEventType.stop);
     _publishMediaSession();
     await _persistQueueSnapshot();
   }
@@ -375,6 +380,7 @@ class PlayerController extends Notifier<PlayerState>
       statusHint: null,
       errorMessage: null,
     );
+    _emitPlayerEvent(PlayerEventType.trackChanged);
     _publishMediaSession();
     await _loadQueueIndex(
       resolvedIndex,
@@ -421,6 +427,7 @@ class PlayerController extends Notifier<PlayerState>
       statusHint: null,
       errorMessage: null,
     );
+    _emitPlayerEvent(PlayerEventType.trackChanged);
     _publishMediaSession();
     await _loadQueueIndex(
       currentIndex,
@@ -1097,6 +1104,7 @@ class PlayerController extends Notifier<PlayerState>
       statusHint: null,
       errorMessage: null,
     );
+    _emitPlayerEvent(PlayerEventType.trackChanged);
   }
 
   void _bindPlayerStreams() {
@@ -1125,6 +1133,7 @@ class PlayerController extends Notifier<PlayerState>
       _EnginePlaybackChange.position,
       _enginePlaybackSnapshot.copyWith(position: position),
     );
+    _emitPlayerEvent(PlayerEventType.position, position: position);
   }
 
   void _onEngineBufferedPositionChanged(Duration bufferedPosition) {
@@ -1143,6 +1152,7 @@ class PlayerController extends Notifier<PlayerState>
       _EnginePlaybackChange.duration,
       _enginePlaybackSnapshot.copyWith(duration: duration),
     );
+    _emitPlayerEvent(PlayerEventType.duration);
   }
 
   void _onEngineVolumeChanged(double volume) {
@@ -1202,6 +1212,10 @@ class PlayerController extends Notifier<PlayerState>
         processingState: playerState.processingState,
       ),
     );
+    _emitPlayerEvent(
+      PlayerEventType.playbackState,
+      isPlaying: playerState.playing,
+    );
   }
 
   void _resetEnginePlaybackSnapshot({
@@ -1245,6 +1259,22 @@ class PlayerController extends Notifier<PlayerState>
     if (reduction.shouldHandleCompleted) {
       unawaited(_handlePlaybackCompleted(_operationGeneration));
     }
+  }
+
+  void _emitPlayerEvent(
+    PlayerEventType type, {
+    Duration? position,
+    bool? isPlaying,
+  }) {
+    _eventHub.add(
+      PlayerEvent(
+        type: type,
+        item: state.currentItem,
+        position: position ?? state.position,
+        duration: state.duration,
+        isPlaying: isPlaying ?? state.isPlaying,
+      ),
+    );
   }
 
   _EnginePlaybackReduction _reduceEnginePlaybackSnapshot({
