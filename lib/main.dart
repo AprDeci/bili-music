@@ -11,6 +11,7 @@ import 'package:bilimusic/feature/metadata/logic/metadata_controller.dart';
 import 'package:bilimusic/feature/player/logic/app_audio_handler.dart';
 import 'package:bilimusic/feature/player/logic/player_controller.dart';
 import 'package:bilimusic/feature/player/logic/sleep_timer_controller.dart';
+import 'package:bilimusic/feature/statistics/logic/statistics_tracker.dart';
 import 'package:bilimusic/feature/up/logic/favorite_up_controller.dart';
 import 'package:bilimusic/feature/favorites/logic/favorited_season_controller.dart';
 import 'package:bilimusic/myApp.dart';
@@ -101,6 +102,7 @@ class _AppBootstrapState extends ConsumerState<_AppBootstrap>
       await ref
           .read(playerControllerProvider.notifier)
           .restoreFromPersistence();
+      ref.read(statisticsTrackerProvider);
       if (PlatformUtil.isDesktop) {
         _desktopHotkeyController = DesktopHotkeyController();
         await _desktopHotkeyController!.attach(ref);
