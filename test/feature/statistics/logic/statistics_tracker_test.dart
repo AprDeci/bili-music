@@ -157,7 +157,7 @@ void main() {
     expect(statistics.lastPlayedAtEpochMs, isNull);
   });
 
-  test('a new playback attempt can be counted after pausing', () async {
+  test('pausing and resuming the same attempt counts only once', () async {
     await tracker.onEvent(
       event(
         PlayerEventType.trackChanged,
@@ -186,6 +186,140 @@ void main() {
       ),
     );
     await tracker.onEvent(event(PlayerEventType.playbackState));
+
+    expect(repository.read(item.stableId)!.playCount, 1);
+  });
+
+  test('repeated lifecycle flushes do not repeat the count', () async {
+    await tracker.onEvent(
+      event(
+        PlayerEventType.trackChanged,
+        duration: const Duration(seconds: 10),
+      ),
+    );
+    await tracker.onEvent(
+      event(PlayerEventType.playbackState, isPlaying: true),
+    );
+    await tracker.onEvent(
+      event(
+        PlayerEventType.position,
+        position: const Duration(seconds: 1),
+        isPlaying: true,
+      ),
+    );
+    await tracker.flush();
+    await tracker.flush();
+
+    expect(repository.read(item.stableId)!.playCount, 1);
+  });
+
+  test('concurrent flushes commit one pending segment', () async {
+    await tracker.onEvent(
+      event(
+        PlayerEventType.trackChanged,
+        duration: const Duration(seconds: 10),
+      ),
+    );
+    await tracker.onEvent(
+      event(PlayerEventType.playbackState, isPlaying: true),
+    );
+    await tracker.onEvent(
+      event(
+        PlayerEventType.position,
+        position: const Duration(seconds: 1),
+        isPlaying: true,
+      ),
+    );
+
+    await Future.wait<void>(<Future<void>>[tracker.flush(), tracker.flush()]);
+
+    expect(repository.read(item.stableId)!.playCount, 1);
+    expect(repository.read(item.stableId)!.totalPlayedMs, 1000);
+  });
+
+  test(
+    'queued flush and pause do not commit the same pending segment twice',
+    () async {
+      await tracker.onEvent(
+        event(
+          PlayerEventType.trackChanged,
+          duration: const Duration(seconds: 10),
+        ),
+      );
+      await tracker.onEvent(
+        event(PlayerEventType.playbackState, isPlaying: true),
+      );
+      await tracker.onEvent(
+        event(
+          PlayerEventType.position,
+          position: const Duration(seconds: 1),
+          isPlaying: true,
+        ),
+      );
+
+      final Future<void> flush = tracker.flush();
+      final Future<void> pause = tracker.onEvent(
+        event(PlayerEventType.playbackState),
+      );
+      await Future.wait<void>(<Future<void>>[flush, pause]);
+
+      expect(repository.read(item.stableId)!.playCount, 1);
+      expect(repository.read(item.stableId)!.totalPlayedMs, 1000);
+    },
+  );
+
+  test('threshold can be reached across two flushes', () async {
+    await tracker.onEvent(
+      event(
+        PlayerEventType.trackChanged,
+        duration: const Duration(seconds: 10),
+      ),
+    );
+    await tracker.onEvent(
+      event(PlayerEventType.playbackState, isPlaying: true),
+    );
+    await tracker.onEvent(
+      event(
+        PlayerEventType.position,
+        position: const Duration(milliseconds: 500),
+        isPlaying: true,
+      ),
+    );
+    await tracker.flush();
+    await tracker.onEvent(
+      event(
+        PlayerEventType.position,
+        position: const Duration(seconds: 1),
+        isPlaying: true,
+      ),
+    );
+    await tracker.flush();
+
+    expect(repository.read(item.stableId)!.playCount, 1);
+  });
+
+  test('completed ends the attempt and allows the next loop count', () async {
+    await _playAndComplete(tracker, item);
+    await tracker.onEvent(
+      event(
+        PlayerEventType.trackChanged,
+        duration: const Duration(seconds: 10),
+      ),
+    );
+    await _playAndComplete(tracker, item);
+
+    expect(repository.read(item.stableId)!.playCount, 2);
+  });
+
+  test('stop ends the attempt and allows a new count', () async {
+    await _playAndComplete(tracker, item, endType: PlayerEventType.stop);
+    await tracker.onEvent(
+      event(
+        PlayerEventType.trackChanged,
+        duration: const Duration(seconds: 10),
+      ),
+    );
+    await _playAndComplete(tracker, item, endType: PlayerEventType.stop);
 
     expect(repository.read(item.stableId)!.playCount, 2);
   });
@@ -370,4 +504,47 @@ void main() {
     expect(repository.read(resolvedItem.stableId)?.totalPlayedMs, 1000);
     expect(repository.read(item.stableId), isNull);
   });
+}
+
+Future<void> _playAndComplete(
+  StatisticsTracker tracker,
+  PlayableItem item, {
+  PlayerEventType endType = PlayerEventType.completed,
+}) async {
+  await tracker.onEvent(
+    PlayerEvent(
+      type: PlayerEventType.trackChanged,
+      item: item,
+      position: Duration.zero,
+      duration: const Duration(seconds: 10),
+      isPlaying: false,
+    ),
+  );
+  await tracker.onEvent(
+    PlayerEvent(
+      type: PlayerEventType.playbackState,
+      item: item,
+      position: Duration.zero,
+      duration: const Duration(seconds: 10),
+      isPlaying: true,
+    ),
+  );
+  await tracker.onEvent(
+    PlayerEvent(
+      type: PlayerEventType.position,
+      item: item,
+      position: const Duration(seconds: 1),
+      duration: const Duration(seconds: 10),
+      isPlaying: true,
+    ),
+  );
+  await tracker.onEvent(
+    PlayerEvent(
+      type: endType,
+      item: item,
+      position: const Duration(seconds: 1),
+      duration: const Duration(seconds: 10),
+      isPlaying: false,
+    ),
+  );
 }

@@ -14,7 +14,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$PlaybackTrackingState {
 
- String? get stableId; String get title; String get author; String get coverUrl; int get durationMs; int get playedMs; int get lastPositionMs; bool get isPlaying; bool get counted;
+ String? get stableId; String get title; String get author; String get coverUrl; int get durationMs; int get playedMs; int get attemptPlayedMs; int get lastPositionMs; bool get isPlaying; bool get counted;
 /// Create a copy of PlaybackTrackingState
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -25,16 +25,16 @@ $PlaybackTrackingStateCopyWith<PlaybackTrackingState> get copyWith => _$Playback
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is PlaybackTrackingState&&(identical(other.stableId, stableId) || other.stableId == stableId)&&(identical(other.title, title) || other.title == title)&&(identical(other.author, author) || other.author == author)&&(identical(other.coverUrl, coverUrl) || other.coverUrl == coverUrl)&&(identical(other.durationMs, durationMs) || other.durationMs == durationMs)&&(identical(other.playedMs, playedMs) || other.playedMs == playedMs)&&(identical(other.lastPositionMs, lastPositionMs) || other.lastPositionMs == lastPositionMs)&&(identical(other.isPlaying, isPlaying) || other.isPlaying == isPlaying)&&(identical(other.counted, counted) || other.counted == counted));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is PlaybackTrackingState&&(identical(other.stableId, stableId) || other.stableId == stableId)&&(identical(other.title, title) || other.title == title)&&(identical(other.author, author) || other.author == author)&&(identical(other.coverUrl, coverUrl) || other.coverUrl == coverUrl)&&(identical(other.durationMs, durationMs) || other.durationMs == durationMs)&&(identical(other.playedMs, playedMs) || other.playedMs == playedMs)&&(identical(other.attemptPlayedMs, attemptPlayedMs) || other.attemptPlayedMs == attemptPlayedMs)&&(identical(other.lastPositionMs, lastPositionMs) || other.lastPositionMs == lastPositionMs)&&(identical(other.isPlaying, isPlaying) || other.isPlaying == isPlaying)&&(identical(other.counted, counted) || other.counted == counted));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,stableId,title,author,coverUrl,durationMs,playedMs,lastPositionMs,isPlaying,counted);
+int get hashCode => Object.hash(runtimeType,stableId,title,author,coverUrl,durationMs,playedMs,attemptPlayedMs,lastPositionMs,isPlaying,counted);
 
 @override
 String toString() {
-  return 'PlaybackTrackingState(stableId: $stableId, title: $title, author: $author, coverUrl: $coverUrl, durationMs: $durationMs, playedMs: $playedMs, lastPositionMs: $lastPositionMs, isPlaying: $isPlaying, counted: $counted)';
+  return 'PlaybackTrackingState(stableId: $stableId, title: $title, author: $author, coverUrl: $coverUrl, durationMs: $durationMs, playedMs: $playedMs, attemptPlayedMs: $attemptPlayedMs, lastPositionMs: $lastPositionMs, isPlaying: $isPlaying, counted: $counted)';
 }
 
 
@@ -45,7 +45,7 @@ abstract mixin class $PlaybackTrackingStateCopyWith<$Res>  {
   factory $PlaybackTrackingStateCopyWith(PlaybackTrackingState value, $Res Function(PlaybackTrackingState) _then) = _$PlaybackTrackingStateCopyWithImpl;
 @useResult
 $Res call({
- String? stableId, String title, String author, String coverUrl, int durationMs, int playedMs, int lastPositionMs, bool isPlaying, bool counted
+ String? stableId, String title, String author, String coverUrl, int durationMs, int playedMs, int attemptPlayedMs, int lastPositionMs, bool isPlaying, bool counted
 });
 
 
@@ -62,7 +62,7 @@ class _$PlaybackTrackingStateCopyWithImpl<$Res>
 
 /// Create a copy of PlaybackTrackingState
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? stableId = freezed,Object? title = null,Object? author = null,Object? coverUrl = null,Object? durationMs = null,Object? playedMs = null,Object? lastPositionMs = null,Object? isPlaying = null,Object? counted = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? stableId = freezed,Object? title = null,Object? author = null,Object? coverUrl = null,Object? durationMs = null,Object? playedMs = null,Object? attemptPlayedMs = null,Object? lastPositionMs = null,Object? isPlaying = null,Object? counted = null,}) {
   return _then(_self.copyWith(
 stableId: freezed == stableId ? _self.stableId : stableId // ignore: cast_nullable_to_non_nullable
 as String?,title: null == title ? _self.title : title // ignore: cast_nullable_to_non_nullable
@@ -70,6 +70,7 @@ as String,author: null == author ? _self.author : author // ignore: cast_nullabl
 as String,coverUrl: null == coverUrl ? _self.coverUrl : coverUrl // ignore: cast_nullable_to_non_nullable
 as String,durationMs: null == durationMs ? _self.durationMs : durationMs // ignore: cast_nullable_to_non_nullable
 as int,playedMs: null == playedMs ? _self.playedMs : playedMs // ignore: cast_nullable_to_non_nullable
+as int,attemptPlayedMs: null == attemptPlayedMs ? _self.attemptPlayedMs : attemptPlayedMs // ignore: cast_nullable_to_non_nullable
 as int,lastPositionMs: null == lastPositionMs ? _self.lastPositionMs : lastPositionMs // ignore: cast_nullable_to_non_nullable
 as int,isPlaying: null == isPlaying ? _self.isPlaying : isPlaying // ignore: cast_nullable_to_non_nullable
 as bool,counted: null == counted ? _self.counted : counted // ignore: cast_nullable_to_non_nullable
@@ -158,10 +159,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String? stableId,  String title,  String author,  String coverUrl,  int durationMs,  int playedMs,  int lastPositionMs,  bool isPlaying,  bool counted)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String? stableId,  String title,  String author,  String coverUrl,  int durationMs,  int playedMs,  int attemptPlayedMs,  int lastPositionMs,  bool isPlaying,  bool counted)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _PlaybackTrackingState() when $default != null:
-return $default(_that.stableId,_that.title,_that.author,_that.coverUrl,_that.durationMs,_that.playedMs,_that.lastPositionMs,_that.isPlaying,_that.counted);case _:
+return $default(_that.stableId,_that.title,_that.author,_that.coverUrl,_that.durationMs,_that.playedMs,_that.attemptPlayedMs,_that.lastPositionMs,_that.isPlaying,_that.counted);case _:
   return orElse();
 
 }
@@ -179,10 +180,10 @@ return $default(_that.stableId,_that.title,_that.author,_that.coverUrl,_that.dur
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String? stableId,  String title,  String author,  String coverUrl,  int durationMs,  int playedMs,  int lastPositionMs,  bool isPlaying,  bool counted)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String? stableId,  String title,  String author,  String coverUrl,  int durationMs,  int playedMs,  int attemptPlayedMs,  int lastPositionMs,  bool isPlaying,  bool counted)  $default,) {final _that = this;
 switch (_that) {
 case _PlaybackTrackingState():
-return $default(_that.stableId,_that.title,_that.author,_that.coverUrl,_that.durationMs,_that.playedMs,_that.lastPositionMs,_that.isPlaying,_that.counted);case _:
+return $default(_that.stableId,_that.title,_that.author,_that.coverUrl,_that.durationMs,_that.playedMs,_that.attemptPlayedMs,_that.lastPositionMs,_that.isPlaying,_that.counted);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -199,10 +200,10 @@ return $default(_that.stableId,_that.title,_that.author,_that.coverUrl,_that.dur
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String? stableId,  String title,  String author,  String coverUrl,  int durationMs,  int playedMs,  int lastPositionMs,  bool isPlaying,  bool counted)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String? stableId,  String title,  String author,  String coverUrl,  int durationMs,  int playedMs,  int attemptPlayedMs,  int lastPositionMs,  bool isPlaying,  bool counted)?  $default,) {final _that = this;
 switch (_that) {
 case _PlaybackTrackingState() when $default != null:
-return $default(_that.stableId,_that.title,_that.author,_that.coverUrl,_that.durationMs,_that.playedMs,_that.lastPositionMs,_that.isPlaying,_that.counted);case _:
+return $default(_that.stableId,_that.title,_that.author,_that.coverUrl,_that.durationMs,_that.playedMs,_that.attemptPlayedMs,_that.lastPositionMs,_that.isPlaying,_that.counted);case _:
   return null;
 
 }
@@ -214,7 +215,7 @@ return $default(_that.stableId,_that.title,_that.author,_that.coverUrl,_that.dur
 
 
 class _PlaybackTrackingState implements PlaybackTrackingState {
-  const _PlaybackTrackingState({this.stableId, this.title = '', this.author = '', this.coverUrl = '', this.durationMs = 0, this.playedMs = 0, this.lastPositionMs = 0, this.isPlaying = false, this.counted = false});
+  const _PlaybackTrackingState({this.stableId, this.title = '', this.author = '', this.coverUrl = '', this.durationMs = 0, this.playedMs = 0, this.attemptPlayedMs = 0, this.lastPositionMs = 0, this.isPlaying = false, this.counted = false});
   
 
 @override final  String? stableId;
@@ -223,6 +224,7 @@ class _PlaybackTrackingState implements PlaybackTrackingState {
 @override@JsonKey() final  String coverUrl;
 @override@JsonKey() final  int durationMs;
 @override@JsonKey() final  int playedMs;
+@override@JsonKey() final  int attemptPlayedMs;
 @override@JsonKey() final  int lastPositionMs;
 @override@JsonKey() final  bool isPlaying;
 @override@JsonKey() final  bool counted;
@@ -237,16 +239,16 @@ _$PlaybackTrackingStateCopyWith<_PlaybackTrackingState> get copyWith => __$Playb
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _PlaybackTrackingState&&(identical(other.stableId, stableId) || other.stableId == stableId)&&(identical(other.title, title) || other.title == title)&&(identical(other.author, author) || other.author == author)&&(identical(other.coverUrl, coverUrl) || other.coverUrl == coverUrl)&&(identical(other.durationMs, durationMs) || other.durationMs == durationMs)&&(identical(other.playedMs, playedMs) || other.playedMs == playedMs)&&(identical(other.lastPositionMs, lastPositionMs) || other.lastPositionMs == lastPositionMs)&&(identical(other.isPlaying, isPlaying) || other.isPlaying == isPlaying)&&(identical(other.counted, counted) || other.counted == counted));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _PlaybackTrackingState&&(identical(other.stableId, stableId) || other.stableId == stableId)&&(identical(other.title, title) || other.title == title)&&(identical(other.author, author) || other.author == author)&&(identical(other.coverUrl, coverUrl) || other.coverUrl == coverUrl)&&(identical(other.durationMs, durationMs) || other.durationMs == durationMs)&&(identical(other.playedMs, playedMs) || other.playedMs == playedMs)&&(identical(other.attemptPlayedMs, attemptPlayedMs) || other.attemptPlayedMs == attemptPlayedMs)&&(identical(other.lastPositionMs, lastPositionMs) || other.lastPositionMs == lastPositionMs)&&(identical(other.isPlaying, isPlaying) || other.isPlaying == isPlaying)&&(identical(other.counted, counted) || other.counted == counted));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,stableId,title,author,coverUrl,durationMs,playedMs,lastPositionMs,isPlaying,counted);
+int get hashCode => Object.hash(runtimeType,stableId,title,author,coverUrl,durationMs,playedMs,attemptPlayedMs,lastPositionMs,isPlaying,counted);
 
 @override
 String toString() {
-  return 'PlaybackTrackingState(stableId: $stableId, title: $title, author: $author, coverUrl: $coverUrl, durationMs: $durationMs, playedMs: $playedMs, lastPositionMs: $lastPositionMs, isPlaying: $isPlaying, counted: $counted)';
+  return 'PlaybackTrackingState(stableId: $stableId, title: $title, author: $author, coverUrl: $coverUrl, durationMs: $durationMs, playedMs: $playedMs, attemptPlayedMs: $attemptPlayedMs, lastPositionMs: $lastPositionMs, isPlaying: $isPlaying, counted: $counted)';
 }
 
 
@@ -257,7 +259,7 @@ abstract mixin class _$PlaybackTrackingStateCopyWith<$Res> implements $PlaybackT
   factory _$PlaybackTrackingStateCopyWith(_PlaybackTrackingState value, $Res Function(_PlaybackTrackingState) _then) = __$PlaybackTrackingStateCopyWithImpl;
 @override @useResult
 $Res call({
- String? stableId, String title, String author, String coverUrl, int durationMs, int playedMs, int lastPositionMs, bool isPlaying, bool counted
+ String? stableId, String title, String author, String coverUrl, int durationMs, int playedMs, int attemptPlayedMs, int lastPositionMs, bool isPlaying, bool counted
 });
 
 
@@ -274,7 +276,7 @@ class __$PlaybackTrackingStateCopyWithImpl<$Res>
 
 /// Create a copy of PlaybackTrackingState
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? stableId = freezed,Object? title = null,Object? author = null,Object? coverUrl = null,Object? durationMs = null,Object? playedMs = null,Object? lastPositionMs = null,Object? isPlaying = null,Object? counted = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? stableId = freezed,Object? title = null,Object? author = null,Object? coverUrl = null,Object? durationMs = null,Object? playedMs = null,Object? attemptPlayedMs = null,Object? lastPositionMs = null,Object? isPlaying = null,Object? counted = null,}) {
   return _then(_PlaybackTrackingState(
 stableId: freezed == stableId ? _self.stableId : stableId // ignore: cast_nullable_to_non_nullable
 as String?,title: null == title ? _self.title : title // ignore: cast_nullable_to_non_nullable
@@ -282,6 +284,7 @@ as String,author: null == author ? _self.author : author // ignore: cast_nullabl
 as String,coverUrl: null == coverUrl ? _self.coverUrl : coverUrl // ignore: cast_nullable_to_non_nullable
 as String,durationMs: null == durationMs ? _self.durationMs : durationMs // ignore: cast_nullable_to_non_nullable
 as int,playedMs: null == playedMs ? _self.playedMs : playedMs // ignore: cast_nullable_to_non_nullable
+as int,attemptPlayedMs: null == attemptPlayedMs ? _self.attemptPlayedMs : attemptPlayedMs // ignore: cast_nullable_to_non_nullable
 as int,lastPositionMs: null == lastPositionMs ? _self.lastPositionMs : lastPositionMs // ignore: cast_nullable_to_non_nullable
 as int,isPlaying: null == isPlaying ? _self.isPlaying : isPlaying // ignore: cast_nullable_to_non_nullable
 as bool,counted: null == counted ? _self.counted : counted // ignore: cast_nullable_to_non_nullable

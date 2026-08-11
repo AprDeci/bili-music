@@ -11,6 +11,7 @@ abstract class PlaybackTrackingState with _$PlaybackTrackingState {
     @Default('') String coverUrl,
     @Default(0) int durationMs,
     @Default(0) int playedMs,
+    @Default(0) int attemptPlayedMs,
     @Default(0) int lastPositionMs,
     @Default(false) bool isPlaying,
     @Default(false) bool counted,

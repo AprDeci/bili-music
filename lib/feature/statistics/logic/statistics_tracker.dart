@@ -26,29 +26,57 @@ class StatisticsTracker with WidgetsBindingObserver {
   StatisticsTracker(this._events, this._repository) {
     _subscription = _events.listen(_onEvent);
     WidgetsBinding.instance.addObserver(this);
-    _logger.d('initialized');
   }
 
   final Stream<PlayerEvent> _events;
   final StatisticsLocalRepository _repository;
   final AppLogger _logger = AppLogger('Statistics');
   late final StreamSubscription<PlayerEvent> _subscription;
+  Future<void> _eventQueue = Future<void>.value();
   PlaybackTrackingState _tracking = const PlaybackTrackingState();
 
   PlaybackTrackingState get tracking => _tracking;
 
-  Future<void> _onEvent(PlayerEvent event) async {
-    try {
-      await onEvent(event);
-    } on Object catch (error, stackTrace) {
-      _logger.e('event handling failed', error, stackTrace);
-    }
+  void _onEvent(PlayerEvent event) {
+    unawaited(
+      _enqueue(
+        () => _handleEvent(event),
+        errorMessage: 'event handling failed',
+      ),
+    );
+  }
+
+  Future<void> _enqueue(
+    Future<void> Function() task, {
+    required String errorMessage,
+  }) {
+    final Future<void> queued = _eventQueue.then((_) async {
+      try {
+        await task();
+      } on Object catch (error, stackTrace) {
+        _logger.e(errorMessage, error, stackTrace);
+      }
+    });
+    _eventQueue = queued;
+    return queued;
   }
 
   Future<void> onEvent(PlayerEvent event) async {
+    await _enqueue(
+      () => _handleEvent(event),
+      errorMessage: 'event handling failed',
+    );
+  }
+
+  Future<void> _handleEvent(PlayerEvent event) async {
     final String? stableId = event.item?.stableId;
     if (event.type == PlayerEventType.trackChanged && stableId != null) {
-      await _commit();
+      if (_isIdentityUpgrade(stableId)) {
+        _tracking = _tracking.copyWith(stableId: stableId);
+        _logger.d('tracking identity upgraded to $stableId');
+        return;
+      }
+      await _commit(resetAttempt: true);
       _tracking = PlaybackTrackingState(
         stableId: stableId,
         title: event.item!.title,
@@ -67,7 +95,10 @@ class StatisticsTracker with WidgetsBindingObserver {
       final int positionMs = event.position.inMilliseconds;
       final int delta = positionMs - _tracking.lastPositionMs;
       if (delta > 0 && delta <= 3000) {
-        _tracking = _tracking.copyWith(playedMs: _tracking.playedMs + delta);
+        _tracking = _tracking.copyWith(
+          playedMs: _tracking.playedMs + delta,
+          attemptPlayedMs: _tracking.attemptPlayedMs + delta,
+        );
       } else if (delta > 3000 || delta < 0) {
         _logger.d('ignored seek jump for $stableId: ${delta}ms');
       }
@@ -92,15 +123,17 @@ class StatisticsTracker with WidgetsBindingObserver {
       );
     }
     if (event.type == PlayerEventType.stop ||
-        (event.type == PlayerEventType.playbackState && !event.isPlaying)) {
+        event.type == PlayerEventType.completed) {
+      await _commit(resetAttempt: true);
+    } else if (event.type == PlayerEventType.playbackState &&
+        !event.isPlaying) {
       await _commit();
     }
   }
 
-  Future<void> flush() async {
-    _logger.d('lifecycle flush');
+  Future<void> flush() => _enqueue(() async {
     await _commit();
-  }
+  }, errorMessage: 'lifecycle flush failed');
 
   SongStatistics? read(String stableId) {
     final SongStatistics? exact = _repository.read(stableId);
@@ -123,20 +156,25 @@ class StatisticsTracker with WidgetsBindingObserver {
     }
   }
 
-  Future<void> _commit() async {
+  Future<void> _commit({bool resetAttempt = false}) async {
     final String? stableId = _tracking.stableId;
-    if (stableId == null || _tracking.playedMs <= 0) return;
+    if (stableId == null) return;
+    if (_tracking.playedMs <= 0) {
+      if (resetAttempt) _resetAttempt();
+      return;
+    }
     final DateTime now = DateTime.now();
     final SongStatistics current =
         _repository.read(stableId) ?? SongStatistics(stableId: stableId);
+    final int oldPlayCount = current.playCount;
     final bool qualifies =
         _tracking.durationMs > 0 &&
-        _tracking.playedMs >= (_tracking.durationMs * 0.1).ceil();
+        _tracking.attemptPlayedMs >= (_tracking.durationMs * 0.1).ceil();
     final SongStatistics next = current.copyWith(
       title: _tracking.title,
       author: _tracking.author,
       coverUrl: _tracking.coverUrl,
-      playCount: current.playCount + (qualifies ? 1 : 0),
+      playCount: current.playCount + (qualifies && !_tracking.counted ? 1 : 0),
       totalPlayedMs: current.totalPlayedMs + _tracking.playedMs,
       firstPlayedAtEpochMs: qualifies
           ? current.firstPlayedAtEpochMs ?? now.millisecondsSinceEpoch
@@ -151,16 +189,40 @@ class StatisticsTracker with WidgetsBindingObserver {
       _logger.e('repository write failed for $stableId', error, stackTrace);
       return;
     }
-    _logger.i(
-      'committed $stableId: +${_tracking.playedMs}ms, '
-      'qualified=$qualifies, total=${next.totalPlayedMs}',
+    _logger.d(
+      'committed $stableId: playCount $oldPlayCount->${next.playCount}, '
+      '+${_tracking.playedMs}ms, total=${next.totalPlayedMs}',
     );
-    _tracking = _tracking.copyWith(playedMs: 0, counted: false);
+    if (resetAttempt) {
+      _resetAttempt();
+    } else {
+      _tracking = _tracking.copyWith(
+        playedMs: 0,
+        counted: _tracking.counted || qualifies,
+      );
+    }
+  }
+
+  void _resetAttempt() {
+    _tracking = _tracking.copyWith(
+      playedMs: 0,
+      attemptPlayedMs: 0,
+      counted: false,
+      lastPositionMs: 0,
+      isPlaying: false,
+    );
+  }
+
+  bool _isIdentityUpgrade(String stableId) {
+    final String? current = _tracking.stableId;
+    if (current == null || current == stableId) return false;
+    if (current.contains(':cid:') || !stableId.contains(':cid:')) return false;
+    return current == stableId.split(':cid:').first;
   }
 
   Future<void> dispose() async {
-    WidgetsBinding.instance.removeObserver(this);
     await _subscription.cancel();
-    _logger.d('disposed');
+    await _eventQueue;
+    WidgetsBinding.instance.removeObserver(this);
   }
 }
