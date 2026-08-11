@@ -86,7 +86,7 @@ class _DesktopProfileSidebarState extends ConsumerState<DesktopProfileSidebar> {
     };
 
     return Container(
-      width: 240,
+      width: 232,
       padding: const EdgeInsets.fromLTRB(10, 12, 10, 10),
       decoration: BoxDecoration(
         color: colorScheme.surfaceContainer.withValues(alpha: 0.52),
