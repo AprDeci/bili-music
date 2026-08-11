@@ -7,6 +7,7 @@ enum PlayerEventType {
   playbackState,
   seek,
   stop,
+  completed,
 }
 
 class PlayerEvent {

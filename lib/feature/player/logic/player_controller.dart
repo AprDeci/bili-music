@@ -1087,6 +1087,7 @@ class PlayerController extends Notifier<PlayerState>
     required ResolvedQueueEntry entry,
     Duration? durationOverride,
   }) {
+    final String? previousStableId = state.currentItem?.stableId;
     final List<PlayableItem> queue = _playbackLoader.replaceQueueEntry(
       queue: state.queue,
       index: queueIndex,
@@ -1104,7 +1105,9 @@ class PlayerController extends Notifier<PlayerState>
       statusHint: null,
       errorMessage: null,
     );
-    _emitPlayerEvent(PlayerEventType.trackChanged);
+    if (previousStableId != entry.item.stableId) {
+      _emitPlayerEvent(PlayerEventType.trackChanged);
+    }
   }
 
   void _bindPlayerStreams() {
@@ -1257,6 +1260,7 @@ class PlayerController extends Notifier<PlayerState>
       }
     }
     if (reduction.shouldHandleCompleted) {
+      _emitPlayerEvent(PlayerEventType.completed);
       unawaited(_handlePlaybackCompleted(_operationGeneration));
     }
   }
