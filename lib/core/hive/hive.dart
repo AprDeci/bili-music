@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:bilimusic/common/util/platform_util.dart';
 import 'package:bilimusic/core/hive/hive_adapters.dart';
 import 'package:bilimusic/core/hive/hive_keys.dart';
 import 'package:bilimusic/feature/favorites/data/favorites_local_repository.dart';
@@ -24,7 +25,9 @@ import 'package:path_provider/path_provider.dart';
 
 Future<void> initHive() async {
   if (!kIsWeb) {
-    final Directory directory = await getApplicationDocumentsDirectory();
+    final Directory directory = PlatformUtil.isDesktop
+        ? await getApplicationSupportDirectory()
+        : await getApplicationDocumentsDirectory();
     Hive
       ..init(directory.path)
       ..registerAdapter(FavoriteCollectionAdapter())
