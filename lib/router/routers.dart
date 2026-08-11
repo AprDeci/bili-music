@@ -13,6 +13,7 @@ import 'package:bilimusic/feature/profile/ui/profile_page.dart';
 import 'package:bilimusic/feature/recent/ui/desktop/desktop_recent_playback_page.dart';
 import 'package:bilimusic/feature/recent/ui/recent_playback_page.dart';
 import 'package:bilimusic/feature/search/ui/search_page.dart';
+import 'package:bilimusic/feature/statistics/ui/song_statistics_page.dart';
 import 'package:bilimusic/feature/setting/ui/about_settings_page.dart';
 import 'package:bilimusic/feature/setting/ui/cache_settings_page.dart';
 import 'package:bilimusic/feature/setting/ui/app_transfer_page.dart';
@@ -226,6 +227,12 @@ final List<Map<String, dynamic>> desktopHiddenBranches = [
 
 final List<RouteBase> mobileRoutes = [
   GoRoute(path: '/auth', builder: (context, state) => const AuthPage()),
+  GoRoute(
+    path: '/statistics/song',
+    parentNavigatorKey: _rootNavigatorKey,
+    builder: (context, state) =>
+        SongStatisticsPage(item: state.extra! as PlayableItem),
+  ),
   StatefulShellRoute.indexedStack(
     parentNavigatorKey: _rootNavigatorKey,
     builder: (context, state, navigationShell) {
@@ -258,6 +265,12 @@ final List<RouteBase> mobileRoutes = [
 
 final List<RouteBase> desktopRoutes = [
   GoRoute(path: '/auth', builder: (context, state) => const AuthPage()),
+  GoRoute(
+    path: '/statistics/song',
+    parentNavigatorKey: _rootNavigatorKey,
+    builder: (context, state) =>
+        SongStatisticsPage(item: state.extra! as PlayableItem),
+  ),
   GoRoute(
     path: '/player',
     parentNavigatorKey: _rootNavigatorKey,
