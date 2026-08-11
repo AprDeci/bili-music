@@ -18,6 +18,7 @@ import 'package:bilimusic/feature/favorites/ui/components/desktop/desktop_favori
 import 'package:bilimusic/feature/favorites/ui/components/favorite_entry_subtitle.dart';
 import 'package:bilimusic/feature/favorites/ui/components/favorited_seasons_list.dart';
 import 'package:bilimusic/feature/player/domain/playable_item.dart';
+import 'package:bilimusic/feature/player/data/bili_player_repository.dart';
 import 'package:bilimusic/feature/player/logic/player_controller.dart';
 import 'package:bilimusic/feature/player/ui/components/player_collection_sheet.dart';
 import 'package:flutter/material.dart';
@@ -668,6 +669,35 @@ class _DesktopFavoriteCollectionPageState
                     onTap: () {
                       Navigator.of(sheetContext).pop();
                       _openOwnerPage(context, item);
+                    },
+                  ),
+                  _FavoriteActionTile(
+                    icon: Icons.bar_chart_rounded,
+                    title: '统计',
+                    onTap: () async {
+                      Navigator.of(sheetContext).pop();
+                      PlayableItem resolved = playableItem;
+                      if (playableItem.cid == null || playableItem.cid! <= 0) {
+                        try {
+                          resolved = await ref
+                              .read(biliPlayerRepositoryProvider)
+                              .resolvePreferredPart(
+                                playableItem,
+                                preferredPage: playableItem.page ?? 1,
+                              );
+                        } on Object catch (error, stackTrace) {
+                          DesktopFavoriteCollectionPage._logger.e(
+                            'resolve statistics item failed',
+                            error,
+                            stackTrace,
+                          );
+                          if (context.mounted) ToastUtil.show('无法解析歌曲分P');
+                          return;
+                        }
+                      }
+                      if (context.mounted) {
+                        context.push('/statistics/song', extra: resolved);
+                      }
                     },
                   ),
                   _FavoriteActionTile(
