@@ -1,14 +1,18 @@
 import 'package:bilimusic/common/bm_icons.dart';
 import 'package:bilimusic/common/components/cached_image.dart';
 import 'package:bilimusic/common/components/selectable_auto_scroll_list_view.dart';
+import 'package:bilimusic/common/components/tag.dart';
 import 'package:bilimusic/feature/favorites/domain/favorite_entry.dart';
 import 'package:bilimusic/feature/favorites/ui/components/favorite_entry_subtitle.dart';
+import 'package:bilimusic/feature/statistics/logic/statistics_tracker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hugeicons/hugeicons.dart';
 
 typedef DesktopFavoriteCollectionItemCallback =
     void Function(int index, FavoriteEntry item);
 
-class DesktopFavoriteCollectionItemsList extends StatelessWidget {
+class DesktopFavoriteCollectionItemsList extends ConsumerWidget {
   const DesktopFavoriteCollectionItemsList({
     super.key,
     required this.items,
@@ -35,7 +39,8 @@ class DesktopFavoriteCollectionItemsList extends StatelessWidget {
   final DesktopFavoriteCollectionItemCallback onMoreItem;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final StatisticsTracker tracker = ref.read(statisticsTrackerProvider);
     return NotificationListener<ScrollNotification>(
       onNotification: onNotification,
       child: SelectableAutoScrollListView<FavoriteEntry, String>(
@@ -56,9 +61,11 @@ class DesktopFavoriteCollectionItemsList extends StatelessWidget {
         footer: footer,
         separatorBuilder: (_, _) => const SizedBox.shrink(),
         checkboxControlAffinity: ListTileControlAffinity.trailing,
-        itemBuilder: _buildNormalItem,
+        itemBuilder: (context, item, state) =>
+            _buildNormalItem(context, item, state, tracker),
         titleBuilder: _buildTitle,
-        subtitleBuilder: _buildSubtitle,
+        subtitleBuilder: (context, item, state) =>
+            _buildSubtitle(context, item, state, tracker),
         leadingBuilder: _buildLeading,
         trailingBuilder: _buildTrailing,
       ),
@@ -69,6 +76,7 @@ class DesktopFavoriteCollectionItemsList extends StatelessWidget {
     BuildContext context,
     FavoriteEntry item,
     SelectableListItemState<FavoriteEntry, String> state,
+    StatisticsTracker tracker,
   ) {
     final bool isEvenRow = state.index.isEven;
 
@@ -82,7 +90,7 @@ class DesktopFavoriteCollectionItemsList extends StatelessWidget {
         contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 0),
         leading: _buildLeading(context, item, state),
         title: _buildTitle(context, item, state),
-        subtitle: _buildSubtitle(context, item, state),
+        subtitle: _buildSubtitle(context, item, state, tracker),
         trailing: _buildTrailing(context, item, state),
         selected: state.selected,
         onTap: state.handleTap,
@@ -129,17 +137,36 @@ class DesktopFavoriteCollectionItemsList extends StatelessWidget {
     BuildContext context,
     FavoriteEntry item,
     SelectableListItemState<FavoriteEntry, String> state,
+    StatisticsTracker tracker,
   ) {
     final ThemeData theme = Theme.of(context);
+    final int playCount = tracker.read(item.itemId)?.playCount ?? 0;
 
-    return Text(
-      buildFavoriteEntrySubtitle(item),
-      maxLines: 1,
-      overflow: TextOverflow.ellipsis,
-      style: theme.textTheme.bodySmall?.copyWith(
-        color: theme.colorScheme.onSurfaceVariant,
-        height: 1.5,
-      ),
+    return Row(
+      children: [
+        Text(
+          buildFavoriteEntrySubtitle(item),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+            height: 1.5,
+          ),
+        ),
+        const SizedBox(width: 8),
+        playCount > 0
+            ? Tag(
+                text: '$playCount',
+                color: Colors.grey.withValues(alpha: 0.2),
+                textColor: const Color.fromARGB(255, 134, 134, 134),
+                size: TagSize.small,
+                icon: const HugeIcon(
+                  icon: HugeIcons.strokeRoundedHeadphones,
+                  size: 12,
+                ),
+              )
+            : const SizedBox.shrink(),
+      ],
     );
   }
 
