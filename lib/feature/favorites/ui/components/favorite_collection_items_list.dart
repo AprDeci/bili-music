@@ -134,6 +134,8 @@ class FavoriteCollectionItemsList extends ConsumerWidget {
     final int playCount = tracker.read(item.itemId)?.playCount ?? 0;
 
     return Row(
+      mainAxisAlignment: MainAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         Text(
           buildFavoriteEntrySubtitle(item),
@@ -148,6 +150,7 @@ class FavoriteCollectionItemsList extends ConsumerWidget {
         playCount > 0
             ? 
           Tag(
+                padding: EdgeInsets.symmetric(horizontal: 4),
                 text: '$playCount',
                 color: Colors.grey.withValues(alpha: 0.2),
                 textColor: const Color.fromARGB(255, 134, 134, 134),
