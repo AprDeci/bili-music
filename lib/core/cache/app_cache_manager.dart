@@ -20,7 +20,7 @@ class AppAudioCacheManager extends CacheManager {
     : super(
         Config(
           _cacheKey,
-          stalePeriod: const Duration(days: 21),
+          stalePeriod: const Duration(days: 365),
           maxNrOfCacheObjects: 120,
         ),
       );

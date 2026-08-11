@@ -864,8 +864,6 @@ class PlayerController extends Notifier<PlayerState>
         return false;
       }
 
-      unawaited(_playbackLoader.cacheEntryInBackground(entry));
-
       if (persistAfterLoad) {
         await _persistQueueSnapshot();
       }

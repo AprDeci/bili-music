@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:bilimusic/core/bili/session/bili_session.dart';
@@ -81,6 +82,45 @@ class PlayerPlaybackLoader {
       throw const BiliPlayerException('当前搜索结果缺少可播放的视频标识。');
     }
 
+    final CachedAudio? diskCache = await _audioCacheRepository
+        .lookupCachedAudio(
+          item: item,
+          preference: qualityPreference,
+          preferredQualityId: preferredQualityId,
+        );
+    if (diskCache != null) {
+      final AudioCacheMetadata metadata = diskCache.metadata;
+      final AudioStreamInfo audioStream = AudioStreamInfo(
+        streamUrl: '',
+        backupUrls: const <String>[],
+        headers: const <String, String>{},
+        cid: metadata.cid,
+        duration: metadata.durationMs == null
+            ? null
+            : Duration(milliseconds: metadata.durationMs!),
+        bandwidth: metadata.bandwidth,
+        availableQualities: <AudioQualityOption>[
+          AudioQualityOption(
+            qualityId: metadata.qualityId,
+            bandwidth: metadata.bandwidth,
+            label: metadata.qualityLabel ?? '本地缓存',
+            isSelected: true,
+          ),
+        ],
+        pageTitle: metadata.pageTitle,
+        qualityId: metadata.qualityId,
+        qualityLabel: metadata.qualityLabel,
+      );
+      final ResolvedQueueEntry entry = ResolvedQueueEntry(
+        item: item,
+        availableParts: const <PlayableItem>[],
+        audioStream: audioStream,
+        cachedFile: diskCache.file,
+      );
+      _resolvedEntries[cacheKey] = entry;
+      return entry;
+    }
+
     final PlayerLoadResult loadResult = await _repository.resolveAudioStream(
       item,
       session: _readSession(),
@@ -109,11 +149,11 @@ class PlayerPlaybackLoader {
     required Duration initialPosition,
     required void Function(PlayerStatusHint hint) onStatusHint,
   }) async {
-    onStatusHint(PlayerStatusHint.connectingStream);
     final Duration? effectiveInitialPosition = initialPosition > Duration.zero
         ? initialPosition
         : null;
-    final File? cachedFile = await _audioCacheRepository.getCachedFile(
+    File? cachedFile = entry.cachedFile;
+    cachedFile ??= await _audioCacheRepository.getCachedFile(
       item: entry.item,
       audioStream: entry.audioStream,
     );
@@ -132,7 +172,7 @@ class PlayerPlaybackLoader {
           filePath: cachedFile.path,
           initialPosition: effectiveInitialPosition,
         );
-      } on Object catch (error) {
+      } on Object catch (error, stackTrace) {
         _logEvent(
           'loadQueueIndex:cache-fallback',
           details: <String, Object?>{
@@ -144,23 +184,29 @@ class PlayerPlaybackLoader {
           item: entry.item,
           audioStream: entry.audioStream,
         );
+        if (entry.audioStream.streamUrl.isEmpty) {
+          Error.throwWithStackTrace(error, stackTrace);
+        }
       }
     }
 
+    onStatusHint(PlayerStatusHint.connectingStream);
     _logEvent(
       'loadQueueIndex:remote-source',
       details: <String, Object?>{'stableId': entry.item.stableId},
     );
-    return _audioEngine.setRemoteSource(
+    final Duration? duration = await _audioEngine.setRemoteSource(
       uri: Uri.parse(entry.audioStream.streamUrl),
       headers: entry.audioStream.headers.isEmpty
           ? null
           : entry.audioStream.headers,
       initialPosition: effectiveInitialPosition,
     );
+    unawaited(_cacheEntry(entry));
+    return duration;
   }
 
-  Future<void> cacheEntryInBackground(ResolvedQueueEntry entry) async {
+  Future<void> _cacheEntry(ResolvedQueueEntry entry) async {
     try {
       await _audioCacheRepository.cacheAudio(
         item: entry.item,
@@ -201,9 +247,11 @@ class ResolvedQueueEntry {
     required this.item,
     required this.availableParts,
     required this.audioStream,
+    this.cachedFile,
   });
 
   final PlayableItem item;
   final List<PlayableItem> availableParts;
   final AudioStreamInfo audioStream;
+  final File? cachedFile;
 }
