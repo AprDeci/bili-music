@@ -14,7 +14,7 @@ class PlayerAudioQualityPreferenceLogic
     return playerAudioQualityPreferenceFromStorage(
       settingsStore.readString(
         HiveKeys.playerAudioQualityPreference,
-        defaultValue: PlayerAudioQualityPreference.auto.storageValue,
+        defaultValue: PlayerAudioQualityPreference.k192.storageValue,
       ),
     );
   }
