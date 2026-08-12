@@ -111,11 +111,8 @@ class PlayerPlaybackLoader {
         qualityId: metadata.qualityId,
         qualityLabel: metadata.qualityLabel,
       );
-      final PlayableItem cachedItem = item.cid == metadata.cid
-          ? item
-          : item.copyWith(cid: metadata.cid);
       final ResolvedQueueEntry entry = ResolvedQueueEntry(
-        item: cachedItem,
+        item: item,
         availableParts: const <PlayableItem>[],
         audioStream: audioStream,
         cachedFile: diskCache.file,

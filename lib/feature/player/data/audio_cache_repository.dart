@@ -177,11 +177,15 @@ class PlayerAudioCacheRepository {
     int? preferredQualityId,
   }) async {
     final int? cid = item.cid;
+    if (cid == null || cid <= 0) {
+      return null;
+    }
+
     await _indexUpdates;
     final List<AudioCacheMetadata> matching = (await _readMetadata())
         .where(
           (AudioCacheMetadata metadata) =>
-              (cid == null || cid <= 0 || metadata.cid == cid) &&
+              metadata.cid == cid &&
               (item.bvid.isNotEmpty
                   ? metadata.bvid == item.bvid
                   : metadata.bvid.isEmpty && metadata.aid == item.aid),
