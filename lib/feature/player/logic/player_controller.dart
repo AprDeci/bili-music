@@ -841,6 +841,15 @@ class PlayerController extends Notifier<PlayerState>
         entry: entry,
         durationOverride: loadedDuration,
       );
+      if (entry.cachedFile != null) {
+        unawaited(
+          _completeCachedEntryParts(
+            generation: effectiveGeneration,
+            queueIndex: queueIndex,
+            entry: entry,
+          ),
+        );
+      }
       _queueManager.recordVisit(
         queue: state.queue,
         mode: state.queueMode,
@@ -1106,6 +1115,35 @@ class PlayerController extends Notifier<PlayerState>
     if (previousStableId != entry.item.stableId) {
       _emitPlayerEvent(PlayerEventType.trackChanged);
     }
+  }
+
+  Future<void> _completeCachedEntryParts({
+    required int generation,
+    required int queueIndex,
+    required ResolvedQueueEntry entry,
+  }) async {
+    final ResolvedQueueEntry? completed = await _playbackLoader
+        .resolveCachedEntryParts(entry);
+    if (completed == null ||
+        !_isCurrentGeneration(generation) ||
+        state.currentQueueIndex != queueIndex ||
+        queueIndex >= state.queue.length ||
+        state.currentItem?.stableId != entry.item.stableId ||
+        state.queue[queueIndex].stableId != entry.item.stableId) {
+      return;
+    }
+
+    state = state.copyWith(
+      queue: _playbackLoader.replaceQueueEntry(
+        queue: state.queue,
+        index: queueIndex,
+        item: completed.item,
+      ),
+      currentItem: completed.item,
+      availableParts: completed.availableParts,
+    );
+    _publishMediaSession();
+    unawaited(_persistQueueSnapshot());
   }
 
   void _bindPlayerStreams() {

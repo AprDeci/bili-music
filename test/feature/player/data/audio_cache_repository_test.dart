@@ -137,6 +137,26 @@ void main() {
     expect(cached?.metadata.qualityId, 30280);
   });
 
+  test('missing cid falls back to cached video audio quality', () async {
+    await repository.cacheAudio(
+      item: _item(bvid: 'BV1', aid: 1, cid: 10),
+      audioStream: _stream(
+        url: 'https://audio',
+        cid: 10,
+        qualityId: 30232,
+        bandwidth: 132000,
+      ),
+    );
+
+    final CachedAudio? cached = await repository.lookupCachedAudio(
+      item: _itemWithoutCid(bvid: 'BV1', aid: 1),
+      preference: PlayerAudioQualityPreference.k192,
+    );
+
+    expect(cached?.metadata.cid, 10);
+    expect(cached?.metadata.qualityId, 30232);
+  });
+
   test('damaged file invalidates persistent index', () async {
     final PlayableItem item = _item(bvid: 'BV1', aid: 1, cid: 10);
     final AudioStreamInfo stream = _stream(
@@ -168,6 +188,16 @@ PlayableItem _item({required String bvid, required int aid, required int cid}) {
     aid: aid,
     bvid: bvid,
     cid: cid,
+    title: 'title',
+    author: 'author',
+    coverUrl: '',
+  );
+}
+
+PlayableItem _itemWithoutCid({required String bvid, required int aid}) {
+  return PlayableItem(
+    aid: aid,
+    bvid: bvid,
     title: 'title',
     author: 'author',
     coverUrl: '',

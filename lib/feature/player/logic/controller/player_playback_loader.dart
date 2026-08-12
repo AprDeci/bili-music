@@ -21,7 +21,8 @@ class PlayerPlaybackLoader {
     required this._readSession,
     required this._readQualityPreference,
     required this._logEvent,
-  });
+    Future<List<PlayableItem>> Function(PlayableItem item)? resolveAllParts,
+  }) : _resolveAllParts = resolveAllParts ?? _repository.resolveAllParts;
 
   final BiliPlayerRepository _repository;
   final PlayerAudioCacheRepository _audioCacheRepository;
@@ -29,6 +30,7 @@ class PlayerPlaybackLoader {
   final BiliSession? Function() _readSession;
   final PlayerAudioQualityPreference Function() _readQualityPreference;
   final PlayerControllerLogger _logEvent;
+  final Future<List<PlayableItem>> Function(PlayableItem item) _resolveAllParts;
 
   final Map<String, ResolvedQueueEntry> _resolvedEntries =
       <String, ResolvedQueueEntry>{};
@@ -112,7 +114,12 @@ class PlayerPlaybackLoader {
         qualityLabel: metadata.qualityLabel,
       );
       final ResolvedQueueEntry entry = ResolvedQueueEntry(
-        item: item,
+        item: item.copyWith(
+          cid: metadata.cid,
+          pageTitle: (item.pageTitle?.trim().isNotEmpty ?? false)
+              ? item.pageTitle
+              : metadata.pageTitle,
+        ),
         availableParts: const <PlayableItem>[],
         audioStream: audioStream,
         cachedFile: diskCache.file,
@@ -142,6 +149,43 @@ class PlayerPlaybackLoader {
         )] =
         entry;
     return entry;
+  }
+
+  Future<ResolvedQueueEntry?> resolveCachedEntryParts(
+    ResolvedQueueEntry entry,
+  ) async {
+    try {
+      final List<PlayableItem> parts = await _resolveAllParts(entry.item);
+      final int cid = entry.item.cid ?? entry.audioStream.cid;
+      final PlayableItem? item = parts
+          .where((PlayableItem part) => part.cid == cid)
+          .firstOrNull;
+      if (item == null) {
+        _logEvent(
+          'cache-parts:current-part-not-found',
+          details: <String, Object?>{
+            'stableId': entry.item.stableId,
+            'cid': cid,
+          },
+        );
+        return null;
+      }
+      return ResolvedQueueEntry(
+        item: item,
+        availableParts: List<PlayableItem>.unmodifiable(parts),
+        audioStream: entry.audioStream,
+        cachedFile: entry.cachedFile,
+      );
+    } on Object catch (error) {
+      _logEvent(
+        'cache-parts:failed',
+        details: <String, Object?>{
+          'stableId': entry.item.stableId,
+          'error': error,
+        },
+      );
+      return null;
+    }
   }
 
   Future<Duration?> setSourceForEntry({
