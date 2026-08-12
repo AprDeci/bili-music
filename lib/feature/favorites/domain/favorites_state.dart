@@ -92,9 +92,20 @@ abstract class FavoritesState with _$FavoritesState {
   }
 
   List<FavoriteCollection> collectionsForItem(PlayableItem item) {
+    final Set<String> itemIds = entries
+        .where(
+          (FavoriteEntry entry) => item.matchesContent(
+            aid: entry.aid,
+            bvid: entry.bvid,
+            page: entry.page,
+          ),
+        )
+        .map((FavoriteEntry entry) => entry.itemId)
+        .toSet();
     final Set<String> collectionIds = memberships
         .where(
-          (FavoriteMembership membership) => membership.itemId == item.stableId,
+          (FavoriteMembership membership) =>
+              itemIds.contains(membership.itemId),
         )
         .map((FavoriteMembership membership) => membership.collectionId)
         .toSet();

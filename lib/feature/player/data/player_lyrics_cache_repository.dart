@@ -21,7 +21,11 @@ class PlayerLyricsCacheRepository {
   final CacheManager _cacheManager;
 
   String buildCacheKey({required PlayableItem item}) {
-    return 'lyrics:${item.stableId}';
+    return buildCacheKeyForItem(item);
+  }
+
+  static String buildCacheKeyForItem(PlayableItem item) {
+    return 'lyrics:${item.contentId}';
   }
 
   Future<PlayerLyricsCacheEntry?> getCachedEntry({
@@ -49,10 +53,6 @@ class PlayerLyricsCacheRepository {
       final PlayerLyricsCacheEntry entry = PlayerLyricsCacheEntry.fromJson(
         decoded,
       );
-      if (entry.stableId != item.stableId) {
-        await _cacheManager.removeFile(key);
-        return null;
-      }
       return entry;
     } on FormatException {
       await _cacheManager.removeFile(key);
@@ -66,8 +66,11 @@ class PlayerLyricsCacheRepository {
     }
   }
 
-  Future<void> saveEntry(PlayerLyricsCacheEntry entry) async {
-    final String key = 'lyrics:${entry.stableId}';
+  Future<void> saveEntry({
+    required PlayableItem item,
+    required PlayerLyricsCacheEntry entry,
+  }) async {
+    final String key = buildCacheKey(item: item);
     final Uint8List bytes = Uint8List.fromList(
       utf8.encode(jsonEncode(entry.toJson())),
     );

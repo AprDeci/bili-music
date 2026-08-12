@@ -332,7 +332,8 @@ class PlayerLyricsController extends _$PlayerLyricsController {
     await ref
         .read(playerLyricsCacheRepositoryProvider)
         .saveEntry(
-          PlayerLyricsCacheEntry(
+          item: item,
+          entry: PlayerLyricsCacheEntry(
             stableId: item.stableId,
             rawLyrics: _normalizeLyrics(nextState.rawLyrics),
             lyricOffsetMs: nextState.lyricOffsetMs,

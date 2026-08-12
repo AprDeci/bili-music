@@ -59,4 +59,16 @@ abstract class PlayableItem with _$PlayableItem {
     }
     return 'aid:$aid';
   }
+
+  String get contentId {
+    final String videoId = bvid.isNotEmpty ? 'bvid:$bvid' : 'aid:$aid';
+    return '$videoId:page:${page ?? 1}';
+  }
+
+  bool matchesContent({required int aid, required String bvid, int? page}) {
+    final bool sameVideo = this.bvid.isNotEmpty
+        ? this.bvid == bvid
+        : this.aid == aid;
+    return sameVideo && (this.page ?? 1) == (page ?? 1);
+  }
 }

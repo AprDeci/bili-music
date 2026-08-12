@@ -18,7 +18,7 @@ class MetadataCacheRepository {
   final LazyBox<Metadata> _box;
 
   String buildCacheKey({required PlayableItem item}) {
-    return item.stableId;
+    return 'metadata:${item.contentId}';
   }
 
   Future<Metadata?> getCachedMetadata({required PlayableItem item}) async {
@@ -28,11 +28,7 @@ class MetadataCacheRepository {
       return null;
     }
 
-    if (metadata.stableId != item.stableId) {
-      await _box.delete(key);
-      return null;
-    }
-    return metadata;
+    return metadata.copyWith(stableId: item.stableId);
   }
 
   Future<void> putCachedMetadata({
@@ -41,9 +37,10 @@ class MetadataCacheRepository {
   }) async {
     await _box.put(
       buildCacheKey(item: item),
-      metadata.updatedAt == null
-          ? metadata.copyWith(updatedAt: DateTime.now())
-          : metadata,
+      metadata.copyWith(
+        stableId: item.stableId,
+        updatedAt: metadata.updatedAt ?? DateTime.now(),
+      ),
     );
   }
 
