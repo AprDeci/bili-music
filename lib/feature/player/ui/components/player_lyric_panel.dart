@@ -183,7 +183,6 @@ class _PlayerLyricPanelState extends ConsumerState<PlayerLyricPanel> {
         message: metadataState.errorMessage!,
         icon: Icons.error_outline_rounded,
         actionLabel: '重试',
-        goSetting: true,
         onAction: () =>
             ref.read(metadataControllerProvider.notifier).retryCurrent(),
       );
