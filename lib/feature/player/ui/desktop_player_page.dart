@@ -24,7 +24,7 @@ import 'package:bilimusic/feature/player/ui/components/desktop/play_pause_button
 import 'package:bilimusic/feature/player/ui/components/desktop/quality_attach.dart';
 import 'package:bilimusic/feature/player/ui/components/desktop/queue_mode_attach.dart';
 import 'package:bilimusic/feature/player/ui/components/player_collection_sheet.dart';
-import 'package:bilimusic/feature/player/ui/components/player_display_metadata.dart';
+import 'package:bilimusic/feature/player/logic/utils/player_display_metadata.dart';
 import 'package:bilimusic/feature/player/ui/components/player_dynamic_backdrop.dart';
 import 'package:bilimusic/feature/player/ui/components/player_lyric_panel.dart';
 import 'package:bilimusic/feature/player/ui/components/player_part_selector.dart';
