@@ -46,6 +46,8 @@ class DesktopPlayerPage extends ConsumerStatefulWidget {
 }
 
 class _DesktopPlayerPageState extends ConsumerState<DesktopPlayerPage> {
+  bool _showTranslation = true;
+
   @override
   void initState() {
     super.initState();
@@ -93,6 +95,13 @@ class _DesktopPlayerPageState extends ConsumerState<DesktopPlayerPage> {
     );
     final PlayableItem? item = state.currentItem ?? widget.initialItem;
     final MetadataState metadataState = ref.watch(metadataControllerProvider);
+    final bool canToggleTranslation =
+        item != null &&
+        metadataState.stableId == item.stableId &&
+        resolveDisplayTranslationLyrics(
+              metadataState.metadata,
+            )?.trim().isNotEmpty ==
+            true;
     final bool isFavorite = item != null
         ? ref.watch(favoritesControllerProvider).isLiked(item)
         : false;
@@ -133,6 +142,12 @@ class _DesktopPlayerPageState extends ConsumerState<DesktopPlayerPage> {
                 onOffset: item == null
                     ? null
                     : () => showLyricOffsetSheet(context),
+                toggleTranslation: canToggleTranslation
+                    ? () => setState(() {
+                        _showTranslation = !_showTranslation;
+                      })
+                    : null,
+                showTranslation: _showTranslation,
               ),
             ),
             Column(
@@ -147,6 +162,7 @@ class _DesktopPlayerPageState extends ConsumerState<DesktopPlayerPage> {
                     metadataState: metadataState,
                     onSeek: controller.seek,
                     activeColor: coverColor,
+                    showTranslation: _showTranslation,
                     useMetadataCover: useMetadataCover,
                     canToggleCover: hasSwitchableCover(
                       item: item,
@@ -364,6 +380,7 @@ class _DesktopPlayerHeroSection extends ConsumerWidget {
     required this.item,
     required this.metadataState,
     required this.onSeek,
+    required this.showTranslation,
     required this.useMetadataCover,
     required this.canToggleCover,
     required this.onToggleCover,
@@ -374,6 +391,7 @@ class _DesktopPlayerHeroSection extends ConsumerWidget {
   final PlayableItem? item;
   final MetadataState metadataState;
   final ValueChanged<Duration> onSeek;
+  final bool showTranslation;
   final bool useMetadataCover;
   final bool canToggleCover;
   final VoidCallback onToggleCover;
@@ -431,6 +449,7 @@ class _DesktopPlayerHeroSection extends ConsumerWidget {
                               onSeek: onSeek,
                               activeColor: activeColor,
                               variant: PlayerLyricPanelVariant.desktop,
+                              showTranslation: showTranslation,
                             ),
                           ),
                         ),
@@ -448,10 +467,17 @@ class _DesktopPlayerHeroSection extends ConsumerWidget {
 }
 
 class _DesktopLyricToolRail extends StatelessWidget {
-  const _DesktopLyricToolRail({required this.onSearch, required this.onOffset});
+  const _DesktopLyricToolRail({
+    required this.onSearch,
+    required this.onOffset,
+    this.toggleTranslation,
+    required this.showTranslation,
+  });
 
   final VoidCallback? onSearch;
   final VoidCallback? onOffset;
+  final VoidCallback? toggleTranslation;
+  final bool showTranslation;
 
   @override
   Widget build(BuildContext context) {
@@ -464,6 +490,16 @@ class _DesktopLyricToolRail extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: <Widget>[
+              if (toggleTranslation != null) ...<Widget>[
+                BarIconButton(
+                  iconSize: 28,
+                  icon: BmIcons.translate,
+                  tooltip: showTranslation ? '隐藏译文' : '显示译文',
+                  onPressed: toggleTranslation,
+                  isActive: showTranslation,
+                ),
+              ],
+              const SizedBox(height: 6),
               BarIconButton(
                 icon: Icons.search_rounded,
                 tooltip: '手动匹配歌词',
