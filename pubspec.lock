@@ -750,10 +750,10 @@ packages:
     dependency: "direct main"
     description:
       name: liquid_glass_widgets
-      sha256: def55de680a993d1f3bfe52fd6abd201873af8d6a1c5bcfb5fe915f7808928e8
+      sha256: e839a79985305f732763591a005a39f8b85e225ce8688c2a97fc04ba8f33fc82
       url: "https://pub.dev"
     source: hosted
-    version: "0.15.4"
+    version: "0.29.5"
   logger:
     dependency: "direct main"
     description:
@@ -1674,4 +1674,4 @@ packages:
     version: "2.1.0"
 sdks:
   dart: ">=3.12.0 <4.0.0"
-  flutter: ">=3.38.4"
+  flutter: ">=3.41.0"

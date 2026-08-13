@@ -75,7 +75,7 @@ dependencies:
   fl_chart: ^1.2.0
   color_palette_plus: ^2.0.0
   lottie: ^3.3.2
-  liquid_glass_widgets: ^0.15.4
+  liquid_glass_widgets: ^0.29.5
   flutter_smart_dialog: ^5.1.0
   flutter_lyric: ^3.0.3
   scroll_to_index: ^3.0.1
