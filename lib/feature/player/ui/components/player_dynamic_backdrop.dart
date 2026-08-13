@@ -208,7 +208,7 @@ class _BackdropColors {
           .withSaturation(
             _clampSaturation(hsl.saturation, isDark ? 0.32 : 0.34),
           )
-          .withLightness(isDark ? 0.13 : 0.90)
+          .withLightness(isDark ? 0.43 : 0.90)
           .toColor(),
       colorScheme.surface,
       isDark ? 0.14 : 0.10,
@@ -218,7 +218,7 @@ class _BackdropColors {
           .withSaturation(
             _clampSaturation(hsl.saturation, isDark ? 0.28 : 0.30),
           )
-          .withLightness(isDark ? 0.16 : 0.88)
+          .withLightness(isDark ? 0.36 : 0.88)
           .toColor(),
       colorScheme.surface,
       isDark ? 0.20 : 0.18,
@@ -228,7 +228,7 @@ class _BackdropColors {
           .withSaturation(
             _clampSaturation(hsl.saturation, isDark ? 0.18 : 0.18),
           )
-          .withLightness(isDark ? 0.11 : 0.94)
+          .withLightness(isDark ? 0.21 : 0.94)
           .toColor(),
       colorScheme.surface,
       isDark ? 0.32 : 0.42,
