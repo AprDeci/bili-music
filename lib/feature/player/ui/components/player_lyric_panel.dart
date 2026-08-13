@@ -5,7 +5,7 @@ import 'package:bilimusic/feature/metadata/domain/metadata_state.dart';
 import 'package:bilimusic/feature/metadata/logic/metadata_controller.dart';
 import 'package:bilimusic/feature/player/domain/playable_item.dart';
 import 'package:bilimusic/feature/player/domain/player_state.dart';
-import 'package:bilimusic/feature/player/ui/components/player_display_metadata.dart';
+import 'package:bilimusic/feature/player/logic/utils/player_display_metadata.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_lyric/flutter_lyric.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -22,6 +22,7 @@ class PlayerLyricPanel extends ConsumerStatefulWidget {
     required this.onSeek,
     this.activeColor,
     this.variant = PlayerLyricPanelVariant.mobile,
+    this.showTranslation = true,
   });
 
   final PlayerState state;
@@ -30,6 +31,7 @@ class PlayerLyricPanel extends ConsumerStatefulWidget {
   final ValueChanged<Duration> onSeek;
   final Color? activeColor;
   final PlayerLyricPanelVariant variant;
+  final bool showTranslation;
 
   @override
   ConsumerState<PlayerLyricPanel> createState() => _PlayerLyricPanelState();
@@ -203,9 +205,9 @@ class _PlayerLyricPanelState extends ConsumerState<PlayerLyricPanel> {
     );
 
     final String? rawLyrics = resolveDisplayLyrics(metadataState.metadata);
-    final String? translationLyrics = resolveDisplayTranslationLyrics(
-      metadataState.metadata,
-    );
+    final String? translationLyrics = widget.showTranslation
+        ? resolveDisplayTranslationLyrics(metadataState.metadata)
+        : null;
     final String? stableId = metadataState.stableId;
     final String? renderableLyrics = PlayerUtil.buildRenderableLyrics(
       rawLyrics,
