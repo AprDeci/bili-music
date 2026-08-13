@@ -137,19 +137,20 @@ class FavoriteCollectionItemsList extends ConsumerWidget {
       mainAxisAlignment: MainAxisAlignment.start,
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        Text(
-          buildFavoriteEntrySubtitle(item),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
-            height: 1.5,
+        Expanded(
+          child: Text(
+            buildFavoriteTileSubtitle(item),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+              height: 1.5,
+            ),
           ),
         ),
         const SizedBox(width: 8),
         playCount > 0
-            ? 
-          Tag(
+            ? Tag(
                 padding: EdgeInsets.symmetric(horizontal: 4),
                 text: '$playCount',
                 color: Colors.grey.withValues(alpha: 0.2),
