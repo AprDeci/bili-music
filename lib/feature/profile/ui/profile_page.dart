@@ -18,7 +18,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:hugeicons/hugeicons.dart';
 
 class ProfilePage extends ConsumerStatefulWidget {
   const ProfilePage({super.key});
@@ -773,6 +772,8 @@ class _ProfileSectionHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final Color iconColor = Theme.of(context).colorScheme.onSurfaceVariant;
+
     return Row(
       children: <Widget>[
         Expanded(
@@ -799,7 +800,7 @@ class _ProfileSectionHeader extends StatelessWidget {
           child: Icon(
             BmIcons.importright,
             size: 20,
-            color: Colors.black.withValues(alpha: 0.6),
+            color: Colors.grey.withValues(alpha: 0.9),
           ),
         ),
         Material(
@@ -812,7 +813,7 @@ class _ProfileSectionHeader extends StatelessWidget {
               height: 38,
               child: Icon(
                 Icons.add_rounded,
-                color: Colors.black.withValues(alpha: 0.6),
+                color: Colors.grey.withValues(alpha: 0.9),
               ),
             ),
           ),
