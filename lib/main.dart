@@ -15,6 +15,7 @@ import 'package:bilimusic/feature/statistics/logic/statistics_tracker.dart';
 import 'package:bilimusic/feature/up/logic/favorite_up_controller.dart';
 import 'package:bilimusic/feature/favorites/logic/favorited_season_controller.dart';
 import 'package:bilimusic/myApp.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_smart_dialog/flutter_smart_dialog.dart';
@@ -59,6 +60,7 @@ void main() async {
   }
   runApp(
     LiquidGlassWidgets.wrap(
+      brightnessResolver: Theme.maybeBrightnessOf,
       adaptiveQuality: true,
       child: UncontrolledProviderScope(
         container: container,
