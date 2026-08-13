@@ -322,6 +322,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.7.12"
+  desktop_lyrics:
+    dependency: "direct main"
+    description:
+      name: desktop_lyrics
+      sha256: d039e659fde59b223b4ebd1b51eac04e61fae9944c8326783406b328ff587c2f
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.0.8"
   dio:
     dependency: "direct main"
     description:

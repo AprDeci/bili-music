@@ -4,6 +4,7 @@
 
 list(APPEND FLUTTER_PLUGIN_LIST
   audio_service_win
+  desktop_lyrics
   hotkey_manager_windows
   media_kit_libs_windows_audio
   screen_retriever_windows
