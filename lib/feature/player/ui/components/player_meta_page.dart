@@ -95,12 +95,12 @@ class PlayerMetaSheet extends StatelessWidget {
             value: resolvePlayerDurationLabel(state, item),
             activeColor: activeColor,
           ),
-          PlayerMetaRow(
-            label: '分P',
-            value: state.audioStream?.pageTitle ?? '--',
-            activeColor: activeColor,
-            isLast: true,
-          ),
+          // PlayerMetaRow(
+          //   label: '分P',
+          //   value: state.audioStream?.pageTitle ?? '--',
+          //   activeColor: activeColor,
+          //   isLast: true,
+          // ),
         ],
       ),
     );
