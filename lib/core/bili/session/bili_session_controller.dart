@@ -35,7 +35,11 @@ class BiliSessionController extends _$BiliSessionController {
   }
 
   Future<BiliSession?> bootstrap() async {
-    await warmupBaseCookies();
+    try {
+      await warmupBaseCookies();
+    } on DioException {
+      // 网络不可用时继续使用本地会话。
+    }
 
     final BiliSession? currentSession = state;
     if (currentSession == null || !currentSession.isLoggedIn) {
@@ -44,6 +48,8 @@ class BiliSessionController extends _$BiliSessionController {
 
     try {
       return await refreshSessionFromNav();
+    } on DioException {
+      return currentSession;
     } on Object {
       final BiliSession anonymousSession = currentSession.clearAuth();
       await _persistSession(anonymousSession);
@@ -56,7 +62,9 @@ class BiliSessionController extends _$BiliSessionController {
       'https://www.bilibili.com/',
       options: Options(responseType: ResponseType.plain),
     );
-    final Map<String, String> cookies = extractCookiesFromHeaders(response.headers);
+    final Map<String, String> cookies = extractCookiesFromHeaders(
+      response.headers,
+    );
 
     if (cookies.isEmpty) {
       return state ??
@@ -79,21 +87,22 @@ class BiliSessionController extends _$BiliSessionController {
 
   Future<BiliSession> adoptAuthenticatedSession(BiliSession session) async {
     final Map<String, String> nextCookies = parseCookieHeader(session.cookie);
-    final BiliSession mergedSession = _mergeCookiesIntoSession(
-      base: state,
-      nextCookies: nextCookies,
-      fallback: session,
-    ).copyWith(
-      sessData: session.sessData,
-      biliJct: session.biliJct,
-      dedeUserId: session.dedeUserId,
-      refreshToken: session.refreshToken,
-      mid: session.mid,
-      uname: session.uname,
-      face: session.face,
-      imgKey: session.imgKey,
-      subKey: session.subKey,
-    );
+    final BiliSession mergedSession =
+        _mergeCookiesIntoSession(
+          base: state,
+          nextCookies: nextCookies,
+          fallback: session,
+        ).copyWith(
+          sessData: session.sessData,
+          biliJct: session.biliJct,
+          dedeUserId: session.dedeUserId,
+          refreshToken: session.refreshToken,
+          mid: session.mid,
+          uname: session.uname,
+          face: session.face,
+          imgKey: session.imgKey,
+          subKey: session.subKey,
+        );
 
     await _persistSession(mergedSession);
     return mergedSession;
@@ -102,7 +111,9 @@ class BiliSessionController extends _$BiliSessionController {
   Future<BiliSession> refreshSessionFromNav() async {
     final BiliSession? currentSession = state;
     if (currentSession == null || !currentSession.isLoggedIn) {
-      throw const BiliSessionException('No logged-in Bilibili session available.');
+      throw const BiliSessionException(
+        'No logged-in Bilibili session available.',
+      );
     }
 
     final Response<dynamic> response = await _client.get<dynamic>(
@@ -113,7 +124,9 @@ class BiliSessionController extends _$BiliSessionController {
     final Map<String, dynamic> data = _asMap(json['data']);
     final bool isLogin = data['isLogin'] as bool? ?? false;
     if (!isLogin) {
-      throw const BiliSessionException('Current Bilibili cookie is no longer valid.');
+      throw const BiliSessionException(
+        'Current Bilibili cookie is no longer valid.',
+      );
     }
 
     final Map<String, dynamic> wbiImg = _asMap(data['wbi_img']);
@@ -144,7 +157,8 @@ class BiliSessionController extends _$BiliSessionController {
     required Map<String, String> nextCookies,
     BiliSession? fallback,
   }) {
-    final BiliSession seed = base ??
+    final BiliSession seed =
+        base ??
         fallback ??
         const BiliSession(
           sessData: '',
