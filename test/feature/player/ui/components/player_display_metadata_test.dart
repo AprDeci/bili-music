@@ -1,6 +1,6 @@
 import 'package:bilimusic/feature/metadata/domain/metadata.dart';
 import 'package:bilimusic/feature/player/domain/playable_item.dart';
-import 'package:bilimusic/feature/player/ui/components/player_display_metadata.dart';
+import 'package:bilimusic/feature/player/logic/utils/player_display_metadata.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
