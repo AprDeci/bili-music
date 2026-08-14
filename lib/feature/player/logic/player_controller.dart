@@ -172,6 +172,7 @@ class PlayerController extends Notifier<PlayerState>
       return;
     }
 
+    await _audioSessionCoordinator.activateForPlayback();
     await _audioEngine.play();
   }
 
@@ -774,6 +775,13 @@ class PlayerController extends Notifier<PlayerState>
     }
     final int effectiveGeneration = generation ?? _nextGeneration();
     final PlayableItem targetItem = state.queue[queueIndex];
+
+    // Keep the iOS playback session alive while resolving the next stream.
+    // Stopping first creates a silent gap in which iOS can suspend the app.
+    await _audioSessionCoordinator.activateForPlayback();
+    if (!_isCurrentGeneration(effectiveGeneration)) {
+      return false;
+    }
     _logPlayerEvent(
       'loadQueueIndex:start',
       details: <String, Object?>{
@@ -786,15 +794,6 @@ class PlayerController extends Notifier<PlayerState>
         'retryCount': retryCount,
       },
     );
-
-    try {
-      await _audioEngine.stop();
-    } on Object catch (error) {
-      _logPlayerEvent(
-        'loadQueueIndex:stop-before-load-failed',
-        details: <String, Object?>{'error': error},
-      );
-    }
 
     _resetEnginePlaybackSnapshot(
       processingState: PlayerEngineProcessingState.loading,
@@ -865,6 +864,7 @@ class PlayerController extends Notifier<PlayerState>
       _publishMediaSession();
 
       if (autoplay) {
+        await _audioSessionCoordinator.activateForPlayback();
         await _audioEngine.play();
       } else {
         await _audioEngine.pause();
@@ -1209,6 +1209,7 @@ class PlayerController extends Notifier<PlayerState>
   void _onEnginePlaybackError(PlayerEngineException error) {
     if (_isRetryingPlayback ||
         _isWaitingForRetry ||
+        state.isLoading ||
         !state.hasActiveQueueIndex) {
       return;
     }
@@ -1359,7 +1360,9 @@ class PlayerController extends Notifier<PlayerState>
         completed &&
         previous.processingState != PlayerEngineProcessingState.completed;
     // 只处理进入 completed 的瞬间，忽略停留在 completed 的旧快照。
-    final bool shouldHandleCompleted = enteredCompleted;
+    // The old source can emit completed while the next source is being
+    // resolved/opened. Do not advance an already-changing queue.
+    final bool shouldHandleCompleted = enteredCompleted && !current.isLoading;
 
     return _EnginePlaybackReduction(
       nextState: current.copyWith(
@@ -1401,6 +1404,7 @@ class PlayerController extends Notifier<PlayerState>
         if (!_isCurrentGeneration(generation)) {
           return;
         }
+        await _audioSessionCoordinator.activateForPlayback();
         await _audioEngine.play();
         return;
       }

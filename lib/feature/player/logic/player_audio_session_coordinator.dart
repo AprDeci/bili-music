@@ -51,6 +51,17 @@ class PlayerAudioSessionCoordinator {
       return;
     }
 
+    // Declaring UIBackgroundModes in Info.plist is not enough on iOS. The
+    // session must also use the playback category before the app is
+    // suspended, otherwise opening the next source in the background can
+    // leave the engine without an active playback session.
+    await session.configure(
+      _audioSessionConfiguration(_readAllowMixWithOthers()),
+    );
+    if (_isDisposed) {
+      return;
+    }
+
     _subscriptions.add(
       session.interruptionEventStream.listen((AudioInterruptionEvent event) {
         unawaited(_handleAudioInterruption(event));
@@ -62,6 +73,14 @@ class PlayerAudioSessionCoordinator {
       }),
     );
     _isBound = true;
+  }
+
+  Future<void> activateForPlayback() async {
+    final AudioSession session = await AudioSession.instance;
+    await session.configure(
+      _audioSessionConfiguration(_readAllowMixWithOthers()),
+    );
+    await session.setActive(true);
   }
 
   Future<void> refreshConfiguration() async {
