@@ -2,6 +2,11 @@
 cmake_minimum_required(VERSION 3.14)
 project(bilimusic LANGUAGES CXX)
 
+# 强制使用utf-8
+if(MSVC)
+  add_compile_options(/utf-8)
+endif()
+
 # The name of the executable created for the application. Change this to change
 # the on-disk name of your application.
 set(BINARY_NAME "bilimusic")
@@ -110,3 +115,4 @@ install(DIRECTORY "${PROJECT_BUILD_DIR}/${FLUTTER_ASSET_DIR_NAME}"
 install(FILES "${AOT_LIBRARY}" DESTINATION "${INSTALL_BUNDLE_DATA_DIR}"
   CONFIGURATIONS Profile;Release
   COMPONENT Runtime)
+
