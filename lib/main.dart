@@ -9,6 +9,7 @@ import 'package:bilimusic/core/window/desktop_hotkey_controller.dart';
 import 'package:bilimusic/feature/favorites/logic/favorites_controller.dart';
 import 'package:bilimusic/feature/metadata/logic/metadata_controller.dart';
 import 'package:bilimusic/feature/player/logic/app_audio_handler.dart';
+import 'package:bilimusic/feature/player/logic/desktop_lyrics_controller.dart';
 import 'package:bilimusic/feature/player/logic/player_controller.dart';
 import 'package:bilimusic/feature/player/logic/sleep_timer_controller.dart';
 import 'package:bilimusic/feature/statistics/logic/statistics_tracker.dart';
@@ -111,6 +112,9 @@ class _AppBootstrapState extends ConsumerState<_AppBootstrap>
         widget.desktopLifecycle?.attachHotkeyController(
           _desktopHotkeyController!,
         );
+      }
+      if (PlatformUtil.isWindows) {
+        ref.read(desktopLyricsControllerProvider);
       }
     });
   }
