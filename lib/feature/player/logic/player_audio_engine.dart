@@ -19,6 +19,8 @@ class PlayerAudioEngine {
   bool _hasSource = false;
   bool _isOpening = false;
 
+  static const Duration _sourceOpenTimeout = Duration(seconds: 20);
+
   bool get playing => _player.state.playing;
   double get volume => _player.state.volume / 100.0;
   Duration get position => _player.state.position;
@@ -99,7 +101,17 @@ class PlayerAudioEngine {
     _isOpening = true;
     _emitPlayerState();
     try {
-      await _player.open(media, play: false);
+      try {
+        await _player
+            .open(media, play: false)
+            .timeout(_sourceOpenTimeout);
+      } on TimeoutException {
+        // media_kit's native open may stay pending when iOS suspends the Dart
+        // side during a background track transition. Stop the pending native
+        // load so later sources are not queued behind it forever.
+        await _player.stop();
+        throw const PlayerEngineException('打开播放流超时，请重试。');
+      }
       _hasSource = true;
       final Duration? position = initialPosition;
       if (position != null && position > Duration.zero) {

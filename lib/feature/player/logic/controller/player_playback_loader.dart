@@ -24,8 +24,11 @@ class PlayerPlaybackLoader {
     required this._logEvent,
     Future<List<PlayableItem>> Function(PlayableItem item)? resolveAllParts,
     Future<bool> Function()? isOffline,
+    bool Function()? allowAutomaticCache,
   }) : _resolveAllParts = resolveAllParts ?? _repository.resolveAllParts,
-       _isOffline = isOffline ?? NetUtil.isOffline;
+       _isOffline = isOffline ?? NetUtil.isOffline,
+       _allowAutomaticCache =
+           allowAutomaticCache ?? (() => !Platform.isIOS);
 
   final BiliPlayerRepository _repository;
   final PlayerAudioCacheRepository _audioCacheRepository;
@@ -35,6 +38,7 @@ class PlayerPlaybackLoader {
   final PlayerControllerLogger _logEvent;
   final Future<List<PlayableItem>> Function(PlayableItem item) _resolveAllParts;
   final Future<bool> Function() _isOffline;
+  final bool Function() _allowAutomaticCache;
 
   final Map<String, ResolvedQueueEntry> _resolvedEntries =
       <String, ResolvedQueueEntry>{};
@@ -89,6 +93,24 @@ class PlayerPlaybackLoader {
         preference: qualityPreference,
         preferredQualityId: preferredQualityId,
       );
+    }
+
+    // A cached track must not depend on a network round trip. In particular,
+    // iOS can suspend Dart HTTP work while native audio keeps playing in the
+    // background. Waiting for stream resolution here made a valid local file
+    // unusable when that suspended request did not recover after foregrounding.
+    final CachedAudio? diskCache = await _audioCacheRepository
+        .lookupCachedAudio(
+          item: item,
+          preference: qualityPreference,
+          preferredQualityId: preferredQualityId,
+        );
+    if (diskCache != null) {
+      _logEvent(
+        'resolveQueueEntry:cache-first',
+        details: <String, Object?>{'stableId': item.stableId},
+      );
+      return _entryFromCachedAudio(item, diskCache);
     }
 
     final ResolvedQueueEntry? cached = _resolvedEntries[cacheKey];
@@ -153,6 +175,13 @@ class PlayerPlaybackLoader {
     if (diskCache == null) {
       throw const BiliPlayerException('设备处于离线状态，且没有可用的音频缓存。');
     }
+    return _entryFromCachedAudio(item, diskCache);
+  }
+
+  ResolvedQueueEntry _entryFromCachedAudio(
+    PlayableItem item,
+    CachedAudio diskCache,
+  ) {
     final AudioCacheMetadata metadata = diskCache.metadata;
     return ResolvedQueueEntry(
       item: item.copyWith(
@@ -282,7 +311,14 @@ class PlayerPlaybackLoader {
           : entry.audioStream.headers,
       initialPosition: effectiveInitialPosition,
     );
-    unawaited(_cacheEntry(entry));
+    // flutter_cache_manager uses a separate Dart HTTP download. Such downloads
+    // are suspended by iOS in the background and can accumulate stale sockets,
+    // eventually starving unrelated API and image requests. The native player
+    // remains responsible for streaming on iOS; existing/manual cache files
+    // are still fully supported by the cache-first path above.
+    if (_allowAutomaticCache()) {
+      unawaited(_cacheEntry(entry));
+    }
     return duration;
   }
 

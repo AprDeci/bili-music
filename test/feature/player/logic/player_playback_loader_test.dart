@@ -17,7 +17,7 @@ void main() {
   setUp(() async => directory = await Directory.systemTemp.createTemp());
   tearDown(() async => directory.delete(recursive: true));
 
-  test('online exact cache retains remote qualities and preference', () async {
+  test('online exact cache plays locally without waiting for remote', () async {
     final _RecordingRepository remote = _RecordingRepository(_loadResult());
     final PlayerAudioCacheRepository cache = _cache(directory);
     final AudioStreamInfo stream = _loadResult().audioStream;
@@ -32,27 +32,29 @@ void main() {
       isOffline: () async => false,
     ).resolveQueueEntry(_item(), preferredQualityId: 30232);
 
-    expect(remote.calls, 1);
-    expect(remote.preference, PlayerAudioQualityPreference.k132);
-    expect(remote.preferredQualityId, 30232);
+    expect(remote.calls, 0);
     expect(entry.cachedFile?.path, file.path);
-    expect(entry.audioStream.availableQualities, hasLength(2));
+    expect(entry.audioStream.availableQualities, hasLength(1));
   });
 
-  test('online missing selected cache does not use another quality', () async {
-    final PlayerAudioCacheRepository cache = _cache(directory);
-    await cache.cacheAudio(
-      item: _item(),
-      audioStream: _stream(qualityId: 30280, bandwidth: 192000),
-    );
-    final ResolvedQueueEntry entry = await _loader(
-      repository: _RecordingRepository(_loadResult()),
-      cache: cache,
-      isOffline: () async => false,
-    ).resolveQueueEntry(_item());
+  test(
+    'online missing selected cache falls back to available local quality',
+    () async {
+      final PlayerAudioCacheRepository cache = _cache(directory);
+      await cache.cacheAudio(
+        item: _item(),
+        audioStream: _stream(qualityId: 30280, bandwidth: 192000),
+      );
+      final ResolvedQueueEntry entry = await _loader(
+        repository: _RecordingRepository(_loadResult()),
+        cache: cache,
+        isOffline: () async => false,
+      ).resolveQueueEntry(_item());
 
-    expect(entry.cachedFile, isNull);
-  });
+      expect(entry.cachedFile, isNotNull);
+      expect(entry.audioStream.qualityId, 30280);
+    },
+  );
 
   test(
     'initial offline uses preferred cached fallback without remote',
@@ -79,24 +81,29 @@ void main() {
     },
   );
 
-  test('remote failure falls back only after becoming offline', () async {
+  test('cache hit does not start a remote request', () async {
     final PlayerAudioCacheRepository cache = _cache(directory);
     await cache.cacheAudio(
       item: _item(),
       audioStream: _stream(qualityId: 30232, bandwidth: 132000),
     );
     int checks = 0;
+    final _RecordingRepository remote = _RecordingRepository(
+      null,
+      error: StateError('failed'),
+    );
     final ResolvedQueueEntry entry = await _loader(
-      repository: _RecordingRepository(null, error: StateError('failed')),
+      repository: remote,
       cache: cache,
       isOffline: () async => checks++ > 0,
     ).resolveQueueEntry(_item());
 
-    expect(checks, 2);
+    expect(checks, 1);
+    expect(remote.calls, 0);
     expect(entry.cachedFile, isNotNull);
   });
 
-  test('online business error is rethrown despite cache', () async {
+  test('online cache avoids a business request failure', () async {
     final PlayerAudioCacheRepository cache = _cache(directory);
     await cache.cacheAudio(
       item: _item(),
@@ -109,7 +116,9 @@ void main() {
       isOffline: () async => false,
     );
 
-    expect(loader.resolveQueueEntry(_item()), throwsA(same(error)));
+    final ResolvedQueueEntry entry = await loader.resolveQueueEntry(_item());
+
+    expect(entry.cachedFile, isNotNull);
   });
 
   test('cached entry parts selects matching enriched part', () async {
@@ -166,28 +175,33 @@ void main() {
     expect(result, isNull);
   });
 
-  test('offline entry is not retained after reconnecting', () async {
-    final PlayerAudioCacheRepository cache = _cache(directory);
-    await cache.cacheAudio(
-      item: _item(),
-      audioStream: _stream(qualityId: 30232, bandwidth: 132000),
-    );
-    bool offline = true;
-    final _RecordingRepository remote = _RecordingRepository(_loadResult());
-    final PlayerPlaybackLoader loader = _loader(
-      repository: remote,
-      cache: cache,
-      isOffline: () async => offline,
-    );
+  test(
+    'cached entry remains immediately available after reconnecting',
+    () async {
+      final PlayerAudioCacheRepository cache = _cache(directory);
+      await cache.cacheAudio(
+        item: _item(),
+        audioStream: _stream(qualityId: 30232, bandwidth: 132000),
+      );
+      bool offline = true;
+      final _RecordingRepository remote = _RecordingRepository(_loadResult());
+      final PlayerPlaybackLoader loader = _loader(
+        repository: remote,
+        cache: cache,
+        isOffline: () async => offline,
+      );
 
-    final ResolvedQueueEntry cached = await loader.resolveQueueEntry(_item());
-    offline = false;
-    final ResolvedQueueEntry resolved = await loader.resolveQueueEntry(_item());
+      final ResolvedQueueEntry cached = await loader.resolveQueueEntry(_item());
+      offline = false;
+      final ResolvedQueueEntry resolved = await loader.resolveQueueEntry(
+        _item(),
+      );
 
-    expect(cached.audioStream.availableQualities, hasLength(1));
-    expect(remote.calls, 1);
-    expect(resolved.audioStream.availableQualities, hasLength(2));
-  });
+      expect(cached.audioStream.availableQualities, hasLength(1));
+      expect(remote.calls, 0);
+      expect(resolved.audioStream.availableQualities, hasLength(1));
+    },
+  );
 }
 
 PlayerPlaybackLoader _loader({
