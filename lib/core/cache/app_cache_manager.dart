@@ -12,7 +12,18 @@ class AppImageCacheManager extends CacheManager with ImageCacheManager {
 
   static const String _cacheKey = 'bilimusic_image_cache';
 
-  static final AppImageCacheManager instance = AppImageCacheManager._();
+  static AppImageCacheManager _instance = AppImageCacheManager._();
+
+  static AppImageCacheManager get instance => _instance;
+
+  static Future<void> resetNetworkClient() async {
+    final AppImageCacheManager previous = _instance;
+    try {
+      await previous.dispose();
+    } finally {
+      _instance = AppImageCacheManager._();
+    }
+  }
 }
 
 class AppAudioCacheManager extends CacheManager {

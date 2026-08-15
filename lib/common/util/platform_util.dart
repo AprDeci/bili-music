@@ -7,4 +7,5 @@ class PlatformUtil {
 
   static bool get isWindows => Platform.isWindows;
   static bool get isLinux => Platform.isLinux;
+  static bool get isIOS => Platform.isIOS;
 }

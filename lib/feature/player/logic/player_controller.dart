@@ -1178,7 +1178,7 @@ class PlayerController extends Notifier<PlayerState>
     _prefetchNextTrackIfNeeded(position);
   }
 
-  void _prefetchNextTrackIfNeeded(Duration position) {
+  void _prefetchNextTrackIfNeeded(Duration _) {
     // Shuffle resolution mutates its cursor and single-repeat does not advance.
     // Only sequential mode has a deterministic, side-effect-free next item.
     if (!state.isPlaying ||
@@ -1187,11 +1187,9 @@ class PlayerController extends Notifier<PlayerState>
         state.queueMode != PlayerQueueMode.sequence) {
       return;
     }
-    final Duration? duration = state.duration;
-    if (duration == null ||
-        duration - position > const Duration(seconds: 20)) {
-      return;
-    }
+    // Resolve immediately. After a few minutes iOS may keep native audio alive
+    // while suspending ordinary Dart networking, so a last-second prefetch is
+    // already too late for longer tracks.
     final int? currentIndex = state.currentQueueIndex;
     if (currentIndex == null) {
       return;

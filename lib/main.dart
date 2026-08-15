@@ -2,11 +2,14 @@ import 'dart:async';
 
 import 'package:bilimusic/common/util/platform_util.dart';
 import 'package:bilimusic/core/bili/session/bili_session_controller.dart';
+import 'package:bilimusic/core/cache/app_cache_manager.dart';
 import 'package:bilimusic/core/hive/hive.dart';
+import 'package:bilimusic/core/net/bili_client.dart';
 import 'package:bilimusic/core/theme/desktop_chinese_font.dart';
 import 'package:bilimusic/core/window/desktop_app_lifecycle.dart';
 import 'package:bilimusic/core/window/desktop_hotkey_controller.dart';
 import 'package:bilimusic/feature/favorites/logic/favorites_controller.dart';
+import 'package:bilimusic/feature/home/logic/music_ranking_controller.dart';
 import 'package:bilimusic/feature/metadata/logic/metadata_controller.dart';
 import 'package:bilimusic/feature/player/logic/app_audio_handler.dart';
 import 'package:bilimusic/feature/player/logic/player_controller.dart';
@@ -87,6 +90,7 @@ class _AppBootstrapState extends ConsumerState<_AppBootstrap>
     with WidgetsBindingObserver {
   bool _didBootstrap = false;
   DesktopHotkeyController? _desktopHotkeyController;
+  DateTime? _backgroundedAt;
 
   @override
   void initState() {
@@ -133,9 +137,32 @@ class _AppBootstrapState extends ConsumerState<_AppBootstrap>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused) {
+      _backgroundedAt ??= DateTime.now();
+      return;
+    }
     if (state == AppLifecycleState.resumed) {
+      final DateTime? backgroundedAt = _backgroundedAt;
+      _backgroundedAt = null;
+      if (PlatformUtil.isIOS &&
+          backgroundedAt != null &&
+          DateTime.now().difference(backgroundedAt) >=
+              const Duration(minutes: 2)) {
+        unawaited(_recoverNetworkAfterResume());
+      }
       unawaited(ref.read(sleepTimerControllerProvider.notifier).expireIfDue());
     }
+  }
+
+  Future<void> _recoverNetworkAfterResume() async {
+    ref.read(biliClientProvider.notifier).resetConnections();
+    await AppImageCacheManager.resetNetworkClient();
+    if (!mounted) {
+      return;
+    }
+    PaintingBinding.instance.imageCache.clear();
+    PaintingBinding.instance.imageCache.clearLiveImages();
+    ref.invalidate(musicRankingControllerProvider);
   }
 
   @override

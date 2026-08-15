@@ -47,7 +47,13 @@ class BiliClient extends _$BiliClient implements BiliHttpClient {
 
   @override
   Dio build() {
-    _dio = Dio(
+    _dio = _createDio();
+    _logger.i('Dio client initialized');
+    return _dio;
+  }
+
+  Dio _createDio() {
+    final Dio dio = Dio(
       BaseOptions(
         baseUrl: NetConfig.baseUrl,
         connectTimeout: NetConfig.connectTimeout,
@@ -59,7 +65,7 @@ class BiliClient extends _$BiliClient implements BiliHttpClient {
     );
 
     // 匿名模式下，移除Cookie
-    _dio.interceptors.add(
+    dio.interceptors.add(
       InterceptorsWrapper(
         onRequest: (RequestOptions options, RequestInterceptorHandler handler) {
           if (options.extra['biliRequestMode'] == BiliRequestMode.anonymous) {
@@ -71,7 +77,7 @@ class BiliClient extends _$BiliClient implements BiliHttpClient {
     );
 
     if (kDebugMode) {
-      _dio.interceptors.add(
+      dio.interceptors.add(
         LogInterceptor(
           requestHeader: false,
           requestBody: false,
@@ -81,13 +87,20 @@ class BiliClient extends _$BiliClient implements BiliHttpClient {
         ),
       );
     }
-    _logger.i('Dio client initialized');
-    return _dio;
+    return dio;
   }
 
-  late final Dio _dio;
+  late Dio _dio;
 
   Dio get dio => _dio;
+
+  void resetConnections() {
+    final Dio previous = _dio;
+    _dio = _createDio();
+    state = _dio;
+    previous.close(force: true);
+    _logger.i('Dio connections reset after app resume');
+  }
 
   @override
   BiliSession? get currentSession => ref.read(biliSessionControllerProvider);
