@@ -83,16 +83,12 @@ class PlayerPlaybackLoader {
       preference: qualityPreference,
       preferredQualityId: preferredQualityId,
     );
-    final bool offline = await _isOffline();
-    if (offline) {
-      if (!item.hasIdentity) {
-        throw const BiliPlayerException('当前搜索结果缺少可播放的视频标识。');
-      }
-      return _resolveOfflineEntry(
-        item,
-        preference: qualityPreference,
-        preferredQualityId: preferredQualityId,
-      );
+    // Consult the in-memory result before any plugin/network operation. This
+    // is what makes a prefetched next track usable during an iOS background
+    // transition, where even connectivity checks may be suspended.
+    final ResolvedQueueEntry? resolved = _resolvedEntries[cacheKey];
+    if (resolved != null) {
+      return resolved;
     }
 
     // A cached track must not depend on a network round trip. In particular,
@@ -113,13 +109,13 @@ class PlayerPlaybackLoader {
       return _entryFromCachedAudio(item, diskCache);
     }
 
-    final ResolvedQueueEntry? cached = _resolvedEntries[cacheKey];
-    if (cached != null) {
-      return cached;
-    }
-
     if (!item.hasIdentity) {
       throw const BiliPlayerException('当前搜索结果缺少可播放的视频标识。');
+    }
+
+    final bool offline = await _isOffline();
+    if (offline) {
+      throw const BiliPlayerException('设备处于离线状态，且没有可用的音频缓存。');
     }
 
     late final PlayerLoadResult loadResult;
@@ -159,6 +155,34 @@ class PlayerPlaybackLoader {
         )] =
         entry;
     return entry;
+  }
+
+  Future<bool> prefetchQueueEntry(
+    PlayableItem item, {
+    int? preferredQualityId,
+  }) async {
+    try {
+      await resolveQueueEntry(
+        item,
+        preferredQualityId: preferredQualityId,
+      );
+      _logEvent(
+        'prefetchQueueEntry:completed',
+        details: <String, Object?>{'stableId': item.stableId},
+      );
+      return true;
+    } on Object catch (error) {
+      // Prefetch is opportunistic. Normal loading keeps its existing retry and
+      // queue-skip behavior if the network was unavailable before the window.
+      _logEvent(
+        'prefetchQueueEntry:failed',
+        details: <String, Object?>{
+          'stableId': item.stableId,
+          'error': error,
+        },
+      );
+      return false;
+    }
   }
 
   Future<ResolvedQueueEntry> _resolveOfflineEntry(

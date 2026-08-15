@@ -82,6 +82,8 @@ class PlayerController extends Notifier<PlayerState>
   int _operationGeneration = 0;
   int _retryGeneration = 0;
   int _enginePlaybackRetryCount = 0;
+  String? _prefetchingStableId;
+  String? _prefetchedStableId;
 
   static const int _maxPlaybackRetries = 3;
 
@@ -1173,6 +1175,51 @@ class PlayerController extends Notifier<PlayerState>
       _enginePlaybackSnapshot.copyWith(position: position),
     );
     _emitPlayerEvent(PlayerEventType.position, position: position);
+    _prefetchNextTrackIfNeeded(position);
+  }
+
+  void _prefetchNextTrackIfNeeded(Duration position) {
+    // Shuffle resolution mutates its cursor and single-repeat does not advance.
+    // Only sequential mode has a deterministic, side-effect-free next item.
+    if (!state.isPlaying ||
+        state.isLoading ||
+        state.queue.length < 2 ||
+        state.queueMode != PlayerQueueMode.sequence) {
+      return;
+    }
+    final Duration? duration = state.duration;
+    if (duration == null ||
+        duration - position > const Duration(seconds: 20)) {
+      return;
+    }
+    final int? currentIndex = state.currentQueueIndex;
+    if (currentIndex == null) {
+      return;
+    }
+    final int nextIndex = (currentIndex + 1) % state.queue.length;
+    final PlayableItem nextItem = state.queue[nextIndex];
+    if (_prefetchingStableId == nextItem.stableId ||
+        _prefetchedStableId == nextItem.stableId) {
+      return;
+    }
+    _prefetchingStableId = nextItem.stableId;
+    unawaited(
+      _playbackLoader
+          .prefetchQueueEntry(
+            nextItem,
+            preferredQualityId: _qualityOverrides[nextItem.stableId],
+          )
+          .then((bool succeeded) {
+            if (succeeded) {
+              _prefetchedStableId = nextItem.stableId;
+            }
+          })
+          .whenComplete(() {
+            if (_prefetchingStableId == nextItem.stableId) {
+              _prefetchingStableId = null;
+            }
+          }),
+    );
   }
 
   void _onEngineBufferedPositionChanged(Duration bufferedPosition) {

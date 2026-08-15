@@ -77,6 +77,7 @@ void main() {
       ).resolveQueueEntry(_item());
 
       expect(remote.calls, 0);
+      expect(entry.cachedFile, isNotNull);
       expect(entry.audioStream.qualityId, 30232);
     },
   );
@@ -98,7 +99,7 @@ void main() {
       isOffline: () async => checks++ > 0,
     ).resolveQueueEntry(_item());
 
-    expect(checks, 1);
+    expect(checks, 0);
     expect(remote.calls, 0);
     expect(entry.cachedFile, isNotNull);
   });
@@ -119,6 +120,26 @@ void main() {
     final ResolvedQueueEntry entry = await loader.resolveQueueEntry(_item());
 
     expect(entry.cachedFile, isNotNull);
+  });
+
+  test('prefetched entry is reused before connectivity check', () async {
+    int connectivityChecks = 0;
+    final _RecordingRepository remote = _RecordingRepository(_loadResult());
+    final PlayerPlaybackLoader loader = _loader(
+      repository: remote,
+      cache: _cache(directory),
+      isOffline: () async {
+        connectivityChecks += 1;
+        return false;
+      },
+    );
+
+    expect(await loader.prefetchQueueEntry(_item()), isTrue);
+    final ResolvedQueueEntry entry = await loader.resolveQueueEntry(_item());
+
+    expect(entry.audioStream.streamUrl, isNotEmpty);
+    expect(connectivityChecks, 1);
+    expect(remote.calls, 1);
   });
 
   test('cached entry parts selects matching enriched part', () async {
