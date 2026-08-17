@@ -31,6 +31,47 @@ void main() {
     );
   });
 
+  test('keeps the previous LRC line during empty timestamps', () {
+    const String lyrics =
+        '[00:01.00]\n'
+        '[00:02.00]one\n'
+        '[00:03.00]\n'
+        '[00:04.00]\n'
+        '[00:05.00]two\n'
+        '[00:07.00]three';
+
+    expect(
+      resolveDesktopLyricFrame(
+        lyrics,
+        position: const Duration(milliseconds: 1500),
+        offsetMs: 0,
+      ),
+      isNull,
+    );
+    for (final int positionMs in <int>[3000, 4000]) {
+      expect(
+        resolveDesktopLyricFrame(
+          lyrics,
+          position: Duration(milliseconds: positionMs),
+          offsetMs: 0,
+        ),
+        isA<DesktopLyricFrame>()
+            .having((DesktopLyricFrame frame) => frame.line, 'line', 'one')
+            .having((DesktopLyricFrame frame) => frame.progress, 'progress', 1),
+      );
+    }
+    expect(
+      resolveDesktopLyricFrame(
+        lyrics,
+        position: const Duration(milliseconds: 5000),
+        offsetMs: 0,
+      ),
+      isA<DesktopLyricFrame>()
+          .having((DesktopLyricFrame frame) => frame.line, 'line', 'two')
+          .having((DesktopLyricFrame frame) => frame.progress, 'progress', 0),
+    );
+  });
+
   test('resolves QRC duration progress boundaries', () {
     const String lyrics = '[1000,2000]line';
 

@@ -132,9 +132,7 @@ class DesktopLyricsController extends _$DesktopLyricsController {
           fontSize: 24,
           textColor: Colors.blue[400],
         ),
-        gradient: lyrics.state.gradient.copyWith(
-          textGradientEnabled: false, 
-        ),
+        gradient: lyrics.state.gradient.copyWith(textGradientEnabled: false),
       ),
     );
     _pluginEnabled = enabled;
@@ -174,15 +172,25 @@ DesktopLyricFrame? resolveDesktopLyricFrame(
       position.inMilliseconds + offsetMs - parsedLyrics.offsetMs;
   _DesktopLyricLine? current;
   _DesktopLyricLine? next;
+  _DesktopLyricLine? previousNonEmpty;
   for (final _DesktopLyricLine line in lines) {
     if (line.startMs > positionMs) {
       next = line;
       break;
     }
     current = line;
+    if (line.text.isNotEmpty) {
+      previousNonEmpty = line;
+    }
   }
-  if (current == null || current.text.isEmpty) {
+  if (current == null) {
     return null;
+  }
+  if (current.text.isEmpty) {
+    final _DesktopLyricLine? line = previousNonEmpty;
+    return line == null
+        ? null
+        : DesktopLyricFrame(line: line.text, progress: 1);
   }
   final int durationMs =
       current.durationMs ??
