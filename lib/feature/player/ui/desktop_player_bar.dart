@@ -106,9 +106,9 @@ class DesktopPlayerBar extends ConsumerWidget {
               ),
             ),
 
-            const SizedBox(width: 30),
+            const SizedBox(width: 20),
             Expanded(
-              flex: 4,
+              flex: 6,
               child: _PlaybackSection(
                 state: state,
                 progress: progress,
@@ -130,7 +130,7 @@ class DesktopPlayerBar extends ConsumerWidget {
               ),
             ),
             Expanded(
-              flex: 2,
+              flex: 4,
               child: _ActionSection(
                 item: item,
                 state: state,
