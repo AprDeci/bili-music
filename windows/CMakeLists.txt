@@ -116,3 +116,7 @@ install(FILES "${AOT_LIBRARY}" DESTINATION "${INSTALL_BUNDLE_DATA_DIR}"
   CONFIGURATIONS Profile;Release
   COMPONENT Runtime)
 
+# 强制插件源文件用 UTF-8 编译，解决 C4819
+if(MSVC)
+  target_compile_options(desktop_lyrics_plugin PRIVATE /utf-8)
+endif()

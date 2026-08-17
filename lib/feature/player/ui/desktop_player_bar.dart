@@ -5,6 +5,7 @@ import 'package:bilimusic/common/components/cached_image.dart';
 import 'package:bilimusic/common/components/desktop/pingpong_marquee_plus.dart';
 import 'package:bilimusic/common/components/desktop/volumn_attach.dart';
 import 'package:bilimusic/common/util/color_util.dart';
+import 'package:bilimusic/common/util/platform_util.dart';
 import 'package:bilimusic/feature/comment/domain/comment_target.dart';
 import 'package:bilimusic/feature/favorites/logic/favorites_controller.dart';
 import 'package:bilimusic/feature/metadata/domain/metadata_state.dart';
@@ -15,6 +16,7 @@ import 'package:bilimusic/feature/player/domain/player_state.dart';
 import 'package:bilimusic/feature/player/logic/player_controller.dart';
 import 'package:bilimusic/feature/player/logic/player_cover_logic.dart';
 import 'package:bilimusic/feature/player/logic/player_cover_settings_logic.dart';
+import 'package:bilimusic/feature/player/logic/desktop_lyrics_controller.dart';
 import 'package:bilimusic/feature/player/ui/components/desktop/quality_attach.dart';
 import 'package:bilimusic/feature/player/ui/components/desktop/play_pause_button.dart';
 import 'package:bilimusic/feature/player/ui/components/desktop/queue_mode_attach.dart';
@@ -104,9 +106,9 @@ class DesktopPlayerBar extends ConsumerWidget {
               ),
             ),
 
-            const SizedBox(width: 30),
+            const SizedBox(width: 20),
             Expanded(
-              flex: 4,
+              flex: 6,
               child: _PlaybackSection(
                 state: state,
                 progress: progress,
@@ -128,7 +130,7 @@ class DesktopPlayerBar extends ConsumerWidget {
               ),
             ),
             Expanded(
-              flex: 2,
+              flex: 4,
               child: _ActionSection(
                 item: item,
                 state: state,
@@ -457,7 +459,7 @@ class _PlaybackSection extends StatelessWidget {
   }
 }
 
-class _ActionSection extends StatelessWidget {
+class _ActionSection extends ConsumerWidget {
   const _ActionSection({
     required this.item,
     required this.state,
@@ -473,13 +475,26 @@ class _ActionSection extends StatelessWidget {
   final ValueChanged<int?> onSelectQuality;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final List<AudioQualityOption> qualities =
         state.audioStream?.availableQualities ?? const <AudioQualityOption>[];
+    final bool isDesktopLyricsEnabled = PlatformUtil.isWindows
+        ? ref.watch(desktopLyricsControllerProvider)
+        : false;
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.end,
       children: <Widget>[
+                  
+          BarIconButton(
+          iconSize: 28,
+            onPressed: () =>
+                ref.read(desktopLyricsControllerProvider.notifier).toggle(),
+            icon: BmIcons.desktopLyrics,
+            tooltip: isDesktopLyricsEnabled ? '关闭桌面歌词' : '开启桌面歌词',
+            isActive: isDesktopLyricsEnabled,
+        ),
+        const SizedBox(width: 10),
         DesktopQualityAttach(qualities: qualities, onSelected: onSelectQuality),
         const SizedBox(width: 10),
         BadgedIconButton(
