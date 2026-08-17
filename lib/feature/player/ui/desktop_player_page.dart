@@ -16,6 +16,7 @@ import 'package:bilimusic/feature/metadata/ui/components/lyric_search_sheet.dart
 import 'package:bilimusic/feature/player/domain/audio_stream_info.dart';
 import 'package:bilimusic/feature/player/domain/playable_item.dart';
 import 'package:bilimusic/feature/player/domain/player_state.dart';
+import 'package:bilimusic/feature/player/logic/desktop_lyrics_controller.dart';
 import 'package:bilimusic/feature/player/logic/player_controller.dart';
 import 'package:bilimusic/feature/player/logic/player_cover_color_provider.dart';
 import 'package:bilimusic/feature/player/logic/player_cover_logic.dart';
@@ -112,6 +113,9 @@ class _DesktopPlayerPageState extends ConsumerState<DesktopPlayerPage> {
     );
     final bool useMetadataCover =
         ref.watch(playerCoverLogicProvider) ?? defaultUseMetadataCover;
+    final bool isDesktopLyricsEnabled = ref.watch(
+      desktopLyricsControllerProvider,
+    );
 
     return Scaffold(
       backgroundColor: colorScheme.surface,
@@ -213,6 +217,10 @@ class _DesktopPlayerPageState extends ConsumerState<DesktopPlayerPage> {
                   onNext: controller.skipToNext,
                   onVolumeChanged: controller.setVolume,
                   onToggleMute: controller.toggleMute,
+                  isDesktopLyricsEnabled: isDesktopLyricsEnabled,
+                  onDesktopLyricsToggle: () => ref
+                      .read(desktopLyricsControllerProvider.notifier)
+                      .toggle(),
                   onSeek: (double value) {
                     final Duration total = _resolveTotalDuration(state);
                     controller.seek(
@@ -579,6 +587,8 @@ class _DesktopPlayerControlDeck extends StatelessWidget {
     required this.onNext,
     required this.onVolumeChanged,
     required this.onToggleMute,
+    required this.isDesktopLyricsEnabled,
+    required this.onDesktopLyricsToggle,
     required this.onSeek,
   });
 
@@ -597,6 +607,8 @@ class _DesktopPlayerControlDeck extends StatelessWidget {
   final VoidCallback onNext;
   final ValueChanged<double> onVolumeChanged;
   final Future<double> Function() onToggleMute;
+  final bool isDesktopLyricsEnabled;
+  final VoidCallback onDesktopLyricsToggle;
   final ValueChanged<double> onSeek;
 
   @override
@@ -775,10 +787,18 @@ class _DesktopPlayerControlDeck extends StatelessWidget {
                     ),
                   ),
                   SizedBox(
-                    width: 190,
+                    width: 200,
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: <Widget>[
+                        BarIconButton(
+                          iconSize: 28,
+                          icon: BmIcons.desktopLyrics,
+                          tooltip: isDesktopLyricsEnabled ? '关闭桌面歌词' : '开启桌面歌词',
+                          isActive: isDesktopLyricsEnabled,
+                          onPressed: onDesktopLyricsToggle,
+                        ),
+                        const SizedBox(width: 16),
                         DesktopQualityAttach(
                           qualities: qualities,
                           onSelected: onSelectQuality,
