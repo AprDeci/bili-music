@@ -485,7 +485,7 @@ class _ActionSection extends ConsumerWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.end,
       children: <Widget>[
-                  
+        if (PlatformUtil.isWindows) ...[
           BarIconButton(
           iconSize: 28,
             onPressed: () =>
@@ -494,6 +494,7 @@ class _ActionSection extends ConsumerWidget {
             tooltip: isDesktopLyricsEnabled ? '关闭桌面歌词' : '开启桌面歌词',
             isActive: isDesktopLyricsEnabled,
         ),
+        ],
         const SizedBox(width: 10),
         DesktopQualityAttach(qualities: qualities, onSelected: onSelectQuality),
         const SizedBox(width: 10),

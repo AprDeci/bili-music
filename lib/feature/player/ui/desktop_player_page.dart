@@ -4,6 +4,7 @@ import 'package:bilimusic/common/components/bar_icon_button.dart';
 import 'package:bilimusic/common/components/cached_image.dart';
 import 'package:bilimusic/common/components/desktop/desktop_side_panel.dart';
 import 'package:bilimusic/common/components/desktop/volumn_attach.dart';
+import 'package:bilimusic/common/util/platform_util.dart';
 import 'package:bilimusic/common/util/toast_util.dart';
 import 'package:bilimusic/feature/comment/domain/comment_target.dart';
 import 'package:bilimusic/feature/comment/ui/comment_page.dart';
@@ -791,6 +792,7 @@ class _DesktopPlayerControlDeck extends StatelessWidget {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: <Widget>[
+                        if (PlatformUtil.isWindows) ...[
                         BarIconButton(
                           iconSize: 28,
                           icon: BmIcons.desktopLyrics,
@@ -798,6 +800,7 @@ class _DesktopPlayerControlDeck extends StatelessWidget {
                           isActive: isDesktopLyricsEnabled,
                           onPressed: onDesktopLyricsToggle,
                         ),
+                        ],
                         const SizedBox(width: 16),
                         DesktopQualityAttach(
                           qualities: qualities,
