@@ -130,7 +130,7 @@ class DesktopLyricsController extends _$DesktopLyricsController {
         ),
         text: lyrics.state.text.copyWith(
           fontSize: 24,
-          textColor: Colors.blue[400],
+          textColor: Colors.blue[100],
         ),
         gradient: lyrics.state.gradient.copyWith(textGradientEnabled: false),
       ),
