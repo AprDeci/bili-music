@@ -485,17 +485,17 @@ class _ActionSection extends ConsumerWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.end,
       children: <Widget>[
-        DesktopQualityAttach(qualities: qualities, onSelected: onSelectQuality),
-        if (PlatformUtil.isWindows) ...<Widget>[
-          const SizedBox(width: 10),
+                  
           BarIconButton(
+          iconSize: 28,
             onPressed: () =>
                 ref.read(desktopLyricsControllerProvider.notifier).toggle(),
             icon: BmIcons.desktopLyrics,
             tooltip: isDesktopLyricsEnabled ? '关闭桌面歌词' : '开启桌面歌词',
             isActive: isDesktopLyricsEnabled,
-          ),
-        ],
+        ),
+        const SizedBox(width: 10),
+        DesktopQualityAttach(qualities: qualities, onSelected: onSelectQuality),
         const SizedBox(width: 10),
         BadgedIconButton(
           noBadgeIcon: HugeIcon(
