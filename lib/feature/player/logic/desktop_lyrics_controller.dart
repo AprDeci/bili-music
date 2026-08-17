@@ -124,10 +124,16 @@ class DesktopLyricsController extends _$DesktopLyricsController {
     await lyrics.apply(
       lyrics.state.copyWith(
         interaction: lyrics.state.interaction.copyWith(enabled: enabled),
-        background: DesktopLyricsBackgroundConfig(opacity: 0),
+        background: lyrics.state.background.copyWith(
+          opacity: 0.3,
+          backgroundColor: Colors.black,
+        ),
         text: lyrics.state.text.copyWith(
           fontSize: 24,
           textColor: Colors.blue[400],
+        ),
+        gradient: lyrics.state.gradient.copyWith(
+          textGradientEnabled: false, 
         ),
       ),
     );
