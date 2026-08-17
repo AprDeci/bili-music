@@ -212,7 +212,9 @@ enum _DesktopLyricsFormat { lrc, krc, qrc, yrc }
 
 final RegExp _lrcTimestamp = RegExp(r'\[(\d{1,3}):(\d{2})(?:[.:](\d{1,3}))?\]');
 final RegExp _timedLine = RegExp(r'^\[(\d+),(\d+)(?:,\d+)?\]\s*(.*)$');
-final RegExp _timedWord = RegExp(r'\(-?\d+,-?\d+(?:,-?\d+)?\)');
+final RegExp _timedWord = RegExp(
+  r'(?:\(-?\d+,-?\d+(?:,-?\d+)?\)|<-?\d+,-?\d+(?:,-?\d+)?>)',
+);
 final RegExp _offsetTag = RegExp(
   r'^\[offset[:,](-?\d+)\]$',
   caseSensitive: false,

@@ -128,6 +128,19 @@ void main() {
     );
   });
 
+  test('strips Kugou angle-bracket word timings', () {
+    const String lyrics = '[1000,2000,0]哭<22,456,0>人<1278,392,0>';
+
+    expect(
+      resolveDesktopLyricFrame(
+        lyrics,
+        position: const Duration(milliseconds: 1000),
+        offsetMs: 0,
+      )?.line,
+      '哭人',
+    );
+  });
+
   test('strips YRC word timings before each character', () {
     const String lyrics = '[1790,2062] (1790,375,0)那(2165,309,0)一(2474,315,0)年';
 
