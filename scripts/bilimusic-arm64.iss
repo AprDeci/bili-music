@@ -21,7 +21,6 @@ SolidCompression=yes
 WizardStyle=modern
 ArchitecturesAllowed=arm64
 ArchitecturesInstallIn64BitMode=arm64
-SameVersionInstall=yes
 UninstallDisplayIcon={app}\{#MyAppExeName}
 
 [Languages]
