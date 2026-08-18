@@ -234,6 +234,23 @@ jobs:
           architecture: "x64"
           cache: true
 
+      - name: Switch to ARM64 Dart SDK
+        shell: pwsh
+        run: |
+          # Flutter 官方 Windows SDK 包仅 x64，flutter-action 无法在 ARM64
+          # runner 上自动换装 arm64 Dart。这里把 cache 中的 Dart SDK 替换为
+          # dart-archive 官方 windows-arm64 版（与 Flutter 3.44.0 对应的
+          # Dart 3.12.0），并移除预编译快照，使 flutter 工具识别 ARM64
+          # 宿主、产出 arm64 产物。
+          $sdkRoot = Split-Path (Split-Path (Get-Command flutter).Source) -Parent
+          $cache = Join-Path $sdkRoot "bin\cache"
+          $zip = Join-Path $env:RUNNER_TEMP "dartsdk-windows-arm64.zip"
+          Invoke-WebRequest -Uri "https://storage.googleapis.com/dart-archive/channels/stable/release/3.12.0/sdk/dartsdk-windows-arm64-release.zip" -OutFile $zip
+          Remove-Item -Recurse -Force (Join-Path $cache "dart-sdk")
+          tar.exe -xf $zip -C $cache
+          Remove-Item -Force (Join-Path $cache "flutter_tools.snapshot") -ErrorAction SilentlyContinue
+          Remove-Item -Force (Join-Path $cache "flutter_tools.stamp") -ErrorAction SilentlyContinue
+
       - name: Flutter Pub Get
         run: flutter pub get
 
