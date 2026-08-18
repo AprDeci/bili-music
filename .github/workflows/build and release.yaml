@@ -222,6 +222,7 @@ jobs:
         with:
           channel: "stable"
           flutter-version: "3.44.0"
+          architecture: "x64"
           cache: true
 
       - name: Flutter Pub Get
