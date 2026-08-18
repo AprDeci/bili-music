@@ -18,6 +18,11 @@ on:
         required: true
         type: boolean
         default: false
+      build_windows_arm64:
+        description: Build Windows ARM64 installer
+        required: true
+        type: boolean
+        default: false
       build_macos_dmg:
         description: Build unsigned macOS DMG
         required: true
@@ -209,6 +214,60 @@ jobs:
         with:
           name: bilimusic-windows-installer
           path: build/artifacts/bilimusic-*-windows-setup.exe
+          retention-days: 30
+
+  # ==================== Windows ARM64 Job ====================
+  build-windows-arm64:
+    name: Build Windows ARM64 Installer
+    runs-on: windows-11-arm
+    if: ${{ inputs.build_windows_arm64 }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: "stable"
+          flutter-version: "3.44.0"
+          cache: true
+
+      - name: Flutter Pub Get
+        run: flutter pub get
+
+      - name: Build Windows (ARM64)
+        run: flutter build windows --release
+
+      - name: Patch libmpv with ARM64 build
+        shell: pwsh
+        run: |
+          # media_kit_libs_windows_audio 目前只捆绑 x86_64 的 libmpv
+          # （上游 media-kit/media-kit#867 尚未支持 Windows ARM64），
+          # 这里用 media-kit 官方发布的 aarch64 构建替换产物中的
+          # libmpv-2.dll，保证 ARM64 进程能正常加载音频后端。
+          $url = "https://github.com/media-kit/libmpv-win32-video-cmake/releases/download/20241021/mpv-dev-aarch64-20241021-git-0f78584.7z"
+          $archive = Join-Path $env:RUNNER_TEMP "mpv-dev-aarch64.7z"
+          $extract = Join-Path $env:RUNNER_TEMP "mpv-arm64"
+          Invoke-WebRequest -Uri $url -OutFile $archive
+          New-Item -ItemType Directory -Force -Path $extract | Out-Null
+          tar.exe -xf $archive -C $extract
+          Copy-Item -Force "$extract\libmpv-2.dll" "build\windows\arm64\runner\Release\libmpv-2.dll"
+
+      - name: Setup Inno Setup
+        run: choco install innosetup --no-progress -y
+
+      - name: Build Windows ARM64 Installer
+        shell: pwsh
+        run: |
+          $env:APP_VERSION = "Test-Build"
+          iscc scripts/bilimusic-arm64.iss
+
+      - name: Upload Windows ARM64 Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: bilimusic-windows-arm64-installer
+          path: build/artifacts/bilimusic-*-windows-arm64-setup.exe
           retention-days: 30
 
   # ==================== Linux Job ====================
