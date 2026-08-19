@@ -144,7 +144,7 @@ class _MobileShellScaffoldState extends ConsumerState<MobileShellScaffold> {
                   ? const Offset(0, _navHiddenSlideOffset)
                   : Offset.zero,
               child: useGlassBar
-                  ? GlassBottomBar(
+                  ? GlassTabBar.bottom(
                       spacing: 4,
                       verticalPadding: 4,
                       barHeight: 54,
@@ -155,15 +155,15 @@ class _MobileShellScaffoldState extends ConsumerState<MobileShellScaffold> {
                       indicatorColor: ColorUtil.getLight(
                         colorScheme.primary,
                       ).withValues(alpha: 0.2),
-                      tabs: const <GlassBottomBarTab>[
-                        GlassBottomBarTab(
+                      tabs: const <GlassTab>[
+                        GlassTab(
                           icon: HugeIcon(
                             icon: HugeIcons.strokeRoundedHome07,
                             size: 20,
                           ),
                           label: '首页',
                         ),
-                        GlassBottomBarTab(
+                        GlassTab(
                           icon: HugeIcon(
                             icon: HugeIcons.strokeRoundedUser,
                             size: 20,
