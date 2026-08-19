@@ -175,7 +175,7 @@ class PlayerController extends Notifier<PlayerState>
       return;
     }
 
-    await _audioEngine.play();
+    await _playCurrentSource();
   }
 
   @override
@@ -790,15 +790,6 @@ class PlayerController extends Notifier<PlayerState>
       },
     );
 
-    try {
-      await _audioEngine.stop();
-    } on Object catch (error) {
-      _logPlayerEvent(
-        'loadQueueIndex:stop-before-load-failed',
-        details: <String, Object?>{'error': error},
-      );
-    }
-
     _resetEnginePlaybackSnapshot(
       processingState: PlayerEngineProcessingState.loading,
     );
@@ -820,6 +811,7 @@ class PlayerController extends Notifier<PlayerState>
     _publishMediaSession();
 
     try {
+      await _activateAudioSessionForPlayback();
       final ResolvedQueueEntry entry = await _playbackLoader.resolveQueueEntry(
         targetItem,
         preferredQualityId: _qualityOverrides[targetItem.stableId],
@@ -868,7 +860,7 @@ class PlayerController extends Notifier<PlayerState>
       _publishMediaSession();
 
       if (autoplay) {
-        await _audioEngine.play();
+        await _playCurrentSource();
       } else {
         await _audioEngine.pause();
       }
@@ -1212,6 +1204,7 @@ class PlayerController extends Notifier<PlayerState>
   void _onEnginePlaybackError(PlayerEngineException error) {
     if (_isRetryingPlayback ||
         _isWaitingForRetry ||
+        state.isLoading ||
         !state.hasActiveQueueIndex) {
       return;
     }
@@ -1362,7 +1355,7 @@ class PlayerController extends Notifier<PlayerState>
         completed &&
         previous.processingState != PlayerEngineProcessingState.completed;
     // 只处理进入 completed 的瞬间，忽略停留在 completed 的旧快照。
-    final bool shouldHandleCompleted = enteredCompleted;
+    final bool shouldHandleCompleted = enteredCompleted && !current.isLoading;
 
     return _EnginePlaybackReduction(
       nextState: current.copyWith(
@@ -1404,7 +1397,7 @@ class PlayerController extends Notifier<PlayerState>
         if (!_isCurrentGeneration(generation)) {
           return;
         }
-        await _audioEngine.play();
+        await _playCurrentSource();
         return;
       }
 
@@ -1428,6 +1421,24 @@ class PlayerController extends Notifier<PlayerState>
 
   bool _isCurrentGeneration(int generation) {
     return generation == _operationGeneration;
+  }
+
+  // 激活音频会话以进行播放。
+  Future<void> _activateAudioSessionForPlayback() async {
+    try {
+      await _audioSessionCoordinator.activateForPlayback();
+    } on Object catch (error) {
+      _logPlayerEvent(
+        'audioSession:activate-for-playback-failed',
+        details: <String, Object?>{'error': error},
+      );
+    }
+  }
+
+  // 播放当前源。
+  Future<void> _playCurrentSource() async {
+    await _activateAudioSessionForPlayback();
+    await _audioEngine.play();
   }
 
   Future<void> _persistQueueSnapshot() async {

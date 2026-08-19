@@ -21,7 +21,6 @@ class PlayerAudioSessionCoordinator {
     required this._pause,
   });
 
-
   final PlayerAudioEngine _audioEngine;
   final AllowMixWithOthersReader _readAllowMixWithOthers;
   final BoolStateReader _readHasQueue;
@@ -35,18 +34,31 @@ class PlayerAudioSessionCoordinator {
   final List<StreamSubscription<dynamic>> _subscriptions =
       <StreamSubscription<dynamic>>[];
 
+  Future<void>? _initializationFuture;
+  Future<void>? _activationFuture;
   bool _isBound = false;
   bool _isDisposed = false;
   bool _isDuckedForUnknownInterruption = false;
   bool _resumeAfterInterruption = false;
   double _volumeBeforeUnknownInterruption = 1.0;
 
-  Future<void> bind() async {
+  Future<void> bind() {
     if (_isBound || _isDisposed) {
+      return Future<void>.value();
+    }
+
+    return _initializationFuture ??= _bind();
+  }
+
+  Future<void> _bind() async {
+    final AudioSession session = await AudioSession.instance;
+    if (_isDisposed) {
       return;
     }
 
-    final AudioSession session = await AudioSession.instance;
+    await session.configure(
+      _audioSessionConfiguration(_readAllowMixWithOthers()),
+    );
     if (_isDisposed) {
       return;
     }
@@ -69,6 +81,24 @@ class PlayerAudioSessionCoordinator {
     await session.configure(
       _audioSessionConfiguration(_readAllowMixWithOthers()),
     );
+  }
+
+  Future<void> activateForPlayback() {
+    return _activationFuture ??= _activateForPlayback().whenComplete(() {
+      _activationFuture = null;
+    });
+  }
+
+  Future<void> _activateForPlayback() async {
+    await bind().timeout(const Duration(seconds: 2));
+    if (_isDisposed) {
+      return;
+    }
+
+    final AudioSession session = await AudioSession.instance.timeout(
+      const Duration(seconds: 2),
+    );
+    await session.setActive(true).timeout(const Duration(seconds: 2));
   }
 
   Future<void> dispose() async {
