@@ -772,7 +772,6 @@ class _ProfileSectionHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final Color iconColor = Theme.of(context).colorScheme.onSurfaceVariant;
 
     return Row(
       children: <Widget>[

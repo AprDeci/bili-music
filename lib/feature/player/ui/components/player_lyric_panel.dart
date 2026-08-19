@@ -307,11 +307,10 @@ class _PlayerLyricPanelStatus extends StatelessWidget {
     required this.title,
     required this.message,
     required this.icon,
-    this.goSetting = false,
     this.isLoading = false,
     this.actionLabel,
     this.onAction,
-  });
+  }) : goSetting = false;
 
   final PlayerLyricPanelVariant variant;
   final String title;

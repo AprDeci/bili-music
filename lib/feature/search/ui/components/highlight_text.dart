@@ -21,7 +21,7 @@ class HighlightText extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
+    Theme.of(context);
 
     if (highlight.isEmpty) {
       return Text(text, style: normalStyle);
