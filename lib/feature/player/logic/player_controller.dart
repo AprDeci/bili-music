@@ -6,6 +6,7 @@ import 'package:bilimusic/common/util/toast_util.dart';
 import 'package:bilimusic/core/bili/session/bili_session_controller.dart';
 import 'package:bilimusic/core/hive/hive_keys.dart';
 import 'package:bilimusic/core/settings/app_settings_store.dart';
+import 'package:bilimusic/core/window/windows_taskbar_thumbnail_toolbar.dart';
 import 'package:bilimusic/feature/player/data/audio_cache_repository.dart';
 import 'package:bilimusic/feature/player/data/bili_player_repository.dart';
 import 'package:bilimusic/feature/player/data/player_queue_local_repository.dart';
@@ -96,6 +97,7 @@ class PlayerController extends Notifier<PlayerState>
       _bindPlayerStreams();
       unawaited(_audioEngine.setVolume(savedVolume));
       _audioHandler.attachTarget(this);
+      WindowsTaskbarThumbnailToolbar.instance.attachTarget(this);
       unawaited(_audioSessionCoordinator.bind());
       _isBound = true;
     }
@@ -114,6 +116,7 @@ class PlayerController extends Notifier<PlayerState>
     _isDisposed = true;
     _nextGeneration();
     _audioHandler.detachTarget(this);
+    WindowsTaskbarThumbnailToolbar.instance.detachTarget(this);
     await _audioSessionCoordinator.dispose();
 
     for (final StreamSubscription<dynamic> subscription in _subscriptions) {
@@ -1535,6 +1538,11 @@ class PlayerController extends Notifier<PlayerState>
               : state.isReady
               ? AudioProcessingState.ready
               : AudioProcessingState.idle),
+    );
+    WindowsTaskbarThumbnailToolbar.instance.publish(
+      isPlaying: state.isPlaying,
+      hasPrevious: state.hasPrevious,
+      hasNext: state.queueMode == PlayerQueueMode.singleRepeat || state.hasNext,
     );
   }
 
