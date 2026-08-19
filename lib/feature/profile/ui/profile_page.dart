@@ -1,7 +1,7 @@
 import 'package:bilimusic/common/bm_icons.dart';
 import 'package:bilimusic/common/components/bottom_page_spacer.dart';
 import 'package:bilimusic/common/components/cached_image.dart';
-import 'package:bilimusic/common/components/searchBar.dart';
+import 'package:bilimusic/common/components/search_bar.dart';
 import 'package:bilimusic/common/util/toast_util.dart';
 import 'package:bilimusic/core/bili/session/bili_session.dart';
 import 'package:bilimusic/core/bili/session/bili_session_controller.dart';
