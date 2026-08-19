@@ -1,5 +1,5 @@
 import 'package:bilimusic/common/components/bottom_page_spacer.dart';
-import 'package:bilimusic/common/components/searchBar.dart';
+import 'package:bilimusic/common/components/search_bar.dart';
 import 'package:bilimusic/common/util/platform_util.dart';
 import 'package:bilimusic/feature/home/logic/music_ranking_controller.dart';
 import 'package:bilimusic/feature/home/ui/components/music_ranking_section.dart';
