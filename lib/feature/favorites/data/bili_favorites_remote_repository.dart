@@ -80,6 +80,39 @@ class BiliFavoritesRemoteRepository {
     );
   }
 
+  Future<Set<String>> fetchCollectionItemIds({
+    required BiliSession session,
+    required String remoteId,
+  }) async {
+    _ensureLoggedIn(session);
+    final Response<dynamic> response = await client.get<dynamic>(
+      '/x/v3/fav/resource/ids',
+      queryParameters: <String, dynamic>{
+        'media_id': remoteId,
+        'platform': 'web',
+      },
+      options: Options(headers: <String, dynamic>{'Cookie': session.cookie}),
+    );
+    final Map<String, dynamic> json = _asMap(response.data);
+    _ensureSuccess(json);
+    final Set<String> itemIds = <String>{};
+    for (final Map<String, dynamic> resource in asListOfMaps(json['data'])) {
+      if (_readInt(resource['type']) != 2) {
+        continue;
+      }
+      final String bvid =
+          _readNullableString(resource['bvid']) ??
+          _readNullableString(resource['bv_id']) ??
+          '';
+      if (bvid.isNotEmpty) {
+        itemIds.add('bvid:$bvid');
+      } else if (_readInt(resource['id']) case final int aid when aid > 0) {
+        itemIds.add('aid:$aid');
+      }
+    }
+    return itemIds;
+  }
+
   Future<FavoriteCollection> createCollection({
     required BiliSession session,
     required String name,
@@ -201,7 +234,6 @@ class BiliFavoritesRemoteRepository {
       isManagedByApp: false,
       createdAt: _readTimestamp(json['ctime']) ?? now,
       updatedAt: _readTimestamp(json['mtime']) ?? now,
-      lastSyncedAt: now,
     );
   }
 
