@@ -1,4 +1,5 @@
 import 'package:bilimusic/core/net/bili_client.dart';
+import 'package:bilimusic/core/hive/hive_keys.dart';
 import 'package:bilimusic/feature/favorites/data/bili_favorites_remote_repository.dart';
 import 'package:bilimusic/feature/favorites/data/favorites_remote_cache_repository.dart';
 import 'package:bilimusic/feature/favorites/domain/favorite_collection.dart';
@@ -18,6 +19,9 @@ FavoritesRemoteCacheRepository favoritesRemoteCacheRepository(Ref ref) {
     entriesBox: Hive.box<FavoriteEntry>(remoteFavoriteEntriesBoxName),
     membershipsBox: Hive.box<FavoriteMembership>(
       remoteFavoriteMembershipsBoxName,
+    ),
+    wastedResourceIdsBox: Hive.box<String>(
+      HiveBoxNames.remoteFavoriteWastedResourceIds,
     ),
   );
 }

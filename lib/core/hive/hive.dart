@@ -50,6 +50,7 @@ Future<void> initHive() async {
   await Hive.openBox<FavoriteCollection>(remoteFavoriteCollectionsBoxName);
   await Hive.openBox<FavoriteEntry>(remoteFavoriteEntriesBoxName);
   await Hive.openBox<FavoriteMembership>(remoteFavoriteMembershipsBoxName);
+  await Hive.openBox<String>(HiveBoxNames.remoteFavoriteWastedResourceIds);
   await Hive.openBox<PersistedPlaybackQueue>(playerQueueSnapshotBoxName);
   await Hive.openBox<RecentPlaybackEntry>(recentPlaybackBoxName);
   await Hive.openBox<Map>(songStatisticsBoxName);

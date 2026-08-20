@@ -2,6 +2,8 @@ class HiveBoxNames {
   HiveBoxNames._();
 
   static const String prefs = 'prefs';
+  static const String remoteFavoriteWastedResourceIds =
+      'remote_favorite_wasted_resource_ids';
 }
 
 class HiveKeys {
