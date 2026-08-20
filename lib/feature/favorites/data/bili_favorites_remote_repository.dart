@@ -8,6 +8,18 @@ import 'package:bilimusic/feature/favorites/domain/favorite_entry.dart';
 import 'package:bilimusic/feature/player/domain/playable_item.dart';
 import 'package:dio/dio.dart';
 
+class FavoriteRemoteResource {
+  const FavoriteRemoteResource({
+    required this.stableId,
+    required this.aid,
+    this.bvid = '',
+  });
+
+  final String stableId;
+  final int aid;
+  final String bvid;
+}
+
 class BiliFavoritesRemoteRepository {
   const BiliFavoritesRemoteRepository({required this.client});
 
@@ -80,7 +92,7 @@ class BiliFavoritesRemoteRepository {
     );
   }
 
-  Future<Set<String>> fetchCollectionItemIds({
+  Future<List<FavoriteRemoteResource>> fetchCollectionItemManifest({
     required BiliSession session,
     required String remoteId,
   }) async {
@@ -95,22 +107,28 @@ class BiliFavoritesRemoteRepository {
     );
     final Map<String, dynamic> json = _asMap(response.data);
     _ensureSuccess(json);
-    final Set<String> itemIds = <String>{};
+    final List<FavoriteRemoteResource> resources = <FavoriteRemoteResource>[];
     for (final Map<String, dynamic> resource in asListOfMaps(json['data'])) {
       if (_readInt(resource['type']) != 2) {
+        continue;
+      }
+      final int aid = _readInt(resource['id']) ?? 0;
+      if (aid <= 0) {
         continue;
       }
       final String bvid =
           _readNullableString(resource['bvid']) ??
           _readNullableString(resource['bv_id']) ??
           '';
-      if (bvid.isNotEmpty) {
-        itemIds.add('bvid:$bvid');
-      } else if (_readInt(resource['id']) case final int aid when aid > 0) {
-        itemIds.add('aid:$aid');
-      }
+      resources.add(
+        FavoriteRemoteResource(
+          stableId: bvid.isNotEmpty ? 'bvid:$bvid' : 'aid:$aid',
+          aid: aid,
+          bvid: bvid,
+        ),
+      );
     }
-    return itemIds;
+    return resources;
   }
 
   Future<FavoriteCollection> createCollection({
@@ -238,11 +256,11 @@ class BiliFavoritesRemoteRepository {
   }
 
   FavoriteEntry? _mapEntry(Map<String, dynamic> json) {
-    final int type = (json['type'] as num? ?? 0).toInt();
+    final int type = _readInt(json['type']) ?? 0;
     if (type != 2) {
       return null;
     }
-    final int aid = (json['id'] as num? ?? 0).toInt();
+    final int aid = _readInt(json['aid'] ?? json['id']) ?? 0;
     final String bvid =
         _readNullableString(json['bvid']) ??
         _readNullableString(json['bv_id']) ??
@@ -252,7 +270,9 @@ class BiliFavoritesRemoteRepository {
     }
     final Map<String, dynamic> upper = asStringKeyedMapOrEmpty(json['upper']);
     final DateTime now = DateTime.now();
-    final DateTime favTime = _readTimestamp(json['fav_time']) ?? now;
+    final DateTime favTime =
+        _readTimestamp(json['fav_time']) ??
+        DateTime.fromMillisecondsSinceEpoch(1);
     final PlayableItem item = PlayableItem(
       aid: aid,
       bvid: bvid,
