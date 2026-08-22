@@ -6,7 +6,6 @@ import 'package:bilimusic/common/components/desktop/desktop_tab_switcher.dart';
 import 'package:bilimusic/common/logger.dart';
 import 'package:bilimusic/common/util/player_util.dart';
 import 'package:bilimusic/common/util/toast_util.dart';
-import 'package:bilimusic/feature/favorites/domain/bili_favorite_collection_page.dart';
 import 'package:bilimusic/feature/favorites/domain/favorite_collection.dart';
 import 'package:bilimusic/feature/favorites/domain/favorite_entry.dart';
 import 'package:bilimusic/feature/favorites/domain/favorites_state.dart';
@@ -43,12 +42,9 @@ class _DesktopFavoriteCollectionPageState
   String _searchQuery = '';
   Set<String> _selectedItemIds = <String>{};
   bool _selectionMode = false;
-  int _nextRemotePageNumber = 2;
   int _remoteRefreshRequestId = 0;
-  bool _remoteHasMore = false;
-  bool _isLoadingRemotePage = false;
+  bool _isSyncingRemoteCollection = false;
   bool _remoteRefreshFailed = false;
-  bool _remoteLoadMoreFailed = false;
   bool _showFavoritedSeasons = false;
   RemoteCollectionSyncStatus? _remoteSyncStatus;
   Timer? _remoteSyncStatusTimer;
@@ -66,7 +62,7 @@ class _DesktopFavoriteCollectionPageState
       _remoteSyncStatusTimer?.cancel();
       _remoteSyncStatus = null;
       _resetSearchState();
-      _resetRemotePagingState();
+      _resetRemoteSyncState();
       _selectedItemIds = <String>{};
       _selectionMode = false;
       _refreshRemoteCollectionItems();
@@ -74,7 +70,7 @@ class _DesktopFavoriteCollectionPageState
   }
 
   void _refreshRemoteCollectionItems() {
-    if (_isLoadingRemotePage || !_shouldSyncRemoteCollection) {
+    if (_isSyncingRemoteCollection || !_shouldSyncRemoteCollection) {
       return;
     }
 
@@ -85,7 +81,7 @@ class _DesktopFavoriteCollectionPageState
         try {
           if (mounted) {
             setState(() {
-              _isLoadingRemotePage = true;
+              _isSyncingRemoteCollection = true;
               _remoteRefreshFailed = false;
               _remoteSyncStatus = RemoteCollectionSyncStatus.syncing;
             });
@@ -98,7 +94,7 @@ class _DesktopFavoriteCollectionPageState
           }
           if (result == RemoteCollectionSyncResult.skipped) {
             setState(() {
-              _isLoadingRemotePage = false;
+              _isSyncingRemoteCollection = false;
               _remoteSyncStatus = null;
             });
             _remoteSyncStatusTimer?.cancel();
@@ -107,7 +103,7 @@ class _DesktopFavoriteCollectionPageState
           if (result == RemoteCollectionSyncResult.incomplete) {
             setState(() {
               _remoteRefreshFailed = true;
-              _isLoadingRemotePage = false;
+              _isSyncingRemoteCollection = false;
               _remoteSyncStatus = RemoteCollectionSyncStatus.failure;
             });
             ToastUtil.show('同步未完成，已使用本地数据');
@@ -115,7 +111,7 @@ class _DesktopFavoriteCollectionPageState
             return;
           }
           setState(() {
-            _isLoadingRemotePage = false;
+            _isSyncingRemoteCollection = false;
             _remoteSyncStatus = RemoteCollectionSyncStatus.success;
           });
           _clearRemoteSyncStatusAfter(const Duration(milliseconds: 350));
@@ -129,7 +125,7 @@ class _DesktopFavoriteCollectionPageState
           if (_canApplyRemoteRefreshResult(collectionId, requestId)) {
             setState(() {
               _remoteRefreshFailed = true;
-              _isLoadingRemotePage = false;
+              _isSyncingRemoteCollection = false;
               _remoteSyncStatus = RemoteCollectionSyncStatus.failure;
             });
             ToastUtil.show('网络歌单同步失败，请稍后重试');
@@ -138,7 +134,7 @@ class _DesktopFavoriteCollectionPageState
         } finally {
           if (_canApplyRemoteRefreshResult(collectionId, requestId)) {
             setState(() {
-              _isLoadingRemotePage = false;
+              _isSyncingRemoteCollection = false;
             });
           }
         }
@@ -174,83 +170,12 @@ class _DesktopFavoriteCollectionPageState
     return null;
   }
 
-  void _resetRemotePagingState() {
+  void _resetRemoteSyncState() {
     _remoteSyncStatusTimer?.cancel();
     _remoteSyncStatus = null;
-    _nextRemotePageNumber = 2;
     _remoteRefreshRequestId++;
-    _remoteHasMore = false;
-    _isLoadingRemotePage = false;
+    _isSyncingRemoteCollection = false;
     _remoteRefreshFailed = false;
-    _remoteLoadMoreFailed = false;
-  }
-
-  bool _handleScrollNotification(ScrollNotification notification) {
-    if (_searchQuery.isNotEmpty ||
-        !_remoteHasMore ||
-        _isLoadingRemotePage ||
-        _remoteLoadMoreFailed) {
-      return false;
-    }
-    if (notification.metrics.extentAfter > 320) {
-      return false;
-    }
-    _loadMoreRemoteCollectionItems();
-    return false;
-  }
-
-  void _loadMoreRemoteCollectionItems() {
-    if (_isLoadingRemotePage || !_remoteHasMore) {
-      return;
-    }
-
-    final String collectionId = widget.collectionId;
-    final int pageNumber = _nextRemotePageNumber;
-    unawaited(
-      Future<void>.microtask(() async {
-        try {
-          if (!mounted) {
-            return;
-          }
-          setState(() {
-            _isLoadingRemotePage = true;
-            _remoteLoadMoreFailed = false;
-          });
-          final BiliFavoriteCollectionPage? page = await ref
-              .read(favoritesControllerProvider.notifier)
-              .loadMoreRemoteCollectionItems(
-                collectionId: collectionId,
-                pageNumber: pageNumber,
-              );
-          if (!mounted || widget.collectionId != collectionId || page == null) {
-            return;
-          }
-          setState(() {
-            _remoteLoadMoreFailed = false;
-            _remoteHasMore = page.hasMore;
-            _nextRemotePageNumber = page.pageNumber + 1;
-          });
-        } on Object catch (error, stackTrace) {
-          DesktopFavoriteCollectionPage._logger.w(
-            'Failed to load more remote collection items',
-            error,
-            stackTrace,
-          );
-          if (mounted && widget.collectionId == collectionId) {
-            setState(() {
-              _remoteLoadMoreFailed = true;
-            });
-            ToastUtil.show('加载更多失败，请重试');
-          }
-        } finally {
-          if (mounted && widget.collectionId == collectionId) {
-            setState(() {
-              _isLoadingRemotePage = false;
-            });
-          }
-        }
-      }),
-    );
   }
 
   bool _canApplyRemoteRefreshResult(String collectionId, int requestId) {
@@ -434,7 +359,7 @@ class _DesktopFavoriteCollectionPageState
         Expanded(
           child: items.isEmpty && _remoteRefreshFailed
               ? _RemoteCollectionErrorState(
-                  isRetrying: _isLoadingRemotePage,
+                  isRetrying: _isSyncingRemoteCollection,
                   onRetry: _refreshRemoteCollectionItems,
                 )
               : items.isEmpty
@@ -509,8 +434,8 @@ class _DesktopFavoriteCollectionPageState
                             )
                           : DesktopFavoriteCollectionItemsList(
                               items: visibleItems,
-                              footer: _buildListFooter(theme),
-                              onNotification: _handleScrollNotification,
+                              footer: const BottomPageSpacer.overlay(),
+                              onNotification: (_) => false,
                               selectedItemIds: _selectedItemIds,
                               selectionMode: _selectionMode,
                               onSelectionModeChanged: _setSelectionMode,
@@ -578,38 +503,6 @@ class _DesktopFavoriteCollectionPageState
         ],
       ),
     );
-  }
-
-  Widget _buildListFooter(ThemeData theme) {
-    if (_remoteLoadMoreFailed) {
-      return Padding(
-        padding: const EdgeInsets.fromLTRB(0, 12, 0, 28),
-        child: Center(
-          child: TextButton.icon(
-            onPressed: _loadMoreRemoteCollectionItems,
-            icon: const Icon(Icons.refresh_rounded, size: 18),
-            label: const Text('加载失败，重试'),
-          ),
-        ),
-      );
-    }
-
-    if (_remoteHasMore || _isLoadingRemotePage) {
-      return Padding(
-        padding: const EdgeInsets.fromLTRB(0, 12, 0, 28),
-        child: Center(
-          child: SizedBox(
-            width: 20,
-            height: 20,
-            child: CircularProgressIndicator(
-              strokeWidth: 2,
-              color: theme.colorScheme.primary,
-            ),
-          ),
-        ),
-      );
-    }
-    return const BottomPageSpacer.overlay();
   }
 
   Future<void> _playCollectionItem(
