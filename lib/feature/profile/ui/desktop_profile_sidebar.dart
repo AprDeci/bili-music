@@ -194,9 +194,9 @@ class _DesktopProfileSidebarState extends ConsumerState<DesktopProfileSidebar> {
                           coverUrl: latestItem?.coverUrl,
                         ),
                         title: collection.name,
-                        count: collection.isRemote
-                            ? collection.itemCount
-                            : items.length,
+                        count: favoritesState.itemCountForCollection(
+                          collection.id,
+                        ),
                         isSelected:
                             widget.currentLocation ==
                             '/profile/favorites/${collection.id}',

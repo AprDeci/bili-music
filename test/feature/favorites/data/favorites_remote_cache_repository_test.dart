@@ -154,6 +154,42 @@ void main() {
 
     expect(membershipsBox.values.single.addedAt, original);
   });
+
+  test(
+    'collection order stays based on createdAt after item refresh',
+    () async {
+      final DateTime olderCreatedAt = DateTime(2024);
+      final DateTime newerCreatedAt = DateTime(2025);
+      final FavoriteCollection older = _collection(
+        'remote:older',
+      ).copyWith(createdAt: olderCreatedAt, updatedAt: DateTime(2026));
+      final FavoriteCollection newer = _collection(
+        'remote:newer',
+      ).copyWith(createdAt: newerCreatedAt, updatedAt: DateTime(2024));
+
+      await repository.upsertCollection(older);
+      await repository.upsertCollection(newer);
+
+      expect(
+        repository.loadState().collections.map(
+          (FavoriteCollection value) => value.id,
+        ),
+        <String>['remote:newer', 'remote:older'],
+      );
+
+      await repository.upsertCollectionItems(
+        collection: older.copyWith(updatedAt: DateTime(2027)),
+        items: <FavoriteEntry>[_entry('aid:1')],
+      );
+
+      expect(
+        repository.loadState().collections.map(
+          (FavoriteCollection value) => value.id,
+        ),
+        <String>['remote:newer', 'remote:older'],
+      );
+    },
+  );
 }
 
 FavoriteCollection _collection(String id) {

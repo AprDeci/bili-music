@@ -84,7 +84,7 @@ class FavoritesRemoteCacheRepository {
             .toList()
           ..sort(
             (FavoriteCollection a, FavoriteCollection b) =>
-                b.updatedAt.compareTo(a.updatedAt),
+                b.createdAt.compareTo(a.createdAt),
           );
     return FavoritesState(
       collections: collections,
@@ -94,11 +94,13 @@ class FavoritesRemoteCacheRepository {
   }
 
   Future<void> bindCollection(FavoriteCollection collection) {
+    final FavoriteCollection? existing = collectionsBox.get(collection.id);
     return collectionsBox.put(
       collection.id,
       collection.copyWith(
         source: FavoriteCollectionSource.remote,
         isManagedByApp: true,
+        createdAt: existing?.createdAt ?? collection.createdAt,
         lastSyncedAt: collection.lastSyncedAt,
       ),
     );
@@ -111,6 +113,7 @@ class FavoritesRemoteCacheRepository {
       collection.copyWith(
         source: FavoriteCollectionSource.remote,
         isManagedByApp: existing?.isManagedByApp ?? collection.isManagedByApp,
+        createdAt: existing?.createdAt ?? collection.createdAt,
         lastSyncedAt: existing?.lastSyncedAt,
       ),
     );
@@ -131,6 +134,7 @@ class FavoritesRemoteCacheRepository {
       collection.copyWith(
         source: FavoriteCollectionSource.remote,
         isManagedByApp: existing?.isManagedByApp ?? collection.isManagedByApp,
+        createdAt: existing?.createdAt ?? collection.createdAt,
         itemCount: collection.itemCount,
         lastSyncedAt: existing?.lastSyncedAt,
       ),

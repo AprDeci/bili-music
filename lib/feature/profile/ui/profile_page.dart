@@ -124,9 +124,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
               padding: const EdgeInsets.only(bottom: 12),
               child: _PlaylistTile(
                 title: collection.name,
-                count: collection.isRemote
-                    ? collection.itemCount
-                    : items.length,
+                count: favoritesState.itemCountForCollection(collection.id),
                 coverUrl: latestItem?.coverUrl,
                 onTap: () =>
                     context.push('/profile/favorites/${collection.id}'),
@@ -772,7 +770,6 @@ class _ProfileSectionHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-
     return Row(
       children: <Widget>[
         Expanded(
