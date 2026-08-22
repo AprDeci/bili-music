@@ -1,3 +1,6 @@
+import 'dart:convert';
+
+import 'package:bilimusic/common/logger.dart';
 import 'package:bilimusic/feature/favorites/domain/favorite_collection.dart';
 import 'package:bilimusic/feature/favorites/domain/favorite_entry.dart';
 import 'package:bilimusic/feature/favorites/domain/favorite_membership.dart';
@@ -9,15 +12,70 @@ const String remoteFavoriteEntriesBoxName = 'remote_favorite_entries';
 const String remoteFavoriteMembershipsBoxName = 'remote_favorite_memberships';
 
 class FavoritesRemoteCacheRepository {
+  static final AppLogger _logger = AppLogger('RemoteFavoriteSync');
+
   FavoritesRemoteCacheRepository({
     required this.collectionsBox,
     required this.entriesBox,
     required this.membershipsBox,
+    this.wastedResourceIdsBox,
   });
 
   final Box<FavoriteCollection> collectionsBox;
   final Box<FavoriteEntry> entriesBox;
   final Box<FavoriteMembership> membershipsBox;
+  final Box<String>? wastedResourceIdsBox;
+
+  ({bool hasFullSnapshot, Set<String> ids}) loadWastedSnapshot(
+    String collectionId,
+  ) {
+    final String? encoded = wastedResourceIdsBox?.get(collectionId);
+    if (encoded == null || encoded.isEmpty) {
+      return (hasFullSnapshot: false, ids: <String>{});
+    }
+    try {
+      final dynamic decoded = jsonDecode(encoded);
+      if (decoded is Map<String, dynamic>) {
+        return (
+          hasFullSnapshot: decoded['hasFullSnapshot'] == true,
+          ids: (decoded['ids'] as List<dynamic>? ?? const <dynamic>[])
+              .whereType<String>()
+              .toSet(),
+        );
+      }
+    } on Object {
+      // Keep malformed old records recoverable as an empty snapshot.
+    }
+    return (hasFullSnapshot: false, ids: <String>{});
+  }
+
+  Set<String> loadWastedIds(String collectionId) {
+    return loadWastedSnapshot(collectionId).ids;
+  }
+
+  Future<void> addWastedIds(String collectionId, Iterable<String> ids) async {
+    final ({bool hasFullSnapshot, Set<String> ids}) snapshot =
+        loadWastedSnapshot(collectionId);
+    await saveWastedSnapshot(
+      collectionId: collectionId,
+      hasFullSnapshot: snapshot.hasFullSnapshot,
+      ids: snapshot.ids..addAll(ids),
+    );
+  }
+
+  Future<void> saveWastedSnapshot({
+    required String collectionId,
+    required bool hasFullSnapshot,
+    required Iterable<String> ids,
+  }) async {
+    await wastedResourceIdsBox?.put(
+      collectionId,
+      jsonEncode(<String, dynamic>{
+        'hasFullSnapshot': hasFullSnapshot,
+        'ids': ids.toSet().toList(),
+      }),
+    );
+  }
 
   FavoritesState loadState() {
     final List<FavoriteCollection> collections =
@@ -41,7 +99,7 @@ class FavoritesRemoteCacheRepository {
       collection.copyWith(
         source: FavoriteCollectionSource.remote,
         isManagedByApp: true,
-        lastSyncedAt: DateTime.now(),
+        lastSyncedAt: collection.lastSyncedAt,
       ),
     );
   }
@@ -53,16 +111,20 @@ class FavoritesRemoteCacheRepository {
       collection.copyWith(
         source: FavoriteCollectionSource.remote,
         isManagedByApp: existing?.isManagedByApp ?? collection.isManagedByApp,
-        lastSyncedAt: DateTime.now(),
+        lastSyncedAt: existing?.lastSyncedAt,
       ),
     );
   }
 
-  Future<void> replaceCollectionItems({
+  Future<void> upsertCollectionItems({
     required FavoriteCollection collection,
     required Iterable<FavoriteEntry> items,
+    bool preserveExistingAddedAt = true,
   }) async {
-    final DateTime now = DateTime.now();
+    final List<FavoriteEntry> itemList = items.toList(growable: false);
+    _logger.d(
+      'upsertCollectionItems collectionId=${collection.id} items=${itemList.length}',
+    );
     final FavoriteCollection? existing = collectionsBox.get(collection.id);
     await collectionsBox.put(
       collection.id,
@@ -70,72 +132,76 @@ class FavoritesRemoteCacheRepository {
         source: FavoriteCollectionSource.remote,
         isManagedByApp: existing?.isManagedByApp ?? collection.isManagedByApp,
         itemCount: collection.itemCount,
-        lastSyncedAt: now,
+        lastSyncedAt: existing?.lastSyncedAt,
       ),
     );
 
-    final List<String> oldMembershipIds = membershipsBox.values
+    final Map<String, FavoriteEntry> entryMap = <String, FavoriteEntry>{};
+    final Map<String, FavoriteMembership> membershipMap =
+        <String, FavoriteMembership>{};
+    for (final FavoriteEntry entry in itemList) {
+      FavoriteMembership? existingMembership;
+      for (final FavoriteMembership membership in membershipsBox.values) {
+        if (membership.collectionId != collection.id) {
+          continue;
+        }
+        final FavoriteEntry? existingEntry = entriesBox.get(membership.itemId);
+        if (existingEntry != null &&
+            ((entry.aid > 0 && entry.aid == existingEntry.aid) ||
+                (entry.bvid.isNotEmpty && entry.bvid == existingEntry.bvid))) {
+          existingMembership = membership;
+          break;
+        }
+      }
+      final String itemId = existingMembership?.itemId ?? entry.itemId;
+      final FavoriteEntry storedEntry = entry.itemId == itemId
+          ? entry
+          : entry.copyWith(itemId: itemId);
+      entryMap[itemId] = storedEntry;
+      final FavoriteMembership membership = FavoriteMembership.create(
+        collectionId: collection.id,
+        itemId: itemId,
+        addedAt: preserveExistingAddedAt && existingMembership != null
+            ? existingMembership.addedAt
+            : entry.createdAt,
+      );
+      membershipMap[membership.id] = membership;
+    }
+    await Future.wait(<Future<void>>[
+      entriesBox.putAll(entryMap),
+      membershipsBox.putAll(membershipMap),
+    ]);
+  }
+
+  // 同步收藏项到本地缓存。
+  Future<void> reconcileCollection({
+    required String collectionId,
+    required Set<String> supportedItemIds,
+  }) async {
+    final List<String> staleMembershipIds = membershipsBox.values
         .where(
           (FavoriteMembership membership) =>
-              membership.collectionId == collection.id,
+              membership.collectionId == collectionId &&
+              !supportedItemIds.contains(membership.itemId),
         )
         .map((FavoriteMembership membership) => membership.id)
         .toList(growable: false);
-    if (oldMembershipIds.isNotEmpty) {
-      await membershipsBox.deleteAll(oldMembershipIds);
+    if (staleMembershipIds.isNotEmpty) {
+      await membershipsBox.deleteAll(staleMembershipIds);
     }
-
-    final Map<String, FavoriteEntry> entryMap = <String, FavoriteEntry>{};
-    final Map<String, FavoriteMembership> membershipMap =
-        <String, FavoriteMembership>{};
-    for (final FavoriteEntry entry in items) {
-      entryMap[entry.itemId] = entry;
-      final FavoriteMembership membership = FavoriteMembership.create(
-        collectionId: collection.id,
-        itemId: entry.itemId,
-        addedAt: entry.createdAt,
-      );
-      membershipMap[membership.id] = membership;
-    }
-    await Future.wait(<Future<void>>[
-      entriesBox.putAll(entryMap),
-      membershipsBox.putAll(membershipMap),
-    ]);
     await pruneOrphanEntries();
-  }
-
-  Future<void> appendCollectionItems({
-    required FavoriteCollection collection,
-    required Iterable<FavoriteEntry> items,
-  }) async {
-    final DateTime now = DateTime.now();
-    final FavoriteCollection? existing = collectionsBox.get(collection.id);
-    await collectionsBox.put(
-      collection.id,
-      collection.copyWith(
-        source: FavoriteCollectionSource.remote,
-        isManagedByApp: existing?.isManagedByApp ?? collection.isManagedByApp,
-        itemCount: collection.itemCount,
-        lastSyncedAt: now,
-      ),
-    );
-
-    final Map<String, FavoriteEntry> entryMap = <String, FavoriteEntry>{};
-    final Map<String, FavoriteMembership> membershipMap =
-        <String, FavoriteMembership>{};
-    for (final FavoriteEntry entry in items) {
-      entryMap[entry.itemId] = entry;
-      final FavoriteMembership membership = FavoriteMembership.create(
-        collectionId: collection.id,
-        itemId: entry.itemId,
-        addedAt: entry.createdAt,
+    final FavoriteCollection? collection = collectionsBox.get(collectionId);
+    final DateTime syncedAt = DateTime.now();
+    if (collection != null) {
+      await collectionsBox.put(
+        collectionId,
+        collection.copyWith(lastSyncedAt: syncedAt),
       );
-      membershipMap[membership.id] = membership;
     }
-    await Future.wait(<Future<void>>[
-      entriesBox.putAll(entryMap),
-      membershipsBox.putAll(membershipMap),
-    ]);
+    _logger.d(
+      'reconcile collectionId=$collectionId deletedMemberships=${staleMembershipIds.length} '
+      'savedLastSyncedAt=${collection != null ? syncedAt : null}',
+    );
   }
 
   Future<void> saveEntryToCollection({
@@ -157,7 +223,6 @@ class FavoritesRemoteCacheRepository {
         collection.copyWith(
           itemCount: collection.itemCount + 1,
           updatedAt: addedAt,
-          lastSyncedAt: DateTime.now(),
         ),
       );
     }
@@ -180,7 +245,6 @@ class FavoritesRemoteCacheRepository {
         collection.copyWith(
           itemCount: collection.itemCount > 0 ? collection.itemCount - 1 : 0,
           updatedAt: DateTime.now(),
-          lastSyncedAt: DateTime.now(),
         ),
       );
     }
@@ -200,6 +264,7 @@ class FavoritesRemoteCacheRepository {
       await membershipsBox.deleteAll(membershipIds);
     }
     await pruneOrphanEntries();
+    await wastedResourceIdsBox?.delete(collectionId);
   }
 
   Future<void> pruneOrphanEntries() async {

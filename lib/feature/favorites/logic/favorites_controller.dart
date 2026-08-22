@@ -1,5 +1,6 @@
 import 'dart:math';
 
+import 'package:bilimusic/common/logger.dart';
 import 'package:bilimusic/core/bili/session/bili_session.dart';
 import 'package:bilimusic/core/bili/session/bili_session_controller.dart';
 import 'package:bilimusic/feature/favorites/data/bili_favorites_remote_repository.dart';
@@ -16,8 +17,16 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'favorites_controller.g.dart';
 
+int remoteFavoriteSyncBatchLimit(int itemCount) {
+  return max(1, ((itemCount + 19) ~/ 20) + 2);
+}
+
+enum RemoteCollectionSyncResult { skipped, completed, incomplete }
+
 @Riverpod(keepAlive: true)
 class FavoritesController extends _$FavoritesController {
+  static final AppLogger _logger = AppLogger('RemoteFavoriteSync');
+
   late final FavoritesLocalRepository _repository = ref.read(
     favoritesLocalRepositoryProvider,
   );
@@ -28,6 +37,8 @@ class FavoritesController extends _$FavoritesController {
     biliFavoritesRemoteRepositoryProvider,
   );
   final Random _remoteImportRandom = Random();
+  final Map<String, Future<RemoteCollectionSyncResult>> _collectionSyncs =
+      <String, Future<RemoteCollectionSyncResult>>{};
 
   @override
   FavoritesState build() {
@@ -110,14 +121,148 @@ class FavoritesController extends _$FavoritesController {
     return true;
   }
 
+  Future<RemoteCollectionSyncResult> syncRemoteCollectionIfStale(
+    String collectionId,
+  ) {
+    final Future<RemoteCollectionSyncResult>? existing =
+        _collectionSyncs[collectionId];
+    final FavoriteCollection? collection = _collectionById(collectionId);
+    final DateTime now = DateTime.now();
+    _logger.d(
+      'sync entry collectionId=$collectionId remoteId=${collection?.remoteId} '
+      'foundCollection=${collection != null} lastSyncedAt=${collection?.lastSyncedAt} '
+      'now=$now concurrentFuture=${existing != null}',
+    );
+    if (existing != null) {
+      return existing;
+    }
+    final Future<RemoteCollectionSyncResult> sync =
+        _syncRemoteCollectionIfStale(collectionId);
+    _collectionSyncs[collectionId] = sync;
+    sync.then<void>(
+      (_) => _collectionSyncs.remove(collectionId),
+      onError: (Object error, StackTrace stackTrace) {
+        _collectionSyncs.remove(collectionId);
+      },
+    );
+    return sync;
+  }
+
+  Future<RemoteCollectionSyncResult> _syncRemoteCollectionIfStale(
+    String collectionId,
+  ) async {
+    final FavoriteCollection? collection = _collectionById(collectionId);
+    final String? remoteId = collection?.remoteId;
+    if (collection == null || !collection.isRemote || remoteId == null) {
+      return RemoteCollectionSyncResult.skipped;
+    }
+    final DateTime? lastSyncedAt = collection.lastSyncedAt;
+    final DateTime now = DateTime.now();
+    final Duration? age = lastSyncedAt == null
+        ? null
+        : now.difference(lastSyncedAt);
+    const Duration staleThreshold = Duration(minutes: 5);
+    if (age != null && age <= staleThreshold) {
+      _logger.d(
+        'stale decision=skip collectionId=$collectionId age=$age '
+        'threshold=$staleThreshold',
+      );
+      return RemoteCollectionSyncResult.skipped;
+    }
+    _logger.d(
+      'stale decision=continue collectionId=$collectionId age=$age '
+      'threshold=$staleThreshold',
+    );
+
+    try {
+      final BiliSession session = _getSession();
+      final List<FavoriteRemoteResource> manifest = await _remoteRepository
+          .fetchCollectionItemManifest(session: session, remoteId: remoteId);
+      final ({bool hasFullSnapshot, Set<String> ids}) snapshot = _remoteCache
+          .loadWastedSnapshot(collectionId);
+      final Set<String> wastedIds = snapshot.ids
+        ..retainAll(
+          manifest.map((FavoriteRemoteResource resource) => resource.stableId),
+        );
+      final List<FavoriteRemoteResource> effectiveManifest = manifest
+          .where(
+            (FavoriteRemoteResource resource) =>
+                !wastedIds.contains(resource.stableId),
+          )
+          .toList(growable: false);
+      final List<FavoriteRemoteResource> missing = _missingResources(
+        collectionId,
+        effectiveManifest,
+      );
+      if (!snapshot.hasFullSnapshot) {
+        final Set<String> seen = await _scanCollectionPages(
+          session: session,
+          collection: collection,
+          remoteId: remoteId,
+          manifest: manifest,
+        );
+        state = _loadState();
+        final Set<String> finalWasted =
+            manifest
+                .map((FavoriteRemoteResource resource) => resource.stableId)
+                .toSet()
+              ..removeAll(seen);
+        await _remoteCache.saveWastedSnapshot(
+          collectionId: collectionId,
+          hasFullSnapshot: true,
+          ids: finalWasted,
+        );
+        await _finishRemoteSync(collectionId, manifest, finalWasted);
+        return RemoteCollectionSyncResult.completed;
+      }
+      if (missing.isNotEmpty) {
+        int noProgressPages = 0;
+        List<FavoriteRemoteResource> remaining = missing;
+        for (int pageNumber = 1; ; pageNumber++) {
+          final int before = remaining.length;
+          final BiliFavoriteCollectionPage page = await _fetchAndCachePage(
+            session: session,
+            collection: collection,
+            remoteId: remoteId,
+            pageNumber: pageNumber,
+            onlyResources: remaining,
+          );
+          state = _loadState();
+          remaining = _missingResources(collectionId, remaining);
+          noProgressPages = remaining.length == before
+              ? noProgressPages + 1
+              : 0;
+          if (remaining.isEmpty || noProgressPages >= 2 || !page.hasMore) {
+            wastedIds.addAll(
+              remaining.map(
+                (FavoriteRemoteResource resource) => resource.stableId,
+              ),
+            );
+            break;
+          }
+          await _waitBetweenRemotePages();
+        }
+      }
+      await _remoteCache.saveWastedSnapshot(
+        collectionId: collectionId,
+        hasFullSnapshot: true,
+        ids: wastedIds,
+      );
+      await _finishRemoteSync(collectionId, manifest, wastedIds);
+      return RemoteCollectionSyncResult.completed;
+    } on Object catch (error, stackTrace) {
+      _logger.w('Remote collection sync incomplete', error, stackTrace);
+      return RemoteCollectionSyncResult.incomplete;
+    }
+  }
+
   Future<BiliFavoriteCollectionPage?> refreshRemoteCollectionItems({
     required String collectionId,
     int pageNumber = 1,
-  }) async {
+  }) {
     return _syncRemoteCollectionItemsPage(
       collectionId: collectionId,
       pageNumber: pageNumber,
-      replaceExistingItems: true,
     );
   }
 
@@ -128,14 +273,12 @@ class FavoritesController extends _$FavoritesController {
     return _syncRemoteCollectionItemsPage(
       collectionId: collectionId,
       pageNumber: pageNumber,
-      replaceExistingItems: false,
     );
   }
 
   Future<BiliFavoriteCollectionPage?> _syncRemoteCollectionItemsPage({
     required String collectionId,
     required int pageNumber,
-    required bool replaceExistingItems,
   }) async {
     final FavoriteCollection? collection = _collectionById(collectionId);
     final String? remoteId = collection?.remoteId;
@@ -149,22 +292,103 @@ class FavoritesController extends _$FavoritesController {
           remoteId: remoteId,
           pageNumber: pageNumber,
         );
+    _logger.d(
+      'detail request after collectionId=$collectionId pageNumber=$pageNumber '
+      'page.items.length=${page.items.length} hasMore=${page.hasMore} '
+      'missingIdsRemaining=unknown',
+    );
     final FavoriteCollection remoteCollection = page.collection.copyWith(
       isManagedByApp: true,
     );
-    if (replaceExistingItems) {
-      await _remoteCache.replaceCollectionItems(
-        collection: remoteCollection,
-        items: page.items,
-      );
-    } else {
-      await _remoteCache.appendCollectionItems(
-        collection: remoteCollection,
-        items: page.items,
-      );
-    }
+    await _remoteCache.upsertCollectionItems(
+      collection: remoteCollection,
+      items: page.items,
+    );
     state = _loadState();
     return page;
+  }
+
+  Future<BiliFavoriteCollectionPage> _fetchAndCachePage({
+    required BiliSession session,
+    required FavoriteCollection collection,
+    required String remoteId,
+    required int pageNumber,
+    Iterable<FavoriteRemoteResource>? onlyResources,
+  }) async {
+    final BiliFavoriteCollectionPage page = await _remoteRepository
+        .fetchCollectionPage(
+          session: session,
+          remoteId: remoteId,
+          pageNumber: pageNumber,
+        );
+    final Iterable<FavoriteEntry> items = onlyResources == null
+        ? page.items
+        : page.items.where(
+            (FavoriteEntry entry) => onlyResources.any(
+              (FavoriteRemoteResource resource) =>
+                  _resourceMatchesEntry(resource, entry),
+            ),
+          );
+    await _remoteCache.upsertCollectionItems(
+      collection: page.collection.copyWith(isManagedByApp: true),
+      items: items,
+    );
+    return page;
+  }
+
+  Future<Set<String>> _scanCollectionPages({
+    required BiliSession session,
+    required FavoriteCollection collection,
+    required String remoteId,
+    required Iterable<FavoriteRemoteResource> manifest,
+  }) async {
+    final Set<String> seen = <String>{};
+    for (int pageNumber = 1; ; pageNumber++) {
+      final BiliFavoriteCollectionPage page = await _fetchAndCachePage(
+        session: session,
+        collection: collection,
+        remoteId: remoteId,
+        pageNumber: pageNumber,
+      );
+      for (final FavoriteRemoteResource resource in manifest) {
+        if (page.items.any(
+          (FavoriteEntry entry) => _resourceMatchesEntry(resource, entry),
+        )) {
+          seen.add(resource.stableId);
+        }
+      }
+      if (!page.hasMore) {
+        return seen;
+      }
+      await _waitBetweenRemotePages();
+    }
+  }
+
+  Future<void> _waitBetweenRemotePages() {
+    return Future<void>.delayed(
+      Duration(milliseconds: 800 + _remoteImportRandom.nextInt(401)),
+    );
+  }
+
+  Future<void> _finishRemoteSync(
+    String collectionId,
+    Iterable<FavoriteRemoteResource> manifest,
+    Set<String> wastedIds,
+  ) async {
+    final List<FavoriteRemoteResource> effectiveManifest = manifest
+        .where(
+          (FavoriteRemoteResource resource) =>
+              !wastedIds.contains(resource.stableId),
+        )
+        .toList(growable: false);
+    await _remoteCache.reconcileCollection(
+      collectionId: collectionId,
+      supportedItemIds: _supportedItemIdsForReconcile(
+        collectionId: collectionId,
+        manifest: effectiveManifest,
+      ),
+    );
+    state = _loadState();
   }
 
   Future<bool> toggleLiked(PlayableItem item) async {
@@ -583,6 +807,62 @@ class FavoritesController extends _$FavoritesController {
       }
     }
     return null;
+  }
+
+  bool _resourceMatchesEntry(
+    FavoriteRemoteResource resource,
+    FavoriteEntry entry,
+  ) {
+    return (resource.aid > 0 && resource.aid == entry.aid) ||
+        (resource.bvid.isNotEmpty && resource.bvid == entry.bvid);
+  }
+
+  List<FavoriteRemoteResource> _missingResources(
+    String collectionId,
+    Iterable<FavoriteRemoteResource> manifest,
+  ) {
+    final List<FavoriteEntry> localEntries = state.itemsForCollection(
+      collectionId,
+    );
+    return manifest
+        .where(
+          (FavoriteRemoteResource resource) => !localEntries.any(
+            (FavoriteEntry entry) => _resourceMatchesEntry(resource, entry),
+          ),
+        )
+        .toList(growable: true);
+  }
+
+  Set<String> _supportedItemIdsForReconcile({
+    required String collectionId,
+    required Iterable<FavoriteRemoteResource> manifest,
+  }) {
+    final List<FavoriteRemoteResource> resources = manifest.toList(
+      growable: false,
+    );
+    final Set<String> supported = <String>{
+      for (final FavoriteRemoteResource resource in resources)
+        resource.stableId,
+      for (final FavoriteRemoteResource resource in resources)
+        if (resource.aid > 0) 'aid:${resource.aid}',
+      for (final FavoriteRemoteResource resource in resources)
+        if (resource.bvid.isNotEmpty) resource.bvid,
+    };
+    for (final FavoriteEntry entry in state.itemsForCollection(collectionId)) {
+      if (resources.any(
+        (FavoriteRemoteResource resource) =>
+            _resourceMatchesEntry(resource, entry),
+      )) {
+        supported.add(entry.itemId);
+        if (entry.aid > 0) {
+          supported.add('aid:${entry.aid}');
+        }
+        if (entry.bvid.isNotEmpty) {
+          supported.add(entry.bvid);
+        }
+      }
+    }
+    return supported;
   }
 
   BiliSession _getSession() {
