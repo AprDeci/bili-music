@@ -32,7 +32,7 @@ class _SearchPageState extends ConsumerState<SearchPage>
   void initState() {
     super.initState();
     _controller = TextEditingController();
-    _focusNode = FocusNode();
+    _focusNode = FocusNode()..addListener(_handleFocusChange);
     _tabController = TabController(
       length: SearchType.values.length,
       vsync: this,
@@ -47,7 +47,9 @@ class _SearchPageState extends ConsumerState<SearchPage>
   @override
   void dispose() {
     _controller.dispose();
-    _focusNode.dispose();
+    _focusNode
+      ..removeListener(_handleFocusChange)
+      ..dispose();
     _tabController
       ..removeListener(_handleTabChange)
       ..dispose();
@@ -65,6 +67,19 @@ class _SearchPageState extends ConsumerState<SearchPage>
         .changeType(SearchType.values[_tabController.index]);
   }
 
+  void _handleFocusChange() {
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {});
+    if (_focusNode.hasFocus) {
+      ref
+          .read(searchPageControllerProvider.notifier)
+          .loadSuggestions(ref.read(searchPageControllerProvider).query);
+    }
+  }
+
   Future<void> _submitSearch(
     SearchPageController controller, [
     String? value,
@@ -72,6 +87,15 @@ class _SearchPageState extends ConsumerState<SearchPage>
     FocusManager.instance.primaryFocus?.unfocus();
 
     await controller.submitSearch(value);
+  }
+
+  void _handleBack(String from, {required bool shouldCloseSuggestions}) {
+    if (shouldCloseSuggestions) {
+      _focusNode.unfocus();
+      return;
+    }
+
+    context.go(from);
   }
 
   @override
@@ -84,87 +108,99 @@ class _SearchPageState extends ConsumerState<SearchPage>
     );
     final bool isDesktop = ScreenUtil.shouldUseDesktopShell(context);
     final String trimmedQuery = state.query.trim();
-    final String trimmedSubmittedQuery = state.submittedQuery?.trim() ?? '';
     final bool isShowingSuggestions =
-        !isDesktop &&
-        trimmedQuery.isNotEmpty &&
-        trimmedQuery != trimmedSubmittedQuery;
+        !isDesktop && _focusNode.hasFocus && trimmedQuery.isNotEmpty;
+    final bool shouldCloseSuggestions =
+        isShowingSuggestions && state.submittedQuery?.isNotEmpty == true;
 
     _syncSearchText(state.query);
     _syncTabIndex(state.type);
 
-    return Scaffold(
-      body: SafeArea(
-        child: Column(
-          children: <Widget>[
-            if (!isDesktop)
-              SearchInputBar(
-                controller: _controller,
-                focusNode: _focusNode,
-                query: state.query,
-                onBack: () => context.go(from),
-                onChanged: controller.updateQuery,
-                onSubmitted: () => _submitSearch(controller),
-                onClear: () {
-                  _controller.clear();
-                  controller.clearQuery();
-                },
+    return PopScope<Object?>(
+      canPop: !shouldCloseSuggestions,
+      onPopInvokedWithResult: (bool didPop, Object? result) {
+        if (!didPop && shouldCloseSuggestions) {
+          _focusNode.unfocus();
+        }
+      },
+      child: Scaffold(
+        body: SafeArea(
+          child: Column(
+            children: <Widget>[
+              if (!isDesktop)
+                SearchInputBar(
+                  controller: _controller,
+                  focusNode: _focusNode,
+                  query: state.query,
+                  onBack: () => _handleBack(
+                    from,
+                    shouldCloseSuggestions: shouldCloseSuggestions,
+                  ),
+                  onChanged: controller.updateQuery,
+                  onSubmitted: () => _submitSearch(controller),
+                  onClear: () {
+                    _controller.clear();
+                    controller.clearQuery();
+                  },
+                ),
+              Expanded(
+                child:
+                    !isShowingSuggestions &&
+                        state.submittedQuery?.isNotEmpty == true
+                    ? SearchResultsView(
+                        state: state,
+                        tabController: _tabController,
+                        onLoadMore: controller.loadNextPage,
+                        onChangeSort: controller.changeSort,
+                        onPlayItem: (SearchResultItem item) async {
+                          await PlayerUtil.playItemAndOpenPlayer(
+                            context,
+                            ref,
+                            item: item.toPlayableItem(),
+                            sourceLabel: '搜索结果',
+                          );
+                        },
+                        onPlayNext: (SearchResultItem item) async {
+                          final PlayableItem resolvedItem = await ref
+                              .read(biliPlayerRepositoryProvider)
+                              .resolvePreferredPart(
+                                item.toPlayableItem(),
+                                preferredPage: 1,
+                              );
+                          await ref
+                              .read(playerControllerProvider.notifier)
+                              .playNext(resolvedItem);
+                        },
+                        onEnqueue: (SearchResultItem item) async {
+                          final PlayableItem resolvedItem = await ref
+                              .read(biliPlayerRepositoryProvider)
+                              .resolvePreferredPart(
+                                item.toPlayableItem(),
+                                preferredPage: 1,
+                              );
+                          await ref
+                              .read(playerControllerProvider.notifier)
+                              .enqueue(<PlayableItem>[resolvedItem]);
+                        },
+                        onTapUser: (SearchUserItem item) {
+                          context.push('/up/${item.mid}');
+                        },
+                      )
+                    : SearchIdleView(
+                        isDesktop: isDesktop,
+                        isShowingSuggestions: isShowingSuggestions,
+                        query: trimmedQuery,
+                        recentKeywords: state.recentKeywords,
+                        suggestions: state.suggestions,
+                        isLoadingSuggestions: state.isLoadingSuggestions,
+                        onClearHistory: controller.clearHistory,
+                        onSelectKeyword: (String value) {
+                          _submitSearch(controller, value);
+                        },
+                      ),
               ),
-            Expanded(
-              child: state.submittedQuery?.isNotEmpty == true
-                  ? SearchResultsView(
-                      state: state,
-                      tabController: _tabController,
-                      onLoadMore: controller.loadNextPage,
-                      onChangeSort: controller.changeSort,
-                      onPlayItem: (SearchResultItem item) async {
-                        await PlayerUtil.playItemAndOpenPlayer(
-                          context,
-                          ref,
-                          item: item.toPlayableItem(),
-                          sourceLabel: '搜索结果',
-                        );
-                      },
-                      onPlayNext: (SearchResultItem item) async {
-                        final PlayableItem resolvedItem = await ref
-                            .read(biliPlayerRepositoryProvider)
-                            .resolvePreferredPart(
-                              item.toPlayableItem(),
-                              preferredPage: 1,
-                            );
-                        await ref
-                            .read(playerControllerProvider.notifier)
-                            .playNext(resolvedItem);
-                      },
-                      onEnqueue: (SearchResultItem item) async {
-                        final PlayableItem resolvedItem = await ref
-                            .read(biliPlayerRepositoryProvider)
-                            .resolvePreferredPart(
-                              item.toPlayableItem(),
-                              preferredPage: 1,
-                            );
-                        await ref
-                            .read(playerControllerProvider.notifier)
-                            .enqueue(<PlayableItem>[resolvedItem]);
-                      },
-                      onTapUser: (SearchUserItem item) {
-                        context.push('/up/${item.mid}');
-                      },
-                    )
-                  : SearchIdleView(
-                      isDesktop: isDesktop,
-                      isShowingSuggestions: isShowingSuggestions,
-                      query: trimmedQuery,
-                      recentKeywords: state.recentKeywords,
-                      suggestions: state.suggestions,
-                      isLoadingSuggestions: state.isLoadingSuggestions,
-                      onClearHistory: controller.clearHistory,
-                      onSelectKeyword: (String value) {
-                        _submitSearch(controller, value);
-                      },
-                    ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

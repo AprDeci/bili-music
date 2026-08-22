@@ -47,6 +47,39 @@ void main() {
     expect(state.isLoadingSuggestions, isFalse);
   });
 
+  test('loads suggestions for an already submitted query', () async {
+    final ProviderContainer container = ProviderContainer(
+      overrides: [
+        biliSearchRepositoryProvider.overrideWithValue(
+          _FakeBiliSearchRepository(
+            suggestionsByTerm: <String, List<String>>{
+              '洛天依': <String>['洛天依', '洛天依歌曲'],
+            },
+          ),
+        ),
+        searchHistoryStoreProvider.overrideWithValue(_FakeSearchHistoryStore()),
+      ],
+    );
+    addTearDown(container.dispose);
+    final ProviderSubscription<SearchState> subscription = container.listen(
+      searchPageControllerProvider,
+      (_, _) {},
+      fireImmediately: true,
+    );
+    addTearDown(subscription.close);
+
+    final SearchPageController controller = container.read(
+      searchPageControllerProvider.notifier,
+    );
+
+    await controller.submitSearch('洛天依');
+    await controller.loadSuggestions('洛天依');
+
+    final SearchState state = container.read(searchPageControllerProvider);
+    expect(state.suggestions, <String>['洛天依', '洛天依歌曲']);
+    expect(state.isLoadingSuggestions, isFalse);
+  });
+
   test('changeSort reloads submitted query with new sort', () async {
     final _FakeBiliSearchRepository repository = _FakeBiliSearchRepository(
       searchResultsByKeyword: <String, SearchPageResult>{

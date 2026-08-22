@@ -188,15 +188,6 @@ class SearchPageController extends _$SearchPageController {
       return;
     }
 
-    if (state.submittedQuery == term) {
-      state = state.copyWith(
-        suggestions: const <String>[],
-        isLoadingSuggestions: false,
-        suggestionsErrorMessage: null,
-      );
-      return;
-    }
-
     state = state.copyWith(
       isLoadingSuggestions: true,
       suggestionsErrorMessage: null,
