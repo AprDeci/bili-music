@@ -16,6 +16,7 @@ import 'package:bilimusic/feature/favorites/ui/components/favorite_collection_se
 import 'package:bilimusic/feature/favorites/ui/components/favorite_entry_subtitle.dart';
 import 'package:bilimusic/feature/favorites/ui/components/favorite_search_empty_state.dart';
 import 'package:bilimusic/feature/favorites/ui/components/favorited_seasons_list.dart';
+import 'package:bilimusic/feature/favorites/ui/components/remote_collection_sync_status_bar.dart';
 import 'package:bilimusic/feature/player/domain/playable_item.dart';
 import 'package:bilimusic/feature/player/logic/player_controller.dart';
 import 'package:bilimusic/feature/player/ui/components/player_collection_sheet.dart';
@@ -47,6 +48,8 @@ class _FavoriteCollectionPageState
   bool _isLoadingRemotePage = false;
   bool _remoteRefreshFailed = false;
   bool _remoteLoadMoreFailed = false;
+  RemoteCollectionSyncStatus? _remoteSyncStatus;
+  Timer? _remoteSyncStatusTimer;
 
   @override
   void initState() {
@@ -58,6 +61,8 @@ class _FavoriteCollectionPageState
   void didUpdateWidget(covariant FavoriteCollectionPage oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.collectionId != widget.collectionId) {
+      _remoteSyncStatusTimer?.cancel();
+      _remoteSyncStatus = null;
       _resetSearchState();
       _resetRemotePagingState();
       _selectedItemIds = <String>{};
@@ -67,7 +72,7 @@ class _FavoriteCollectionPageState
   }
 
   void _refreshRemoteCollectionItems() {
-    if (_isLoadingRemotePage || !_isRemoteCollection()) {
+    if (_isLoadingRemotePage || !_shouldSyncRemoteCollection) {
       return;
     }
 
@@ -77,24 +82,43 @@ class _FavoriteCollectionPageState
       Future<void>.microtask(() async {
         try {
           if (mounted) {
+            _remoteSyncStatusTimer?.cancel();
             setState(() {
               _isLoadingRemotePage = true;
               _remoteRefreshFailed = false;
+              _remoteSyncStatus = RemoteCollectionSyncStatus.syncing;
             });
           }
-          final BiliFavoriteCollectionPage? page = await ref
+          final RemoteCollectionSyncResult result = await ref
               .read(favoritesControllerProvider.notifier)
-              .refreshRemoteCollectionItems(collectionId: collectionId);
-          if (!_canApplyRemoteRefreshResult(collectionId, requestId) ||
-              page == null) {
+              .syncRemoteCollectionIfStale(collectionId);
+          if (!_canApplyRemoteRefreshResult(collectionId, requestId)) {
+            return;
+          }
+          if (result == RemoteCollectionSyncResult.skipped) {
+            _remoteSyncStatusTimer?.cancel();
+            setState(() {
+              _isLoadingRemotePage = false;
+              _remoteSyncStatus = null;
+            });
+            return;
+          }
+          if (result == RemoteCollectionSyncResult.incomplete) {
+            setState(() {
+              _remoteRefreshFailed = true;
+              _isLoadingRemotePage = false;
+              _remoteSyncStatus = RemoteCollectionSyncStatus.failure;
+            });
+            ToastUtil.show('同步未完成，已使用本地数据');
+            _clearRemoteSyncStatusAfter(const Duration(milliseconds: 2500));
             return;
           }
           setState(() {
-            _remoteRefreshFailed = false;
-            _remoteLoadMoreFailed = false;
-            _remoteHasMore = page.hasMore;
-            _nextRemotePageNumber = page.pageNumber + 1;
+            _isLoadingRemotePage = false;
+            _remoteSyncStatus = RemoteCollectionSyncStatus.success;
           });
+          _clearRemoteSyncStatusAfter(const Duration(milliseconds: 350));
+          return;
         } on Object catch (error, stackTrace) {
           FavoriteCollectionPage._logger.w(
             'Failed to refresh remote collection',
@@ -104,8 +128,11 @@ class _FavoriteCollectionPageState
           if (_canApplyRemoteRefreshResult(collectionId, requestId)) {
             setState(() {
               _remoteRefreshFailed = true;
+              _isLoadingRemotePage = false;
+              _remoteSyncStatus = RemoteCollectionSyncStatus.failure;
             });
             ToastUtil.show('网络歌单同步失败，请稍后重试');
+            _clearRemoteSyncStatusAfter(const Duration(milliseconds: 2500));
           }
         } finally {
           if (_canApplyRemoteRefreshResult(collectionId, requestId)) {
@@ -118,17 +145,37 @@ class _FavoriteCollectionPageState
     );
   }
 
-  bool _isRemoteCollection() {
-    return ref
-        .read(favoritesControllerProvider)
-        .collections
-        .any(
-          (FavoriteCollection collection) =>
-              collection.id == widget.collectionId && collection.isRemote,
-        );
+  void _clearRemoteSyncStatusAfter(Duration duration) {
+    _remoteSyncStatusTimer?.cancel();
+    _remoteSyncStatusTimer = Timer(duration, () {
+      if (mounted) {
+        setState(() => _remoteSyncStatus = null);
+      }
+    });
+  }
+
+  bool get _shouldSyncRemoteCollection {
+    final FavoriteCollection? collection = _collectionForCurrentId();
+    return collection != null &&
+        collection.isRemote &&
+        (collection.lastSyncedAt == null ||
+            DateTime.now().difference(collection.lastSyncedAt!) >
+                const Duration(minutes: 5));
+  }
+
+  FavoriteCollection? _collectionForCurrentId() {
+    for (final FavoriteCollection collection
+        in ref.read(favoritesControllerProvider).collections) {
+      if (collection.id == widget.collectionId) {
+        return collection;
+      }
+    }
+    return null;
   }
 
   void _resetRemotePagingState() {
+    _remoteSyncStatusTimer?.cancel();
+    _remoteSyncStatus = null;
     _nextRemotePageNumber = 2;
     _remoteRefreshRequestId++;
     _remoteHasMore = false;
@@ -224,6 +271,7 @@ class _FavoriteCollectionPageState
 
   @override
   void dispose() {
+    _remoteSyncStatusTimer?.cancel();
     _searchController.dispose();
     super.dispose();
   }
@@ -380,119 +428,131 @@ class _FavoriteCollectionPageState
         .map((FavoriteEntry item) => item.toPlayableItem())
         .toList(growable: false);
     final bool showLikedTabs = resolvedCollection.isLikedCollection;
-    final Widget songsBody = items.isEmpty && _remoteRefreshFailed
-        ? _RemoteCollectionErrorState(
-            isRetrying: _isLoadingRemotePage,
-            onRetry: _refreshRemoteCollectionItems,
-          )
-        : items.isEmpty
-        ? Center(
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: <Widget>[
-                  SizedBox(
-                    width: 72,
-                    height: 72,
-                    child: Icon(
-                      resolvedCollection.isLikedCollection
-                          ? Icons.favorite_border_rounded
-                          : Icons.folder_open_rounded,
-                      color: primary,
-                      size: 34,
-                    ),
-                  ),
-                  const SizedBox(height: 18),
-                  Text(
-                    '这个歌单还是空的',
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    '先去搜索页或者播放器点亮爱心，喜欢的内容会出现在这里。',
-                    textAlign: TextAlign.center,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: colorScheme.onSurfaceVariant,
-                      height: 1.5,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          )
-        : Column(
-            children: <Widget>[
-              Padding(
-                padding: const EdgeInsets.fromLTRB(14, 10, 14, 8),
-                child: _selectionMode
-                    ? _FavoriteBatchActionBar(
-                        selectedCount: _selectedItemIds.length,
-                        onAdd: () => _addSelectedItems(visibleItems),
-                        onDelete: () => _deleteSelectedItems(
-                          collection: resolvedCollection,
-                          items: visibleItems,
-                        ),
-                        onExit: () => _setSelectionMode(false),
-                      )
-                    : FavoriteCollectionSearchField(
-                        controller: _searchController,
-                        query: _searchQuery,
-                        onChanged: _updateSearchQuery,
-                        onClear: _clearSearchQuery,
-                      ),
-              ),
-              Expanded(
-                child: visibleItems.isEmpty
-                    ? ListView(
-                        padding: EdgeInsets.zero,
-                        children: <Widget>[
-                          FavoriteSearchEmptyState(
-                            onSearchOnline: () => context.go('/search'),
+    final Widget songsBody = Column(
+      children: <Widget>[
+        RemoteCollectionSyncStatusBar(status: _remoteSyncStatus),
+        Expanded(
+          child: items.isEmpty && _remoteRefreshFailed
+              ? _RemoteCollectionErrorState(
+                  isRetrying: _isLoadingRemotePage,
+                  onRetry: _refreshRemoteCollectionItems,
+                )
+              : items.isEmpty
+              ? Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: <Widget>[
+                        SizedBox(
+                          width: 72,
+                          height: 72,
+                          child: Icon(
+                            resolvedCollection.isLikedCollection
+                                ? Icons.favorite_border_rounded
+                                : Icons.folder_open_rounded,
+                            color: primary,
+                            size: 34,
                           ),
-                          const BottomPageSpacer.overlay(),
-                        ],
-                      )
-                    : FavoriteCollectionItemsList(
-                        items: visibleItems,
-                        footer: _buildListFooter(theme),
-                        onNotification: _handleScrollNotification,
-                        selectedItemIds: _selectedItemIds,
-                        selectionMode: _selectionMode,
-                        onSelectionModeChanged: _setSelectionMode,
-                        onSelectionChanged: _setSelectedItemIds,
-                        onTapItem: (int itemIndex, FavoriteEntry item) async {
-                          await _playCollectionItem(
-                            context,
-                            ref,
-                            collectionName: resolvedCollection.name,
-                            queueItems: queueItems,
-                            index: itemIndex,
-                          );
-                        },
-                        onPlayItem: (int itemIndex, FavoriteEntry item) async {
-                          await _playCollectionItem(
-                            context,
-                            ref,
-                            collectionName: resolvedCollection.name,
-                            queueItems: queueItems,
-                            index: itemIndex,
-                          );
-                        },
-                        onMoreItem: (int itemIndex, FavoriteEntry item) async {
-                          await _showItemActionSheet(
-                            context,
-                            ref,
-                            collection: resolvedCollection,
-                            item: item,
-                          );
-                        },
-                      ),
-              ),
-            ],
-          );
+                        ),
+                        const SizedBox(height: 18),
+                        Text(
+                          '这个歌单还是空的',
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          '先去搜索页或者播放器点亮爱心，喜欢的内容会出现在这里。',
+                          textAlign: TextAlign.center,
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: colorScheme.onSurfaceVariant,
+                            height: 1.5,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                )
+              : Column(
+                  children: <Widget>[
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(14, 10, 14, 8),
+                      child: _selectionMode
+                          ? _FavoriteBatchActionBar(
+                              selectedCount: _selectedItemIds.length,
+                              onAdd: () => _addSelectedItems(visibleItems),
+                              onDelete: () => _deleteSelectedItems(
+                                collection: resolvedCollection,
+                                items: visibleItems,
+                              ),
+                              onExit: () => _setSelectionMode(false),
+                            )
+                          : FavoriteCollectionSearchField(
+                              controller: _searchController,
+                              query: _searchQuery,
+                              onChanged: _updateSearchQuery,
+                              onClear: _clearSearchQuery,
+                            ),
+                    ),
+                    Expanded(
+                      child: visibleItems.isEmpty
+                          ? ListView(
+                              padding: EdgeInsets.zero,
+                              children: <Widget>[
+                                FavoriteSearchEmptyState(
+                                  onSearchOnline: () => context.go('/search'),
+                                ),
+                                const BottomPageSpacer.overlay(),
+                              ],
+                            )
+                          : FavoriteCollectionItemsList(
+                              items: visibleItems,
+                              footer: _buildListFooter(theme),
+                              onNotification: _handleScrollNotification,
+                              selectedItemIds: _selectedItemIds,
+                              selectionMode: _selectionMode,
+                              onSelectionModeChanged: _setSelectionMode,
+                              onSelectionChanged: _setSelectedItemIds,
+                              onTapItem:
+                                  (int itemIndex, FavoriteEntry item) async {
+                                    await _playCollectionItem(
+                                      context,
+                                      ref,
+                                      collectionName: resolvedCollection.name,
+                                      queueItems: queueItems,
+                                      item: item,
+                                      index: itemIndex,
+                                    );
+                                  },
+                              onPlayItem:
+                                  (int itemIndex, FavoriteEntry item) async {
+                                    await _playCollectionItem(
+                                      context,
+                                      ref,
+                                      collectionName: resolvedCollection.name,
+                                      queueItems: queueItems,
+                                      item: item,
+                                      index: itemIndex,
+                                    );
+                                  },
+                              onMoreItem:
+                                  (int itemIndex, FavoriteEntry item) async {
+                                    await _showItemActionSheet(
+                                      context,
+                                      ref,
+                                      collection: resolvedCollection,
+                                      item: item,
+                                    );
+                                  },
+                            ),
+                    ),
+                  ],
+                ),
+        ),
+      ],
+    );
     return DefaultTabController(
       length: showLikedTabs ? 2 : 1,
       child: Scaffold(
@@ -554,14 +614,30 @@ class _FavoriteCollectionPageState
     WidgetRef ref, {
     required String collectionName,
     required List<PlayableItem> queueItems,
+    required FavoriteEntry item,
     required int index,
   }) async {
+    final PlayableItem playableItem = item.toPlayableItem();
+    final int stableIndex = queueItems.indexWhere(
+      (PlayableItem candidate) =>
+          candidate.stableId == playableItem.stableId ||
+          candidate.stableId == item.itemId,
+    );
+    if (stableIndex >= 0) {
+      index = stableIndex;
+    }
+    if (queueItems.isEmpty || index < 0 || index >= queueItems.length) {
+      return;
+    }
     FavoriteCollectionPage._logger.d(
       '[FavoriteDebug] tapPlay | collection=$collectionName, '
       'index=$index, queueLength=${queueItems.length}, '
       'itemStableId=${queueItems[index].stableId}, '
       'itemTitle=${queueItems[index].title}',
     );
+    if (!context.mounted) {
+      return;
+    }
     await PlayerUtil.playQueueAndOpenPlayer(
       context,
       ref,
