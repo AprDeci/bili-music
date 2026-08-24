@@ -25,6 +25,7 @@ class FavoriteCollectionItemsList extends ConsumerWidget {
     required this.onTapItem,
     required this.onPlayItem,
     required this.onMoreItem,
+    this.onRefresh,
   });
 
   final List<FavoriteEntry> items;
@@ -37,37 +38,42 @@ class FavoriteCollectionItemsList extends ConsumerWidget {
   final FavoriteCollectionItemCallback onTapItem;
   final FavoriteCollectionItemCallback onPlayItem;
   final FavoriteCollectionItemCallback onMoreItem;
+  final Future<void> Function()? onRefresh;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final StatisticsTracker tracker = ref.read(statisticsTrackerProvider);
+    final Widget list = SelectableAutoScrollListView<FavoriteEntry, String>(
+      items: items,
+      itemKeyOf: (FavoriteEntry item) => item.itemId,
+      selectedKeys: selectedItemIds,
+      multiSelectEnabled: selectionMode,
+      onMultiSelectModeChanged: onSelectionModeChanged,
+      onSelectionChanged: onSelectionChanged,
+      onItemTap: (FavoriteEntry item) {
+        final int index = items.indexOf(item);
+        if (index < 0) {
+          return;
+        }
+        onTapItem(index, item);
+      },
+      padding: EdgeInsets.zero,
+      physics: onRefresh == null ? null : const AlwaysScrollableScrollPhysics(),
+      footer: footer,
+      checkboxControlAffinity: ListTileControlAffinity.trailing,
+      itemBuilder: (context, item, state) =>
+          _buildNormalItem(context, item, state, tracker),
+      titleBuilder: _buildTitle,
+      subtitleBuilder: (context, item, state) =>
+          _buildSubtitle(context, item, state, tracker),
+      leadingBuilder: _buildLeading,
+      trailingBuilder: _buildTrailing,
+    );
     return NotificationListener<ScrollNotification>(
       onNotification: onNotification,
-      child: SelectableAutoScrollListView<FavoriteEntry, String>(
-        items: items,
-        itemKeyOf: (FavoriteEntry item) => item.itemId,
-        selectedKeys: selectedItemIds,
-        multiSelectEnabled: selectionMode,
-        onMultiSelectModeChanged: onSelectionModeChanged,
-        onSelectionChanged: onSelectionChanged,
-        onItemTap: (FavoriteEntry item) {
-          final int index = items.indexOf(item);
-          if (index < 0) {
-            return;
-          }
-          onTapItem(index, item);
-        },
-        padding: EdgeInsets.zero,
-        footer: footer,
-        checkboxControlAffinity: ListTileControlAffinity.trailing,
-        itemBuilder: (context, item, state) =>
-            _buildNormalItem(context, item, state, tracker),
-        titleBuilder: _buildTitle,
-        subtitleBuilder: (context, item, state) =>
-            _buildSubtitle(context, item, state, tracker),
-        leadingBuilder: _buildLeading,
-        trailingBuilder: _buildTrailing,
-      ),
+      child: onRefresh == null
+          ? list
+          : RefreshIndicator(onRefresh: onRefresh!, child: list),
     );
   }
 

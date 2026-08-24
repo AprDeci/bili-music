@@ -46,11 +46,12 @@ class _FavoriteCollectionPageState
   bool _remoteRefreshFailed = false;
   RemoteCollectionSyncStatus? _remoteSyncStatus;
   Timer? _remoteSyncStatusTimer;
+  Future<void>? _remoteRefreshFuture;
 
   @override
   void initState() {
     super.initState();
-    _refreshRemoteCollectionItems();
+    unawaited(_refreshRemoteCollectionItems());
   }
 
   @override
@@ -63,82 +64,102 @@ class _FavoriteCollectionPageState
       _resetRemoteSyncState();
       _selectedItemIds = <String>{};
       _selectionMode = false;
-      _refreshRemoteCollectionItems();
+      unawaited(_refreshRemoteCollectionItems());
     }
   }
 
-  void _refreshRemoteCollectionItems() {
-    if (_isSyncingRemoteCollection || !_shouldSyncRemoteCollection) {
-      return;
+  Future<void> _refreshRemoteCollectionItems({bool force = false}) {
+    final Future<void>? existing = _remoteRefreshFuture;
+    if (existing != null) {
+      return existing;
+    }
+    if (!_isCurrentCollectionRemote) {
+      return Future<void>.value();
     }
 
     final String collectionId = widget.collectionId;
     final int requestId = ++_remoteRefreshRequestId;
-    unawaited(
-      Future<void>.microtask(() async {
-        try {
-          if (mounted) {
-            _remoteSyncStatusTimer?.cancel();
-            setState(() {
-              _isSyncingRemoteCollection = true;
-              _remoteRefreshFailed = false;
-              _remoteSyncStatus = RemoteCollectionSyncStatus.syncing;
-            });
-          }
-          final RemoteCollectionSyncResult result = await ref
-              .read(favoritesControllerProvider.notifier)
-              .syncRemoteCollectionIfStale(collectionId);
-          if (!_canApplyRemoteRefreshResult(collectionId, requestId)) {
-            return;
-          }
-          if (result == RemoteCollectionSyncResult.skipped) {
-            _remoteSyncStatusTimer?.cancel();
-            setState(() {
-              _isSyncingRemoteCollection = false;
-              _remoteSyncStatus = null;
-            });
-            return;
-          }
-          if (result == RemoteCollectionSyncResult.incomplete) {
-            setState(() {
-              _remoteRefreshFailed = true;
-              _isSyncingRemoteCollection = false;
-              _remoteSyncStatus = RemoteCollectionSyncStatus.failure;
-            });
-            ToastUtil.show('同步未完成，已使用本地数据');
-            _clearRemoteSyncStatusAfter(const Duration(milliseconds: 2500));
-            return;
-          }
+    final Future<void> refresh = Future<void>.microtask(() async {
+      try {
+        if (mounted) {
+          _remoteSyncStatusTimer?.cancel();
+          setState(() {
+            _isSyncingRemoteCollection = true;
+            _remoteRefreshFailed = false;
+            _remoteSyncStatus = RemoteCollectionSyncStatus.syncing;
+          });
+        }
+        final RemoteCollectionSyncResult result = await ref
+            .read(favoritesControllerProvider.notifier)
+            .syncRemoteCollectionIfStale(collectionId, force: force);
+        if (!_canApplyRemoteRefreshResult(collectionId, requestId)) {
+          return;
+        }
+        if (result == RemoteCollectionSyncResult.skipped) {
+          _remoteSyncStatusTimer?.cancel();
           setState(() {
             _isSyncingRemoteCollection = false;
-            _remoteSyncStatus = RemoteCollectionSyncStatus.success;
+            _remoteSyncStatus = null;
           });
-          _clearRemoteSyncStatusAfter(const Duration(milliseconds: 350));
           return;
-        } on Object catch (error, stackTrace) {
-          FavoriteCollectionPage._logger.w(
-            'Failed to refresh remote collection',
-            error,
-            stackTrace,
-          );
-          if (_canApplyRemoteRefreshResult(collectionId, requestId)) {
-            setState(() {
-              _remoteRefreshFailed = true;
-              _isSyncingRemoteCollection = false;
-              _remoteSyncStatus = RemoteCollectionSyncStatus.failure;
-            });
-            ToastUtil.show('网络歌单同步失败，请稍后重试');
-            _clearRemoteSyncStatusAfter(const Duration(milliseconds: 2500));
-          }
-        } finally {
-          if (_canApplyRemoteRefreshResult(collectionId, requestId)) {
-            setState(() {
-              _isSyncingRemoteCollection = false;
-            });
-          }
         }
-      }),
+        if (result == RemoteCollectionSyncResult.incomplete) {
+          setState(() {
+            _remoteRefreshFailed = true;
+            _isSyncingRemoteCollection = false;
+            _remoteSyncStatus = RemoteCollectionSyncStatus.failure;
+          });
+          ToastUtil.show('同步未完成，已使用本地数据');
+          _clearRemoteSyncStatusAfter(const Duration(milliseconds: 2500));
+          return;
+        }
+        setState(() {
+          _isSyncingRemoteCollection = false;
+          _remoteSyncStatus = RemoteCollectionSyncStatus.success;
+        });
+        _clearRemoteSyncStatusAfter(const Duration(milliseconds: 350));
+        return;
+      } on Object catch (error, stackTrace) {
+        FavoriteCollectionPage._logger.w(
+          'Failed to refresh remote collection',
+          error,
+          stackTrace,
+        );
+        if (_canApplyRemoteRefreshResult(collectionId, requestId)) {
+          setState(() {
+            _remoteRefreshFailed = true;
+            _isSyncingRemoteCollection = false;
+            _remoteSyncStatus = RemoteCollectionSyncStatus.failure;
+          });
+          ToastUtil.show('网络歌单同步失败，请稍后重试');
+          _clearRemoteSyncStatusAfter(const Duration(milliseconds: 2500));
+        }
+      } finally {
+        if (_canApplyRemoteRefreshResult(collectionId, requestId)) {
+          setState(() {
+            _isSyncingRemoteCollection = false;
+          });
+        }
+      }
+    });
+    _remoteRefreshFuture = refresh;
+    refresh.then<void>(
+      (_) {
+        if (identical(_remoteRefreshFuture, refresh)) {
+          _remoteRefreshFuture = null;
+        }
+      },
+      onError: (Object error, StackTrace stackTrace) {
+        if (identical(_remoteRefreshFuture, refresh)) {
+          _remoteRefreshFuture = null;
+        }
+      },
     );
+    return refresh;
+  }
+
+  Future<void> _refreshRemoteCollectionItemsForce() {
+    return _refreshRemoteCollectionItems(force: true);
   }
 
   void _clearRemoteSyncStatusAfter(Duration duration) {
@@ -150,13 +171,9 @@ class _FavoriteCollectionPageState
     });
   }
 
-  bool get _shouldSyncRemoteCollection {
+  bool get _isCurrentCollectionRemote {
     final FavoriteCollection? collection = _collectionForCurrentId();
-    return collection != null &&
-        collection.isRemote &&
-        (collection.lastSyncedAt == null ||
-            DateTime.now().difference(collection.lastSyncedAt!) >
-                const Duration(minutes: 5));
+    return collection != null && collection.isRemote;
   }
 
   FavoriteCollection? _collectionForCurrentId() {
@@ -174,6 +191,7 @@ class _FavoriteCollectionPageState
     _remoteSyncStatus = null;
     _remoteRefreshRequestId++;
     _isSyncingRemoteCollection = false;
+    _remoteRefreshFuture = null;
     _remoteRefreshFailed = false;
   }
 
@@ -322,26 +340,12 @@ class _FavoriteCollectionPageState
   @override
   Widget build(BuildContext context) {
     final FavoritesState state = ref.watch(favoritesControllerProvider);
-    final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
-    final Color primary = colorScheme.primary;
-    FavoriteCollection? collection;
-    for (final FavoriteCollection item in state.collections) {
-      if (item.id == widget.collectionId) {
-        collection = item;
-        break;
-      }
-    }
-
+    final FavoriteCollection? collection = _findCollection(state);
     if (collection == null) {
-      return Scaffold(
-        appBar: AppBar(title: const Text('歌单')),
-        body: const Center(child: Text('歌单不存在')),
-      );
+      return _buildMissingCollectionPage();
     }
 
     final FavoriteCollection resolvedCollection = collection;
-
     final List<FavoriteEntry> items = state.itemsForCollection(
       resolvedCollection.id,
     );
@@ -352,138 +356,45 @@ class _FavoriteCollectionPageState
     final List<PlayableItem> queueItems = visibleItems
         .map((FavoriteEntry item) => item.toPlayableItem())
         .toList(growable: false);
-    final bool showLikedTabs = resolvedCollection.isLikedCollection;
-    final Widget songsBody = Column(
-      children: <Widget>[
-        RemoteCollectionSyncStatusBar(status: _remoteSyncStatus),
-        Expanded(
-          child: items.isEmpty && _remoteRefreshFailed
-              ? _RemoteCollectionErrorState(
-                  isRetrying: _isSyncingRemoteCollection,
-                  onRetry: _refreshRemoteCollectionItems,
-                )
-              : items.isEmpty
-              ? Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(24),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: <Widget>[
-                        SizedBox(
-                          width: 72,
-                          height: 72,
-                          child: Icon(
-                            resolvedCollection.isLikedCollection
-                                ? Icons.favorite_border_rounded
-                                : Icons.folder_open_rounded,
-                            color: primary,
-                            size: 34,
-                          ),
-                        ),
-                        const SizedBox(height: 18),
-                        Text(
-                          '这个歌单还是空的',
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          '先去搜索页或者播放器点亮爱心，喜欢的内容会出现在这里。',
-                          textAlign: TextAlign.center,
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            color: colorScheme.onSurfaceVariant,
-                            height: 1.5,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                )
-              : Column(
-                  children: <Widget>[
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(14, 10, 14, 8),
-                      child: _selectionMode
-                          ? _FavoriteBatchActionBar(
-                              selectedCount: _selectedItemIds.length,
-                              onAdd: () => _addSelectedItems(visibleItems),
-                              onDelete: () => _deleteSelectedItems(
-                                collection: resolvedCollection,
-                                items: visibleItems,
-                              ),
-                              onExit: () => _setSelectionMode(false),
-                            )
-                          : FavoriteCollectionSearchField(
-                              controller: _searchController,
-                              query: _searchQuery,
-                              onChanged: _updateSearchQuery,
-                              onClear: _clearSearchQuery,
-                            ),
-                    ),
-                    Expanded(
-                      child: visibleItems.isEmpty
-                          ? ListView(
-                              padding: EdgeInsets.zero,
-                              children: <Widget>[
-                                FavoriteSearchEmptyState(
-                                  onSearchOnline: () => context.go('/search'),
-                                ),
-                                const BottomPageSpacer.overlay(),
-                              ],
-                            )
-                          : FavoriteCollectionItemsList(
-                              items: visibleItems,
-                              footer: const BottomPageSpacer.overlay(),
-                              onNotification: (_) => false,
-                              selectedItemIds: _selectedItemIds,
-                              selectionMode: _selectionMode,
-                              onSelectionModeChanged: _setSelectionMode,
-                              onSelectionChanged: _setSelectedItemIds,
-                              onTapItem:
-                                  (int itemIndex, FavoriteEntry item) async {
-                                    await _playCollectionItem(
-                                      context,
-                                      ref,
-                                      collectionName: resolvedCollection.name,
-                                      queueItems: queueItems,
-                                      item: item,
-                                      index: itemIndex,
-                                    );
-                                  },
-                              onPlayItem:
-                                  (int itemIndex, FavoriteEntry item) async {
-                                    await _playCollectionItem(
-                                      context,
-                                      ref,
-                                      collectionName: resolvedCollection.name,
-                                      queueItems: queueItems,
-                                      item: item,
-                                      index: itemIndex,
-                                    );
-                                  },
-                              onMoreItem:
-                                  (int itemIndex, FavoriteEntry item) async {
-                                    await _showItemActionSheet(
-                                      context,
-                                      ref,
-                                      collection: resolvedCollection,
-                                      item: item,
-                                    );
-                                  },
-                            ),
-                    ),
-                  ],
-                ),
-        ),
-      ],
+    return _buildPage(
+      collection: resolvedCollection,
+      items: items,
+      visibleItems: visibleItems,
+      queueItems: queueItems,
     );
+  }
+
+  FavoriteCollection? _findCollection(FavoritesState state) {
+    for (final FavoriteCollection collection in state.collections) {
+      if (collection.id == widget.collectionId) {
+        return collection;
+      }
+    }
+    return null;
+  }
+
+  Widget _buildMissingCollectionPage() {
+    return Scaffold(
+      appBar: AppBar(title: const Text('歌单')),
+      body: const Center(child: Text('歌单不存在')),
+    );
+  }
+
+  Widget _buildPage({
+    required FavoriteCollection collection,
+    required List<FavoriteEntry> items,
+    required List<FavoriteEntry> visibleItems,
+    required List<PlayableItem> queueItems,
+  }) {
+    final ColorScheme colorScheme = Theme.of(context).colorScheme;
+    final bool showLikedTabs = collection.isLikedCollection;
+
     return DefaultTabController(
       length: showLikedTabs ? 2 : 1,
       child: Scaffold(
         backgroundColor: colorScheme.surface.withValues(alpha: 0.4),
         appBar: AppBar(
-          title: Text(resolvedCollection.name),
+          title: Text(collection.name),
           bottom: showLikedTabs
               ? const TabBar(
                   tabs: <Widget>[
@@ -495,11 +406,222 @@ class _FavoriteCollectionPageState
         ),
         body: showLikedTabs
             ? TabBarView(
-                children: <Widget>[songsBody, const FavoritedSeasonsList()],
+                children: <Widget>[
+                  _buildSongsBody(collection, items, visibleItems, queueItems),
+                  const FavoritedSeasonsList(),
+                ],
               )
-            : songsBody,
+            : _buildSongsBody(collection, items, visibleItems, queueItems),
       ),
     );
+  }
+
+  Widget _buildSongsBody(
+    FavoriteCollection collection,
+    List<FavoriteEntry> items,
+    List<FavoriteEntry> visibleItems,
+    List<PlayableItem> queueItems,
+  ) {
+    return Column(
+      children: <Widget>[
+        RemoteCollectionSyncStatusBar(status: _remoteSyncStatus),
+        Expanded(
+          child: _buildCollectionItemsContent(
+            collection,
+            items,
+            visibleItems,
+            queueItems,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCollectionItemsContent(
+    FavoriteCollection collection,
+    List<FavoriteEntry> items,
+    List<FavoriteEntry> visibleItems,
+    List<PlayableItem> queueItems,
+  ) {
+    if (items.isEmpty && _remoteRefreshFailed) {
+      return _RemoteCollectionErrorState(
+        isRetrying: _isSyncingRemoteCollection,
+        onRetry: _refreshRemoteCollectionItemsForce,
+      );
+    }
+    if (items.isEmpty) {
+      final ColorScheme colorScheme = Theme.of(context).colorScheme;
+      return _buildEmptyCollectionState(
+        collection,
+        colorScheme.primary,
+        Theme.of(context),
+        colorScheme,
+      );
+    }
+    return _buildItemsContent(collection, visibleItems, queueItems);
+  }
+
+  Widget _buildItemsContent(
+    FavoriteCollection collection,
+    List<FavoriteEntry> visibleItems,
+    List<PlayableItem> queueItems,
+  ) {
+    return Column(
+      children: <Widget>[
+        _buildItemsToolbar(collection, visibleItems),
+        Expanded(
+          child: visibleItems.isEmpty
+              ? _buildSearchEmptyState(context, collection.isRemote)
+              : _buildItemsList(collection, visibleItems, queueItems),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildItemsToolbar(
+    FavoriteCollection collection,
+    List<FavoriteEntry> visibleItems,
+  ) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(14, 10, 14, 8),
+      child: _selectionMode
+          ? _FavoriteBatchActionBar(
+              selectedCount: _selectedItemIds.length,
+              onAdd: () => _addSelectedItems(visibleItems),
+              onDelete: () => _deleteSelectedItems(
+                collection: collection,
+                items: visibleItems,
+              ),
+              onExit: () => _setSelectionMode(false),
+            )
+          : FavoriteCollectionSearchField(
+              controller: _searchController,
+              query: _searchQuery,
+              onChanged: _updateSearchQuery,
+              onClear: _clearSearchQuery,
+            ),
+    );
+  }
+
+  Widget _buildItemsList(
+    FavoriteCollection collection,
+    List<FavoriteEntry> visibleItems,
+    List<PlayableItem> queueItems,
+  ) {
+    return FavoriteCollectionItemsList(
+      items: visibleItems,
+      footer: const BottomPageSpacer.overlay(),
+      onNotification: (_) => false,
+      selectedItemIds: _selectedItemIds,
+      selectionMode: _selectionMode,
+      onSelectionModeChanged: _setSelectionMode,
+      onSelectionChanged: _setSelectedItemIds,
+      onRefresh: collection.isRemote
+          ? _refreshRemoteCollectionItemsForce
+          : null,
+      onTapItem: (int itemIndex, FavoriteEntry item) async {
+        await _playCollectionItem(
+          context,
+          ref,
+          collectionName: collection.name,
+          queueItems: queueItems,
+          item: item,
+          index: itemIndex,
+        );
+      },
+      onPlayItem: (int itemIndex, FavoriteEntry item) async {
+        await _playCollectionItem(
+          context,
+          ref,
+          collectionName: collection.name,
+          queueItems: queueItems,
+          item: item,
+          index: itemIndex,
+        );
+      },
+      onMoreItem: (int itemIndex, FavoriteEntry item) async {
+        await _showItemActionSheet(
+          context,
+          ref,
+          collection: collection,
+          item: item,
+        );
+      },
+    );
+  }
+
+  Widget _buildEmptyCollectionState(
+    FavoriteCollection collection,
+    Color primary,
+    ThemeData theme,
+    ColorScheme colorScheme,
+  ) {
+    final Widget list = ListView(
+      padding: EdgeInsets.zero,
+      physics: collection.isRemote
+          ? const AlwaysScrollableScrollPhysics()
+          : null,
+      children: <Widget>[
+        Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              SizedBox(
+                width: 72,
+                height: 72,
+                child: Icon(
+                  collection.isLikedCollection
+                      ? Icons.favorite_border_rounded
+                      : Icons.folder_open_rounded,
+                  color: primary,
+                  size: 34,
+                ),
+              ),
+              const SizedBox(height: 18),
+              Text(
+                '这个歌单还是空的',
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                '先去搜索页或者播放器点亮爱心，喜欢的内容会出现在这里。',
+                textAlign: TextAlign.center,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
+                  height: 1.5,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+    return collection.isRemote
+        ? RefreshIndicator(
+            onRefresh: _refreshRemoteCollectionItemsForce,
+            child: list,
+          )
+        : list;
+  }
+
+  Widget _buildSearchEmptyState(BuildContext context, bool isRemote) {
+    final Widget list = ListView(
+      physics: isRemote ? const AlwaysScrollableScrollPhysics() : null,
+      padding: EdgeInsets.zero,
+      children: <Widget>[
+        FavoriteSearchEmptyState(onSearchOnline: () => context.go('/search')),
+        const BottomPageSpacer.overlay(),
+      ],
+    );
+    return isRemote
+        ? RefreshIndicator(
+            onRefresh: _refreshRemoteCollectionItemsForce,
+            child: list,
+          )
+        : list;
   }
 
   Future<void> _playCollectionItem(

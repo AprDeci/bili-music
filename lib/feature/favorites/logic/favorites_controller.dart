@@ -122,8 +122,9 @@ class FavoritesController extends _$FavoritesController {
   }
 
   Future<RemoteCollectionSyncResult> syncRemoteCollectionIfStale(
-    String collectionId,
-  ) {
+    String collectionId, {
+    bool force = false,
+  }) {
     final Future<RemoteCollectionSyncResult>? existing =
         _collectionSyncs[collectionId];
     final FavoriteCollection? collection = _collectionById(collectionId);
@@ -137,7 +138,7 @@ class FavoritesController extends _$FavoritesController {
       return existing;
     }
     final Future<RemoteCollectionSyncResult> sync =
-        _syncRemoteCollectionIfStale(collectionId);
+        _syncRemoteCollectionIfStale(collectionId, force: force);
     _collectionSyncs[collectionId] = sync;
     sync.then<void>(
       (_) => _collectionSyncs.remove(collectionId),
@@ -149,8 +150,9 @@ class FavoritesController extends _$FavoritesController {
   }
 
   Future<RemoteCollectionSyncResult> _syncRemoteCollectionIfStale(
-    String collectionId,
-  ) async {
+    String collectionId, {
+    required bool force,
+  }) async {
     final FavoriteCollection? collection = _collectionById(collectionId);
     final String? remoteId = collection?.remoteId;
     if (collection == null || !collection.isRemote || remoteId == null) {
@@ -162,7 +164,7 @@ class FavoritesController extends _$FavoritesController {
         ? null
         : now.difference(lastSyncedAt);
     const Duration staleThreshold = Duration(minutes: 5);
-    if (age != null && age <= staleThreshold) {
+    if (!force && age != null && age <= staleThreshold) {
       _logger.d(
         'stale decision=skip collectionId=$collectionId age=$age '
         'threshold=$staleThreshold',
