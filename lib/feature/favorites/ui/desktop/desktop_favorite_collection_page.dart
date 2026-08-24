@@ -69,8 +69,9 @@ class _DesktopFavoriteCollectionPageState
     }
   }
 
-  void _refreshRemoteCollectionItems() {
-    if (_isSyncingRemoteCollection || !_shouldSyncRemoteCollection) {
+  void _refreshRemoteCollectionItems({bool force = false}) {
+    if (_isSyncingRemoteCollection ||
+        (!force && !_shouldSyncRemoteCollection)) {
       return;
     }
 
@@ -88,7 +89,7 @@ class _DesktopFavoriteCollectionPageState
           }
           final RemoteCollectionSyncResult result = await ref
               .read(favoritesControllerProvider.notifier)
-              .syncRemoteCollectionIfStale(collectionId);
+              .syncRemoteCollectionIfStale(collectionId, force: force);
           if (!_canApplyRemoteRefreshResult(collectionId, requestId)) {
             return;
           }
@@ -140,6 +141,10 @@ class _DesktopFavoriteCollectionPageState
         }
       }),
     );
+  }
+
+  void _refreshRemoteCollectionItemsForce() {
+    _refreshRemoteCollectionItems(force: true);
   }
 
   void _clearRemoteSyncStatusAfter(Duration duration) {
@@ -414,11 +419,43 @@ class _DesktopFavoriteCollectionPageState
                               ),
                               onExit: () => _setSelectionMode(false),
                             )
-                          : FavoriteCollectionSearchField(
-                              controller: _searchController,
-                              query: _searchQuery,
-                              onChanged: _updateSearchQuery,
-                              onClear: _clearSearchQuery,
+                          : Row(
+                              children: <Widget>[
+                                Expanded(
+                                  child: FavoriteCollectionSearchField(
+                                    controller: _searchController,
+                                    query: _searchQuery,
+                                    onChanged: _updateSearchQuery,
+                                    onClear: _clearSearchQuery,
+                                  ),
+                                ),
+                                if (resolvedCollection.isRemote) ...<Widget>[
+                                  const SizedBox(width: 6),
+                                  Tooltip(
+                                    message: '同步网络歌单',
+                                    child: IconButton(
+                                      onPressed: _isSyncingRemoteCollection
+                                          ? null
+                                          : _refreshRemoteCollectionItemsForce,
+                                      padding: EdgeInsets.zero,
+                                      constraints:
+                                          const BoxConstraints.tightFor(
+                                            width: 30,
+                                            height: 30,
+                                          ),
+                                      icon: _isSyncingRemoteCollection
+                                          ? const SizedBox(
+                                              width: 16,
+                                              height: 16,
+                                              child: CircularProgressIndicator(
+                                                strokeWidth: 2,
+                                              ),
+                                            )
+                                          : const Icon(Icons.sync_rounded),
+                                    ),
+                                  ),
+                                ],
+                              ],
                             ),
                     ),
                     Expanded(

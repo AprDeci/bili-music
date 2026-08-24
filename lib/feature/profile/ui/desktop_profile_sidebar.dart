@@ -473,6 +473,12 @@ class _DesktopProfileSidebarState extends ConsumerState<DesktopProfileSidebar> {
                     icon: SizedBox.shrink(),
                   ),
                   if (collection.isRemote)
+                    const CommonAttachMenuItem<_CollectionAction>(
+                      value: _CollectionAction.sync,
+                      label: '同步',
+                      icon: Icons.sync_rounded,
+                    ),
+                  if (collection.isRemote)
                     CommonAttachMenuItem<_CollectionAction>(
                       value: _CollectionAction.remove,
                       label: '移除',
@@ -500,6 +506,13 @@ class _DesktopProfileSidebarState extends ConsumerState<DesktopProfileSidebar> {
                       );
                     case _CollectionAction.remove:
                       await _showRemoveRemoteCollectionDialog(
+                        sidebarContext,
+                        ref,
+                        collection,
+                      );
+                    case _CollectionAction.sync:
+                      SmartDialog.dismiss<void>();
+                      await _syncRemoteCollection(
                         sidebarContext,
                         ref,
                         collection,
@@ -645,9 +658,43 @@ class _DesktopProfileSidebarState extends ConsumerState<DesktopProfileSidebar> {
     }
     ToastUtil.show(removed ? '已移除网络歌单' : '移除失败');
   }
+
+  Future<void> _syncRemoteCollection(
+    BuildContext context,
+    WidgetRef ref,
+    FavoriteCollection collection,
+  ) async {
+    if (!collection.isRemote) {
+      return;
+    }
+
+    ToastUtil.show('正在同步…');
+    try {
+      final RemoteCollectionSyncResult result = await ref
+          .read(favoritesControllerProvider.notifier)
+          .syncRemoteCollectionIfStale(collection.id, force: true);
+      if (!context.mounted) {
+        return;
+      }
+
+      switch (result) {
+        case RemoteCollectionSyncResult.completed:
+          ToastUtil.show('同步完成');
+        case RemoteCollectionSyncResult.incomplete:
+          ToastUtil.show('同步未完成，已使用本地数据');
+        case RemoteCollectionSyncResult.skipped:
+          return;
+      }
+    } on Object {
+      if (!context.mounted) {
+        return;
+      }
+      ToastUtil.show('网络歌单同步失败，请稍后重试');
+    }
+  }
 }
 
-enum _CollectionAction { rename, delete, remove }
+enum _CollectionAction { rename, delete, remove, sync }
 
 enum _FavoriteListTab { remote, local }
 
