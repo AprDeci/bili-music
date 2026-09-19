@@ -84,6 +84,7 @@ dependencies:
   photo_view: ^0.15.0
 
   # 系统
+  open_filex: ^4.7.0
   saver_gallery: ^4.1.2
   package_info_plus: ^10.1.0
   url_launcher: ^6.3.2
