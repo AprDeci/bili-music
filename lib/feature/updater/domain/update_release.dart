@@ -26,10 +26,10 @@ abstract class UpdateRelease with _$UpdateRelease {
 
   const UpdateRelease._();
 
-  /// 资产名形如 `bili-music-v1.8.2-arm64-v8a.apk`，按 [abiSuffixes] 顺序取第一个匹配。
-  UpdateAsset? selectApkAsset(List<String> abiSuffixes) {
-    for (final String suffix in abiSuffixes) {
-      final String needle = '-${suffix.toLowerCase()}.apk';
+  /// 资产名形如 `bili-music-v1.8.2-arm64-v8a.apk`，按 [nameSuffixes] 顺序取第一个匹配。
+  UpdateAsset? selectAsset(List<String> nameSuffixes) {
+    for (final String suffix in nameSuffixes) {
+      final String needle = '-${suffix.toLowerCase()}';
       for (final UpdateAsset asset in assets) {
         if (asset.name.toLowerCase().endsWith(needle)) {
           return asset;

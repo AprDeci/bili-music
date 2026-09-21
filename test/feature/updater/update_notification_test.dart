@@ -1,4 +1,5 @@
 import 'package:bilimusic/feature/updater/data/update_notification.dart';
+import 'package:bilimusic/feature/updater/data/update_progress_reporter.dart';
 import 'package:bilimusic/feature/updater/data/update_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -23,5 +24,14 @@ void main() {
     await UpdateNotification.showProgress(percent: 50, host: 'gh-proxy.org');
     await UpdateNotification.showFailure('所有下载地址均失败');
     await UpdateNotification.cancel();
+  });
+
+  test('进度通道在插件缺失的环境里也不抛错', () async {
+    final UpdateProgressReporter reporter = UpdateProgressReporter();
+    await reporter.prepare();
+    await reporter.report(0, 'gh-proxy.org');
+    await reporter.report(50, null);
+    await reporter.finish();
+    await reporter.fail('所有下载地址均失败');
   });
 }

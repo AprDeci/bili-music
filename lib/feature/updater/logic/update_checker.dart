@@ -68,13 +68,13 @@ class UpdateChecker {
         return;
       }
 
-      final UpdateAsset? apkAsset = _resolveAndroidAsset(release);
+      final UpdateAsset? installAsset = _resolveInstallAsset(release);
       final UpdateDialogAction? action = await showUpdateDialog(
         context,
         currentVersion: currentVersion.displayValue,
         latestVersion: latestVersion.displayValue,
         release: release,
-        apkAsset: apkAsset,
+        installAsset: installAsset,
       );
       if (!context.mounted || action == null) {
         return;
@@ -91,10 +91,10 @@ class UpdateChecker {
             mode: LaunchMode.externalApplication,
           );
         case UpdateDialogAction.downloadAndInstall:
-          if (apkAsset != null) {
+          if (installAsset != null) {
             await container
                 .read(updaterControllerProvider.notifier)
-                .downloadAndInstall(apkAsset);
+                .downloadAndInstall(installAsset);
           }
       }
     } on Object catch (error, stackTrace) {
@@ -103,11 +103,12 @@ class UpdateChecker {
     }
   }
 
-  static UpdateAsset? _resolveAndroidAsset(UpdateRelease release) {
-    if (!PlatformUtil.isAndroid) {
+  /// Android 取 ABI 对应的 APK，Windows 取安装包；其他平台交给浏览器。
+  static UpdateAsset? _resolveInstallAsset(UpdateRelease release) {
+    if (!PlatformUtil.isAndroid && !PlatformUtil.isWindows) {
       return null;
     }
-    return release.selectApkAsset(UpdateRepository.abiSuffixCandidates());
+    return release.selectAsset(UpdateRepository.installerSuffixCandidates());
   }
 
   static void _toastIfManual(bool manual, String message) {

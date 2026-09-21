@@ -34,14 +34,54 @@ void main() {
     );
 
     expect(
-      release.selectApkAsset(<String>['x86_64', 'arm64-v8a'])?.name,
+      release.selectAsset(<String>['x86_64.apk', 'arm64-v8a.apk'])?.name,
       'bili-music-v1.8.2-arm64-v8a.apk',
     );
     expect(
-      release.selectApkAsset(<String>['x86_64', 'armeabi-v7a'])?.name,
+      release.selectAsset(<String>['x86_64.apk', 'armeabi-v7a.apk'])?.name,
       'bili-music-v1.8.2-armeabi-v7a.apk',
     );
-    expect(release.selectApkAsset(<String>['x86_64']), isNull);
+    expect(release.selectAsset(<String>['x86_64.apk']), isNull);
+  });
+
+  test('Windows 安装包后缀按架构区分，且不会误选另一个架构', () {
+    const UpdateRelease release = UpdateRelease(
+      tagName: 'v1.8.2',
+      title: '',
+      body: '',
+      htmlUrl: '',
+      assets: <UpdateAsset>[
+        UpdateAsset(
+          name: 'bilimusic-v1.8.2-windows-setup.exe',
+          downloadUrl: 'https://example.com/x64.exe',
+        ),
+        UpdateAsset(
+          name: 'bilimusic-v1.8.2-windows-arm64-setup.exe',
+          downloadUrl: 'https://example.com/arm64.exe',
+        ),
+      ],
+    );
+
+    expect(UpdateRepository.windowsInstallerSuffixes(isArm64: true), <String>[
+      'windows-arm64-setup.exe',
+    ]);
+    expect(UpdateRepository.windowsInstallerSuffixes(isArm64: false), <String>[
+      'windows-setup.exe',
+    ]);
+    expect(
+      release
+          .selectAsset(UpdateRepository.windowsInstallerSuffixes(isArm64: true))
+          ?.name,
+      'bilimusic-v1.8.2-windows-arm64-setup.exe',
+    );
+    expect(
+      release
+          .selectAsset(
+            UpdateRepository.windowsInstallerSuffixes(isArm64: false),
+          )
+          ?.name,
+      'bilimusic-v1.8.2-windows-setup.exe',
+    );
   });
 
   test('探测结果按延迟排序，不可达的排最后', () {
@@ -147,15 +187,15 @@ void main() {
     );
   });
 
-  test('ABI 候选去重且当前 ABI 优先', () {
-    expect(UpdateRepository.abiSuffixCandidates(current: 'arm64-v8a'), <String>[
-      'arm64-v8a',
-      'armeabi-v7a',
+  test('Android 候选去重且当前 ABI 优先', () {
+    expect(UpdateRepository.androidApkSuffixes(current: 'arm64-v8a'), <String>[
+      'arm64-v8a.apk',
+      'armeabi-v7a.apk',
     ]);
-    expect(UpdateRepository.abiSuffixCandidates(current: 'x86_64'), <String>[
-      'x86_64',
-      'arm64-v8a',
-      'armeabi-v7a',
+    expect(UpdateRepository.androidApkSuffixes(current: 'x86_64'), <String>[
+      'x86_64.apk',
+      'arm64-v8a.apk',
+      'armeabi-v7a.apk',
     ]);
   });
 }

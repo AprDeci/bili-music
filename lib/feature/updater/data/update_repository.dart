@@ -4,6 +4,7 @@ import 'dart:io';
 
 import 'package:bilimusic/common/logger.dart';
 import 'package:bilimusic/common/util/json_util.dart';
+import 'package:bilimusic/common/util/platform_util.dart';
 import 'package:bilimusic/feature/updater/domain/update_release.dart';
 import 'package:crypto/crypto.dart';
 import 'package:dio/dio.dart';
@@ -290,25 +291,40 @@ class UpdateRepository {
     return digest.toString();
   }
 
+  /// 当前平台安装包资产的候选后缀，按优先级排列。
+  static List<String> installerSuffixCandidates() {
+    if (PlatformUtil.isWindows) {
+      return windowsInstallerSuffixes();
+    }
+    return androidApkSuffixes();
+  }
+
+  /// Android 拆包后缀：当前 ABI 优先，缺资产时退回常见 64/32 位包。
+  static List<String> androidApkSuffixes({String? current}) {
+    final String? primary = current ?? _currentAndroidAbiSuffix();
+    final List<String> suffixes = <String>[
+      if (primary != null && primary.isNotEmpty) '$primary.apk',
+      'arm64-v8a.apk',
+      'armeabi-v7a.apk',
+    ];
+    return suffixes.toSet().toList(growable: false);
+  }
+
+  /// Windows 安装包后缀；arm64 与 x64 的包互不兼容，所以只有一个候选。
+  static List<String> windowsInstallerSuffixes({bool? isArm64}) {
+    final bool arm64 = isArm64 ?? Abi.current() == Abi.windowsArm64;
+    return <String>[
+      if (arm64) 'windows-arm64-setup.exe' else 'windows-setup.exe',
+    ];
+  }
+
   /// 当前进程所在 Android ABI 对应的资产后缀；非 Android 返回 null。
-  static String? currentAndroidAbiSuffix() {
+  static String? _currentAndroidAbiSuffix() {
     return switch (Abi.current()) {
       Abi.androidArm64 => 'arm64-v8a',
       Abi.androidArm => 'armeabi-v7a',
       Abi.androidX64 => 'x86_64',
-      Abi.androidIA32 => 'x86',
       _ => null,
     };
-  }
-
-  /// 优先当前 ABI，缺资产时退回常见 64/32 位包。
-  static List<String> abiSuffixCandidates({String? current}) {
-    final String? primary = current ?? currentAndroidAbiSuffix();
-    final List<String> suffixes = <String>[
-      if (primary != null && primary.isNotEmpty) primary,
-      'arm64-v8a',
-      'armeabi-v7a',
-    ];
-    return suffixes.toSet().toList(growable: false);
   }
 }

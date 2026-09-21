@@ -10,7 +10,7 @@ Future<UpdateDialogAction?> showUpdateDialog(
   required String currentVersion,
   required String latestVersion,
   required UpdateRelease release,
-  required UpdateAsset? apkAsset,
+  required UpdateAsset? installAsset,
 }) {
   final ThemeData theme = Theme.of(context);
   final String title = release.title.isEmpty
@@ -38,10 +38,11 @@ Future<UpdateDialogAction?> showUpdateDialog(
                 Text('更新内容', style: theme.textTheme.titleSmall),
                 const SizedBox(height: 8),
                 SelectableText(body),
-                if (apkAsset != null) ...<Widget>[
+                if (installAsset != null) ...<Widget>[
                   const SizedBox(height: 12),
                   Text(
-                    '安装包：${apkAsset.name}（${formatBytes(apkAsset.sizeBytes)}）',
+                    '安装包：${installAsset.name}'
+                    '（${formatBytes(installAsset.sizeBytes)}）',
                     style: theme.textTheme.bodySmall,
                   ),
                 ],
@@ -57,11 +58,11 @@ Future<UpdateDialogAction?> showUpdateDialog(
           ),
           FilledButton(
             onPressed: () => Navigator.of(context).pop(
-              apkAsset == null
+              installAsset == null
                   ? UpdateDialogAction.openReleasePage
                   : UpdateDialogAction.downloadAndInstall,
             ),
-            child: Text(apkAsset == null ? '前往更新' : '下载更新'),
+            child: Text(installAsset == null ? '前往更新' : '下载更新'),
           ),
         ],
       );

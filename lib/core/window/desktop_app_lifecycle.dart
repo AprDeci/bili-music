@@ -12,6 +12,11 @@ import 'package:window_manager/window_manager.dart';
 class DesktopAppLifecycle {
   DesktopAppLifecycle._(this._container);
 
+  static DesktopAppLifecycle? _current;
+
+  /// 当前桌面生命周期实例；应用内更新等场景需要借它做真正的退出。
+  static DesktopAppLifecycle? get current => _current;
+
   final ProviderContainer _container;
   DesktopTrayController? _trayController;
   DesktopWindowStateController? _windowStateController;
@@ -24,9 +29,19 @@ class DesktopAppLifecycle {
     await windowManager.ensureInitialized();
 
     final DesktopAppLifecycle lifecycle = DesktopAppLifecycle._(container);
+    _current = lifecycle;
     await lifecycle._attachTray();
     await lifecycle._attachWindowState();
     return lifecycle;
+  }
+
+  /// 走托盘那条完整的退出路径（关播放器、存窗口状态、销毁托盘与窗口）。
+  Future<void> requestExit() async {
+    final DesktopTrayController? trayController = _trayController;
+    if (trayController == null) {
+      return;
+    }
+    await trayController.requestExit();
   }
 
   void attachHotkeyController(DesktopHotkeyController controller) {
