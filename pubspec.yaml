@@ -98,6 +98,7 @@ dependencies:
   adaptive_palette: ^3.1.0
   audio_service_win: ^0.0.3
   desktop_lyrics: ^0.0.8
+  flutter_local_notifications: ^22.3.1
 
 dependency_overrides: 
   flutter_lyric: 
