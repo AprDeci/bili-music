@@ -58,7 +58,7 @@ final class FavoritesRemoteCacheRepositoryProvider
 }
 
 String _$favoritesRemoteCacheRepositoryHash() =>
-    r'd221a5555da29fbe5885e6a60a9a1fca63f417a9';
+    r'1910ecd61def78c37250d8378d1be5e48afdf02c';
 
 @ProviderFor(biliFavoritesRemoteRepository)
 final biliFavoritesRemoteRepositoryProvider =

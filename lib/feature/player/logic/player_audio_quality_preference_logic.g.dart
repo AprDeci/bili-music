@@ -49,7 +49,7 @@ final class PlayerAudioQualityPreferenceLogicProvider
 }
 
 String _$playerAudioQualityPreferenceLogicHash() =>
-    r'ecc263c19d6774c487559c2b76819954ad42d0fb';
+    r'27348d7bb6ba2e4e4b56ccfcfe65284f46ca7d91';
 
 abstract class _$PlayerAudioQualityPreferenceLogic
     extends $Notifier<PlayerAudioQualityPreference> {

@@ -56,4 +56,4 @@ final class PlayerAudioCacheRepositoryProvider
 }
 
 String _$playerAudioCacheRepositoryHash() =>
-    r'b2a6600185ab8335b9583e4eba574b8d362a36e4';
+    r'de01a18d258dace6c36fa7e19b1bec294f17c563';
