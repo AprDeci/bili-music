@@ -1,11 +1,11 @@
 import 'package:bilimusic/common/bottom_height_helper.dart';
 import 'package:bilimusic/common/util/color_util.dart';
-import 'package:bilimusic/common/util/update_util.dart';
 import 'package:bilimusic/feature/player/domain/player_state.dart';
 import 'package:bilimusic/feature/player/logic/player_controller.dart';
 import 'package:bilimusic/feature/player/ui/mini_player_bar.dart';
 import 'package:bilimusic/feature/player/ui/mini_player_glass_bar.dart';
 import 'package:bilimusic/feature/setting/logic/appearance_setting_logic.dart';
+import 'package:bilimusic/feature/updater/logic/update_checker.dart';
 import 'package:bilimusic/router/util/mobile_branch_navigator_keys.dart';
 import 'package:bilimusic/router/util/mobile_chrome_config.dart';
 import 'package:bilimusic/router/util/player_navigation.dart';
@@ -61,7 +61,7 @@ class _MobileShellScaffoldState extends ConsumerState<MobileShellScaffold> {
         return;
       }
 
-      await UpdateUtil.checkAndPromptForUpdate(context);
+      await UpdateChecker.checkAndPrompt(context);
     });
   }
 

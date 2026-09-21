@@ -1,4 +1,4 @@
-import 'package:bilimusic/common/util/update_util.dart';
+import 'package:bilimusic/feature/updater/logic/update_checker.dart';
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -47,8 +47,7 @@ class AboutSettingsPage extends StatelessWidget {
               title: const Text('检查更新'),
               subtitle: Text('查看是否有新版本', style: theme.textTheme.bodySmall),
               trailing: const Icon(Icons.arrow_forward_outlined),
-              onTap: () =>
-                  UpdateUtil.checkAndPromptForUpdate(context, manual: true),
+              onTap: () => UpdateChecker.checkAndPrompt(context, manual: true),
             ),
             ListTile(
               contentPadding: EdgeInsets.zero,
