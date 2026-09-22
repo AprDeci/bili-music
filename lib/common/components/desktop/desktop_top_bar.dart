@@ -160,83 +160,86 @@ class _DesktopTopBarState extends ConsumerState<DesktopTopBar>
 
     return SizedBox(
       height: 56,
-      child: DragToMoveArea(
-        child: GestureDetector(
-          behavior: HitTestBehavior.opaque,
-          onDoubleTap: _toggleMaximize,
-          child: Row(
-            children: <Widget>[
-              const SizedBox(width: 16),
-              // const _LeadingSlot(),
-              // const SizedBox(width: 12),
-              Expanded(
-                child: Row(
-                  children: <Widget>[
-                    Expanded(
-                      flex: 2,
-                      child: CompositedTransformTarget(
-                        link: _searchLayerLink,
-                        child: _DesktopSearchField(
-                          controller: _searchController,
-                          focusNode: _searchFocusNode,
-                          textStyle: theme.textTheme.bodyMedium?.copyWith(
-                            color: theme.colorScheme.onSurface,
-                          ),
-                          onChanged: (String value) {
-                            ref
-                                .read(searchPageControllerProvider.notifier)
-                                .updateQuery(value);
-                            _showDropdown();
-                          },
-                          onSubmitted: (_) => _submitSearch(),
-                          onTap: _showDropdown,
-                          onClear: () {
-                            _searchController.clear();
-                            ref
-                                .read(searchPageControllerProvider.notifier)
-                                .clearQuery();
-                            _showDropdown();
-                          },
+      child: GestureDetector(
+        behavior: HitTestBehavior.translucent,
+        onPanStart: (_) => windowManager.startDragging(),
+        child: Row(
+          children: <Widget>[
+            const SizedBox(width: 16),
+            Expanded(
+              child: Row(
+                children: <Widget>[
+                  Expanded(
+                    flex: 2,
+                    child: CompositedTransformTarget(
+                      link: _searchLayerLink,
+                      child: _DesktopSearchField(
+                        controller: _searchController,
+                        focusNode: _searchFocusNode,
+                        textStyle: theme.textTheme.bodyMedium?.copyWith(
+                          color: theme.colorScheme.onSurface,
                         ),
+                        onChanged: (String value) {
+                          ref
+                              .read(searchPageControllerProvider.notifier)
+                              .updateQuery(value);
+                          _showDropdown();
+                        },
+                        onSubmitted: (_) => _submitSearch(),
+                        onTap: _showDropdown,
+                        onClear: () {
+                          _searchController.clear();
+                          ref
+                              .read(searchPageControllerProvider.notifier)
+                              .clearQuery();
+                          _showDropdown();
+                        },
                       ),
                     ),
-                    const Expanded(flex: 3, child: SizedBox.shrink()),
-                  ],
-                ),
+                  ),
+                  Expanded(
+                    flex: 3,
+                    child: GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onDoubleTap: _toggleMaximize,
+                      child: const SizedBox.expand(),
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(width: 12),
-              Tooltip(
-                waitDuration: const Duration(seconds: 1),
-                message: '最小化',
-                child: BarIconButton(
-                  icon: Icons.remove_rounded,
-                  iconSize: 18,
-                  onPressed: () => windowManager.minimize(),
-                ),
+            ),
+            const SizedBox(width: 12),
+            Tooltip(
+              waitDuration: const Duration(seconds: 1),
+              message: '最小化',
+              child: BarIconButton(
+                icon: Icons.remove_rounded,
+                iconSize: 18,
+                onPressed: () => windowManager.minimize(),
               ),
-              Tooltip(
-                waitDuration: const Duration(seconds: 1),
-                message: _isMaximized ? '还原' : '最大化',
-                child: BarIconButton(
-                  icon: _isMaximized
-                      ? Icons.filter_none_rounded
-                      : Icons.crop_square_rounded,
-                  iconSize: 16,
-                  onPressed: _toggleMaximize,
-                ),
+            ),
+            Tooltip(
+              waitDuration: const Duration(seconds: 1),
+              message: _isMaximized ? '还原' : '最大化',
+              child: BarIconButton(
+                icon: _isMaximized
+                    ? Icons.filter_none_rounded
+                    : Icons.crop_square_rounded,
+                iconSize: 16,
+                onPressed: _toggleMaximize,
               ),
-              Tooltip(
-                waitDuration: const Duration(seconds: 1),
-                message: '关闭',
-                child: BarIconButton(
-                  icon: Icons.close_rounded,
-                  iconSize: 18,
-                  onPressed: () => windowManager.close(),
-                ),
+            ),
+            Tooltip(
+              waitDuration: const Duration(seconds: 1),
+              message: '关闭',
+              child: BarIconButton(
+                icon: Icons.close_rounded,
+                iconSize: 18,
+                onPressed: () => windowManager.close(),
               ),
-              const SizedBox(width: 8),
-            ],
-          ),
+            ),
+            const SizedBox(width: 8),
+          ],
         ),
       ),
     );
@@ -646,4 +649,3 @@ class _DesktopHistoryPane extends StatelessWidget {
     );
   }
 }
-
