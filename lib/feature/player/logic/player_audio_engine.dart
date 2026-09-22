@@ -103,6 +103,15 @@ class PlayerAudioEngine {
       _hasSource = true;
       final Duration? position = initialPosition;
       if (position != null && position > Duration.zero) {
+        // 等待音频就绪
+        if (_player.state.duration <= Duration.zero) {
+          await _player.stream.duration
+              .firstWhere((Duration value) => value > Duration.zero)
+              .timeout(
+                const Duration(seconds: 5),
+                onTimeout: () => Duration.zero,
+              );
+        }
         await _player.seek(position);
       }
     } finally {

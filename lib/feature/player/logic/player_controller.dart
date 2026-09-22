@@ -83,8 +83,11 @@ class PlayerController extends Notifier<PlayerState>
   int _operationGeneration = 0;
   int _retryGeneration = 0;
   int _enginePlaybackRetryCount = 0;
+  Duration _lastPersistedProgress = Duration.zero;
 
   static const int _maxPlaybackRetries = 3;
+
+  static const Duration _persistProgressStep = Duration(seconds: 10);
 
   @override
   PlayerState build() {
@@ -137,8 +140,8 @@ class PlayerController extends Notifier<PlayerState>
     }
     _nextGeneration();
     try {
-      await _audioEngine.stop();
       await _persistQueueSnapshot();
+      await _audioEngine.stop();
     } finally {
       await _dispose();
     }
@@ -748,12 +751,16 @@ class PlayerController extends Notifier<PlayerState>
       return;
     }
 
-    await pause();
+    await _audioEngine.pause();
     if (!_isCurrentGeneration(generation)) {
       return;
     }
 
-    state = state.copyWith(isPlaying: false, isBuffering: false);
+    state = state.copyWith(
+      isPlaying: false,
+      isBuffering: false,
+      position: Duration(milliseconds: snapshot.resumePositionMs),
+    );
     _publishMediaSession();
     await _persistQueueSnapshot();
   }
@@ -1168,6 +1175,20 @@ class PlayerController extends Notifier<PlayerState>
       _enginePlaybackSnapshot.copyWith(position: position),
     );
     _emitPlayerEvent(PlayerEventType.position, position: position);
+    _persistProgressWhilePlaying(position);
+  }
+
+  // 自动存储进度
+  void _persistProgressWhilePlaying(Duration position) {
+    if (!state.isPlaying || !state.hasActiveQueueIndex) {
+      return;
+    }
+    if ((position - _lastPersistedProgress).abs() < _persistProgressStep) {
+      return;
+    }
+
+    _lastPersistedProgress = position;
+    unawaited(_persistQueueSnapshot());
   }
 
   void _onEngineBufferedPositionChanged(Duration bufferedPosition) {
