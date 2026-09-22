@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<style>
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, "Segoe UI", Roboto, "Microsoft YaHei", sans-serif;
+    display: flex; align-items: center; justify-content: center;
+    min-height: 100vh;
+  }
+  #hint { color: #666; font-size: 14px; text-align: center; padding: 12px; }
+  #fallback { display: none; color: #d93025; font-size: 14px; text-align: center; padding: 12px; }
+</style>
+</head>
+<body>
+<div id="hint">正在加载人机验证…</div>
+<div id="fallback"></div>
+<script src="https://static.geetest.com/static/js/gt.0.5.0.js"></script>
+<script>
+(function () {
+  var channelName = 'BiliMusicGeetest';
+  var settled = false;
+  var started = false;
+  var timeout = null;
+
+  function post(payload, attempt) {
+    attempt = attempt || 0;
+    var text = JSON.stringify(payload);
+    if (typeof window[channelName] !== 'undefined' && window[channelName]) {
+      window[channelName].postMessage(text);
+      return;
+    }
+    if (attempt < 30) {
+      setTimeout(function () { post(payload, attempt + 1); }, 200);
+    }
+  }
+
+  function fail(message) {
+    if (settled) { return; }
+    settled = true;
+    var fallback = document.getElementById('fallback');
+    fallback.textContent = message;
+    fallback.style.display = 'block';
+    document.getElementById('hint').style.display = 'none';
+    post({ type: 'error', message: message });
+  }
+
+  // 页面加载完成即主动握手，宿主端据此注入 gt/challenge（不依赖 onPageFinished）。
+  post({ type: 'page-loaded', hasInitGeetest: typeof initGeetest });
+
+  window.startBiliGeetest = function (gt, challenge) {
+    if (started) { return 'already-started'; }
+    started = true;
+
+    timeout = setTimeout(function () {
+      fail('人机验证加载超时，请检查网络后重试');
+    }, 20000);
+
+    if (typeof initGeetest !== 'function') {
+      clearTimeout(timeout);
+      fail('人机验证脚本加载失败，请检查网络后重试');
+      return 'initGeetest-missing';
+    }
+
+    try {
+      initGeetest({
+        gt: gt,
+        challenge: challenge,
+        offline: false,
+        new_captcha: true,
+        product: 'bind',
+        lang: 'zh-cn'
+      }, function (captchaObj) {
+        // bind 模式下 appendTo 是空操作，必须在 onReady 之后调用 verify() 显示验证界面。
+        captchaObj.onReady(function () {
+          clearTimeout(timeout);
+          document.getElementById('hint').style.display = 'none';
+
+          try {
+            captchaObj.verify();
+          } catch (error) {
+            fail('验证界面展示失败：' + error);
+            return;
+          }
+
+          post({ type: 'ready' });
+        });
+
+        captchaObj.onSuccess(function () {
+          if (settled) { return; }
+          settled = true;
+          var result = captchaObj.getValidate() || {};
+          post({
+            type: 'success',
+            challenge: result.geetest_challenge,
+            validate: result.geetest_validate,
+            seccode: result.geetest_seccode
+          });
+        });
+
+        captchaObj.onError(function (error) {
+          fail((error && error.msg) ? error.msg : '人机验证出错，请重试');
+        });
+
+        captchaObj.onClose(function () {
+          if (settled) { return; }
+          settled = true;
+          post({ type: 'close' });
+        });
+      });
+    } catch (error) {
+      clearTimeout(timeout);
+      fail('人机验证初始化失败：' + error);
+      return 'init-threw';
+    }
+
+    return 'started';
+  };
+})();
+</script>
+</body>
+</html>

@@ -2,8 +2,10 @@ import 'package:bilimusic/common/util/json_util.dart';
 import 'package:bilimusic/core/bili/session/bili_cookie.dart';
 import 'package:bilimusic/core/bili/session/bili_session.dart';
 import 'package:bilimusic/core/bili/session/bili_session_store.dart';
+import 'package:bilimusic/core/bili/sign/bili_web_ticket.dart';
 import 'package:bilimusic/core/net/bili_client.dart';
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'bili_session_controller.g.dart';
@@ -62,9 +64,15 @@ class BiliSessionController extends _$BiliSessionController {
       'https://www.bilibili.com/',
       options: Options(responseType: ResponseType.plain),
     );
-    final Map<String, String> cookies = extractCookiesFromHeaders(
-      response.headers,
-    );
+    final Map<String, String> cookies = <String, String>{
+      ...extractCookiesFromHeaders(response.headers),
+    };
+
+    // 补齐文档提到的风控 Cookie（buvid4 / bili_ticket），缺了它们容易被判定为异常请求。
+    final Map<String, String> riskCookies = await _fetchRiskCookies();
+    for (final MapEntry<String, String> entry in riskCookies.entries) {
+      cookies.putIfAbsent(entry.key, () => entry.value);
+    }
 
     if (cookies.isEmpty) {
       return state ??
@@ -82,7 +90,83 @@ class BiliSessionController extends _$BiliSessionController {
       nextCookies: cookies,
     );
     await _persistSession(nextSession);
+
+    // debug 用途：风控敏感接口要求「解验证码」和「发请求」走同一出口 IP，
+    // 这里记录 App（Dio）看到的出口，便于和浏览器对比。
+    if (kDebugMode) {
+      await _logEgressIp();
+    }
+
     return nextSession;
+  }
+
+  Future<void> _logEgressIp() async {
+    try {
+      final Response<dynamic> response = await _client.get<dynamic>(
+        '/x/web-interface/zone',
+      );
+      final Map<String, dynamic> data = _asMap(_asMap(response.data)['data']);
+      debugPrint(
+        '[BiliSession] 出口 IP：${data['addr']} '
+        '${data['province'] ?? ''}${data['city'] ?? ''} ${data['isp'] ?? ''}',
+      );
+    } on Object catch (error) {
+      debugPrint('[BiliSession] 出口 IP 查询失败：$error');
+    }
+  }
+
+  /// buvid3 / buvid4 见 `docs/bili-api-doc/docs/misc/buvid3_4.md`，
+  /// bili_ticket 见 `docs/bili-api-doc/docs/misc/sign/bili_ticket.md`。
+  Future<Map<String, String>> _fetchRiskCookies() async {
+    final Map<String, String> cookies = <String, String>{};
+
+    try {
+      final Response<dynamic> response = await _client.get<dynamic>(
+        '/x/frontend/finger/spi',
+      );
+      final Map<String, dynamic> data = _asMap(_asMap(response.data)['data']);
+      final String buvid3 = data['b_3'] as String? ?? '';
+      final String buvid4 = data['b_4'] as String? ?? '';
+      if (buvid3.isNotEmpty) {
+        cookies['buvid3'] = buvid3;
+      }
+      if (buvid4.isNotEmpty) {
+        cookies['buvid4'] = buvid4;
+      }
+    } on Object catch (error) {
+      debugPrint('[BiliSession] buvid 获取失败：$error');
+    }
+
+    try {
+      final String ticket = await _createWebTicket();
+      if (ticket.isNotEmpty) {
+        cookies['bili_ticket'] = ticket;
+      }
+    } on Object catch (error) {
+      debugPrint('[BiliSession] bili_ticket 获取失败：$error');
+    }
+
+    debugPrint('[BiliSession] 风控 Cookie：${cookies.keys.join(', ')}');
+    return cookies;
+  }
+
+  Future<String> _createWebTicket() async {
+    final int timestamp = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+
+    final Response<dynamic> response = await _client.post<dynamic>(
+      '/bapis/bilibili.api.ticket.v1.Ticket/GenWebTicket',
+      queryParameters: <String, dynamic>{
+        'key_id': biliTicketKeyId,
+        'hexsign': biliTicketHexSign(timestamp),
+        'context[ts]': timestamp,
+        'csrf': state?.biliJct ?? '',
+      },
+      options: Options(contentType: Headers.formUrlEncodedContentType),
+    );
+
+    final Map<String, dynamic> json = _asMap(response.data);
+    final Map<String, dynamic> data = _asMap(json['data']);
+    return data['ticket'] as String? ?? '';
   }
 
   Future<BiliSession> adoptAuthenticatedSession(BiliSession session) async {
