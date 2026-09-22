@@ -1712,6 +1712,70 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.2.1"
+  webview_all:
+    dependency: "direct main"
+    description:
+      name: webview_all
+      sha256: "90a3d188fcba65a7cdcaf9cbb645624e784b05e319fbff3f63a690b5f71e38d1"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.4.1"
+  webview_all_android:
+    dependency: transitive
+    description:
+      name: webview_all_android
+      sha256: "54848cda817a64471501db0d2bf975bd26beeee16eec424ffe64578c28cdfd6c"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.4.1"
+  webview_all_linux:
+    dependency: transitive
+    description:
+      name: webview_all_linux
+      sha256: "4f116f9dc8d6a5a2672a86941b14782211d36fc67affd8bced320a8b60be276a"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.4.1"
+  webview_all_ohos:
+    dependency: transitive
+    description:
+      name: webview_all_ohos
+      sha256: af26fe5b387b642c9cf9b6bfe23f84a7d36bbbf35ac04354b6c9f4d734de8bf1
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.4.1"
+  webview_all_web:
+    dependency: transitive
+    description:
+      name: webview_all_web
+      sha256: "767a5bf5b7f7cc51cb905798ada48df0c100559d581e1bd1fc85d34e5bf68a4c"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.4.1"
+  webview_all_windows:
+    dependency: transitive
+    description:
+      name: webview_all_windows
+      sha256: d9b81f16ec41fe19ea966ad690dba6ed65989d2287b04da0eeb19905e4eb3d2f
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.4.1"
+  webview_all_wkwebview:
+    dependency: transitive
+    description:
+      name: webview_all_wkwebview
+      sha256: "7545caa17def777b0ec2c4767803299b170f744a1dae9ffac59a8dfe0f63295e"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.4.1"
+  webview_platform_interface:
+    dependency: transitive
+    description:
+      name: webview_platform_interface
+      sha256: "50b00322919bdae4b27cdb6e1d0ad9bf4348d26a592bf6bab6610e36af083335"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.4.1"
   win32:
     dependency: transitive
     description:
