@@ -7,6 +7,7 @@ import 'package:bilimusic/feature/meting/domain/meting_search_item.dart';
 import 'package:bilimusic/feature/meting/domain/meting_search_response.dart';
 import 'package:bilimusic/feature/meting/domain/meting_server.dart';
 import 'package:bilimusic/feature/meting/logic/meting_logic.dart';
+import 'package:bilimusic/feature/meting/logic/meting_source_preference_logic.dart';
 import 'package:bilimusic/feature/player/data/player_lyrics_cache_repository.dart';
 import 'package:bilimusic/feature/player/domain/playable_item.dart';
 import 'package:bilimusic/feature/player/domain/player_lyrics_cache_entry.dart';
@@ -93,7 +94,11 @@ class PlayerLyricsController extends _$PlayerLyricsController {
       final MetingLogic metingLogic = ref.read(metingLogicProvider);
       final MetingSearchResponse response = await metingLogic.search(
         keyword: trimmedKeyword,
-        server: server ?? metingLogic.resolveServer(trimmedKeyword),
+        server:
+            server ??
+            ref
+                .read(metingSourcePreferenceLogicProvider)
+                .resolve(trimmedKeyword),
       );
       if (state.stableId != stableId) {
         return;
@@ -270,6 +275,9 @@ class PlayerLyricsController extends _$PlayerLyricsController {
   _findLyricsForItem(PlayableItem item) async {
     String? fallbackKeyword;
     final MetingLogic metingLogic = ref.read(metingLogicProvider);
+    final MetingServer server = ref
+        .read(metingSourcePreferenceLogicProvider)
+        .resolve(item.lyricSearchTitles.join(' '));
     for (final String title in item.lyricSearchTitles) {
       final String keyword = (await metingLogic.resolveSearchKeyword(
         title,
@@ -279,7 +287,7 @@ class PlayerLyricsController extends _$PlayerLyricsController {
       }
       final MetingSearchResponse response = await metingLogic.search(
         keyword: keyword,
-        server: metingLogic.resolveServer(title),
+        server: server,
       );
       for (final MetingSearchItem result in response.results) {
         final String? normalizedLyrics = _normalizeLyrics(

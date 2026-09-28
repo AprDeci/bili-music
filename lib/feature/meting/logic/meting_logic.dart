@@ -66,7 +66,7 @@ class MetingLogic {
 
     final List<MetingSearchItem> results = (await search(
       keyword: query,
-      server: resolveServer(title, server: server),
+      server: server,
     )).results;
     return results.isEmpty ? null : results.first;
   }
@@ -75,7 +75,6 @@ class MetingLogic {
     required String title,
     MetingServer server = MetingServer.netease,
   }) async {
-    server = resolveServer(title, server: server);
     final MetingSearchItem? item = await find(title: title, server: server);
     if (item == null) {
       return null;
@@ -138,17 +137,5 @@ class MetingLogic {
     }
 
     return fallbackKeyword;
-  }
-
-  MetingServer resolveServer(
-    String value, {
-    MetingServer server = MetingServer.netease,
-  }) {
-    if (value.contains('周杰伦') ||
-        value.contains('jay') ||
-        value.contains('Jay')) {
-      return MetingServer.kugou;
-    }
-    return server;
   }
 }

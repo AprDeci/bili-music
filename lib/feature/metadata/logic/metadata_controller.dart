@@ -9,6 +9,7 @@ import 'package:bilimusic/feature/metadata/data/metadata_resolver.dart';
 import 'package:bilimusic/feature/metadata/domain/metadata.dart';
 import 'package:bilimusic/feature/metadata/domain/metadata_state.dart';
 import 'package:bilimusic/feature/meting/data/meting_repository.dart';
+import 'package:bilimusic/feature/meting/logic/meting_source_preference_logic.dart';
 import 'package:bilimusic/common/domain/meta_lyrics.dart';
 import 'package:bilimusic/feature/meting/domain/meting_search_item.dart';
 import 'package:bilimusic/feature/meting/domain/meting_search_response.dart';
@@ -329,7 +330,7 @@ class MetadataController extends _$MetadataController {
 
     final List<MetingSearchItem> results = await metingRepository.search(
       keyword: keyword,
-      server: _resolveServer(title),
+      server: _resolveServer(item.lyricSearchTitles.join(' ')),
     );
     for (final MetingSearchItem result in results) {
       final MetaLyrics? metaLyrics = _normalizeMetaLyrics(
@@ -475,13 +476,8 @@ class MetadataController extends _$MetadataController {
     return fallbackKeyword;
   }
 
-  MetingServer _resolveServer(String value) {
-    if (value.contains('周杰伦') ||
-        value.contains('jay') ||
-        value.contains('Jay')) {
-      return MetingServer.kugou;
-    }
-    return MetingServer.netease;
+  MetingServer _resolveServer(String text) {
+    return ref.read(metingSourcePreferenceLogicProvider).resolve(text);
   }
 
   String? _normalizeLyrics(String? value) {
