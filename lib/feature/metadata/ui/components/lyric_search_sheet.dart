@@ -150,15 +150,15 @@ class _LyricSearchSheetState extends ConsumerState<_LyricSearchSheet> {
                   ),
                 ],
               ),
+              const SizedBox(height: 4),
               Align(
                 alignment: Alignment.centerLeft,
-                child: TextButton.icon(
+                child: TextButton(
                   onPressed: _rememberCurrentSource,
-                  icon: const Icon(Icons.push_pin_outlined, size: 18),
-                  label: const Text('记住关键词音源'),
+                  child: const Text('添加规则'),
                 ),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 12),
               Expanded(child: _buildResultList(context, theme, metadataState)),
             ],
           ),

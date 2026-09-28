@@ -100,7 +100,7 @@ class PlayerSettingsPage extends ConsumerWidget {
                   contentPadding: EdgeInsets.zero,
                   title: const Text('暂无规则'),
                   subtitle: Text(
-                    '播放时在歌词搜索里点「记住关键词音源」即可添加',
+                    '在歌词搜索面板点「添加规则」即可添加',
                     style: theme.textTheme.bodySmall,
                   ),
                 ),
@@ -122,7 +122,7 @@ class PlayerSettingsPage extends ConsumerWidget {
               ListTile(
                 contentPadding: EdgeInsets.zero,
                 leading: const Icon(Icons.add_rounded),
-                title: const Text('新增规则'),
+                title: const Text('添加规则'),
                 onTap: () => _addRule(context, ref),
               ),
             ],

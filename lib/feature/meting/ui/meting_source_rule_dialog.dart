@@ -67,9 +67,10 @@ class _MetingSourceRuleDialogState extends State<_MetingSourceRuleDialog> {
             ),
             onChanged: (_) => setState(() {}),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 8),
           Wrap(
             spacing: 8,
+            runSpacing: 8,
             children: <Widget>[
               for (final MetingServer server in MetingServer.values)
                 ChoiceChip(
