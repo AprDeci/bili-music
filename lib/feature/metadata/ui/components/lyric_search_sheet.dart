@@ -4,10 +4,12 @@ import 'package:bilimusic/feature/metadata/logic/metadata_controller.dart';
 import 'package:bilimusic/feature/meting/data/meting_repository.dart';
 import 'package:bilimusic/feature/meting/domain/meting_search_item.dart';
 import 'package:bilimusic/feature/meting/domain/meting_server.dart';
+import 'package:bilimusic/feature/meting/domain/meting_source_rule.dart';
+import 'package:bilimusic/feature/meting/logic/meting_source_preference_logic.dart';
+import 'package:bilimusic/feature/meting/ui/meting_source_rule_dialog.dart';
 import 'package:bilimusic/feature/player/domain/playable_item.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
 
 // 优先元数据信息-提取信息-原标题
 String resolveLyricSearchKeyword({
@@ -68,12 +70,15 @@ class _LyricSearchSheetState extends ConsumerState<_LyricSearchSheet> {
   late final TextEditingController _controller;
   final Map<String, Future<String?>> _pictureFutureCache =
       <String, Future<String?>>{};
-  MetingServer _selectedServer = MetingServer.netease;
+  late MetingServer _selectedServer;
 
   @override
   void initState() {
     super.initState();
     _controller = TextEditingController(text: widget.initialKeyword);
+    _selectedServer = ref
+        .read(metingSourcePreferenceLogicProvider)
+        .resolve(widget.initialKeyword);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final String keyword = widget.initialKeyword.trim();
       if (keyword.isEmpty) {
@@ -145,7 +150,15 @@ class _LyricSearchSheetState extends ConsumerState<_LyricSearchSheet> {
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: TextButton.icon(
+                  onPressed: _rememberCurrentSource,
+                  icon: const Icon(Icons.push_pin_outlined, size: 18),
+                  label: const Text('记住关键词音源'),
+                ),
+              ),
+              const SizedBox(height: 8),
               Expanded(child: _buildResultList(context, theme, metadataState)),
             ],
           ),
@@ -238,6 +251,31 @@ class _LyricSearchSheetState extends ConsumerState<_LyricSearchSheet> {
     ref
         .read(metadataControllerProvider.notifier)
         .searchManual(_controller.text, server: _selectedServer);
+  }
+
+  Future<void> _rememberCurrentSource() async {
+    final MetingSourceRule? rule = await showMetingSourceRuleDialog(
+      context: context,
+      initialKeyword: _controller.text.trim(),
+      initialServer: _selectedServer,
+    );
+    if (rule == null || !mounted) {
+      return;
+    }
+
+    await ref
+        .read(metingSourcePreferenceLogicProvider.notifier)
+        .upsertRule(keyword: rule.keyword, server: rule.server);
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _selectedServer = rule.server;
+    });
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('已记住：${rule.keyword} → ${rule.server.label}')),
+    );
   }
 }
 
