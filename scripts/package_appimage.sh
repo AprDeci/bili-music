@@ -47,10 +47,47 @@ if [ ! -f "${LINUXDEPLOY}" ]; then
   chmod +x "${LINUXDEPLOY}"
 fi
 
+# 排除宿主机的 GTK/GLib 栈
+EXCLUDE_LIBRARIES=(
+  'libgtk-3.so*'
+  'libgdk-3.so*'
+  'libgdk_pixbuf-2.0.so*'
+  'libglib-2.0.so*'
+  'libgio-2.0.so*'
+  'libgobject-2.0.so*'
+  'libgmodule-2.0.so*'
+  'libgthread-2.0.so*'
+  'libpango-1.0.so*'
+  'libpangocairo-1.0.so*'
+  'libpangoft2-1.0.so*'
+  'libatk-1.0.so*'
+  'libatk-bridge-2.0.so*'
+  'libatspi.so*'
+  'libcairo.so*'
+  'libcairo-gobject.so*'
+  'libepoxy.so*'
+)
+EXCLUDE_ARGS=()
+for library in "${EXCLUDE_LIBRARIES[@]}"; do
+  EXCLUDE_ARGS+=(--exclude-library "${library}")
+done
+
 export OUTPUT="${ARTIFACTS_DIR}/${OUTPUT_NAME}"
 
 "${LINUXDEPLOY}" \
   --appdir "${APPDIR}" \
   --desktop-file "${APPDIR}/bilimusic.desktop" \
   --icon-file "${APPDIR}/bilimusic.png" \
+  "${EXCLUDE_ARGS[@]}" \
   --output appimage
+
+# 确保被排除的库没有被打进包
+echo "Checking excluded libraries..."
+for library in "${EXCLUDE_LIBRARIES[@]}"; do
+  pattern="${library%\*}"
+  if find "${APPDIR}/usr/lib" -name "${pattern}*" 2>/dev/null | grep -q .; then
+    echo "ERROR: excluded library still present in AppDir: ${library}" >&2
+    find "${APPDIR}/usr/lib" -name "${pattern}*" >&2
+    exit 1
+  fi
+done
