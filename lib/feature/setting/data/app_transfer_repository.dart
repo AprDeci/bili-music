@@ -9,6 +9,7 @@ import 'package:bilimusic/feature/favorites/domain/favorite_collection.dart';
 import 'package:bilimusic/feature/favorites/domain/favorite_entry.dart';
 import 'package:bilimusic/feature/favorites/domain/favorite_membership.dart';
 import 'package:bilimusic/feature/favorites/domain/favorites_state.dart';
+import 'package:bilimusic/feature/meting/domain/meting_server.dart';
 import 'package:bilimusic/feature/setting/domain/app_transfer_bundle.dart';
 import 'package:bilimusic/feature/setting/domain/app_import_preview.dart';
 import 'package:bilimusic/feature/setting/domain/favorites_transfer_bundle.dart';
@@ -33,7 +34,7 @@ class AppTransferRepository {
   final FavoritesLocalRepository _favoritesRepository;
   final AppSettingsStore _settingsStore;
 
-  static const List<_TransferSettingKey> _settingKeys = <_TransferSettingKey>[
+  static final List<_TransferSettingKey> _settingKeys = <_TransferSettingKey>[
     _TransferSettingKey(key: HiveKeys.themeMode, defaultValue: ''),
     _TransferSettingKey(key: HiveKeys.themeVariant, defaultValue: ''),
     _TransferSettingKey(key: HiveKeys.lightThemeVariant, defaultValue: ''),
@@ -49,6 +50,11 @@ class AppTransferRepository {
       key: HiveKeys.playerAudioQualityPreference,
       defaultValue: 'auto',
     ),
+    _TransferSettingKey(
+      key: HiveKeys.metingDefaultServer,
+      defaultValue: MetingServer.netease.apiValue,
+    ),
+    _TransferSettingKey(key: HiveKeys.metingSourceRules, defaultValue: ''),
   ];
 
   Future<String> buildExportJson() async {
