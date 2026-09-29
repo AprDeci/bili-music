@@ -7,19 +7,20 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:webview_all/webview_all.dart';
 
-// B 站官方登录页；登录完成后从 Cookie 仓库取会话
-class BiliLoginWebViewPage extends ConsumerStatefulWidget {
-  const BiliLoginWebViewPage({super.key});
+// B 站官方登录页；登录成功后取 Cookie 写入会话并回调 onLoggedIn
+class BiliLoginWebView extends ConsumerStatefulWidget {
+  const BiliLoginWebView({super.key, required this.onLoggedIn});
 
   static const String loginUrl = 'https://passport.bilibili.com/login';
   static const String cookieDomain = 'https://www.bilibili.com';
 
+  final VoidCallback onLoggedIn;
+
   @override
-  ConsumerState<BiliLoginWebViewPage> createState() =>
-      _BiliLoginWebViewPageState();
+  ConsumerState<BiliLoginWebView> createState() => _BiliLoginWebViewState();
 }
 
-class _BiliLoginWebViewPageState extends ConsumerState<BiliLoginWebViewPage> {
+class _BiliLoginWebViewState extends ConsumerState<BiliLoginWebView> {
   static const Duration _pollInterval = Duration(seconds: 2);
 
   final WebViewCookieManager _cookieManager = WebViewCookieManager();
@@ -39,7 +40,7 @@ class _BiliLoginWebViewPageState extends ConsumerState<BiliLoginWebViewPage> {
           },
         ),
       )
-      ..loadRequest(Uri.parse(BiliLoginWebViewPage.loginUrl));
+      ..loadRequest(Uri.parse(BiliLoginWebView.loginUrl));
 
     // 网页登录没有回调，靠轮询 Cookie 判断是否登录完成
     _pollTimer = Timer.periodic(_pollInterval, (_) => _checkLogin());
@@ -73,7 +74,7 @@ class _BiliLoginWebViewPageState extends ConsumerState<BiliLoginWebViewPage> {
         return;
       }
       _pollTimer?.cancel();
-      Navigator.of(context).pop(true);
+      widget.onLoggedIn();
     } on Object catch (error) {
       debugPrint('[BiliLogin] 登录态写入失败：$error');
       _finishing = false;
@@ -83,7 +84,7 @@ class _BiliLoginWebViewPageState extends ConsumerState<BiliLoginWebViewPage> {
   Future<BiliSession?> _readSession() async {
     try {
       final List<WebViewCookie> cookies = await _cookieManager.getCookies(
-        domain: Uri.parse(BiliLoginWebViewPage.cookieDomain),
+        domain: Uri.parse(BiliLoginWebView.cookieDomain),
       );
       final Map<String, String> cookieMap = <String, String>{
         for (final WebViewCookie cookie in cookies) cookie.name: cookie.value,
@@ -99,28 +100,19 @@ class _BiliLoginWebViewPageState extends ConsumerState<BiliLoginWebViewPage> {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('登录 B 站'),
-        leading: IconButton(
-          icon: const Icon(Icons.close),
-          onPressed: () => Navigator.of(context).pop(false),
-        ),
-      ),
-      body: Column(
-        children: <Widget>[
-          Expanded(child: WebViewWidget(controller: _controller)),
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
-            child: Text(
-              '登录成功后会自动返回',
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
+    return Column(
+      children: <Widget>[
+        Expanded(child: WebViewWidget(controller: _controller)),
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+          child: Text(
+            '登录成功后会自动完成',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
             ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
