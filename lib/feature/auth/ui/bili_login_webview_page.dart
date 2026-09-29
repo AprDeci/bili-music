@@ -1,0 +1,126 @@
+import 'dart:async';
+
+import 'package:bilimusic/core/bili/session/bili_session.dart';
+import 'package:bilimusic/core/bili/session/bili_session_controller.dart';
+import 'package:bilimusic/feature/auth/data/bili_login_session.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:webview_all/webview_all.dart';
+
+// B 站官方登录页
+class BiliLoginWebViewPage extends ConsumerStatefulWidget {
+  const BiliLoginWebViewPage({super.key});
+
+  static const String loginUrl = 'https://passport.bilibili.com/login';
+  static const String cookieDomain = 'https://www.bilibili.com';
+
+  @override
+  ConsumerState<BiliLoginWebViewPage> createState() =>
+      _BiliLoginWebViewPageState();
+}
+
+class _BiliLoginWebViewPageState extends ConsumerState<BiliLoginWebViewPage> {
+  static const Duration _pollInterval = Duration(seconds: 2);
+
+  final WebViewCookieManager _cookieManager = WebViewCookieManager();
+  late final WebViewController _controller;
+  Timer? _pollTimer;
+  bool _finishing = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = WebViewController()
+      ..setJavaScriptMode(JavaScriptMode.unrestricted)
+      ..setNavigationDelegate(
+        NavigationDelegate(
+          onWebResourceError: (WebResourceError error) {
+            debugPrint('[BiliLogin] 资源加载失败：${error.description}');
+          },
+        ),
+      )
+      ..loadRequest(Uri.parse(BiliLoginWebViewPage.loginUrl));
+
+    // 网页登录不会给宿主任何回调，用 Cookie 轮询判断是否登录完成。
+    _pollTimer = Timer.periodic(_pollInterval, (_) => _checkLogin());
+  }
+
+  @override
+  void dispose() {
+    _pollTimer?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _checkLogin() async {
+    if (_finishing) {
+      return;
+    }
+
+    final BiliSession? session = await _readSession();
+    if (session == null) {
+      return;
+    }
+
+    // 先置位挡住后续轮询，失败时再放开重试（轮询只在这里取消，失败不会卡死）。
+    _finishing = true;
+    try {
+      final BiliSessionController sessionController = ref.read(
+        biliSessionControllerProvider.notifier,
+      );
+      await sessionController.adoptAuthenticatedSession(session);
+      await sessionController.refreshSessionFromNav();
+      if (!mounted) {
+        return;
+      }
+      _pollTimer?.cancel();
+      Navigator.of(context).pop(true);
+    } on Object catch (error) {
+      debugPrint('[BiliLogin] 登录态写入失败：$error');
+      _finishing = false;
+    }
+  }
+
+  Future<BiliSession?> _readSession() async {
+    try {
+      final List<WebViewCookie> cookies = await _cookieManager.getCookies(
+        domain: Uri.parse(BiliLoginWebViewPage.cookieDomain),
+      );
+      final Map<String, String> cookieMap = <String, String>{
+        for (final WebViewCookie cookie in cookies) cookie.name: cookie.value,
+      };
+      return sessionFromCookies(cookieMap);
+    } on Object catch (error) {
+      debugPrint('[BiliLogin] Cookie 读取失败：$error');
+      return null;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('登录 B 站'),
+        leading: IconButton(
+          icon: const Icon(Icons.close),
+          onPressed: () => Navigator.of(context).pop(false),
+        ),
+      ),
+      body: Column(
+        children: <Widget>[
+          Expanded(child: WebViewWidget(controller: _controller)),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+            child: Text(
+              '登录成功后会自动返回',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}

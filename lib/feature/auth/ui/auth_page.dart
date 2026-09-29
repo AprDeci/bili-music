@@ -1,16 +1,19 @@
 import 'dart:io';
 import 'dart:ui' as ui;
-import 'dart:typed_data';
 
 import 'package:bilimusic/common/util/toast_util.dart';
 import 'package:bilimusic/feature/auth/domain/bili_auth_models.dart';
 import 'package:bilimusic/feature/auth/logic/bili_auth_controller.dart';
+import 'package:bilimusic/feature/auth/ui/bili_login_webview_page.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:saver_gallery/saver_gallery.dart';
 import 'package:url_launcher/url_launcher.dart';
+
+enum _AuthMode { qr, phone }
 
 class AuthPage extends ConsumerStatefulWidget {
   const AuthPage({super.key});
@@ -22,6 +25,37 @@ class AuthPage extends ConsumerStatefulWidget {
 class _AuthPageState extends ConsumerState<AuthPage> {
   bool _didScheduleStart = false;
   bool _didPopAfterSuccess = false;
+  _AuthMode _mode = _AuthMode.qr;
+
+  void _completeLogin() {
+    if (_didPopAfterSuccess) {
+      return;
+    }
+
+    _didPopAfterSuccess = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+      ToastUtil.show('登录成功');
+      if (context.canPop()) {
+        context.pop();
+      }
+    });
+  }
+
+  /// 手机号登录交给 B 站官方登录页，在 WebView 里完成后把登录态带回来。
+  Future<void> _openWebLogin() async {
+    final bool? loggedIn = await Navigator.of(context).push<bool>(
+      MaterialPageRoute<bool>(
+        fullscreenDialog: true,
+        builder: (BuildContext context) => const BiliLoginWebViewPage(),
+      ),
+    );
+    if (loggedIn == true) {
+      _completeLogin();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -33,20 +67,9 @@ class _AuthPageState extends ConsumerState<AuthPage> {
           previous?.status != BiliQrLoginStatus.success &&
           next.status == BiliQrLoginStatus.success;
 
-      if (!becameSuccessful || _didPopAfterSuccess) {
-        return;
+      if (becameSuccessful) {
+        _completeLogin();
       }
-
-      _didPopAfterSuccess = true;
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!mounted) {
-          return;
-        }
-        ToastUtil.show('登录成功');
-        if (context.canPop()) {
-          context.pop();
-        }
-      });
     });
 
     final BiliAuthState authState = ref.watch(biliAuthControllerProvider);
@@ -55,6 +78,7 @@ class _AuthPageState extends ConsumerState<AuthPage> {
     );
 
     if (!_didScheduleStart &&
+        _mode == _AuthMode.qr &&
         authState.status == BiliQrLoginStatus.initial &&
         authState.qrSession == null) {
       _didScheduleStart = true;
@@ -68,7 +92,7 @@ class _AuthPageState extends ConsumerState<AuthPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('扫码登录'),
+        title: Text(_mode == _AuthMode.qr ? '扫码登录' : '手机号登录'),
         elevation: 0,
         backgroundColor: Colors.transparent,
         foregroundColor: colorScheme.onSurface,
@@ -81,16 +105,101 @@ class _AuthPageState extends ConsumerState<AuthPage> {
               constraints: const BoxConstraints(maxWidth: 460),
               child: Container(
                 padding: const EdgeInsets.all(16),
-                child: _AuthContent(
-                  state: authState,
-                  onStart: controller.startQrLogin,
-                  onRetry: controller.restartQrLogin,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: <Widget>[
+                    SegmentedButton<_AuthMode>(
+                      segments: const <ButtonSegment<_AuthMode>>[
+                        ButtonSegment<_AuthMode>(
+                          value: _AuthMode.qr,
+                          label: Text('扫码登录'),
+                          icon: Icon(Icons.qr_code_2_rounded),
+                        ),
+                        ButtonSegment<_AuthMode>(
+                          value: _AuthMode.phone,
+                          label: Text('手机号登录'),
+                          icon: Icon(Icons.sms_outlined),
+                        ),
+                      ],
+                      selected: <_AuthMode>{_mode},
+                      onSelectionChanged: (Set<_AuthMode> selection) {
+                        setState(() {
+                          _mode = selection.first;
+                        });
+                      },
+                    ),
+                    const SizedBox(height: 20),
+                    if (_mode == _AuthMode.qr)
+                      _AuthContent(
+                        state: authState,
+                        onStart: controller.startQrLogin,
+                        onRetry: controller.restartQrLogin,
+                      )
+                    else
+                      _WebLoginPanel(onLogin: _openWebLogin),
+                  ],
                 ),
               ),
             ),
           ),
         ),
       ),
+    );
+  }
+}
+
+/// 手机号登录走 B 站官方登录页（在 WebView 内完成）。
+///
+/// Web 端是跨域 iframe，宿主读不到 B 站 Cookie，因此只提示改用扫码。
+class _WebLoginPanel extends StatelessWidget {
+  const _WebLoginPanel({required this.onLogin});
+
+  final Future<void> Function() onLogin;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+
+    if (kIsWeb) {
+      return Text(
+        '网页版无法在应用内登录，请使用扫码登录',
+        textAlign: TextAlign.center,
+        style: theme.textTheme.bodyMedium?.copyWith(
+          color: colorScheme.onSurfaceVariant,
+        ),
+      );
+    }
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        Text(
+          '将打开 B 站官方登录页，可用手机号验证码登录，登录成功后自动返回。',
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: colorScheme.onSurfaceVariant,
+          ),
+        ),
+        const SizedBox(height: 20),
+        FilledButton(
+          onPressed: onLogin,
+          style: FilledButton.styleFrom(
+            padding: const EdgeInsets.symmetric(vertical: 18),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+          ),
+          child: Text(
+            '打开 B 站登录页',
+            style: theme.textTheme.titleMedium?.copyWith(
+              color: Colors.white,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -331,7 +440,6 @@ class _QrCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-
     return Container(
       key: ValueKey<String>(qrUrl),
       padding: const EdgeInsets.all(20),
