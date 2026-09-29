@@ -7,7 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:webview_all/webview_all.dart';
 
-// B 站官方登录页
+// B 站官方登录页；登录完成后从 Cookie 仓库取会话
 class BiliLoginWebViewPage extends ConsumerStatefulWidget {
   const BiliLoginWebViewPage({super.key});
 
@@ -41,7 +41,7 @@ class _BiliLoginWebViewPageState extends ConsumerState<BiliLoginWebViewPage> {
       )
       ..loadRequest(Uri.parse(BiliLoginWebViewPage.loginUrl));
 
-    // 网页登录不会给宿主任何回调，用 Cookie 轮询判断是否登录完成。
+    // 网页登录没有回调，靠轮询 Cookie 判断是否登录完成
     _pollTimer = Timer.periodic(_pollInterval, (_) => _checkLogin());
   }
 
@@ -61,7 +61,7 @@ class _BiliLoginWebViewPageState extends ConsumerState<BiliLoginWebViewPage> {
       return;
     }
 
-    // 先置位挡住后续轮询，失败时再放开重试（轮询只在这里取消，失败不会卡死）。
+    // 置位挡住后续轮询，失败时放开重试
     _finishing = true;
     try {
       final BiliSessionController sessionController = ref.read(

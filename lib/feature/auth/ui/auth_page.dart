@@ -44,7 +44,7 @@ class _AuthPageState extends ConsumerState<AuthPage> {
     });
   }
 
-  /// 手机号登录交给 B 站官方登录页，在 WebView 里完成后把登录态带回来。
+  // 登录页返回 true 表示登录态已写入
   Future<void> _openWebLogin() async {
     final bool? loggedIn = await Navigator.of(context).push<bool>(
       MaterialPageRoute<bool>(
@@ -149,9 +149,7 @@ class _AuthPageState extends ConsumerState<AuthPage> {
   }
 }
 
-/// 手机号登录走 B 站官方登录页（在 WebView 内完成）。
-///
-/// Web 端是跨域 iframe，宿主读不到 B 站 Cookie，因此只提示改用扫码。
+// Web 端是跨域 iframe，读不到 B 站 Cookie，只能扫码
 class _WebLoginPanel extends StatelessWidget {
   const _WebLoginPanel({required this.onLogin});
 
