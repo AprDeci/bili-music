@@ -13,6 +13,7 @@ abstract class HotkeyBinding with _$HotkeyBinding {
     required int keyCode,
     required List<String> modifiers,
     @Default(true) bool enabled,
+    @Default(HotKeyScope.system) HotKeyScope scope,
   }) = _HotkeyBinding;
 
   const HotkeyBinding._();
@@ -33,6 +34,7 @@ abstract class HotkeyBinding with _$HotkeyBinding {
     return HotKey(
       identifier: action.name,
       key: key,
+      scope: scope,
       modifiers: modifiers
           .map(
             (String modifier) => HotKeyModifier.values
@@ -54,6 +56,7 @@ abstract class HotkeyBinding with _$HotkeyBinding {
       modifiers: (hotKey.modifiers ?? const <HotKeyModifier>[])
           .map((HotKeyModifier modifier) => modifier.name)
           .toList(),
+      scope: hotKey.scope,
     );
   }
 }
@@ -67,6 +70,12 @@ List<HotkeyBinding> defaultHotkeyBindings() {
         HotKeyModifier.control,
         HotKeyModifier.alt,
       ],
+    ),
+    _binding(
+      action: HotkeyAction.foregroundPlayPause,
+      key: PhysicalKeyboardKey.space,
+      modifiers: const <HotKeyModifier>[],
+      scope: HotKeyScope.inapp,
     ),
     _binding(
       action: HotkeyAction.previousTrack,
@@ -99,6 +108,7 @@ HotkeyBinding _binding({
   required HotkeyAction action,
   required PhysicalKeyboardKey key,
   required List<HotKeyModifier> modifiers,
+  HotKeyScope scope = HotKeyScope.system,
 }) {
   return HotkeyBinding(
     action: action,
@@ -106,5 +116,6 @@ HotkeyBinding _binding({
     modifiers: modifiers
         .map((HotKeyModifier modifier) => modifier.name)
         .toList(),
+    scope: scope,
   );
 }

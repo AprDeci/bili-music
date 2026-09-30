@@ -33,16 +33,17 @@ class HotkeySettingsPage extends ConsumerWidget {
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
         children: <Widget>[
           Text(
-            '快捷键在桌面端全局生效。若某个组合键已被系统或其他应用占用，请更换后保存。',
+            '全局快捷键可在此修改；前台播放/暂停固定为空格键（仅窗口聚焦时响应）。若组合键已被系统或其他应用占用，请更换后保存。',
             style: theme.textTheme.bodySmall,
           ),
           const SizedBox(height: 12),
           for (final HotkeyAction action in HotkeyAction.values)
-            _HotkeyTile(
-              binding: bindings.firstWhere(
-                (HotkeyBinding binding) => binding.action == action,
+            if (action != HotkeyAction.foregroundPlayPause)
+              _HotkeyTile(
+                binding: bindings.firstWhere(
+                  (HotkeyBinding binding) => binding.action == action,
+                ),
               ),
-            ),
         ],
       ),
     );
@@ -71,9 +72,14 @@ class _HotkeyTile extends ConsumerWidget {
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
-            if (binding.enabled && hotKey != null)
-              HotKeyVirtualView(hotKey: hotKey)
-            else
+            if (binding.enabled && hotKey != null) ...<Widget>[
+              Text(
+                binding.scope == HotKeyScope.inapp ? '前台' : '全局',
+                style: theme.textTheme.bodySmall,
+              ),
+              const SizedBox(width: 8),
+              HotKeyVirtualView(hotKey: hotKey),
+            ] else
               Text('未启用', style: theme.textTheme.bodySmall),
             const SizedBox(width: 12),
             const Icon(Icons.chevron_right_rounded),

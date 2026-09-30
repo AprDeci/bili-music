@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$HotkeyBinding {
 
- HotkeyAction get action; int get keyCode; List<String> get modifiers; bool get enabled;
+ HotkeyAction get action; int get keyCode; List<String> get modifiers; bool get enabled; HotKeyScope get scope;
 /// Create a copy of HotkeyBinding
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -28,16 +28,16 @@ $HotkeyBindingCopyWith<HotkeyBinding> get copyWith => _$HotkeyBindingCopyWithImp
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is HotkeyBinding&&(identical(other.action, action) || other.action == action)&&(identical(other.keyCode, keyCode) || other.keyCode == keyCode)&&const DeepCollectionEquality().equals(other.modifiers, modifiers)&&(identical(other.enabled, enabled) || other.enabled == enabled));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is HotkeyBinding&&(identical(other.action, action) || other.action == action)&&(identical(other.keyCode, keyCode) || other.keyCode == keyCode)&&const DeepCollectionEquality().equals(other.modifiers, modifiers)&&(identical(other.enabled, enabled) || other.enabled == enabled)&&(identical(other.scope, scope) || other.scope == scope));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,action,keyCode,const DeepCollectionEquality().hash(modifiers),enabled);
+int get hashCode => Object.hash(runtimeType,action,keyCode,const DeepCollectionEquality().hash(modifiers),enabled,scope);
 
 @override
 String toString() {
-  return 'HotkeyBinding(action: $action, keyCode: $keyCode, modifiers: $modifiers, enabled: $enabled)';
+  return 'HotkeyBinding(action: $action, keyCode: $keyCode, modifiers: $modifiers, enabled: $enabled, scope: $scope)';
 }
 
 
@@ -48,7 +48,7 @@ abstract mixin class $HotkeyBindingCopyWith<$Res>  {
   factory $HotkeyBindingCopyWith(HotkeyBinding value, $Res Function(HotkeyBinding) _then) = _$HotkeyBindingCopyWithImpl;
 @useResult
 $Res call({
- HotkeyAction action, int keyCode, List<String> modifiers, bool enabled
+ HotkeyAction action, int keyCode, List<String> modifiers, bool enabled, HotKeyScope scope
 });
 
 
@@ -65,13 +65,14 @@ class _$HotkeyBindingCopyWithImpl<$Res>
 
 /// Create a copy of HotkeyBinding
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? action = null,Object? keyCode = null,Object? modifiers = null,Object? enabled = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? action = null,Object? keyCode = null,Object? modifiers = null,Object? enabled = null,Object? scope = null,}) {
   return _then(_self.copyWith(
 action: null == action ? _self.action : action // ignore: cast_nullable_to_non_nullable
 as HotkeyAction,keyCode: null == keyCode ? _self.keyCode : keyCode // ignore: cast_nullable_to_non_nullable
 as int,modifiers: null == modifiers ? _self.modifiers : modifiers // ignore: cast_nullable_to_non_nullable
 as List<String>,enabled: null == enabled ? _self.enabled : enabled // ignore: cast_nullable_to_non_nullable
-as bool,
+as bool,scope: null == scope ? _self.scope : scope // ignore: cast_nullable_to_non_nullable
+as HotKeyScope,
   ));
 }
 
@@ -156,10 +157,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( HotkeyAction action,  int keyCode,  List<String> modifiers,  bool enabled)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( HotkeyAction action,  int keyCode,  List<String> modifiers,  bool enabled,  HotKeyScope scope)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _HotkeyBinding() when $default != null:
-return $default(_that.action,_that.keyCode,_that.modifiers,_that.enabled);case _:
+return $default(_that.action,_that.keyCode,_that.modifiers,_that.enabled,_that.scope);case _:
   return orElse();
 
 }
@@ -177,10 +178,10 @@ return $default(_that.action,_that.keyCode,_that.modifiers,_that.enabled);case _
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( HotkeyAction action,  int keyCode,  List<String> modifiers,  bool enabled)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( HotkeyAction action,  int keyCode,  List<String> modifiers,  bool enabled,  HotKeyScope scope)  $default,) {final _that = this;
 switch (_that) {
 case _HotkeyBinding():
-return $default(_that.action,_that.keyCode,_that.modifiers,_that.enabled);case _:
+return $default(_that.action,_that.keyCode,_that.modifiers,_that.enabled,_that.scope);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -197,10 +198,10 @@ return $default(_that.action,_that.keyCode,_that.modifiers,_that.enabled);case _
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( HotkeyAction action,  int keyCode,  List<String> modifiers,  bool enabled)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( HotkeyAction action,  int keyCode,  List<String> modifiers,  bool enabled,  HotKeyScope scope)?  $default,) {final _that = this;
 switch (_that) {
 case _HotkeyBinding() when $default != null:
-return $default(_that.action,_that.keyCode,_that.modifiers,_that.enabled);case _:
+return $default(_that.action,_that.keyCode,_that.modifiers,_that.enabled,_that.scope);case _:
   return null;
 
 }
@@ -212,7 +213,7 @@ return $default(_that.action,_that.keyCode,_that.modifiers,_that.enabled);case _
 @JsonSerializable()
 
 class _HotkeyBinding extends HotkeyBinding {
-  const _HotkeyBinding({required this.action, required this.keyCode, required final  List<String> modifiers, this.enabled = true}): _modifiers = modifiers,super._();
+  const _HotkeyBinding({required this.action, required this.keyCode, required final  List<String> modifiers, this.enabled = true, this.scope = HotKeyScope.system}): _modifiers = modifiers,super._();
   factory _HotkeyBinding.fromJson(Map<String, dynamic> json) => _$HotkeyBindingFromJson(json);
 
 @override final  HotkeyAction action;
@@ -225,6 +226,7 @@ class _HotkeyBinding extends HotkeyBinding {
 }
 
 @override@JsonKey() final  bool enabled;
+@override@JsonKey() final  HotKeyScope scope;
 
 /// Create a copy of HotkeyBinding
 /// with the given fields replaced by the non-null parameter values.
@@ -239,16 +241,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _HotkeyBinding&&(identical(other.action, action) || other.action == action)&&(identical(other.keyCode, keyCode) || other.keyCode == keyCode)&&const DeepCollectionEquality().equals(other._modifiers, _modifiers)&&(identical(other.enabled, enabled) || other.enabled == enabled));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _HotkeyBinding&&(identical(other.action, action) || other.action == action)&&(identical(other.keyCode, keyCode) || other.keyCode == keyCode)&&const DeepCollectionEquality().equals(other._modifiers, _modifiers)&&(identical(other.enabled, enabled) || other.enabled == enabled)&&(identical(other.scope, scope) || other.scope == scope));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,action,keyCode,const DeepCollectionEquality().hash(_modifiers),enabled);
+int get hashCode => Object.hash(runtimeType,action,keyCode,const DeepCollectionEquality().hash(_modifiers),enabled,scope);
 
 @override
 String toString() {
-  return 'HotkeyBinding(action: $action, keyCode: $keyCode, modifiers: $modifiers, enabled: $enabled)';
+  return 'HotkeyBinding(action: $action, keyCode: $keyCode, modifiers: $modifiers, enabled: $enabled, scope: $scope)';
 }
 
 
@@ -259,7 +261,7 @@ abstract mixin class _$HotkeyBindingCopyWith<$Res> implements $HotkeyBindingCopy
   factory _$HotkeyBindingCopyWith(_HotkeyBinding value, $Res Function(_HotkeyBinding) _then) = __$HotkeyBindingCopyWithImpl;
 @override @useResult
 $Res call({
- HotkeyAction action, int keyCode, List<String> modifiers, bool enabled
+ HotkeyAction action, int keyCode, List<String> modifiers, bool enabled, HotKeyScope scope
 });
 
 
@@ -276,13 +278,14 @@ class __$HotkeyBindingCopyWithImpl<$Res>
 
 /// Create a copy of HotkeyBinding
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? action = null,Object? keyCode = null,Object? modifiers = null,Object? enabled = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? action = null,Object? keyCode = null,Object? modifiers = null,Object? enabled = null,Object? scope = null,}) {
   return _then(_HotkeyBinding(
 action: null == action ? _self.action : action // ignore: cast_nullable_to_non_nullable
 as HotkeyAction,keyCode: null == keyCode ? _self.keyCode : keyCode // ignore: cast_nullable_to_non_nullable
 as int,modifiers: null == modifiers ? _self._modifiers : modifiers // ignore: cast_nullable_to_non_nullable
 as List<String>,enabled: null == enabled ? _self.enabled : enabled // ignore: cast_nullable_to_non_nullable
-as bool,
+as bool,scope: null == scope ? _self.scope : scope // ignore: cast_nullable_to_non_nullable
+as HotKeyScope,
   ));
 }
 

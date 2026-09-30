@@ -14,6 +14,9 @@ _HotkeyBinding _$HotkeyBindingFromJson(Map<String, dynamic> json) =>
           .map((e) => e as String)
           .toList(),
       enabled: json['enabled'] as bool? ?? true,
+      scope:
+          $enumDecodeNullable(_$HotKeyScopeEnumMap, json['scope']) ??
+          HotKeyScope.system,
     );
 
 Map<String, dynamic> _$HotkeyBindingToJson(_HotkeyBinding instance) =>
@@ -22,11 +25,18 @@ Map<String, dynamic> _$HotkeyBindingToJson(_HotkeyBinding instance) =>
       'keyCode': instance.keyCode,
       'modifiers': instance.modifiers,
       'enabled': instance.enabled,
+      'scope': _$HotKeyScopeEnumMap[instance.scope]!,
     };
 
 const _$HotkeyActionEnumMap = {
   HotkeyAction.playPause: 'playPause',
+  HotkeyAction.foregroundPlayPause: 'foregroundPlayPause',
   HotkeyAction.previousTrack: 'previousTrack',
   HotkeyAction.nextTrack: 'nextTrack',
   HotkeyAction.toggleDesktop: 'toggleDesktop',
+};
+
+const _$HotKeyScopeEnumMap = {
+  HotKeyScope.system: 'system',
+  HotKeyScope.inapp: 'inapp',
 };
