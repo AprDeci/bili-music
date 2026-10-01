@@ -5,6 +5,7 @@ project(bilimusic LANGUAGES CXX)
 # 强制使用utf-8
 if(MSVC)
   add_compile_options(/utf-8)
+  add_compile_definitions(_SILENCE_EXPERIMENTAL_COROUTINE_DEPRECATION_WARNINGS)
 endif()
 
 # The name of the executable created for the application. Change this to change
