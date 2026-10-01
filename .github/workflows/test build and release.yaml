@@ -301,6 +301,7 @@ jobs:
             libgtk-3-dev \
             libkeybinder-3.0-dev \
             liblzma-dev \
+            libwebkit2gtk-4.1-dev \
             ninja-build \
             pkg-config
 

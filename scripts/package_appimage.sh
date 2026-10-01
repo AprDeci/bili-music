@@ -66,6 +66,11 @@ EXCLUDE_LIBRARIES=(
   'libcairo.so*'
   'libcairo-gobject.so*'
   'libepoxy.so*'
+  'libwebkit2gtk-4.1.so*'
+  'libjavascriptcoregtk-4.1.so*'
+  'libsoup-3.0.so*'
+  'libwpe-1.0.so*'
+  'libwpebackend-fdo-1.0.so*'
 )
 EXCLUDE_ARGS=()
 for library in "${EXCLUDE_LIBRARIES[@]}"; do
