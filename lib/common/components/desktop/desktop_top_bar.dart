@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:bilimusic/common/components/bar_icon_button.dart';
+import 'package:bilimusic/common/util/platform_util.dart';
 import 'package:bilimusic/feature/search/domain/search_state.dart';
 import 'package:bilimusic/feature/search/logic/search_controller.dart';
 import 'package:bilimusic/feature/search/ui/components/highlight_text.dart';
@@ -209,36 +210,38 @@ class _DesktopTopBarState extends ConsumerState<DesktopTopBar>
               ),
             ),
             const SizedBox(width: 12),
-            Tooltip(
-              waitDuration: const Duration(seconds: 1),
-              message: '最小化',
-              child: BarIconButton(
-                icon: Icons.remove_rounded,
-                iconSize: 18,
-                onPressed: () => windowManager.minimize(),
+            if (!PlatformUtil.isMacOS) ...[
+              Tooltip(
+                waitDuration: const Duration(seconds: 1),
+                message: '最小化',
+                child: BarIconButton(
+                  icon: Icons.remove_rounded,
+                  iconSize: 18,
+                  onPressed: () => windowManager.minimize(),
+                ),
               ),
-            ),
-            Tooltip(
-              waitDuration: const Duration(seconds: 1),
-              message: _isMaximized ? '还原' : '最大化',
-              child: BarIconButton(
-                icon: _isMaximized
-                    ? Icons.filter_none_rounded
-                    : Icons.crop_square_rounded,
-                iconSize: 16,
-                onPressed: _toggleMaximize,
+              Tooltip(
+                waitDuration: const Duration(seconds: 1),
+                message: _isMaximized ? '还原' : '最大化',
+                child: BarIconButton(
+                  icon: _isMaximized
+                      ? Icons.filter_none_rounded
+                      : Icons.crop_square_rounded,
+                  iconSize: 16,
+                  onPressed: _toggleMaximize,
+                ),
               ),
-            ),
-            Tooltip(
-              waitDuration: const Duration(seconds: 1),
-              message: '关闭',
-              child: BarIconButton(
-                icon: Icons.close_rounded,
-                iconSize: 18,
-                onPressed: () => windowManager.close(),
+              Tooltip(
+                waitDuration: const Duration(seconds: 1),
+                message: '关闭',
+                child: BarIconButton(
+                  icon: Icons.close_rounded,
+                  iconSize: 18,
+                  onPressed: () => windowManager.close(),
+                ),
               ),
-            ),
-            const SizedBox(width: 8),
+              const SizedBox(width: 8),
+            ],
           ],
         ),
       ),
