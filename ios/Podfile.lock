@@ -1,0 +1,34 @@
+PODS:
+  - Flutter (1.0.0)
+  - media_kit_libs_ios_audio (1.0.4):
+    - Flutter
+  - open_filex (0.0.2):
+    - Flutter
+  - saver_gallery (0.0.1):
+    - Flutter
+
+DEPENDENCIES:
+  - Flutter (from `Flutter`)
+  - media_kit_libs_ios_audio (from `.symlinks/plugins/media_kit_libs_ios_audio/ios`)
+  - open_filex (from `.symlinks/plugins/open_filex/ios`)
+  - saver_gallery (from `.symlinks/plugins/saver_gallery/ios`)
+
+EXTERNAL SOURCES:
+  Flutter:
+    :path: Flutter
+  media_kit_libs_ios_audio:
+    :path: ".symlinks/plugins/media_kit_libs_ios_audio/ios"
+  open_filex:
+    :path: ".symlinks/plugins/open_filex/ios"
+  saver_gallery:
+    :path: ".symlinks/plugins/saver_gallery/ios"
+
+SPEC CHECKSUMS:
+  Flutter: cabc95a1d2626b1b06e7179b784ebcf0c0cde467
+  media_kit_libs_ios_audio: 905e6323b72e65c63ab9262b2e473f52c024a3a8
+  open_filex: 432f3cd11432da3e39f47fcc0df2b1603854eff1
+  saver_gallery: c5ace923bbca25bcb925ad9be8847f9dfdd2f36b
+
+PODFILE CHECKSUM: 3c63482e143d1b91d2d2560aee9fb04ecc74ac7e
+
+COCOAPODS: 1.17.0
