@@ -129,6 +129,7 @@ dev_dependencies:
   hive_ce_generator: 1.11.0
   flutter_launcher_icons: ^0.14.4
   icon_font_generator: ^4.1.0
+  image: ^4.8.0 # scripts/gen_icons.dart 给 macOS 源图补边距用
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
@@ -196,7 +197,9 @@ flutter_launcher_icons:
     icon_size: 48 # min:48, max:256, default: 48
   macos:
     generate: true
-    image_path: "assets/icons/icon3.png"
+    # macOS 图标网格要求图形本体占 824/1024 并居中；icon3.png 是满画布图形，
+    # 直接用会让 Dock 图标比系统图标大一圈，故改用预留 100px 透明边距的版本。
+    image_path: "assets/icons/icon3_macos.png"
 
 # dart run icon_font_generator:generator
 icon_font:
