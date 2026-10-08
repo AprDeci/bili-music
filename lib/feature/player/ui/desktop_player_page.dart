@@ -324,36 +324,39 @@ class _DesktopPlayerTopBarState extends State<_DesktopPlayerTopBar>
                   ),
                 ),
                 const Spacer(),
-                Tooltip(
-                  waitDuration: const Duration(seconds: 1),
-                  message: '最小化',
-                  child: BarIconButton(
-                    icon: Icons.remove_rounded,
-                    iconSize: 18,
-                    onPressed: () => windowManager.minimize(),
+                // macOS 已经自带交通灯按钮，避免重复绘制窗口操作按钮。
+                if (!PlatformUtil.isMacOS) ...[
+                  Tooltip(
+                    waitDuration: const Duration(seconds: 1),
+                    message: '最小化',
+                    child: BarIconButton(
+                      icon: Icons.remove_rounded,
+                      iconSize: 18,
+                      onPressed: () => windowManager.minimize(),
+                    ),
                   ),
-                ),
-                Tooltip(
-                  waitDuration: const Duration(seconds: 1),
-                  message: _isMaximized ? '还原' : '最大化',
-                  child: BarIconButton(
-                    icon: _isMaximized
-                        ? Icons.filter_none_rounded
-                        : Icons.crop_square_rounded,
-                    iconSize: 16,
-                    onPressed: _toggleMaximize,
+                  Tooltip(
+                    waitDuration: const Duration(seconds: 1),
+                    message: _isMaximized ? '还原' : '最大化',
+                    child: BarIconButton(
+                      icon: _isMaximized
+                          ? Icons.filter_none_rounded
+                          : Icons.crop_square_rounded,
+                      iconSize: 16,
+                      onPressed: _toggleMaximize,
+                    ),
                   ),
-                ),
-                Tooltip(
-                  waitDuration: const Duration(seconds: 1),
-                  message: '关闭',
-                  child: BarIconButton(
-                    icon: Icons.close_rounded,
-                    iconSize: 18,
-                    onPressed: () => windowManager.close(),
+                  Tooltip(
+                    waitDuration: const Duration(seconds: 1),
+                    message: '关闭',
+                    child: BarIconButton(
+                      icon: Icons.close_rounded,
+                      iconSize: 18,
+                      onPressed: () => windowManager.close(),
+                    ),
                   ),
-                ),
-                const SizedBox(width: 8),
+                  const SizedBox(width: 8),
+                ],
               ],
             ),
           ),
@@ -793,13 +796,15 @@ class _DesktopPlayerControlDeck extends StatelessWidget {
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: <Widget>[
                         if (PlatformUtil.isWindows) ...[
-                        BarIconButton(
-                          iconSize: 28,
-                          icon: BmIcons.desktopLyrics,
-                          tooltip: isDesktopLyricsEnabled ? '关闭桌面歌词' : '开启桌面歌词',
-                          isActive: isDesktopLyricsEnabled,
-                          onPressed: onDesktopLyricsToggle,
-                        ),
+                          BarIconButton(
+                            iconSize: 28,
+                            icon: BmIcons.desktopLyrics,
+                            tooltip: isDesktopLyricsEnabled
+                                ? '关闭桌面歌词'
+                                : '开启桌面歌词',
+                            isActive: isDesktopLyricsEnabled,
+                            onPressed: onDesktopLyricsToggle,
+                          ),
                         ],
                         const SizedBox(width: 16),
                         DesktopQualityAttach(
