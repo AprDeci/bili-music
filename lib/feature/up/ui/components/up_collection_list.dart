@@ -1,4 +1,5 @@
 import 'package:bilimusic/common/components/cached_image.dart';
+import 'package:bilimusic/common/components/status_view.dart';
 import 'package:bilimusic/feature/up/domain/up_collection.dart';
 import 'package:bilimusic/feature/up/logic/up_page_controller.dart';
 import 'package:flutter/material.dart';
@@ -28,15 +29,19 @@ class UpCollectionList extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     if (items.isEmpty && error != null) {
-      return Center(
-        child: TextButton(
-          onPressed: () => ref.invalidate(upPageControllerProvider(mid)),
-          child: Text(error!),
-        ),
+      return StatusView(
+        icon: Icons.error_outline_rounded,
+        iconColor: Theme.of(context).colorScheme.error,
+        title: '合集加载失败',
+        description: error!,
+        onRetry: () => ref.invalidate(upPageControllerProvider(mid)),
       );
     }
     if (items.isEmpty) {
-      return const Center(child: Text('暂无合集'));
+      return const StatusView(
+        icon: Icons.video_collection_outlined,
+        title: '暂无合集',
+      );
     }
 
     return NotificationListener<ScrollNotification>(

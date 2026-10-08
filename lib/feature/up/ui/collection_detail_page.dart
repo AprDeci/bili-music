@@ -1,4 +1,5 @@
 import 'package:bilimusic/common/components/video_card.dart';
+import 'package:bilimusic/common/components/status_view.dart';
 import 'package:bilimusic/common/components/cached_image.dart';
 import 'package:bilimusic/common/util/player_util.dart';
 import 'package:bilimusic/feature/favorites/logic/favorites_controller.dart';
@@ -38,22 +39,23 @@ class CollectionDetailPage extends ConsumerWidget {
       appBar: AppBar(title: const Text('合集')),
       body: state.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (Object error, StackTrace stackTrace) => Center(
-          child: TextButton(
-            onPressed: () => ref.invalidate(
-              collectionDetailControllerProvider(mid, seasonId),
-            ),
-            child: Text(error.toString()),
-          ),
+        error: (Object error, StackTrace stackTrace) => StatusView(
+          icon: Icons.error_outline_rounded,
+          iconColor: Theme.of(context).colorScheme.error,
+          title: '合集加载失败',
+          description: error.toString(),
+          onRetry: () =>
+              ref.invalidate(collectionDetailControllerProvider(mid, seasonId)),
         ),
         data: (CollectionDetailState data) {
           if (data.error != null && data.items.isEmpty) {
-            return Center(
-              child: TextButton(
-                onPressed: () => ref.invalidate(
-                  collectionDetailControllerProvider(mid, seasonId),
-                ),
-                child: Text(data.error!),
+            return StatusView(
+              icon: Icons.error_outline_rounded,
+              iconColor: Theme.of(context).colorScheme.error,
+              title: '合集加载失败',
+              description: data.error!,
+              onRetry: () => ref.invalidate(
+                collectionDetailControllerProvider(mid, seasonId),
               ),
             );
           }
@@ -263,9 +265,9 @@ class _CollectionFooter extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (state.items.isEmpty) {
-      return const Padding(
-        padding: EdgeInsets.all(32),
-        child: Center(child: Text('合集暂无内容')),
+      return const StatusView(
+        icon: Icons.video_collection_outlined,
+        title: '合集暂无内容',
       );
     }
     if (state.isLoadingMore) {

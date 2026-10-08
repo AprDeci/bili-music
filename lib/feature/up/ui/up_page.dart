@@ -1,4 +1,5 @@
 import 'package:bilimusic/common/components/login_required.dart';
+import 'package:bilimusic/common/components/status_view.dart';
 import 'package:bilimusic/core/bili/session/bili_session_controller.dart';
 import 'package:bilimusic/feature/up/domain/up_page_state.dart';
 import 'package:bilimusic/feature/up/logic/up_page_controller.dart';
@@ -89,12 +90,13 @@ class _UpPageState extends ConsumerState<UpPage>
           bottom: false,
           child: state.when(
             loading: () => const Center(child: CircularProgressIndicator()),
-            error: (Object error, StackTrace stackTrace) => Center(
-              child: TextButton(
-                onPressed: () =>
-                    ref.invalidate(upPageControllerProvider(widget.mid)),
-                child: Text(error.toString()),
-              ),
+            error: (Object error, StackTrace stackTrace) => StatusView(
+              icon: Icons.error_outline_rounded,
+              iconColor: colorScheme.error,
+              title: 'UP 主空间加载失败',
+              description: error.toString(),
+              onRetry: () =>
+                  ref.invalidate(upPageControllerProvider(widget.mid)),
             ),
             data: (UpPageState data) {
               final int nextIndex = data.selectedTab == UpPageTab.videos

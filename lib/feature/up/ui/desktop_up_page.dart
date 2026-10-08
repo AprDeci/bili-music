@@ -1,4 +1,5 @@
 import 'package:bilimusic/common/components/login_required.dart';
+import 'package:bilimusic/common/components/status_view.dart';
 import 'package:bilimusic/common/components/video_card.dart';
 import 'package:bilimusic/common/util/player_util.dart';
 import 'package:bilimusic/core/bili/session/bili_session_controller.dart';
@@ -73,12 +74,12 @@ class _DesktopUpPageState extends ConsumerState<DesktopUpPage>
         bottom: false,
         child: state.when(
           loading: () => const Center(child: CircularProgressIndicator()),
-          error: (Object error, StackTrace stackTrace) => Center(
-            child: TextButton(
-              onPressed: () =>
-                  ref.invalidate(upPageControllerProvider(widget.mid)),
-              child: Text(error.toString()),
-            ),
+          error: (Object error, StackTrace stackTrace) => StatusView(
+            icon: Icons.error_outline_rounded,
+            iconColor: Theme.of(context).colorScheme.error,
+            title: 'UP 主空间加载失败',
+            description: error.toString(),
+            onRetry: () => ref.invalidate(upPageControllerProvider(widget.mid)),
           ),
           data: _buildContent,
         ),
@@ -210,18 +211,19 @@ class _DesktopUpVideoSliverList extends ConsumerWidget {
     if (items.isEmpty && error != null) {
       return SliverFillRemaining(
         hasScrollBody: false,
-        child: Center(
-          child: TextButton(
-            onPressed: () => ref.invalidate(upPageControllerProvider(mid)),
-            child: Text(error!),
-          ),
+        child: StatusView(
+          icon: Icons.error_outline_rounded,
+          iconColor: Theme.of(context).colorScheme.error,
+          title: '投稿加载失败',
+          description: error!,
+          onRetry: () => ref.invalidate(upPageControllerProvider(mid)),
         ),
       );
     }
     if (items.isEmpty) {
       return const SliverFillRemaining(
         hasScrollBody: false,
-        child: Center(child: Text('暂无投稿')),
+        child: StatusView(icon: Icons.video_library_outlined, title: '暂无投稿'),
       );
     }
 

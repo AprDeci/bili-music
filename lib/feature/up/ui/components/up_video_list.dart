@@ -1,3 +1,4 @@
+import 'package:bilimusic/common/components/status_view.dart';
 import 'package:bilimusic/common/components/video_card.dart';
 import 'package:bilimusic/common/util/player_util.dart';
 import 'package:bilimusic/feature/favorites/logic/favorites_controller.dart';
@@ -30,13 +31,19 @@ class UpVideoList extends ConsumerWidget {
     final favoritesState = ref.watch(favoritesControllerProvider);
 
     if (items.isEmpty && error != null) {
-      return _RetryMessage(
-        message: error!,
+      return StatusView(
+        icon: Icons.error_outline_rounded,
+        iconColor: Theme.of(context).colorScheme.error,
+        title: '投稿加载失败',
+        description: error!,
         onRetry: () => ref.invalidate(upPageControllerProvider(mid)),
       );
     }
     if (items.isEmpty) {
-      return const _EmptyMessage(message: '暂无投稿');
+      return const StatusView(
+        icon: Icons.video_library_outlined,
+        title: '暂无投稿',
+      );
     }
 
     return NotificationListener<ScrollNotification>(
@@ -129,30 +136,5 @@ class _ListFooter extends StatelessWidget {
       padding: const EdgeInsets.all(20),
       child: Center(child: Text(hasMore ? '继续滚动加载' : '没有更多了')),
     );
-  }
-}
-
-class _RetryMessage extends StatelessWidget {
-  const _RetryMessage({required this.message, required this.onRetry});
-
-  final String message;
-  final VoidCallback onRetry;
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: TextButton(onPressed: onRetry, child: Text(message)),
-    );
-  }
-}
-
-class _EmptyMessage extends StatelessWidget {
-  const _EmptyMessage({required this.message});
-
-  final String message;
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(child: Text(message));
   }
 }

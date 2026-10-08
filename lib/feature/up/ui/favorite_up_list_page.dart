@@ -1,4 +1,5 @@
 import 'package:bilimusic/common/components/bottom_page_spacer.dart';
+import 'package:bilimusic/common/components/status_view.dart';
 import 'package:bilimusic/common/components/user_avatar.dart';
 import 'package:bilimusic/common/util/platform_util.dart';
 import 'package:bilimusic/feature/up/domain/favorite_up.dart';
@@ -17,7 +18,7 @@ class FavoriteUpListPage extends ConsumerWidget {
     return Scaffold(
       appBar: PlatformUtil.isMobile ? AppBar(title: const Text('收藏UP主')) : null,
       body: ups.isEmpty
-          ? const Center(child: Text('还没有收藏UP主'))
+          ? const StatusView(icon: Icons.person_off_outlined, title: '还没有收藏UP主')
           : ListView.separated(
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
               itemCount: ups.length + 1,
