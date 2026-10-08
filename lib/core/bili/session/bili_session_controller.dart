@@ -8,6 +8,28 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'bili_session_controller.g.dart';
 
+const BiliSession _emptySession = BiliSession(
+  sessData: '',
+  biliJct: '',
+  dedeUserId: '',
+  refreshToken: '',
+  cookie: '',
+);
+
+// 从 WBI 图片 URL 取文件名
+String? _keyFromUrl(String? url) {
+  if (url == null || url.isEmpty) {
+    return null;
+  }
+
+  final Uri uri = Uri.parse(url);
+  final String lastSegment = uri.pathSegments.isEmpty
+      ? ''
+      : uri.pathSegments.last;
+  final int dotIndex = lastSegment.lastIndexOf('.');
+  return dotIndex > 0 ? lastSegment.substring(0, dotIndex) : lastSegment;
+}
+
 @Riverpod(keepAlive: true)
 class BiliSessionController extends _$BiliSessionController {
   late final BiliSessionStore _store = ref.read(biliSessionStoreProvider);
@@ -32,6 +54,7 @@ class BiliSessionController extends _$BiliSessionController {
     await _store.clear();
     _client.clearCookie();
     state = null;
+    await bootstrap();
   }
 
   Future<BiliSession?> bootstrap() async {
@@ -43,7 +66,12 @@ class BiliSessionController extends _$BiliSessionController {
 
     final BiliSession? currentSession = state;
     if (currentSession == null || !currentSession.isLoggedIn) {
-      return state;
+// 游客wbi
+      try {
+        return await refreshWbiKeys();
+      } on Object {
+        return state;
+      }
     }
 
     try {
@@ -57,6 +85,41 @@ class BiliSessionController extends _$BiliSessionController {
     }
   }
 
+  Future<BiliSession> refreshWbiKeys() async {
+    final Response<dynamic> response = await _client.get<dynamic>(
+      '/x/web-interface/nav',
+    );
+    final ({String imgKey, String subKey})? keys = parseWbiKeys(
+      _asMap(response.data),
+    );
+    final BiliSession current = state ?? _emptySession;
+    if (keys == null) {
+      return current;
+    }
+
+    final BiliSession nextSession = current.copyWith(
+      imgKey: keys.imgKey,
+      subKey: keys.subKey,
+    );
+    await _persistSession(nextSession);
+    return nextSession;
+  }
+
+  static ({String imgKey, String subKey})? parseWbiKeys(
+    Map<String, dynamic> json,
+  ) {
+    final Map<String, dynamic>? data = asNullableStringKeyedMap(json['data']);
+    final Map<String, dynamic>? wbiImg = asNullableStringKeyedMap(
+      data?['wbi_img'],
+    );
+    final String? imgKey = _keyFromUrl(wbiImg?['img_url'] as String?);
+    final String? subKey = _keyFromUrl(wbiImg?['sub_url'] as String?);
+    if (imgKey == null || subKey == null) {
+      return null;
+    }
+    return (imgKey: imgKey, subKey: subKey);
+  }
+
   Future<BiliSession> warmupBaseCookies() async {
     final Response<dynamic> response = await _client.get<dynamic>(
       'https://www.bilibili.com/',
@@ -67,14 +130,7 @@ class BiliSessionController extends _$BiliSessionController {
     );
 
     if (cookies.isEmpty) {
-      return state ??
-          const BiliSession(
-            sessData: '',
-            biliJct: '',
-            dedeUserId: '',
-            refreshToken: '',
-            cookie: '',
-          );
+      return state ?? _emptySession;
     }
 
     final BiliSession nextSession = _mergeCookiesIntoSession(
@@ -134,8 +190,8 @@ class BiliSessionController extends _$BiliSessionController {
       mid: (data['mid'] as num?)?.toInt(),
       uname: data['uname'] as String?,
       face: data['face'] as String?,
-      imgKey: _extractKeyFromUrl(wbiImg['img_url'] as String?),
-      subKey: _extractKeyFromUrl(wbiImg['sub_url'] as String?),
+      imgKey: _keyFromUrl(wbiImg['img_url'] as String?),
+      subKey: _keyFromUrl(wbiImg['sub_url'] as String?),
     );
 
     await _persistSession(nextSession);
@@ -157,16 +213,7 @@ class BiliSessionController extends _$BiliSessionController {
     required Map<String, String> nextCookies,
     BiliSession? fallback,
   }) {
-    final BiliSession seed =
-        base ??
-        fallback ??
-        const BiliSession(
-          sessData: '',
-          biliJct: '',
-          dedeUserId: '',
-          refreshToken: '',
-          cookie: '',
-        );
+    final BiliSession seed = base ?? fallback ?? _emptySession;
 
     final String cookie = mergeCookieHeaders(seed.cookie, nextCookies);
     return seed.copyWith(
@@ -190,19 +237,6 @@ class BiliSessionController extends _$BiliSessionController {
         json['message'] as String? ?? 'Request failed.',
       );
     }
-  }
-
-  String? _extractKeyFromUrl(String? url) {
-    if (url == null || url.isEmpty) {
-      return null;
-    }
-
-    final Uri uri = Uri.parse(url);
-    final String lastSegment = uri.pathSegments.isEmpty
-        ? ''
-        : uri.pathSegments.last;
-    final int dotIndex = lastSegment.lastIndexOf('.');
-    return dotIndex > 0 ? lastSegment.substring(0, dotIndex) : lastSegment;
   }
 }
 
