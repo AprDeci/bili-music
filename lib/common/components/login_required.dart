@@ -1,3 +1,4 @@
+import 'package:bilimusic/common/components/status_view.dart';
 import 'package:bilimusic/core/bili/session/bili_auth_required_exception.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -66,31 +67,15 @@ class LoginRequiredView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: <Widget>[
-            Icon(icon, size: 40, color: theme.colorScheme.onSurfaceVariant),
-            const SizedBox(height: 12),
-            Text(
-              description,
-              textAlign: TextAlign.center,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ),
-            const SizedBox(height: 16),
-            FilledButton(
-              onPressed: () => context.push('/auth'),
-              child: const Text('去登录'),
-            ),
-          ],
+    return StatusView(
+      icon: icon,
+      title: description,
+      actions: <Widget>[
+        FilledButton(
+          onPressed: () => context.push('/auth'),
+          child: const Text('去登录'),
         ),
-      ),
+      ],
     );
   }
 }

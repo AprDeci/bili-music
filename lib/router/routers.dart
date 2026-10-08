@@ -89,7 +89,7 @@ final List<Map<String, dynamic>> mobileHiddenBranches = [
   {
     'path': '/up',
     'builder': (context, state) =>
-        const ErrorPageStatefulWidget(message: 'Up Page Not Found'),
+        const ErrorPage(message: 'Up Page Not Found'),
     'routes': [
       GoRoute(
         path: ':mid',
@@ -202,7 +202,7 @@ final List<Map<String, dynamic>> desktopHiddenBranches = [
   {
     'path': '/up',
     'builder': (context, state) =>
-        const ErrorPageStatefulWidget(message: 'Up Page Not Found'),
+        const ErrorPage(message: 'Up Page Not Found'),
     'routes': [
       GoRoute(
         path: ':mid',
