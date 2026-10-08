@@ -1,5 +1,6 @@
 import 'package:bilimusic/common/logger.dart';
 import 'package:bilimusic/common/util/json_util.dart';
+import 'package:bilimusic/core/bili/session/bili_auth_required_exception.dart';
 import 'package:bilimusic/core/bili/session/bili_session.dart';
 import 'package:bilimusic/core/bili/session/bili_session_controller.dart';
 import 'package:bilimusic/core/bili/sign/bili_wbi_signer.dart';
@@ -103,7 +104,7 @@ class BiliClient extends _$BiliClient implements BiliHttpClient {
   }) async {
     final BiliSession? session = currentSession;
     if (requiresAuth && (session == null || !session.isLoggedIn)) {
-      throw const BiliApiException('Bilibili session is required.');
+      throw const BiliAuthRequiredException();
     }
 
     final Map<String, dynamic> params = _buildQueryParameters(
@@ -112,16 +113,30 @@ class BiliClient extends _$BiliClient implements BiliHttpClient {
       requiresWbi: requiresWbi,
     );
 
-    final Response<dynamic> response = await get<dynamic>(
-      path,
-      queryParameters: params,
-      options: options,
-      mode: mode,
-    );
+    final Response<dynamic> response;
+    try {
+      response = await get<dynamic>(
+        path,
+        queryParameters: params,
+        options: options,
+        mode: mode,
+      );
+    } on DioException catch (error) {
+      throw _mapDioError(error, session);
+    }
 
     final Map<String, dynamic> json = _asMap(response.data);
     _ensureSuccess(json);
     return json;
+  }
+
+  // 未登录时的 403/412 统一成鉴权异常，已登录保持原样
+  Exception _mapDioError(DioException error, BiliSession? session) {
+    final int status = error.response?.statusCode ?? 0;
+    if (!(session?.isLoggedIn ?? false) && (status == 403 || status == 412)) {
+      return const BiliAuthRequiredException();
+    }
+    return error;
   }
 
   @override
@@ -179,9 +194,10 @@ class BiliClient extends _$BiliClient implements BiliHttpClient {
   void _ensureSuccess(Map<String, dynamic> json) {
     final int code = (json['code'] as num? ?? -1).toInt();
     if (code != 0) {
-      throw BiliApiException(
-        json['message'] as String? ?? 'Request failed.',
-        code: code,
+      throw biliApiErrorFromCode(
+        code,
+        loggedIn: currentSession?.isLoggedIn ?? false,
+        message: json['message'] as String?,
       );
     }
   }
@@ -250,6 +266,18 @@ class BiliClient extends _$BiliClient implements BiliHttpClient {
   void clearCookie() {
     removeHeader('Cookie');
   }
+}
+
+// 未登录时 -101/-352/-403 统一成鉴权异常；
+Exception biliApiErrorFromCode(
+  int code, {
+  required bool loggedIn,
+  String? message,
+}) {
+  if (!loggedIn && (code == -101 || code == -352 || code == -403)) {
+    return BiliAuthRequiredException(message ?? '登录后可用');
+  }
+  return BiliApiException(message ?? 'Request failed.', code: code);
 }
 
 class BiliApiException implements Exception {
