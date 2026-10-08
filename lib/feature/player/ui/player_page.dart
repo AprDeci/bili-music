@@ -5,6 +5,7 @@ import 'package:bilimusic/feature/favorites/logic/favorites_controller.dart';
 import 'package:bilimusic/feature/metadata/domain/metadata_state.dart';
 import 'package:bilimusic/feature/metadata/logic/metadata_controller.dart';
 import 'package:bilimusic/feature/player/domain/playable_item.dart';
+import 'package:bilimusic/feature/player/domain/player_playback_speed.dart';
 import 'package:bilimusic/feature/player/domain/player_state.dart';
 import 'package:bilimusic/feature/player/logic/player_controller.dart';
 import 'package:bilimusic/feature/player/logic/player_cover_logic.dart';
@@ -286,6 +287,20 @@ class _PlayerPageState extends ConsumerState<PlayerPage> {
                   },
                 ),
                 ListTile(
+                  key: const Key('playbackSpeedMenuEntry'),
+                  leading: const Icon(Icons.speed_rounded),
+                  title: const Text('倍速播放'),
+                  subtitle: Text(
+                    formatPlaybackSpeed(
+                      ref.read(playerControllerProvider).speed,
+                    ),
+                  ),
+                  onTap: () {
+                    Navigator.of(context).pop();
+                    _showPlaybackSpeedSheet();
+                  },
+                ),
+                ListTile(
                   leading: const Icon(Icons.open_in_new_rounded),
                   title: const Text('外部应用打开'),
                   onTap: () {
@@ -295,6 +310,48 @@ class _PlayerPageState extends ConsumerState<PlayerPage> {
                 ),
               ],
             ),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _showPlaybackSpeedSheet() async {
+    final ThemeData theme = Theme.of(context);
+    final double currentSpeed = ref.read(playerControllerProvider).speed;
+
+    await showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (BuildContext context) {
+        return SafeArea(
+          child: ListView.separated(
+            shrinkWrap: true,
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+            itemCount: kPlayerPlaybackSpeeds.length,
+            separatorBuilder: (_, _) => const SizedBox(height: 8),
+            itemBuilder: (BuildContext context, int index) {
+              final double speed = kPlayerPlaybackSpeeds[index];
+              final bool isSelected = speed == currentSpeed;
+              return ListTile(
+                tileColor: isSelected
+                    ? theme.colorScheme.primary.withValues(alpha: 0.1)
+                    : null,
+                title: Text(formatPlaybackSpeed(speed)),
+                trailing: isSelected
+                    ? Icon(
+                        Icons.check_rounded,
+                        color: theme.colorScheme.primary,
+                      )
+                    : null,
+                onTap: () async {
+                  Navigator.of(context).pop();
+                  await ref
+                      .read(playerControllerProvider.notifier)
+                      .setSpeed(speed);
+                },
+              );
+            },
           ),
         );
       },

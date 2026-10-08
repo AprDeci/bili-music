@@ -81,6 +81,7 @@ class AppAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler {
     required Duration position,
     required Duration bufferedPosition,
     required Duration? duration,
+    required double speed,
     required AudioProcessingState processingState,
   }) {
     final List<MediaControl> controls = <MediaControl>[
@@ -108,7 +109,7 @@ class AppAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler {
         playing: isPlaying,
         updatePosition: position,
         bufferedPosition: bufferedPosition,
-        speed: 1.0,
+        speed: speed,
         queueIndex: queue.value.isEmpty ? null : _resolveQueueIndex(),
       ),
     );

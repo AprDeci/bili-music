@@ -13,27 +13,29 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+const PlayableItem _testItem = PlayableItem(
+  aid: 1,
+  bvid: 'BV1xx411c7mD',
+  title: '测试播放内容',
+  author: '测试UP主',
+  coverUrl: '',
+  durationText: '03:21',
+  playCountText: '12.3万',
+  danmakuCountText: '456',
+  likeCountText: '8,888',
+  coinCountText: '666',
+  favoriteCountText: '1.2万',
+  shareCountText: '234',
+  replyCountText: '321',
+  publishTimeText: '2026-03-27',
+  description: '这是一段测试简介。',
+);
+
 void main() {
   testWidgets('player page shows swipe indicator and meta page', (
     WidgetTester tester,
   ) async {
-    const PlayableItem item = PlayableItem(
-      aid: 1,
-      bvid: 'BV1xx411c7mD',
-      title: '测试播放内容',
-      author: '测试UP主',
-      coverUrl: '',
-      durationText: '03:21',
-      playCountText: '12.3万',
-      danmakuCountText: '456',
-      likeCountText: '8,888',
-      coinCountText: '666',
-      favoriteCountText: '1.2万',
-      shareCountText: '234',
-      replyCountText: '321',
-      publishTimeText: '2026-03-27',
-      description: '这是一段测试简介。',
-    );
+    const PlayableItem item = _testItem;
 
     await tester.pumpWidget(
       ProviderScope(
@@ -66,23 +68,7 @@ void main() {
   testWidgets('player menu opens sleep timer page', (
     WidgetTester tester,
   ) async {
-    const PlayableItem item = PlayableItem(
-      aid: 1,
-      bvid: 'BV1xx411c7mD',
-      title: '测试播放内容',
-      author: '测试UP主',
-      coverUrl: '',
-      durationText: '03:21',
-      playCountText: '12.3万',
-      danmakuCountText: '456',
-      likeCountText: '8,888',
-      coinCountText: '666',
-      favoriteCountText: '1.2万',
-      shareCountText: '234',
-      replyCountText: '321',
-      publishTimeText: '2026-03-27',
-      description: '这是一段测试简介。',
-    );
+    const PlayableItem item = _testItem;
 
     await tester.pumpWidget(
       ProviderScope(
@@ -114,6 +100,52 @@ void main() {
     expect(find.byType(SleepTimerPage), findsOneWidget);
     expect(find.text('倒计时'), findsOneWidget);
     expect(find.text('未开启'), findsOneWidget);
+  });
+
+  testWidgets('player menu applies playback speed', (
+    WidgetTester tester,
+  ) async {
+    const PlayableItem item = _testItem;
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          favoritesControllerProvider.overrideWith(
+            _FakeFavoritesController.new,
+          ),
+          playerControllerProvider.overrideWith(
+            () => _FakePlayerController(item),
+          ),
+          metadataControllerProvider.overrideWith(
+            () => _FakeMetadataController(item),
+          ),
+          playerCoverSettingsLogicProvider.overrideWithValue(true),
+        ],
+        child: const MaterialApp(home: PlayerPage(initialItem: _testItem)),
+      ),
+    );
+    await tester.pump();
+
+    final ProviderContainer container = ProviderScope.containerOf(
+      tester.element(find.byType(PlayerPage)),
+      listen: false,
+    );
+    expect(container.read(playerControllerProvider).speed, 1.0);
+
+    await tester.tap(find.byKey(const Key('playerMenuButton')));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('playbackSpeedMenuEntry')), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('playbackSpeedMenuEntry')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('1.5x'), findsOneWidget);
+
+    await tester.tap(find.text('1.5x'));
+    await tester.pumpAndSettle();
+
+    expect(container.read(playerControllerProvider).speed, 1.5);
   });
 
   testWidgets('sleep timer page starts fixed timer from option tap', (
@@ -184,6 +216,11 @@ class _FakePlayerController extends PlayerController {
 
   @override
   Future<void> toggleQueueMode() async {}
+
+  @override
+  Future<void> setSpeed(double speed) async {
+    state = state.copyWith(speed: speed);
+  }
 
   @override
   Future<void> skipToPrevious() async {}

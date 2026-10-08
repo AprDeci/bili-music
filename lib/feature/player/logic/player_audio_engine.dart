@@ -83,6 +83,12 @@ class PlayerAudioEngine {
     return _player.setVolume(volume.clamp(0.0, 1.0) * 100.0);
   }
 
+  // 依赖 mpv 的 speed 是 player 级属性（换源不重置），故 open 后不重放速率。
+  // ponytail: 若某平台实测换源后回到 1.0x，在 _openMedia 里补一次 setRate。
+  Future<void> setRate(double rate) {
+    return _player.setRate(rate);
+  }
+
   Future<void> dispose() async {
     for (final StreamSubscription<dynamic> subscription in _subscriptions) {
       await subscription.cancel();

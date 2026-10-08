@@ -314,6 +314,16 @@ class PlayerController extends Notifier<PlayerState>
     return nextVolume;
   }
 
+  Future<void> setSpeed(double speed) async {
+    if (state.speed == speed) {
+      return;
+    }
+
+    state = state.copyWith(speed: speed);
+    await _audioEngine.setRate(speed);
+    _publishPlaybackState();
+  }
+
   Future<void> seekBy(Duration offset) async {
     final Duration effectiveDuration = state.duration ?? Duration.zero;
     final Duration nextPosition = _audioEngine.position + offset;
@@ -1561,6 +1571,7 @@ class PlayerController extends Notifier<PlayerState>
       position: state.position,
       bufferedPosition: state.bufferedPosition,
       duration: state.duration,
+      speed: state.speed,
       processingState:
           processingState ??
           (state.isLoading
