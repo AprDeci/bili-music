@@ -1,3 +1,5 @@
+import 'package:bilimusic/common/components/login_required.dart';
+import 'package:bilimusic/core/bili/session/bili_session_controller.dart';
 import 'package:bilimusic/feature/up/domain/up_page_state.dart';
 import 'package:bilimusic/feature/up/logic/up_page_controller.dart';
 import 'package:bilimusic/feature/up/ui/components/up_collection_list.dart';
@@ -54,6 +56,21 @@ class _UpPageState extends ConsumerState<UpPage>
         colorScheme.surface.computeLuminance() > 0.5
         ? Brightness.dark
         : Brightness.light;
+
+    // 登陆提示
+    if (!(ref.watch(biliSessionControllerProvider)?.isLoggedIn ?? false)) {
+      return Scaffold(
+        backgroundColor: colorScheme.surface,
+        appBar: AppBar(
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back),
+            onPressed: () => Navigator.of(context).maybePop(),
+          ),
+        ),
+        body: const LoginRequiredView(description: 'UP 主空间需要登录 B 站账号'),
+      );
+    }
+
     final AsyncValue<UpPageState> state = ref.watch(
       upPageControllerProvider(widget.mid),
     );

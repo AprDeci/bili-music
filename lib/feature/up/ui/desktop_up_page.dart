@@ -1,5 +1,7 @@
+import 'package:bilimusic/common/components/login_required.dart';
 import 'package:bilimusic/common/components/video_card.dart';
 import 'package:bilimusic/common/util/player_util.dart';
+import 'package:bilimusic/core/bili/session/bili_session_controller.dart';
 import 'package:bilimusic/feature/favorites/logic/favorites_controller.dart';
 import 'package:bilimusic/feature/player/domain/playable_item.dart';
 import 'package:bilimusic/feature/up/domain/up_page_state.dart';
@@ -52,6 +54,16 @@ class _DesktopUpPageState extends ConsumerState<DesktopUpPage>
 
   @override
   Widget build(BuildContext context) {
+    // 登陆提示
+    if (!(ref.watch(biliSessionControllerProvider)?.isLoggedIn ?? false)) {
+      return const Scaffold(
+        body: SafeArea(
+          bottom: false,
+          child: LoginRequiredView(description: 'UP 主空间需要登录 B 站账号'),
+        ),
+      );
+    }
+
     final AsyncValue<UpPageState> state = ref.watch(
       upPageControllerProvider(widget.mid),
     );
