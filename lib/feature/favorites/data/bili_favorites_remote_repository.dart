@@ -1,5 +1,6 @@
 import 'package:bilimusic/common/util/json_util.dart';
 import 'package:bilimusic/common/logger.dart';
+import 'package:bilimusic/core/bili/session/bili_auth_required_exception.dart';
 import 'package:bilimusic/core/bili/session/bili_session.dart';
 import 'package:bilimusic/core/net/bili_client.dart';
 import 'package:bilimusic/feature/favorites/domain/bili_favorite_collection_page.dart';
@@ -291,7 +292,7 @@ class BiliFavoritesRemoteRepository {
 
   void _ensureLoggedIn(BiliSession session) {
     if (!session.isLoggedIn) {
-      throw const BiliFavoritesException('Bilibili session is required.');
+      throw const BiliAuthRequiredException('网络歌单需要登录 B 站账号');
     }
   }
 

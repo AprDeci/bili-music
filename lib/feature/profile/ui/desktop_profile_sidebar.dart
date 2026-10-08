@@ -3,7 +3,9 @@ import 'package:bilimusic/common/components/bar_icon_button.dart';
 import 'package:bilimusic/common/components/cached_avatar.dart';
 import 'package:bilimusic/common/components/cached_image.dart';
 import 'package:bilimusic/common/components/common_attach_menu.dart';
+import 'package:bilimusic/common/components/login_required.dart';
 import 'package:bilimusic/common/util/toast_util.dart';
+import 'package:bilimusic/core/bili/session/bili_auth_required_exception.dart';
 import 'package:bilimusic/core/bili/session/bili_session.dart';
 import 'package:bilimusic/core/bili/session/bili_session_controller.dart';
 import 'package:bilimusic/feature/auth/data/bili_auth_repository.dart';
@@ -307,9 +309,17 @@ class _DesktopProfileSidebarState extends ConsumerState<DesktopProfileSidebar> {
       return;
     }
 
-    final FavoriteCollection? collection = await ref
-        .read(favoritesControllerProvider.notifier)
-        .createRemoteCollection(trimmedName);
+    final FavoriteCollection? collection;
+    try {
+      collection = await ref
+          .read(favoritesControllerProvider.notifier)
+          .createRemoteCollection(trimmedName);
+    } on BiliAuthRequiredException {
+      if (context.mounted) {
+        LoginPrompt.show(context, reason: '网络歌单需要登录 B 站账号');
+      }
+      return;
+    }
     if (collection == null) {
       ToastUtil.show('创建网络歌单失败');
     }
@@ -360,8 +370,11 @@ class _DesktopProfileSidebarState extends ConsumerState<DesktopProfileSidebar> {
       await ref
           .read(favoritesControllerProvider.notifier)
           .refreshRemoteCollections();
-    } on Object {
+    } on Object catch (error) {
       if (!mounted) {
+        return;
+      }
+      if (LoginPrompt.handle(context, error, reason: '网络歌单需要重新登录')) {
         return;
       }
       ToastUtil.show('网络歌单同步失败，请稍后重试');
@@ -427,6 +440,10 @@ class _DesktopProfileSidebarState extends ConsumerState<DesktopProfileSidebar> {
   void _handleAddPressed(BuildContext context, WidgetRef ref) {
     switch (_selectedTab) {
       case _FavoriteListTab.remote:
+        if (!(ref.read(biliSessionControllerProvider)?.isLoggedIn ?? false)) {
+          LoginPrompt.show(context, reason: '网络歌单需要登录 B 站账号');
+          return;
+        }
         _showRemoteAddOptions(context, ref);
       case _FavoriteListTab.local:
         _showCreateCollectionDialog(context, ref);

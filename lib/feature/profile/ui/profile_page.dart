@@ -1,8 +1,10 @@
 import 'package:bilimusic/common/bm_icons.dart';
 import 'package:bilimusic/common/components/bottom_page_spacer.dart';
 import 'package:bilimusic/common/components/cached_image.dart';
+import 'package:bilimusic/common/components/login_required.dart';
 import 'package:bilimusic/common/components/search_bar.dart';
 import 'package:bilimusic/common/util/toast_util.dart';
+import 'package:bilimusic/core/bili/session/bili_auth_required_exception.dart';
 import 'package:bilimusic/core/bili/session/bili_session.dart';
 import 'package:bilimusic/core/bili/session/bili_session_controller.dart';
 import 'package:bilimusic/feature/auth/data/bili_auth_repository.dart';
@@ -222,9 +224,17 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
       return;
     }
 
-    final FavoriteCollection? collection = await ref
-        .read(favoritesControllerProvider.notifier)
-        .createRemoteCollection(result);
+    final FavoriteCollection? collection;
+    try {
+      collection = await ref
+          .read(favoritesControllerProvider.notifier)
+          .createRemoteCollection(result);
+    } on BiliAuthRequiredException {
+      if (mounted) {
+        LoginPrompt.show(context, reason: '网络歌单需要登录 B 站账号');
+      }
+      return;
+    }
     if (!mounted) {
       return;
     }
@@ -276,8 +286,11 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
       await ref
           .read(favoritesControllerProvider.notifier)
           .refreshRemoteCollections();
-    } on Object {
+    } on Object catch (error) {
       if (!mounted) {
+        return;
+      }
+      if (LoginPrompt.handle(context, error, reason: '网络歌单需要重新登录')) {
         return;
       }
       _showMessage('网络歌单同步失败，请稍后重试');
@@ -344,6 +357,10 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
   void _handleAddPressed() {
     switch (_selectedTab) {
       case _FavoriteListTab.remote:
+        if (!(ref.read(biliSessionControllerProvider)?.isLoggedIn ?? false)) {
+          LoginPrompt.show(context, reason: '网络歌单需要登录 B 站账号');
+          return;
+        }
         _showRemoteAddOptions(context);
       case _FavoriteListTab.local:
         _showCreateCollectionDialog(context);

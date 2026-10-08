@@ -67,7 +67,7 @@ class SearchVideoResults extends StatelessWidget {
       return const _SearchStatusSliver(
         icon: Icons.search_off_rounded,
         title: '没有找到相关视频',
-        description: '试试更换关键词，或者确认当前登录态和 Cookie 是否可用。',
+        description: '试试更换关键词，或者稍后重试。',
       );
     }
 

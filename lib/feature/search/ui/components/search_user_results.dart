@@ -51,7 +51,7 @@ class SearchUserResults extends StatelessWidget {
       return const _SearchUserStatusSliver(
         icon: Icons.person_off_rounded,
         title: '没有找到相关 UP 主',
-        description: '试试更换关键词，或者确认当前登录态和 Cookie 是否可用。',
+        description: '试试更换关键词，或者稍后重试。',
       );
     }
 

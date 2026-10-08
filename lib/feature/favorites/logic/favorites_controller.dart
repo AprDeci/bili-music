@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:bilimusic/common/logger.dart';
+import 'package:bilimusic/core/bili/session/bili_auth_required_exception.dart';
 import 'package:bilimusic/core/bili/session/bili_session.dart';
 import 'package:bilimusic/core/bili/session/bili_session_controller.dart';
 import 'package:bilimusic/feature/favorites/data/bili_favorites_remote_repository.dart';
@@ -870,7 +871,7 @@ class FavoritesController extends _$FavoritesController {
   BiliSession _getSession() {
     final BiliSession? session = ref.read(biliSessionControllerProvider);
     if (session == null || !session.isLoggedIn) {
-      throw const BiliFavoritesException('Bilibili session is required.');
+      throw const BiliAuthRequiredException('网络歌单需要登录 B 站账号');
     }
     return session;
   }
