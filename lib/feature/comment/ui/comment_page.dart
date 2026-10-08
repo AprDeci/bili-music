@@ -1,4 +1,5 @@
 import 'package:bilimusic/common/components/cached_image.dart';
+import 'package:bilimusic/common/components/status_view.dart';
 import 'package:bilimusic/common/util/platform_util.dart';
 import 'package:bilimusic/feature/comment/domain/comment_item.dart';
 import 'package:bilimusic/feature/comment/domain/comment_sort.dart';
@@ -92,13 +93,13 @@ class _CommentPageState extends ConsumerState<CommentPage> {
                   state.items.isEmpty &&
                   state.hotItems.isEmpty &&
                   state.topItem == null)
-                SliverPadding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  sliver: SliverToBoxAdapter(
-                    child: _CommentErrorCard(
-                      message: state.errorMessage!,
-                      onRetry: controller.loadInitial,
-                    ),
+                SliverStatusView(
+                  child: StatusView(
+                    icon: Icons.error_outline_rounded,
+                    iconColor: Theme.of(context).colorScheme.error,
+                    title: '评论加载失败',
+                    description: state.errorMessage!,
+                    onRetry: controller.loadInitial,
                   ),
                 )
               else ...<Widget>[
@@ -357,29 +358,6 @@ class _CommentSectionTitle extends StatelessWidget {
       style: Theme.of(
         context,
       ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
-    );
-  }
-}
-
-class _CommentErrorCard extends StatelessWidget {
-  const _CommentErrorCard({required this.message, required this.onRetry});
-
-  final String message;
-  final VoidCallback onRetry;
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 48),
-        child: Column(
-          children: <Widget>[
-            Text(message, textAlign: TextAlign.center),
-            const SizedBox(height: 12),
-            FilledButton(onPressed: onRetry, child: const Text('重试')),
-          ],
-        ),
-      ),
     );
   }
 }

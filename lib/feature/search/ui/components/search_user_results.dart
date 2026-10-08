@@ -1,3 +1,4 @@
+import 'package:bilimusic/common/components/status_view.dart';
 import 'package:bilimusic/common/components/user_avatar.dart';
 import 'package:bilimusic/feature/search/domain/search_user_item.dart';
 import 'package:bilimusic/feature/search/ui/components/search_results_view.dart';
@@ -32,10 +33,12 @@ class SearchUserResults extends StatelessWidget {
     final bool hasQuery = submittedQuery != null && submittedQuery!.isNotEmpty;
 
     if (!hasQuery) {
-      return _SearchUserStatusSliver(
-        icon: Icons.person_search_rounded,
-        iconColor: Theme.of(context).colorScheme.primary,
-        title: '输入关键词搜索 UP 主',
+      return SliverStatusView(
+        child: StatusView(
+          icon: Icons.person_search_rounded,
+          iconColor: Theme.of(context).colorScheme.primary,
+          title: '输入关键词搜索 UP 主',
+        ),
       );
     }
 
@@ -44,14 +47,23 @@ class SearchUserResults extends StatelessWidget {
     }
 
     if (errorMessage != null && errorMessage!.isNotEmpty) {
-      return _SearchUserErrorSliver(onRetry: onRetryLoadMore);
+      return SliverStatusView(
+        child: StatusView(
+          icon: Icons.error_outline_rounded,
+          iconColor: Theme.of(context).colorScheme.error,
+          title: '搜索失败',
+          onRetry: onRetryLoadMore,
+        ),
+      );
     }
 
     if (results.isEmpty) {
-      return const _SearchUserStatusSliver(
-        icon: Icons.person_off_rounded,
-        title: '没有找到相关 UP 主',
-        description: '试试更换关键词，或者稍后重试。',
+      return const SliverStatusView(
+        child: StatusView(
+          icon: Icons.person_off_rounded,
+          title: '没有找到相关 UP 主',
+          description: '试试更换关键词，或者稍后重试。',
+        ),
       );
     }
 
@@ -192,102 +204,6 @@ class _SearchUserLoadingSliver extends StatelessWidget {
                   fontWeight: FontWeight.w700,
                 ),
               ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _SearchUserErrorSliver extends StatelessWidget {
-  const _SearchUserErrorSliver({required this.onRetry});
-
-  final VoidCallback onRetry;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
-
-    return SliverPadding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      sliver: SliverToBoxAdapter(
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 28),
-          child: Column(
-            children: <Widget>[
-              Icon(
-                Icons.error_outline_rounded,
-                size: 30,
-                color: colorScheme.error,
-              ),
-              const SizedBox(height: 12),
-              Text(
-                '搜索失败',
-                style: theme.textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              const SizedBox(height: 8),
-              FilledButton.tonal(onPressed: onRetry, child: const Text('点击重试')),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _SearchUserStatusSliver extends StatelessWidget {
-  const _SearchUserStatusSliver({
-    required this.icon,
-    required this.title,
-    this.description,
-    this.iconColor,
-  });
-
-  final IconData icon;
-  final String title;
-  final String? description;
-  final Color? iconColor;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
-
-    return SliverPadding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      sliver: SliverToBoxAdapter(
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 28),
-          child: Column(
-            children: <Widget>[
-              Icon(
-                icon,
-                size: 30,
-                color: iconColor ?? colorScheme.onSurfaceVariant,
-              ),
-              const SizedBox(height: 12),
-              Text(
-                title,
-                textAlign: TextAlign.center,
-                style: theme.textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              if (description != null) ...<Widget>[
-                const SizedBox(height: 8),
-                Text(
-                  description!,
-                  textAlign: TextAlign.center,
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: colorScheme.onSurfaceVariant,
-                    height: 1.5,
-                  ),
-                ),
-              ],
             ],
           ),
         ),

@@ -1,3 +1,4 @@
+import 'package:bilimusic/common/components/status_view.dart';
 import 'package:bilimusic/common/components/video_card.dart';
 import 'package:bilimusic/common/util/toast_util.dart';
 import 'package:bilimusic/feature/favorites/logic/favorites_controller.dart';
@@ -46,12 +47,12 @@ class SearchVideoResults extends StatelessWidget {
     final bool hasQuery = submittedQuery != null && submittedQuery!.isNotEmpty;
 
     if (!hasQuery) {
-      return _SearchStatusSliver(
-        icon: Icons.search_rounded,
-        iconColor: Theme.of(context).colorScheme.primary,
-        title: '输入关键词开始搜索',
-        iconSize: 28,
-        iconBoxSize: 56,
+      return SliverStatusView(
+        child: StatusView(
+          icon: Icons.search_rounded,
+          iconColor: Theme.of(context).colorScheme.primary,
+          title: '输入关键词开始搜索',
+        ),
       );
     }
 
@@ -60,14 +61,23 @@ class SearchVideoResults extends StatelessWidget {
     }
 
     if (errorMessage != null && errorMessage!.isNotEmpty) {
-      return _SearchErrorSliver(onRetry: onRetryLoadMore);
+      return SliverStatusView(
+        child: StatusView(
+          icon: Icons.error_outline_rounded,
+          iconColor: Theme.of(context).colorScheme.error,
+          title: '搜索失败',
+          onRetry: onRetryLoadMore,
+        ),
+      );
     }
 
     if (results.isEmpty) {
-      return const _SearchStatusSliver(
-        icon: Icons.search_off_rounded,
-        title: '没有找到相关视频',
-        description: '试试更换关键词，或者稍后重试。',
+      return const SliverStatusView(
+        child: StatusView(
+          icon: Icons.search_off_rounded,
+          title: '没有找到相关视频',
+          description: '试试更换关键词，或者稍后重试。',
+        ),
       );
     }
 
@@ -239,117 +249,6 @@ class _SearchLoadingSliver extends StatelessWidget {
                   fontWeight: FontWeight.w700,
                 ),
               ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _SearchErrorSliver extends StatelessWidget {
-  const _SearchErrorSliver({required this.onRetry});
-
-  final VoidCallback onRetry;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
-
-    return SliverPadding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      sliver: SliverToBoxAdapter(
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 28),
-          child: Column(
-            children: <Widget>[
-              Icon(
-                Icons.error_outline_rounded,
-                size: 30,
-                color: colorScheme.error,
-              ),
-              const SizedBox(height: 12),
-              Text(
-                '搜索失败',
-                style: theme.textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.w700,
-                  color: colorScheme.onSurface,
-                ),
-              ),
-              const SizedBox(height: 8),
-              FilledButton.tonal(onPressed: onRetry, child: const Text('点击重试')),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _SearchStatusSliver extends StatelessWidget {
-  const _SearchStatusSliver({
-    required this.icon,
-    required this.title,
-    this.description,
-    this.iconColor,
-    this.iconSize = 30,
-    this.iconBoxSize,
-  });
-
-  final IconData icon;
-  final String title;
-  final String? description;
-  final Color? iconColor;
-  final double iconSize;
-  final double? iconBoxSize;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
-    final Widget iconWidget = Icon(
-      icon,
-      size: iconSize,
-      color: iconColor ?? colorScheme.onSurfaceVariant,
-    );
-
-    return SliverPadding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      sliver: SliverToBoxAdapter(
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 28),
-          decoration: BoxDecoration(borderRadius: BorderRadius.circular(24)),
-          child: Column(
-            children: <Widget>[
-              if (iconBoxSize == null)
-                iconWidget
-              else
-                SizedBox(
-                  width: iconBoxSize,
-                  height: iconBoxSize,
-                  child: iconWidget,
-                ),
-              const SizedBox(height: 12),
-              Text(
-                title,
-                textAlign: TextAlign.center,
-                style: theme.textTheme.titleSmall?.copyWith(
-                  color: colorScheme.onSurface,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              if (description != null) ...<Widget>[
-                const SizedBox(height: 8),
-                Text(
-                  description!,
-                  textAlign: TextAlign.center,
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: colorScheme.onSurfaceVariant,
-                    height: 1.5,
-                  ),
-                ),
-              ],
             ],
           ),
         ),
