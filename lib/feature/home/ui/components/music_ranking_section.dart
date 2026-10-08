@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:bilimusic/common/components/bar_icon_button.dart';
 import 'package:bilimusic/common/components/cached_image.dart';
+import 'package:bilimusic/common/components/status_view.dart';
 import 'package:bilimusic/common/util/platform_util.dart';
 import 'package:bilimusic/common/util/player_util.dart';
 import 'package:bilimusic/feature/home/domain/music_ranking_item.dart';
@@ -45,7 +46,10 @@ class MusicRankingSection extends ConsumerWidget {
           ranking.when(
             data: (List<MusicRankingItem> items) {
               if (items.isEmpty) {
-                return const _MusicRankingEmpty();
+                return const StatusView(
+                  icon: Icons.leaderboard_outlined,
+                  title: '暂无热榜内容',
+                );
               }
 
               return _MusicRankingSplitView(
@@ -57,7 +61,13 @@ class MusicRankingSection extends ConsumerWidget {
             },
             loading: () => const _MusicRankingLoading(),
             error: (Object error, StackTrace stackTrace) {
-              return _MusicRankingError(message: error.toString());
+              return StatusView(
+                icon:
+                    Icons.signal_wifi_statusbar_connected_no_internet_4_rounded,
+                iconColor: colorScheme.error,
+                title: '热榜加载失败',
+                description: error.toString(),
+              );
             },
           ),
         ],
@@ -699,70 +709,6 @@ class _MusicRankingLoadingTile extends StatelessWidget {
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _MusicRankingError extends StatelessWidget {
-  const _MusicRankingError({required this.message});
-
-  final String message;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
-
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        child: Column(
-          children: <Widget>[
-            Icon(
-              Icons.signal_wifi_statusbar_connected_no_internet_4_rounded,
-              size: 34,
-              color: colorScheme.onSurfaceVariant,
-            ),
-            const SizedBox(height: 12),
-            Text(
-              '热榜加载失败',
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              message,
-              maxLines: 3,
-              overflow: TextOverflow.ellipsis,
-              textAlign: TextAlign.center,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: colorScheme.onSurfaceVariant,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _MusicRankingEmpty extends StatelessWidget {
-  const _MusicRankingEmpty();
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
-
-    return Center(
-      child: Text(
-        '暂无热榜内容',
-        style: theme.textTheme.titleMedium?.copyWith(
-          color: colorScheme.onSurfaceVariant,
-          fontWeight: FontWeight.w600,
-        ),
       ),
     );
   }

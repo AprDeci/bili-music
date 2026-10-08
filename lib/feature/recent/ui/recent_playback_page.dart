@@ -1,5 +1,6 @@
 import 'package:bilimusic/common/bm_icons.dart';
 import 'package:bilimusic/common/components/bottom_page_spacer.dart';
+import 'package:bilimusic/common/components/status_view.dart';
 import 'package:bilimusic/common/components/cached_image.dart';
 import 'package:bilimusic/common/util/player_util.dart';
 import 'package:bilimusic/feature/player/domain/playable_item.dart';
@@ -29,40 +30,11 @@ class RecentPlaybackPage extends ConsumerWidget {
       backgroundColor: colorScheme.surface.withValues(alpha: 0.4),
       appBar: AppBar(title: const Text(_sourceLabel)),
       body: items.isEmpty
-          ? Center(
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: <Widget>[
-                    SizedBox(
-                      width: 72,
-                      height: 72,
-                      child: Icon(
-                        Icons.history_rounded,
-                        color: primary,
-                        size: 36,
-                      ),
-                    ),
-                    const SizedBox(height: 18),
-                    Text(
-                      '还没有最近播放',
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      '播放过的内容会按时间出现在这里。',
-                      textAlign: TextAlign.center,
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: colorScheme.onSurfaceVariant,
-                        height: 1.5,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+          ? StatusView(
+              icon: Icons.history_rounded,
+              iconColor: primary,
+              title: '还没有最近播放',
+              description: '播放过的内容会按时间出现在这里。',
             )
           : ListView.builder(
               padding: EdgeInsets.zero,

@@ -1,4 +1,5 @@
 import 'package:bilimusic/common/components/cached_image.dart';
+import 'package:bilimusic/common/components/status_view.dart';
 import 'package:bilimusic/feature/player/domain/playable_item.dart';
 import 'package:bilimusic/feature/statistics/domain/song_statistics.dart';
 import 'package:bilimusic/feature/statistics/logic/statistics_tracker.dart';
@@ -28,7 +29,12 @@ class SongStatisticsPage extends ConsumerWidget {
               _SongHeader(item: item, statistics: statistics),
               const SizedBox(height: 28),
               if (statistics == null || statistics.playCount == 0)
-                _EmptyStatistics(colors: colors)
+                StatusView(
+                  icon: Icons.bar_chart_rounded,
+                  iconColor: colors.primary,
+                  title: '还没有播放记录',
+                  description: '播放这首歌后，统计数据会显示在这里。',
+                )
               else
                 _StatisticsGrid(statistics: statistics),
             ],
@@ -183,26 +189,6 @@ class _StatisticTile extends StatelessWidget {
       ),
     );
   }
-}
-
-class _EmptyStatistics extends StatelessWidget {
-  const _EmptyStatistics({required this.colors});
-
-  final ColorScheme colors;
-
-  @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.symmetric(vertical: 48),
-    child: Column(
-      children: <Widget>[
-        Icon(Icons.bar_chart_rounded, size: 48, color: colors.primary),
-        const SizedBox(height: 14),
-        const Text('还没有播放记录'),
-        const SizedBox(height: 6),
-        Text('播放这首歌后，统计数据会显示在这里。', style: TextStyle(color: Colors.grey)),
-      ],
-    ),
-  );
 }
 
 String _formatDuration(int milliseconds) {
