@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:ui' show AppExitResponse;
 
 import 'package:bilimusic/common/util/platform_util.dart';
 import 'package:bilimusic/core/bili/session/bili_session_controller.dart';
@@ -132,6 +133,19 @@ class _AppBootstrapState extends ConsumerState<_AppBootstrap>
       );
     }
     super.dispose();
+  }
+
+  // macos dock退出回调
+  @override
+  Future<AppExitResponse> didRequestAppExit() async {
+    final DesktopAppLifecycle? lifecycle = widget.desktopLifecycle;
+    if (lifecycle != null) {
+      await lifecycle.shutdown().timeout(
+        const Duration(seconds: 5),
+        onTimeout: () {},
+      );
+    }
+    return AppExitResponse.exit;
   }
 
   @override
