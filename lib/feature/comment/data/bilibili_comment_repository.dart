@@ -35,7 +35,7 @@ class BiliCommentRepository {
     bool includeHot = true,
   }) async {
     final BiliSession? session = _client.currentSession;
-    final bool shouldSignWithWbi = session?.isReady ?? false;
+    final bool shouldSignWithWbi = session?.hasWbiKeys ?? false;
 
     _logger.d(
       'fetchRootComments start '
