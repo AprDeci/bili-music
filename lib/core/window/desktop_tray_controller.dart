@@ -19,7 +19,10 @@ class DesktopTrayController with TrayListener, WindowListener {
     await trayManager.setIcon(
       PlatformUtil.isWindows
           ? 'assets/icons/tray_icon.ico'
+          : PlatformUtil.isMacOS
+          ? 'assets/icons/tray_icon_macos.png'
           : 'assets/icons/tray_icon.png',
+      isTemplate: PlatformUtil.isMacOS,
     );
     if (!PlatformUtil.isLinux) {
       await trayManager.setToolTip('BiliMusic');
