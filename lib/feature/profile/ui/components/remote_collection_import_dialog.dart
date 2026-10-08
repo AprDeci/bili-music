@@ -1,4 +1,5 @@
 import 'package:bilimusic/feature/favorites/domain/favorite_collection.dart';
+import 'package:bilimusic/common/components/status_view.dart';
 import 'package:flutter/material.dart';
 
 class RemoteCollectionImportDialog extends StatelessWidget {
@@ -33,6 +34,7 @@ class RemoteCollectionImportDialog extends StatelessWidget {
                 if (snapshot.hasError) {
                   return _DialogMessage(
                     icon: Icons.error_outline_rounded,
+                    isError: true,
                     text: snapshot.error?.toString() ?? '拉取收藏夹失败',
                   );
                 }
@@ -83,30 +85,25 @@ class RemoteCollectionImportDialog extends StatelessWidget {
 }
 
 class _DialogMessage extends StatelessWidget {
-  const _DialogMessage({required this.icon, required this.text});
+  const _DialogMessage({
+    required this.icon,
+    required this.text,
+    this.isError = false,
+  });
 
   final IconData icon;
   final String text;
+  final bool isError;
 
   @override
   Widget build(BuildContext context) {
-    final ColorScheme colorScheme = Theme.of(context).colorScheme;
-    return SizedBox(
-      height: 140,
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: <Widget>[
-          Icon(icon, color: colorScheme.onSurfaceVariant, size: 32),
-          const SizedBox(height: 12),
-          Text(
-            text,
-            textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: colorScheme.onSurfaceVariant,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
+    // 用最小高度：错误信息可能换行，固定高度会溢出
+    return ConstrainedBox(
+      constraints: const BoxConstraints(minHeight: 160),
+      child: StatusView(
+        icon: icon,
+        iconColor: isError ? Theme.of(context).colorScheme.error : null,
+        title: text,
       ),
     );
   }

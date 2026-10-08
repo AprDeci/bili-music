@@ -1,5 +1,6 @@
 import 'package:bilimusic/common/components/bottom_page_spacer.dart';
 import 'package:bilimusic/common/components/cached_image.dart';
+import 'package:bilimusic/common/components/status_view.dart';
 import 'package:bilimusic/feature/favorites/domain/favorited_season.dart';
 import 'package:bilimusic/feature/favorites/logic/favorited_season_controller.dart';
 import 'package:flutter/material.dart';
@@ -18,27 +19,10 @@ class FavoritedSeasonsList extends ConsumerWidget {
     final ColorScheme colorScheme = theme.colorScheme;
 
     if (seasons.isEmpty) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: <Widget>[
-              Icon(
-                Icons.bookmarks_outlined,
-                color: colorScheme.primary,
-                size: 40,
-              ),
-              const SizedBox(height: 16),
-              Text(
-                '还没有收藏合集',
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ],
-          ),
-        ),
+      return StatusView(
+        icon: Icons.bookmarks_outlined,
+        iconColor: colorScheme.primary,
+        title: '还没有收藏合集',
       );
     }
 

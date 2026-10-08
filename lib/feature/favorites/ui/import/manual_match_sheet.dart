@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:bilimusic/common/components/status_view.dart';
 
 import 'package:bilimusic/common/components/cached_image.dart';
 import 'package:bilimusic/feature/favorites/domain/import/favorites_import_candidate.dart';
@@ -163,16 +164,9 @@ class _ManualMatchSheetState extends ConsumerState<ManualMatchSheet> {
                       child: Center(child: CircularProgressIndicator()),
                     )
                   else if (_candidates.isEmpty)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 28),
-                      child: Center(
-                        child: Text(
-                          '暂无搜索结果',
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            color: colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                      ),
+                    const StatusView(
+                      icon: Icons.search_off_rounded,
+                      title: '暂无搜索结果',
                     )
                   else
                     ..._candidates.map(

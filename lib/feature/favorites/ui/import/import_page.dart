@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:bilimusic/common/components/cached_image.dart';
+import 'package:bilimusic/common/components/status_view.dart';
 import 'package:bilimusic/common/util/toast_util.dart';
 import 'package:bilimusic/core/bili/session/bili_session.dart';
 import 'package:bilimusic/core/bili/session/bili_session_controller.dart';
@@ -337,7 +338,7 @@ class _ImportQueueView extends StatelessWidget {
         ),
         const SizedBox(height: 12),
         if (state.results.isEmpty)
-          const _EmptyQueueHint()
+          const StatusView(icon: Icons.search_off_rounded, title: '暂无匹配结果')
         else
           ...state.results.reversed.map(
             (FavoritesImportResult result) => _ResultTile(result),
@@ -575,18 +576,6 @@ class _MatchedCandidateSummary extends StatelessWidget {
           ),
         ),
       ],
-    );
-  }
-}
-
-class _EmptyQueueHint extends StatelessWidget {
-  const _EmptyQueueHint();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Padding(
-      padding: EdgeInsets.symmetric(vertical: 40),
-      child: Center(child: Text('暂无匹配结果')),
     );
   }
 }

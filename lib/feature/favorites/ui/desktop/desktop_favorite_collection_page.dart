@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:bilimusic/common/components/bottom_page_spacer.dart';
 import 'package:bilimusic/common/components/cached_image.dart';
 import 'package:bilimusic/common/components/desktop/desktop_tab_switcher.dart';
+import 'package:bilimusic/common/components/status_view.dart';
 import 'package:bilimusic/common/logger.dart';
 import 'package:bilimusic/common/util/player_util.dart';
 import 'package:bilimusic/common/util/toast_util.dart';
@@ -12,7 +13,6 @@ import 'package:bilimusic/feature/favorites/domain/favorites_state.dart';
 import 'package:bilimusic/feature/favorites/logic/favorite_entry_search.dart';
 import 'package:bilimusic/feature/favorites/logic/favorites_controller.dart';
 import 'package:bilimusic/feature/favorites/ui/components/favorite_collection_search_field.dart';
-import 'package:bilimusic/feature/favorites/ui/components/favorite_search_empty_state.dart';
 import 'package:bilimusic/feature/favorites/ui/components/desktop/desktop_favorite_collection_items_list.dart';
 import 'package:bilimusic/feature/favorites/ui/components/favorite_entry_subtitle.dart';
 import 'package:bilimusic/feature/favorites/ui/components/favorited_seasons_list.dart';
@@ -342,7 +342,7 @@ class _DesktopFavoriteCollectionPageState
     if (collection == null) {
       return Scaffold(
         appBar: AppBar(title: const Text('歌单')),
-        body: const Center(child: Text('歌单不存在')),
+        body: const StatusView(icon: Icons.folder_off_outlined, title: '歌单不存在'),
       );
     }
 
@@ -363,47 +363,22 @@ class _DesktopFavoriteCollectionPageState
         RemoteCollectionSyncStatusBar(status: _remoteSyncStatus),
         Expanded(
           child: items.isEmpty && _remoteRefreshFailed
-              ? _RemoteCollectionErrorState(
+              ? StatusView(
+                  icon: Icons.wifi_off_rounded,
+                  iconColor: Theme.of(context).colorScheme.error,
+                  title: '网络歌单同步失败',
+                  description: '请检查网络后重试。',
                   isRetrying: _isSyncingRemoteCollection,
                   onRetry: _refreshRemoteCollectionItems,
                 )
               : items.isEmpty
-              ? Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(24),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: <Widget>[
-                        SizedBox(
-                          width: 72,
-                          height: 72,
-                          child: Icon(
-                            resolvedCollection.isLikedCollection
-                                ? Icons.favorite_border_rounded
-                                : Icons.folder_open_rounded,
-                            color: primary,
-                            size: 34,
-                          ),
-                        ),
-                        const SizedBox(height: 18),
-                        Text(
-                          '这个歌单还是空的',
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          '先去搜索页或者播放器点亮爱心，喜欢的内容会出现在这里。',
-                          textAlign: TextAlign.center,
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            color: colorScheme.onSurfaceVariant,
-                            height: 1.5,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+              ? StatusView(
+                  icon: resolvedCollection.isLikedCollection
+                      ? Icons.favorite_border_rounded
+                      : Icons.folder_open_rounded,
+                  iconColor: primary,
+                  title: '这个歌单还是空的',
+                  description: '先去搜索页或者播放器点亮爱心，喜欢的内容会出现在这里。',
                 )
               : Column(
                   children: <Widget>[
@@ -460,13 +435,20 @@ class _DesktopFavoriteCollectionPageState
                     ),
                     Expanded(
                       child: visibleItems.isEmpty
-                          ? ListView(
-                              padding: EdgeInsets.zero,
-                              children: <Widget>[
-                                FavoriteSearchEmptyState(
-                                  onSearchOnline: () => context.go('/search'),
+                          ? CustomScrollView(
+                              slivers: <Widget>[
+                                SliverStatusView(
+                                  child: StatusView(
+                                    icon: Icons.search_off_rounded,
+                                    title: '没有结果？前往在线搜索试试',
+                                    actions: <Widget>[
+                                      TextButton.icon(
+                                        onPressed: () => context.go('/search'),
+                                        label: const Text('搜索'),
+                                      ),
+                                    ],
+                                  ),
                                 ),
-                                const BottomPageSpacer.overlay(),
                               ],
                             )
                           : DesktopFavoriteCollectionItemsList(
@@ -757,61 +739,6 @@ class _DesktopFavoriteCollectionPageState
       return;
     }
     context.push('/up/$ownerMid');
-  }
-}
-
-class _RemoteCollectionErrorState extends StatelessWidget {
-  const _RemoteCollectionErrorState({
-    required this.isRetrying,
-    required this.onRetry,
-  });
-
-  final bool isRetrying;
-  final VoidCallback onRetry;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
-
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: <Widget>[
-            Icon(Icons.wifi_off_rounded, color: colorScheme.primary, size: 42),
-            const SizedBox(height: 16),
-            Text(
-              '网络歌单同步失败',
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              '请检查网络后重试。',
-              textAlign: TextAlign.center,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: colorScheme.onSurfaceVariant,
-              ),
-            ),
-            const SizedBox(height: 14),
-            TextButton.icon(
-              onPressed: isRetrying ? null : onRetry,
-              icon: isRetrying
-                  ? const SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Icon(Icons.refresh_rounded, size: 18),
-              label: Text(isRetrying ? '同步中' : '重试'),
-            ),
-          ],
-        ),
-      ),
-    );
   }
 }
 
