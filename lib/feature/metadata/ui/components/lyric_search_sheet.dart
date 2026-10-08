@@ -1,4 +1,5 @@
 import 'package:bilimusic/common/components/cached_image.dart';
+import 'package:bilimusic/common/components/status_view.dart';
 import 'package:bilimusic/feature/metadata/domain/metadata_state.dart';
 import 'package:bilimusic/feature/metadata/logic/metadata_controller.dart';
 import 'package:bilimusic/feature/meting/data/meting_repository.dart';
@@ -178,17 +179,16 @@ class _LyricSearchSheetState extends ConsumerState<_LyricSearchSheet> {
 
     if (metadataState.manualSearchError != null &&
         metadataState.manualSearchError!.isNotEmpty) {
-      return Center(
-        child: Text(
-          metadataState.manualSearchError!,
-          textAlign: TextAlign.center,
-          style: theme.textTheme.bodyMedium,
-        ),
+      return StatusView(
+        icon: Icons.error_outline_rounded,
+        iconColor: theme.colorScheme.error,
+        title: '歌词搜索失败',
+        description: metadataState.manualSearchError!,
       );
     }
 
     if (metadataState.searchResults.isEmpty) {
-      return Center(child: Text('没有搜索到结果', style: theme.textTheme.bodyMedium));
+      return const StatusView(icon: Icons.search_off_rounded, title: '没有搜索到结果');
     }
 
     return ListView.separated(

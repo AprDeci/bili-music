@@ -1,4 +1,5 @@
 import 'package:bilimusic/common/util/toast_util.dart';
+import 'package:bilimusic/common/components/status_view.dart';
 import 'package:bilimusic/feature/favorites/domain/favorite_collection.dart';
 import 'package:bilimusic/feature/favorites/domain/favorites_state.dart';
 import 'package:bilimusic/feature/favorites/logic/favorites_controller.dart';
@@ -92,7 +93,12 @@ class _PlayerCollectionSheetState
             ),
             Expanded(
               child: collections.isEmpty
-                  ? _EmptyCollectionHint(tab: _selectedTab)
+                  ? StatusView(
+                      icon: Icons.queue_music_outlined,
+                      title: _selectedTab == _CollectionListTab.remote
+                          ? '暂无网络歌单'
+                          : '暂无本地歌单',
+                    )
                   : ListView.separated(
                       controller: scrollController,
                       padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
@@ -222,27 +228,6 @@ class _CollectionTabButton extends StatelessWidget {
                 : Colors.black.withValues(alpha: 0.45),
             fontWeight: selected ? FontWeight.w900 : FontWeight.w600,
           ),
-        ),
-      ),
-    );
-  }
-}
-
-class _EmptyCollectionHint extends StatelessWidget {
-  const _EmptyCollectionHint({required this.tab});
-
-  final _CollectionListTab tab;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
-    return Center(
-      child: Text(
-        tab == _CollectionListTab.remote ? '暂无网络歌单' : '暂无本地歌单',
-        style: theme.textTheme.bodyMedium?.copyWith(
-          color: colorScheme.onSurfaceVariant,
-          fontWeight: FontWeight.w600,
         ),
       ),
     );
