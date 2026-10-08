@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:bilimusic/common/components/status_view.dart';
 import 'dart:typed_data';
 
 import 'package:bilimusic/common/util/format_util.dart';
@@ -650,9 +651,9 @@ class _RemoteImportDialogState extends ConsumerState<_RemoteImportDialog> {
     }
 
     if (_items.isEmpty) {
-      return SizedBox(
+      return const SizedBox(
         height: 160,
-        child: Center(child: Text('暂无远程备份', style: theme.textTheme.bodyMedium)),
+        child: StatusView(icon: Icons.cloud_off_outlined, title: '暂无远程备份'),
       );
     }
 

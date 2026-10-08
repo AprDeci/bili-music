@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:bilimusic/common/components/status_view.dart';
 import 'dart:ui' as ui;
 
 import 'package:bilimusic/common/util/toast_util.dart';
@@ -447,7 +448,11 @@ class _QrCard extends StatelessWidget {
                 color: Color(0xFF111111),
               ),
               errorStateBuilder: (_, _) {
-                return const Center(child: Text('二维码生成失败'));
+                return StatusView(
+                  icon: Icons.error_outline_rounded,
+                  iconColor: Theme.of(context).colorScheme.error,
+                  title: '二维码生成失败',
+                );
               },
             ),
           ),
