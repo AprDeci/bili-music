@@ -103,9 +103,11 @@ class UpdateChecker {
     }
   }
 
-  /// Android 取 ABI 对应的 APK，Windows 取安装包；其他平台交给浏览器。
+  /// Android 取 ABI 对应的 APK，Windows 取安装包，macOS 取 DMG；其他平台交给浏览器。
   static UpdateAsset? _resolveInstallAsset(UpdateRelease release) {
-    if (!PlatformUtil.isAndroid && !PlatformUtil.isWindows) {
+    if (!PlatformUtil.isAndroid &&
+        !PlatformUtil.isWindows &&
+        !PlatformUtil.isMacOS) {
       return null;
     }
     return release.selectAsset(UpdateRepository.installerSuffixCandidates());

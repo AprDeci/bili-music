@@ -24,6 +24,10 @@ class UpdateInstaller {
       await _installOnWindows(file);
       return;
     }
+    if (PlatformUtil.isMacOS) {
+      await _installOnMacOS(file);
+      return;
+    }
     throw const UpdateDownloadException('当前平台不支持应用内安装');
   }
 
@@ -47,5 +51,18 @@ class UpdateInstaller {
     // 等安装器起来再退出，避免它还没加载完应用就没了。
     await Future<void>.delayed(_exitDelay);
     await DesktopAppLifecycle.current?.requestExit();
+  }
+
+  /// macOS 只挂载 DMG 交给用户拖拽，不做自动替换。
+  // ponytail: 沙箱里写不了 /Applications、也调不了 hdiutil；要自动替换得先关沙箱，
+  // 再用脚本等进程退出后整包替换 bundle（macOS 只允许整包替换，不能改包内文件）。
+  static Future<void> _installOnMacOS(File file) async {
+    final Process process = await Process.start('open', <String>[file.path]);
+    final int exitCode = await process.exitCode;
+    if (exitCode != 0) {
+      throw const UpdateDownloadException('无法打开安装包，请到 Release 页面手动下载');
+    }
+    // 不退出应用：macOS 允许覆盖运行中的 bundle，用户可以先听完这首歌。
+    ToastUtil.show('把 bilimusic 拖进「应用程序」覆盖后重新打开即可');
   }
 }

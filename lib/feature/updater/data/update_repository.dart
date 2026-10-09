@@ -207,7 +207,7 @@ class UpdateRepository {
   ///
   /// 每个候选都有硬性时限（Dio 的 receiveTimeout 只在完全收不到数据时生效，
   /// 缓慢但不中断的连接需要这里的兜底），超时即取消并换下一个地址。
-  Future<File> downloadApk({
+  Future<File> downloadInstaller({
     required UpdateAsset asset,
     required List<String> candidates,
     required void Function(String url) onMirrorSelected,
@@ -223,8 +223,8 @@ class UpdateRepository {
     // 授权/安装失败后重试时复用已校验通过的缓存包，避免重复下载。
     if (await file.exists()) {
       try {
-        await verifyApk(file, asset);
-        _logger.d('reuse cached apk: ${file.path}');
+        await verifyInstaller(file, asset);
+        _logger.d('reuse cached installer: ${file.path}');
         return file;
       } on UpdateDownloadException {
         // 缓存包不完整或校验失败，落到下面重新下载。
@@ -253,7 +253,7 @@ class UpdateRepository {
           ),
         );
 
-        await verifyApk(file, asset);
+        await verifyInstaller(file, asset);
 
         return file;
       } on Object catch (error) {
@@ -268,7 +268,7 @@ class UpdateRepository {
   }
 
   /// 大小与 sha256 均与发布资产一致才算有效。
-  static Future<void> verifyApk(File file, UpdateAsset asset) async {
+  static Future<void> verifyInstaller(File file, UpdateAsset asset) async {
     final int downloadedBytes = await file.length();
     if (asset.sizeBytes > 0 && downloadedBytes != asset.sizeBytes) {
       throw UpdateDownloadException(
@@ -295,6 +295,9 @@ class UpdateRepository {
   static List<String> installerSuffixCandidates() {
     if (PlatformUtil.isWindows) {
       return windowsInstallerSuffixes();
+    }
+    if (PlatformUtil.isMacOS) {
+      return const <String>['macos.dmg'];
     }
     return androidApkSuffixes();
   }

@@ -50,7 +50,7 @@ class UpdaterController extends _$UpdaterController {
         phase: UpdatePhase.downloading,
         totalBytes: asset.sizeBytes,
       );
-      final File file = await repository.downloadApk(
+      final File file = await repository.downloadInstaller(
         asset: asset,
         candidates: ordered,
         onMirrorSelected: (String url) => _notifyMirrorSelected(url, progress),

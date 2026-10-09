@@ -40,7 +40,7 @@ void main() {
     final String mirrorUrl = 'http://127.0.0.1:${mirrorServer.port}/apk';
     final List<String> selected = <String>[];
 
-    final File file = await UpdateRepository().downloadApk(
+    final File file = await UpdateRepository().downloadInstaller(
       asset: UpdateAsset(
         name: 'bili-music-v1.8.2-arm64-v8a.apk',
         downloadUrl: mirrorUrl,
@@ -58,7 +58,7 @@ void main() {
     expect(await file.readAsBytes(), bytes);
 
     // 校验通过的缓存包会被复用，不再发起下载。
-    final File reused = await UpdateRepository().downloadApk(
+    final File reused = await UpdateRepository().downloadInstaller(
       asset: UpdateAsset(
         name: 'bili-music-v1.8.2-arm64-v8a.apk',
         downloadUrl: mirrorUrl,

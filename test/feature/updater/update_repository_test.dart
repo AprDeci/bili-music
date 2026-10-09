@@ -84,6 +84,35 @@ void main() {
     );
   });
 
+  test('macOS 选 DMG 资产，不会误选同版本的 APK 或 IPA', () {
+    const UpdateRelease release = UpdateRelease(
+      tagName: 'v1.9.0',
+      title: '',
+      body: '',
+      htmlUrl: '',
+      assets: <UpdateAsset>[
+        UpdateAsset(
+          name: 'bili-music-v1.9.0-arm64-v8a.apk',
+          downloadUrl: 'https://example.com/v8a.apk',
+        ),
+        UpdateAsset(
+          name: 'bili-music-v1.9.0.ipa',
+          downloadUrl: 'https://example.com/app.ipa',
+        ),
+        UpdateAsset(
+          name: 'bili-music-v1.9.0-macos.dmg',
+          downloadUrl: 'https://example.com/app.dmg',
+        ),
+      ],
+    );
+
+    // 资产名由 release 工作流的 `bili-music-${tag}-macos.dmg` 决定，改名这里会红。
+    expect(
+      release.selectAsset(const <String>['macos.dmg'])?.name,
+      'bili-music-v1.9.0-macos.dmg',
+    );
+  });
+
   test('探测结果按延迟排序，不可达的排最后', () {
     final List<String> ordered = UpdateRepository.orderByLatency(
       <String>['slow', 'dead', 'fast'],
@@ -147,7 +176,7 @@ void main() {
     final String sha256Hex = sha256.convert(bytes).toString();
 
     await expectLater(
-      UpdateRepository.verifyApk(
+      UpdateRepository.verifyInstaller(
         file,
         UpdateAsset(
           name: 'bili-music-v1.8.2-arm64-v8a.apk',
@@ -160,7 +189,7 @@ void main() {
     );
 
     await expectLater(
-      UpdateRepository.verifyApk(
+      UpdateRepository.verifyInstaller(
         file,
         UpdateAsset(
           name: 'bili-music-v1.8.2-arm64-v8a.apk',
@@ -174,7 +203,7 @@ void main() {
     );
 
     await expectLater(
-      UpdateRepository.verifyApk(
+      UpdateRepository.verifyInstaller(
         file,
         UpdateAsset(
           name: 'bili-music-v1.8.2-arm64-v8a.apk',
