@@ -48,8 +48,11 @@ void main() {
     expect(result.last.stableId, 'aid:2:cid:201');
   });
 
-  test('saveEntry truncates to recent 10 items', () async {
-    for (int index = 0; index < 12; index++) {
+  test('saveEntry truncates to maxEntries items', () async {
+    const int overflow = 2;
+    final int count = RecentPlaybackLocalRepository.maxEntries + overflow;
+
+    for (int index = 0; index < count; index++) {
       await repository.saveEntry(
         _entry(
           aid: index + 1,
@@ -62,9 +65,12 @@ void main() {
 
     final List<RecentPlaybackEntry> result = repository.load();
 
-    expect(result, hasLength(10));
-    expect(result.first.title, 'item 11');
-    expect(result.last.title, 'item 2');
+    expect(result, hasLength(RecentPlaybackLocalRepository.maxEntries));
+    expect(result.first.title, 'item ${count - 1}');
+    expect(
+      result.last.title,
+      'item ${count - RecentPlaybackLocalRepository.maxEntries}',
+    );
   });
 }
 
