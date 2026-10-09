@@ -381,7 +381,7 @@ class _QrCard extends StatelessWidget {
         bytes,
         fileName: fileName,
         skipIfExists: false,
-        androidRelativePath: Platform.isAndroid ? 'Pictures/Bilimusic' : null,
+        albumPath: Platform.isAndroid ? 'Pictures/Bilimusic' : null,
       );
 
       if (!context.mounted) {
