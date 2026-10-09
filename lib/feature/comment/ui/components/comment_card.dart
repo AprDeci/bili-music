@@ -8,6 +8,8 @@ class CommentCard extends StatelessWidget {
     super.key,
     required this.item,
     this.onOpenReplies,
+    this.onToggleLike,
+    this.onTap,
     this.showReplyPreview = false,
     this.showReplyEntry = false,
     this.showTopBadge = true,
@@ -16,6 +18,8 @@ class CommentCard extends StatelessWidget {
 
   final CommentItem item;
   final VoidCallback? onOpenReplies;
+  final VoidCallback? onToggleLike;
+  final VoidCallback? onTap;
   final bool showReplyPreview;
   final bool showReplyEntry;
   final bool showTopBadge;
@@ -26,139 +30,147 @@ class CommentCard extends StatelessWidget {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            CommonCachedAvatar(
-              imageUrl: item.memberAvatarUrl,
-              size: 36,
-              fallbackIcon: Icons.person_outline_rounded,
-              iconColor: colorScheme.onSurfaceVariant,
-              iconSize: 18,
-              backgroundColor: colorScheme.surfaceContainerHigh,
-            ),
-            const SizedBox(width: 12),
-            Expanded(
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              CommonCachedAvatar(
+                imageUrl: item.memberAvatarUrl,
+                size: 36,
+                fallbackIcon: Icons.person_outline_rounded,
+                iconColor: colorScheme.onSurfaceVariant,
+                iconSize: 18,
+                backgroundColor: colorScheme.surfaceContainerHigh,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Row(
+                      children: <Widget>[
+                        Expanded(
+                          child: Text(
+                            item.memberName,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: theme.textTheme.titleSmall?.copyWith(
+                              color: colorScheme.onSurface,
+                            ),
+                          ),
+                        ),
+                        if (showTopBadge && item.isTop)
+                          _CommentBadge(
+                            label: '置顶',
+                            color: colorScheme.primary,
+                          ),
+                        if (showHiddenBadge && item.isHidden)
+                          Padding(
+                            padding: const EdgeInsets.only(left: 6),
+                            child: _CommentBadge(
+                              label: '隐藏',
+                              color: colorScheme.error,
+                            ),
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    if (item.message.isNotEmpty)
+                      Text(
+                        item.message,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: colorScheme.onSurface,
+                          height: 1.55,
+                        ),
+                      ),
+                    if (item.message.isEmpty && item.pictures.isEmpty)
+                      Text(
+                        '该评论没有文本内容',
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: colorScheme.onSurface,
+                          height: 1.55,
+                        ),
+                      ),
+                    if (item.pictures.isNotEmpty) ...<Widget>[
+                      if (item.message.isNotEmpty) const SizedBox(height: 12),
+                      CommentPictureGallery(pictures: item.pictures),
+                    ],
+                    const SizedBox(height: 12),
+                    Wrap(
+                      spacing: 12,
+                      runSpacing: 8,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: <Widget>[
+                        _CommentMetaText(
+                          text: _formatDateTime(item.publishedAt),
+                        ),
+                        _CommentLikeButton(item: item, onTap: onToggleLike),
+                        _CommentMetaText(text: '回复 ${item.replyCount}'),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          if (showReplyPreview && item.replies.isNotEmpty) ...<Widget>[
+            const SizedBox(height: 14),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              decoration: BoxDecoration(color: colorScheme.surfaceContainerLow),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Row(
-                    children: <Widget>[
-                      Expanded(
-                        child: Text(
-                          item.memberName,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: theme.textTheme.titleSmall?.copyWith(
-                            color: colorScheme.onSurface,
-                          ),
+                children: item.replies.take(2).map((CommentItem reply) {
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 2),
+                    child: RichText(
+                      text: TextSpan(
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                          height: 1.5,
                         ),
-                      ),
-                      if (showTopBadge && item.isTop)
-                        _CommentBadge(label: '置顶', color: colorScheme.primary),
-                      if (showHiddenBadge && item.isHidden)
-                        Padding(
-                          padding: const EdgeInsets.only(left: 6),
-                          child: _CommentBadge(
-                            label: '隐藏',
-                            color: colorScheme.error,
+                        children: <InlineSpan>[
+                          TextSpan(
+                            text: '${reply.memberName}: ',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: colorScheme.onSurface,
+                              fontWeight: FontWeight.w700,
+                            ),
                           ),
-                        ),
-                    ],
-                  ),
-                  const SizedBox(height: 10),
-                  if (item.message.isNotEmpty)
-                    Text(
-                      item.message,
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: colorScheme.onSurface,
-                        height: 1.55,
+                          TextSpan(text: _buildReplyPreviewText(reply)),
+                        ],
                       ),
                     ),
-                  if (item.message.isEmpty && item.pictures.isEmpty)
-                    Text(
-                      '该评论没有文本内容',
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: colorScheme.onSurface,
-                        height: 1.55,
-                      ),
-                    ),
-                  if (item.pictures.isNotEmpty) ...<Widget>[
-                    if (item.message.isNotEmpty) const SizedBox(height: 12),
-                    CommentPictureGallery(pictures: item.pictures),
-                  ],
-                  const SizedBox(height: 12),
-                  Wrap(
-                    spacing: 12,
-                    runSpacing: 8,
-                    children: <Widget>[
-                      _CommentMetaText(text: _formatDateTime(item.publishedAt)),
-                      _CommentMetaText(text: '点赞 ${item.likeCount}'),
-                      _CommentMetaText(text: '回复 ${item.replyCount}'),
-                      if (item.isLiked)
-                        _CommentMetaText(text: '已点赞', highlight: true),
-                    ],
-                  ),
-                ],
+                  );
+                }).toList(),
               ),
             ),
           ],
-        ),
-        if (showReplyPreview && item.replies.isNotEmpty) ...<Widget>[
-          const SizedBox(height: 14),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            decoration: BoxDecoration(color: colorScheme.surfaceContainerLow),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: item.replies.take(2).map((CommentItem reply) {
-                return Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 2),
-                  child: RichText(
-                    text: TextSpan(
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: colorScheme.onSurfaceVariant,
-                        height: 1.5,
-                      ),
-                      children: <InlineSpan>[
-                        TextSpan(
-                          text: '${reply.memberName}: ',
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: colorScheme.onSurface,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                        TextSpan(text: _buildReplyPreviewText(reply)),
-                      ],
-                    ),
+          if (showReplyEntry && item.replyCount > 0) ...<Widget>[
+            const SizedBox(height: 10),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8.0),
+              child: GestureDetector(
+                onTap: onOpenReplies,
+                behavior: HitTestBehavior.opaque,
+                child: Text(
+                  '查看全部 ${item.replyCount} 条回复',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: colorScheme.primary,
+                    fontWeight: FontWeight.w700,
                   ),
-                );
-              }).toList(),
-            ),
-          ),
-        ],
-        if (showReplyEntry && item.replyCount > 0) ...<Widget>[
-          const SizedBox(height: 10),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8.0),
-            child: GestureDetector(
-              onTap: onOpenReplies,
-              behavior: HitTestBehavior.opaque,
-              child: Text(
-                '查看全部 ${item.replyCount} 条回复',
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: colorScheme.primary,
-                  fontWeight: FontWeight.w700,
                 ),
               ),
             ),
-          ),
+          ],
         ],
-      ],
+      ),
     );
   }
 
@@ -217,21 +229,62 @@ class _CommentBadge extends StatelessWidget {
 }
 
 class _CommentMetaText extends StatelessWidget {
-  const _CommentMetaText({required this.text, this.highlight = false});
+  const _CommentMetaText({required this.text});
 
   final String text;
-  final bool highlight;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+
+    return Text(
+      text,
+      style: theme.textTheme.bodySmall?.copyWith(
+        color: theme.colorScheme.onSurfaceVariant,
+        fontWeight: FontWeight.w600,
+      ),
+    );
+  }
+}
+
+class _CommentLikeButton extends StatelessWidget {
+  const _CommentLikeButton({required this.item, this.onTap});
+
+  final CommentItem item;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
+    final bool liked = item.isLiked;
+    final Color color = liked
+        ? colorScheme.primary
+        : colorScheme.onSurfaceVariant;
 
-    return Text(
-      text,
-      style: theme.textTheme.bodySmall?.copyWith(
-        color: highlight ? colorScheme.primary : colorScheme.onSurfaceVariant,
-        fontWeight: highlight ? FontWeight.w700 : FontWeight.w600,
+    return InkWell(
+      borderRadius: BorderRadius.circular(999),
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 2),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            Icon(
+              liked ? Icons.thumb_up_alt_rounded : Icons.thumb_up_alt_outlined,
+              size: 14,
+              color: color,
+            ),
+            const SizedBox(width: 4),
+            Text(
+              '${item.likeCount}',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: color,
+                fontWeight: liked ? FontWeight.w700 : FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

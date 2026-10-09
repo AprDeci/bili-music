@@ -64,48 +64,41 @@ class CommentReplyController extends _$CommentReplyController {
         item.rpid,
         (CommentItem comment) => comment.withLike(item.isLiked),
       );
-      ToastUtil.show(_errorText(error));
+      ToastUtil.show(commentErrorText(error));
     } finally {
       _likeInFlight.remove(item.rpid);
     }
   }
 
-  Future<bool> submitReply(String message) async {
-    if (state.isSubmitting) {
-      return false;
-    }
-
+  /// 在楼中楼里发表回复；[replyTo] 为空时回复楼主，否则回复该条回复。
+  Future<bool> submitReply(String message, {CommentItem? replyTo}) async {
     final String content = message.trim();
     if (content.isEmpty) {
       return false;
     }
 
-    state = state.copyWith(isSubmitting: true);
-
+    final int rootRpid = state.rootItem.rpid;
     try {
-      final CommentItem? created = await _repository.addComment(
+      await _repository.addComment(
         state.target,
         message: content,
-        root: state.rootItem.rpid,
-        parent: state.rootItem.rpid,
+        root: rootRpid,
+        parent: replyTo?.rpid ?? rootRpid,
       );
 
       _syncMainList(
-        state.rootItem.rpid,
+        rootRpid,
         (CommentItem comment) =>
             comment.copyWith(replyCount: comment.replyCount + 1),
       );
-      _logger.d('submitReply success created=${created?.rpid}');
       ToastUtil.show('回复已发布');
       // 楼中楼顺序由服务端决定，重拉第一页而不是猜插入位置。
       await loadInitial();
       return true;
     } on Object catch (error) {
       _logger.e('submitReply failed', error);
-      ToastUtil.show(_errorText(error));
+      ToastUtil.show(commentErrorText(error));
       return false;
-    } finally {
-      state = state.copyWith(isSubmitting: false);
     }
   }
 
@@ -127,13 +120,6 @@ class CommentReplyController extends _$CommentReplyController {
     ref
         .read(commentControllerProvider(state.target).notifier)
         .applyLocalUpdate(rpid, update);
-  }
-
-  String _errorText(Object error) {
-    if (error is BiliCommentException) {
-      return error.message;
-    }
-    return '操作失败，请稍后重试';
   }
 
   Future<void> loadInitial() async {

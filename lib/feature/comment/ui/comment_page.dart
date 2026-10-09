@@ -7,8 +7,10 @@ import 'package:bilimusic/feature/comment/domain/comment_state.dart';
 import 'package:bilimusic/feature/comment/domain/comment_target.dart';
 import 'package:bilimusic/feature/comment/logic/comment_controller.dart';
 import 'package:bilimusic/feature/comment/ui/components/comment_card.dart';
+import 'package:bilimusic/feature/comment/ui/components/comment_composer.dart';
 import 'package:bilimusic/feature/comment/ui/comment_reply_sheet.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class CommentPage extends ConsumerStatefulWidget {
@@ -22,6 +24,7 @@ class CommentPage extends ConsumerStatefulWidget {
 
 class _CommentPageState extends ConsumerState<CommentPage> {
   late final ScrollController _scrollController;
+  bool _composerButtonVisible = true;
 
   @override
   void initState() {
@@ -44,11 +47,33 @@ class _CommentPageState extends ConsumerState<CommentPage> {
     if (!_scrollController.hasClients) {
       return;
     }
+    _syncComposerButton(_scrollController.position);
     if (_scrollController.position.extentAfter <= 240) {
       ref
           .read(commentControllerProvider(widget.target).notifier)
           .loadNextPage();
     }
+  }
+
+  void _syncComposerButton(ScrollPosition position) {
+    final ScrollDirection direction = position.userScrollDirection;
+    if (direction == ScrollDirection.reverse && _composerButtonVisible) {
+      setState(() => _composerButtonVisible = false);
+    } else if (direction == ScrollDirection.forward &&
+        !_composerButtonVisible) {
+      setState(() => _composerButtonVisible = true);
+    }
+  }
+
+  Future<void> _openComposer({CommentItem? replyTo}) {
+    return openCommentComposer(
+      context: context,
+      ref: ref,
+      replyTo: replyTo,
+      onSubmit: (String message) => ref
+          .read(commentControllerProvider(widget.target).notifier)
+          .submitComment(message, replyTo: replyTo),
+    );
   }
 
   @override
@@ -64,6 +89,24 @@ class _CommentPageState extends ConsumerState<CommentPage> {
 
     return Scaffold(
       appBar: PlatformUtil.isDesktop ? null : AppBar(title: const Text('评论')),
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+      floatingActionButton: AnimatedSlide(
+        duration: const Duration(milliseconds: 180),
+        curve: Curves.easeOut,
+        offset: _composerButtonVisible ? Offset.zero : const Offset(0, 1.8),
+        child: IgnorePointer(
+          ignoring: !_composerButtonVisible,
+          child: FloatingActionButton(
+            heroTag: null,
+            tooltip: '写评论',
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            onPressed: state.isReadOnly ? null : _openComposer,
+            child: const Icon(Icons.mode_edit_outline_rounded),
+          ),
+        ),
+      ),
       body: SafeArea(
         child: RefreshIndicator(
           onRefresh: controller.refresh,
@@ -110,7 +153,12 @@ class _CommentPageState extends ConsumerState<CommentPage> {
                       children: <Widget>[
                         _CommentSectionTitle(title: '置顶评论'),
                         const SizedBox(height: 8),
-                        CommentCard(item: state.topItem!),
+                        CommentCard(
+                          item: state.topItem!,
+                          onToggleLike: () =>
+                              controller.toggleLike(state.topItem!),
+                          onTap: () => _openComposer(replyTo: state.topItem),
+                        ),
                         const SizedBox(height: 16),
                       ],
                     ),
@@ -199,7 +247,7 @@ class _CommentPageState extends ConsumerState<CommentPage> {
                     ),
                   ),
               ],
-              const SliverToBoxAdapter(child: SizedBox(height: 24)),
+              const SliverToBoxAdapter(child: SizedBox(height: 96)),
             ],
           ),
         ),
@@ -208,6 +256,10 @@ class _CommentPageState extends ConsumerState<CommentPage> {
   }
 
   Widget _buildCommentCard(CommentItem item) {
+    final CommentController controller = ref.read(
+      commentControllerProvider(widget.target).notifier,
+    );
+
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.only(bottom: 12),
@@ -215,6 +267,8 @@ class _CommentPageState extends ConsumerState<CommentPage> {
         item: item,
         showReplyPreview: true,
         showReplyEntry: true,
+        onToggleLike: () => controller.toggleLike(item),
+        onTap: () => _openComposer(replyTo: item),
         onOpenReplies: item.replyCount > 0
             ? () => showCommentReplySheet(
                 context: context,

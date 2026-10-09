@@ -3,6 +3,7 @@ import 'package:bilimusic/feature/comment/domain/comment_reply_state.dart';
 import 'package:bilimusic/feature/comment/domain/comment_target.dart';
 import 'package:bilimusic/feature/comment/logic/comment_reply_controller.dart';
 import 'package:bilimusic/feature/comment/ui/components/comment_card.dart';
+import 'package:bilimusic/feature/comment/ui/components/comment_composer.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -68,10 +69,24 @@ class _CommentReplySheetState extends ConsumerState<_CommentReplySheet> {
     }
   }
 
+  Future<void> _openComposer({CommentItem? replyTo}) {
+    return openCommentComposer(
+      context: context,
+      ref: ref,
+      replyTo: replyTo,
+      onSubmit: (String message) => ref
+          .read(commentReplyControllerProvider(widget.args).notifier)
+          .submitReply(message, replyTo: replyTo),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final CommentReplyState state = ref.watch(
       commentReplyControllerProvider(widget.args),
+    );
+    final CommentReplyController controller = ref.read(
+      commentReplyControllerProvider(widget.args).notifier,
     );
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
@@ -124,6 +139,9 @@ class _CommentReplySheetState extends ConsumerState<_CommentReplySheet> {
                           showReplyPreview: false,
                           showReplyEntry: false,
                           showTopBadge: false,
+                          onToggleLike: () =>
+                              controller.toggleLike(state.rootItem),
+                          onTap: () => _openComposer(),
                         ),
                         const SizedBox(height: 20),
                         Divider(
@@ -166,6 +184,8 @@ class _CommentReplySheetState extends ConsumerState<_CommentReplySheet> {
                               showReplyEntry: false,
                               showTopBadge: false,
                               showHiddenBadge: false,
+                              onToggleLike: () => controller.toggleLike(item),
+                              onTap: () => _openComposer(replyTo: item),
                             ),
                           );
                         },

@@ -26,10 +26,6 @@ class CommentController extends _$CommentController {
     return CommentState(target: target);
   }
 
-  void setReplyTo(CommentItem? item) {
-    state = state.copyWith(replyTo: item);
-  }
-
   Future<void> toggleLike(CommentItem item) async {
     if (_likeInFlight.contains(item.rpid)) {
       return;
@@ -55,30 +51,26 @@ class CommentController extends _$CommentController {
         item.rpid,
         (CommentItem comment) => comment.withLike(item.isLiked),
       );
-      ToastUtil.show(_errorText(error));
+      ToastUtil.show(commentErrorText(error));
     } finally {
       _likeInFlight.remove(item.rpid);
     }
   }
 
-  Future<bool> submitComment(String message) async {
-    if (state.isSubmitting) {
-      return false;
-    }
-
+  /// 发表评论；[replyTo] 非空时为回复该评论。
+  Future<bool> submitComment(String message, {CommentItem? replyTo}) async {
     final String content = message.trim();
     if (content.isEmpty) {
       return false;
     }
 
-    final CommentItem? replyTo = state.replyTo;
-    state = state.copyWith(isSubmitting: true);
-
     try {
       final CommentItem? created = await _repository.addComment(
         state.target,
         message: content,
-        root: replyTo == null ? 0 : _rootRpidOf(replyTo),
+        root: replyTo == null
+            ? 0
+            : (replyTo.isRoot ? replyTo.rpid : replyTo.root),
         parent: replyTo?.rpid ?? 0,
       );
 
@@ -97,16 +89,13 @@ class CommentController extends _$CommentController {
         );
       }
 
-      state = state.copyWith(replyTo: null);
       _logger.d('submitComment success created=${created?.rpid}');
       ToastUtil.show('评论已发布');
       return true;
     } on Object catch (error) {
       _logger.e('submitComment failed', error);
-      ToastUtil.show(_errorText(error));
+      ToastUtil.show(commentErrorText(error));
       return false;
-    } finally {
-      state = state.copyWith(isSubmitting: false);
     }
   }
 
@@ -129,17 +118,6 @@ class CommentController extends _$CommentController {
           .toList(),
       items: state.items.map((CommentItem item) => mapItem(item)!).toList(),
     );
-  }
-
-  int _rootRpidOf(CommentItem replyTo) {
-    return replyTo.isRoot ? replyTo.rpid : replyTo.root;
-  }
-
-  String _errorText(Object error) {
-    if (error is BiliCommentException) {
-      return error.message;
-    }
-    return '操作失败，请稍后重试';
   }
 
   Future<void> loadInitial() async {

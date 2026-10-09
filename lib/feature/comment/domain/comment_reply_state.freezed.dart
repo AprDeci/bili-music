@@ -14,7 +14,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$CommentReplyState {
 
- CommentTarget get target; CommentItem get rootItem; List<CommentItem> get items; bool get isLoading; bool get isLoadingMore; bool get hasMore; int get currentPage; int get totalCount; bool get isReadOnly; bool get isSubmitting; String? get errorMessage; String? get loadMoreErrorMessage;
+ CommentTarget get target; CommentItem get rootItem; List<CommentItem> get items; bool get isLoading; bool get isLoadingMore; bool get hasMore; int get currentPage; int get totalCount; bool get isReadOnly; String? get errorMessage; String? get loadMoreErrorMessage;
 /// Create a copy of CommentReplyState
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -25,16 +25,16 @@ $CommentReplyStateCopyWith<CommentReplyState> get copyWith => _$CommentReplyStat
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is CommentReplyState&&(identical(other.target, target) || other.target == target)&&(identical(other.rootItem, rootItem) || other.rootItem == rootItem)&&const DeepCollectionEquality().equals(other.items, items)&&(identical(other.isLoading, isLoading) || other.isLoading == isLoading)&&(identical(other.isLoadingMore, isLoadingMore) || other.isLoadingMore == isLoadingMore)&&(identical(other.hasMore, hasMore) || other.hasMore == hasMore)&&(identical(other.currentPage, currentPage) || other.currentPage == currentPage)&&(identical(other.totalCount, totalCount) || other.totalCount == totalCount)&&(identical(other.isReadOnly, isReadOnly) || other.isReadOnly == isReadOnly)&&(identical(other.isSubmitting, isSubmitting) || other.isSubmitting == isSubmitting)&&(identical(other.errorMessage, errorMessage) || other.errorMessage == errorMessage)&&(identical(other.loadMoreErrorMessage, loadMoreErrorMessage) || other.loadMoreErrorMessage == loadMoreErrorMessage));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is CommentReplyState&&(identical(other.target, target) || other.target == target)&&(identical(other.rootItem, rootItem) || other.rootItem == rootItem)&&const DeepCollectionEquality().equals(other.items, items)&&(identical(other.isLoading, isLoading) || other.isLoading == isLoading)&&(identical(other.isLoadingMore, isLoadingMore) || other.isLoadingMore == isLoadingMore)&&(identical(other.hasMore, hasMore) || other.hasMore == hasMore)&&(identical(other.currentPage, currentPage) || other.currentPage == currentPage)&&(identical(other.totalCount, totalCount) || other.totalCount == totalCount)&&(identical(other.isReadOnly, isReadOnly) || other.isReadOnly == isReadOnly)&&(identical(other.errorMessage, errorMessage) || other.errorMessage == errorMessage)&&(identical(other.loadMoreErrorMessage, loadMoreErrorMessage) || other.loadMoreErrorMessage == loadMoreErrorMessage));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,target,rootItem,const DeepCollectionEquality().hash(items),isLoading,isLoadingMore,hasMore,currentPage,totalCount,isReadOnly,isSubmitting,errorMessage,loadMoreErrorMessage);
+int get hashCode => Object.hash(runtimeType,target,rootItem,const DeepCollectionEquality().hash(items),isLoading,isLoadingMore,hasMore,currentPage,totalCount,isReadOnly,errorMessage,loadMoreErrorMessage);
 
 @override
 String toString() {
-  return 'CommentReplyState(target: $target, rootItem: $rootItem, items: $items, isLoading: $isLoading, isLoadingMore: $isLoadingMore, hasMore: $hasMore, currentPage: $currentPage, totalCount: $totalCount, isReadOnly: $isReadOnly, isSubmitting: $isSubmitting, errorMessage: $errorMessage, loadMoreErrorMessage: $loadMoreErrorMessage)';
+  return 'CommentReplyState(target: $target, rootItem: $rootItem, items: $items, isLoading: $isLoading, isLoadingMore: $isLoadingMore, hasMore: $hasMore, currentPage: $currentPage, totalCount: $totalCount, isReadOnly: $isReadOnly, errorMessage: $errorMessage, loadMoreErrorMessage: $loadMoreErrorMessage)';
 }
 
 
@@ -45,7 +45,7 @@ abstract mixin class $CommentReplyStateCopyWith<$Res>  {
   factory $CommentReplyStateCopyWith(CommentReplyState value, $Res Function(CommentReplyState) _then) = _$CommentReplyStateCopyWithImpl;
 @useResult
 $Res call({
- CommentTarget target, CommentItem rootItem, List<CommentItem> items, bool isLoading, bool isLoadingMore, bool hasMore, int currentPage, int totalCount, bool isReadOnly, bool isSubmitting, String? errorMessage, String? loadMoreErrorMessage
+ CommentTarget target, CommentItem rootItem, List<CommentItem> items, bool isLoading, bool isLoadingMore, bool hasMore, int currentPage, int totalCount, bool isReadOnly, String? errorMessage, String? loadMoreErrorMessage
 });
 
 
@@ -62,7 +62,7 @@ class _$CommentReplyStateCopyWithImpl<$Res>
 
 /// Create a copy of CommentReplyState
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? target = null,Object? rootItem = null,Object? items = null,Object? isLoading = null,Object? isLoadingMore = null,Object? hasMore = null,Object? currentPage = null,Object? totalCount = null,Object? isReadOnly = null,Object? isSubmitting = null,Object? errorMessage = freezed,Object? loadMoreErrorMessage = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? target = null,Object? rootItem = null,Object? items = null,Object? isLoading = null,Object? isLoadingMore = null,Object? hasMore = null,Object? currentPage = null,Object? totalCount = null,Object? isReadOnly = null,Object? errorMessage = freezed,Object? loadMoreErrorMessage = freezed,}) {
   return _then(_self.copyWith(
 target: null == target ? _self.target : target // ignore: cast_nullable_to_non_nullable
 as CommentTarget,rootItem: null == rootItem ? _self.rootItem : rootItem // ignore: cast_nullable_to_non_nullable
@@ -73,7 +73,6 @@ as bool,hasMore: null == hasMore ? _self.hasMore : hasMore // ignore: cast_nulla
 as bool,currentPage: null == currentPage ? _self.currentPage : currentPage // ignore: cast_nullable_to_non_nullable
 as int,totalCount: null == totalCount ? _self.totalCount : totalCount // ignore: cast_nullable_to_non_nullable
 as int,isReadOnly: null == isReadOnly ? _self.isReadOnly : isReadOnly // ignore: cast_nullable_to_non_nullable
-as bool,isSubmitting: null == isSubmitting ? _self.isSubmitting : isSubmitting // ignore: cast_nullable_to_non_nullable
 as bool,errorMessage: freezed == errorMessage ? _self.errorMessage : errorMessage // ignore: cast_nullable_to_non_nullable
 as String?,loadMoreErrorMessage: freezed == loadMoreErrorMessage ? _self.loadMoreErrorMessage : loadMoreErrorMessage // ignore: cast_nullable_to_non_nullable
 as String?,
@@ -179,10 +178,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( CommentTarget target,  CommentItem rootItem,  List<CommentItem> items,  bool isLoading,  bool isLoadingMore,  bool hasMore,  int currentPage,  int totalCount,  bool isReadOnly,  bool isSubmitting,  String? errorMessage,  String? loadMoreErrorMessage)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( CommentTarget target,  CommentItem rootItem,  List<CommentItem> items,  bool isLoading,  bool isLoadingMore,  bool hasMore,  int currentPage,  int totalCount,  bool isReadOnly,  String? errorMessage,  String? loadMoreErrorMessage)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _CommentReplyState() when $default != null:
-return $default(_that.target,_that.rootItem,_that.items,_that.isLoading,_that.isLoadingMore,_that.hasMore,_that.currentPage,_that.totalCount,_that.isReadOnly,_that.isSubmitting,_that.errorMessage,_that.loadMoreErrorMessage);case _:
+return $default(_that.target,_that.rootItem,_that.items,_that.isLoading,_that.isLoadingMore,_that.hasMore,_that.currentPage,_that.totalCount,_that.isReadOnly,_that.errorMessage,_that.loadMoreErrorMessage);case _:
   return orElse();
 
 }
@@ -200,10 +199,10 @@ return $default(_that.target,_that.rootItem,_that.items,_that.isLoading,_that.is
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( CommentTarget target,  CommentItem rootItem,  List<CommentItem> items,  bool isLoading,  bool isLoadingMore,  bool hasMore,  int currentPage,  int totalCount,  bool isReadOnly,  bool isSubmitting,  String? errorMessage,  String? loadMoreErrorMessage)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( CommentTarget target,  CommentItem rootItem,  List<CommentItem> items,  bool isLoading,  bool isLoadingMore,  bool hasMore,  int currentPage,  int totalCount,  bool isReadOnly,  String? errorMessage,  String? loadMoreErrorMessage)  $default,) {final _that = this;
 switch (_that) {
 case _CommentReplyState():
-return $default(_that.target,_that.rootItem,_that.items,_that.isLoading,_that.isLoadingMore,_that.hasMore,_that.currentPage,_that.totalCount,_that.isReadOnly,_that.isSubmitting,_that.errorMessage,_that.loadMoreErrorMessage);case _:
+return $default(_that.target,_that.rootItem,_that.items,_that.isLoading,_that.isLoadingMore,_that.hasMore,_that.currentPage,_that.totalCount,_that.isReadOnly,_that.errorMessage,_that.loadMoreErrorMessage);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -220,10 +219,10 @@ return $default(_that.target,_that.rootItem,_that.items,_that.isLoading,_that.is
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( CommentTarget target,  CommentItem rootItem,  List<CommentItem> items,  bool isLoading,  bool isLoadingMore,  bool hasMore,  int currentPage,  int totalCount,  bool isReadOnly,  bool isSubmitting,  String? errorMessage,  String? loadMoreErrorMessage)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( CommentTarget target,  CommentItem rootItem,  List<CommentItem> items,  bool isLoading,  bool isLoadingMore,  bool hasMore,  int currentPage,  int totalCount,  bool isReadOnly,  String? errorMessage,  String? loadMoreErrorMessage)?  $default,) {final _that = this;
 switch (_that) {
 case _CommentReplyState() when $default != null:
-return $default(_that.target,_that.rootItem,_that.items,_that.isLoading,_that.isLoadingMore,_that.hasMore,_that.currentPage,_that.totalCount,_that.isReadOnly,_that.isSubmitting,_that.errorMessage,_that.loadMoreErrorMessage);case _:
+return $default(_that.target,_that.rootItem,_that.items,_that.isLoading,_that.isLoadingMore,_that.hasMore,_that.currentPage,_that.totalCount,_that.isReadOnly,_that.errorMessage,_that.loadMoreErrorMessage);case _:
   return null;
 
 }
@@ -235,7 +234,7 @@ return $default(_that.target,_that.rootItem,_that.items,_that.isLoading,_that.is
 
 
 class _CommentReplyState implements CommentReplyState {
-  const _CommentReplyState({required this.target, required this.rootItem, final  List<CommentItem> items = const <CommentItem>[], this.isLoading = false, this.isLoadingMore = false, this.hasMore = false, this.currentPage = 0, this.totalCount = 0, this.isReadOnly = false, this.isSubmitting = false, this.errorMessage, this.loadMoreErrorMessage}): _items = items;
+  const _CommentReplyState({required this.target, required this.rootItem, final  List<CommentItem> items = const <CommentItem>[], this.isLoading = false, this.isLoadingMore = false, this.hasMore = false, this.currentPage = 0, this.totalCount = 0, this.isReadOnly = false, this.errorMessage, this.loadMoreErrorMessage}): _items = items;
   
 
 @override final  CommentTarget target;
@@ -253,7 +252,6 @@ class _CommentReplyState implements CommentReplyState {
 @override@JsonKey() final  int currentPage;
 @override@JsonKey() final  int totalCount;
 @override@JsonKey() final  bool isReadOnly;
-@override@JsonKey() final  bool isSubmitting;
 @override final  String? errorMessage;
 @override final  String? loadMoreErrorMessage;
 
@@ -267,16 +265,16 @@ _$CommentReplyStateCopyWith<_CommentReplyState> get copyWith => __$CommentReplyS
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _CommentReplyState&&(identical(other.target, target) || other.target == target)&&(identical(other.rootItem, rootItem) || other.rootItem == rootItem)&&const DeepCollectionEquality().equals(other._items, _items)&&(identical(other.isLoading, isLoading) || other.isLoading == isLoading)&&(identical(other.isLoadingMore, isLoadingMore) || other.isLoadingMore == isLoadingMore)&&(identical(other.hasMore, hasMore) || other.hasMore == hasMore)&&(identical(other.currentPage, currentPage) || other.currentPage == currentPage)&&(identical(other.totalCount, totalCount) || other.totalCount == totalCount)&&(identical(other.isReadOnly, isReadOnly) || other.isReadOnly == isReadOnly)&&(identical(other.isSubmitting, isSubmitting) || other.isSubmitting == isSubmitting)&&(identical(other.errorMessage, errorMessage) || other.errorMessage == errorMessage)&&(identical(other.loadMoreErrorMessage, loadMoreErrorMessage) || other.loadMoreErrorMessage == loadMoreErrorMessage));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _CommentReplyState&&(identical(other.target, target) || other.target == target)&&(identical(other.rootItem, rootItem) || other.rootItem == rootItem)&&const DeepCollectionEquality().equals(other._items, _items)&&(identical(other.isLoading, isLoading) || other.isLoading == isLoading)&&(identical(other.isLoadingMore, isLoadingMore) || other.isLoadingMore == isLoadingMore)&&(identical(other.hasMore, hasMore) || other.hasMore == hasMore)&&(identical(other.currentPage, currentPage) || other.currentPage == currentPage)&&(identical(other.totalCount, totalCount) || other.totalCount == totalCount)&&(identical(other.isReadOnly, isReadOnly) || other.isReadOnly == isReadOnly)&&(identical(other.errorMessage, errorMessage) || other.errorMessage == errorMessage)&&(identical(other.loadMoreErrorMessage, loadMoreErrorMessage) || other.loadMoreErrorMessage == loadMoreErrorMessage));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,target,rootItem,const DeepCollectionEquality().hash(_items),isLoading,isLoadingMore,hasMore,currentPage,totalCount,isReadOnly,isSubmitting,errorMessage,loadMoreErrorMessage);
+int get hashCode => Object.hash(runtimeType,target,rootItem,const DeepCollectionEquality().hash(_items),isLoading,isLoadingMore,hasMore,currentPage,totalCount,isReadOnly,errorMessage,loadMoreErrorMessage);
 
 @override
 String toString() {
-  return 'CommentReplyState(target: $target, rootItem: $rootItem, items: $items, isLoading: $isLoading, isLoadingMore: $isLoadingMore, hasMore: $hasMore, currentPage: $currentPage, totalCount: $totalCount, isReadOnly: $isReadOnly, isSubmitting: $isSubmitting, errorMessage: $errorMessage, loadMoreErrorMessage: $loadMoreErrorMessage)';
+  return 'CommentReplyState(target: $target, rootItem: $rootItem, items: $items, isLoading: $isLoading, isLoadingMore: $isLoadingMore, hasMore: $hasMore, currentPage: $currentPage, totalCount: $totalCount, isReadOnly: $isReadOnly, errorMessage: $errorMessage, loadMoreErrorMessage: $loadMoreErrorMessage)';
 }
 
 
@@ -287,7 +285,7 @@ abstract mixin class _$CommentReplyStateCopyWith<$Res> implements $CommentReplyS
   factory _$CommentReplyStateCopyWith(_CommentReplyState value, $Res Function(_CommentReplyState) _then) = __$CommentReplyStateCopyWithImpl;
 @override @useResult
 $Res call({
- CommentTarget target, CommentItem rootItem, List<CommentItem> items, bool isLoading, bool isLoadingMore, bool hasMore, int currentPage, int totalCount, bool isReadOnly, bool isSubmitting, String? errorMessage, String? loadMoreErrorMessage
+ CommentTarget target, CommentItem rootItem, List<CommentItem> items, bool isLoading, bool isLoadingMore, bool hasMore, int currentPage, int totalCount, bool isReadOnly, String? errorMessage, String? loadMoreErrorMessage
 });
 
 
@@ -304,7 +302,7 @@ class __$CommentReplyStateCopyWithImpl<$Res>
 
 /// Create a copy of CommentReplyState
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? target = null,Object? rootItem = null,Object? items = null,Object? isLoading = null,Object? isLoadingMore = null,Object? hasMore = null,Object? currentPage = null,Object? totalCount = null,Object? isReadOnly = null,Object? isSubmitting = null,Object? errorMessage = freezed,Object? loadMoreErrorMessage = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? target = null,Object? rootItem = null,Object? items = null,Object? isLoading = null,Object? isLoadingMore = null,Object? hasMore = null,Object? currentPage = null,Object? totalCount = null,Object? isReadOnly = null,Object? errorMessage = freezed,Object? loadMoreErrorMessage = freezed,}) {
   return _then(_CommentReplyState(
 target: null == target ? _self.target : target // ignore: cast_nullable_to_non_nullable
 as CommentTarget,rootItem: null == rootItem ? _self.rootItem : rootItem // ignore: cast_nullable_to_non_nullable
@@ -315,7 +313,6 @@ as bool,hasMore: null == hasMore ? _self.hasMore : hasMore // ignore: cast_nulla
 as bool,currentPage: null == currentPage ? _self.currentPage : currentPage // ignore: cast_nullable_to_non_nullable
 as int,totalCount: null == totalCount ? _self.totalCount : totalCount // ignore: cast_nullable_to_non_nullable
 as int,isReadOnly: null == isReadOnly ? _self.isReadOnly : isReadOnly // ignore: cast_nullable_to_non_nullable
-as bool,isSubmitting: null == isSubmitting ? _self.isSubmitting : isSubmitting // ignore: cast_nullable_to_non_nullable
 as bool,errorMessage: freezed == errorMessage ? _self.errorMessage : errorMessage // ignore: cast_nullable_to_non_nullable
 as String?,loadMoreErrorMessage: freezed == loadMoreErrorMessage ? _self.loadMoreErrorMessage : loadMoreErrorMessage // ignore: cast_nullable_to_non_nullable
 as String?,

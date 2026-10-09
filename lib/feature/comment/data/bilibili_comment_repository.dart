@@ -222,10 +222,7 @@ class BiliCommentRepository {
     }
 
     _logger.e('comment request failed code=$code message=${json['message']}');
-    throw BiliCommentException(
-      _errorMessage(code, json['message']),
-      code: code,
-    );
+    throw BiliCommentException(_errorMessage(code, json['message']));
   }
 
   String _errorMessage(int code, dynamic rawMessage) {
@@ -580,11 +577,17 @@ class BiliCommentRepository {
 }
 
 class BiliCommentException implements Exception {
-  const BiliCommentException(this.message, {this.code});
+  const BiliCommentException(this.message);
 
   final String message;
-  final int? code;
 
   @override
   String toString() => message;
+}
+
+String commentErrorText(Object error) {
+  if (error is BiliCommentException) {
+    return error.message;
+  }
+  return '操作失败，请稍后重试';
 }
