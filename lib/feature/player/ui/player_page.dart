@@ -195,7 +195,7 @@ class _PlayerPageState extends ConsumerState<PlayerPage> {
                                 final Duration position = Duration(
                                   milliseconds: (totalMs * value).round(),
                                 );
-                                playerController.seek(position);
+                                playerController.seekFromProgressBar(position);
                               },
                               onToggleQueueMode:
                                   playerController.toggleQueueMode,

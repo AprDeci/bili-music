@@ -119,7 +119,7 @@ class DesktopPlayerBar extends ConsumerWidget {
                   final Duration target = Duration(
                     milliseconds: (total.inMilliseconds * value).round(),
                   );
-                  controller.seek(target);
+                  controller.seekFromProgressBar(target);
                 },
                 onSelectQueueMode: controller.setQueueMode,
                 onPrevious: controller.skipToPrevious,

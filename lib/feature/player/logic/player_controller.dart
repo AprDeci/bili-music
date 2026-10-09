@@ -292,6 +292,14 @@ class PlayerController extends Notifier<PlayerState>
     return _audioEngine.seek(position);
   }
 
+// seek即播放
+  Future<void> seekFromProgressBar(Duration position) async {
+    await seek(position);
+    if (!state.isPlaying) {
+      await play();
+    }
+  }
+
   Future<void> setVolume(double volume) async {
     final double nextVolume = volume.clamp(0.0, 1.0).toDouble();
     if (nextVolume > 0) {

@@ -224,7 +224,7 @@ class _DesktopPlayerPageState extends ConsumerState<DesktopPlayerPage> {
                       .toggle(),
                   onSeek: (double value) {
                     final Duration total = _resolveTotalDuration(state);
-                    controller.seek(
+                    controller.seekFromProgressBar(
                       Duration(
                         milliseconds: (total.inMilliseconds * value).round(),
                       ),
