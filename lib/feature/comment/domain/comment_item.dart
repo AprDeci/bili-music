@@ -37,4 +37,16 @@ abstract class CommentItem with _$CommentItem {
 
   bool get isRoot => root == 0;
   bool get isLiked => action == 1;
+
+  // 幂等：已处于目标状态时原样返回，便于乐观更新反复套用。
+  CommentItem withLike(bool liked) {
+    if (isLiked == liked) {
+      return this;
+    }
+    final int nextCount = liked ? likeCount + 1 : likeCount - 1;
+    return copyWith(
+      action: liked ? 1 : 0,
+      likeCount: nextCount < 0 ? 0 : nextCount,
+    );
+  }
 }

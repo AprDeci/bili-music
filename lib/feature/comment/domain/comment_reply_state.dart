@@ -16,6 +16,7 @@ abstract class CommentReplyState with _$CommentReplyState {
     @Default(0) int currentPage,
     @Default(0) int totalCount,
     @Default(false) bool isReadOnly,
+    @Default(false) bool isSubmitting,
     String? errorMessage,
     String? loadMoreErrorMessage,
   }) = _CommentReplyState;

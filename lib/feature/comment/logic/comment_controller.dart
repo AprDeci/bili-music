@@ -1,4 +1,5 @@
 import 'package:bilimusic/common/logger.dart';
+import 'package:bilimusic/common/util/toast_util.dart';
 import 'package:bilimusic/feature/comment/data/bilibili_comment_repository.dart';
 import 'package:bilimusic/feature/comment/domain/comment_item.dart';
 import 'package:bilimusic/feature/comment/domain/comment_page_result.dart';
@@ -17,10 +18,128 @@ class CommentController extends _$CommentController {
     biliCommentRepositoryProvider,
   );
 
+  final Set<int> _likeInFlight = <int>{};
+
   @override
   CommentState build(CommentTarget target) {
     _logger.d('build target oid=${target.oid} type=${target.type}');
     return CommentState(target: target);
+  }
+
+  void setReplyTo(CommentItem? item) {
+    state = state.copyWith(replyTo: item);
+  }
+
+  Future<void> toggleLike(CommentItem item) async {
+    if (_likeInFlight.contains(item.rpid)) {
+      return;
+    }
+
+    final bool liked = !item.isLiked;
+    _likeInFlight.add(item.rpid);
+    applyLocalUpdate(
+      item.rpid,
+      (CommentItem comment) => comment.withLike(liked),
+    );
+
+    try {
+      await _repository.likeComment(
+        state.target,
+        rpid: item.rpid,
+        liked: liked,
+      );
+      _logger.d('toggleLike success rpid=${item.rpid} liked=$liked');
+    } on Object catch (error) {
+      _logger.e('toggleLike failed rpid=${item.rpid}', error);
+      applyLocalUpdate(
+        item.rpid,
+        (CommentItem comment) => comment.withLike(item.isLiked),
+      );
+      ToastUtil.show(_errorText(error));
+    } finally {
+      _likeInFlight.remove(item.rpid);
+    }
+  }
+
+  Future<bool> submitComment(String message) async {
+    if (state.isSubmitting) {
+      return false;
+    }
+
+    final String content = message.trim();
+    if (content.isEmpty) {
+      return false;
+    }
+
+    final CommentItem? replyTo = state.replyTo;
+    state = state.copyWith(isSubmitting: true);
+
+    try {
+      final CommentItem? created = await _repository.addComment(
+        state.target,
+        message: content,
+        root: replyTo == null ? 0 : _rootRpidOf(replyTo),
+        parent: replyTo?.rpid ?? 0,
+      );
+
+      if (replyTo == null) {
+        // 最新排序下新评论必然在首位；其它排序交给下次刷新定位。
+        if (created != null && state.sort == CommentSort.time) {
+          state = state.copyWith(
+            items: <CommentItem>[created, ...state.items],
+            total: state.total + 1,
+          );
+        }
+      } else {
+        applyLocalUpdate(
+          replyTo.rpid,
+          (CommentItem item) => item.copyWith(replyCount: item.replyCount + 1),
+        );
+      }
+
+      state = state.copyWith(replyTo: null);
+      _logger.d('submitComment success created=${created?.rpid}');
+      ToastUtil.show('评论已发布');
+      return true;
+    } on Object catch (error) {
+      _logger.e('submitComment failed', error);
+      ToastUtil.show(_errorText(error));
+      return false;
+    } finally {
+      state = state.copyWith(isSubmitting: false);
+    }
+  }
+
+  // 本地替换某个评论，不发请求；楼中楼弹层用它把点赞结果同步回主列表。
+  void applyLocalUpdate(
+    int rpid,
+    CommentItem Function(CommentItem item) update,
+  ) {
+    CommentItem? mapItem(CommentItem? item) {
+      if (item == null || item.rpid != rpid) {
+        return item;
+      }
+      return update(item);
+    }
+
+    state = state.copyWith(
+      topItem: mapItem(state.topItem),
+      hotItems: state.hotItems
+          .map((CommentItem item) => mapItem(item)!)
+          .toList(),
+      items: state.items.map((CommentItem item) => mapItem(item)!).toList(),
+    );
+  }
+
+  int _rootRpidOf(CommentItem replyTo) {
+    return replyTo.isRoot ? replyTo.rpid : replyTo.root;
+  }
+
+  String _errorText(Object error) {
+    if (error is BiliCommentException) {
+      return error.message;
+    }
+    return '操作失败，请稍后重试';
   }
 
   Future<void> loadInitial() async {
@@ -222,7 +341,9 @@ class CommentController extends _$CommentController {
             ? 0
             : state.currentPage,
         hasMore: resetItems && !preserveExistingItems ? false : state.hasMore,
-        nextOffset: resetItems && !preserveExistingItems ? null : state.nextOffset,
+        nextOffset: resetItems && !preserveExistingItems
+            ? null
+            : state.nextOffset,
         errorMessage: error.toString(),
         loadMoreErrorMessage: null,
       );

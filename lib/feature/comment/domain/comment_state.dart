@@ -26,6 +26,8 @@ abstract class CommentState with _$CommentState {
     @Default(false) bool hasFolded,
     @Default(false) bool isFolded,
     @Default(false) bool isReadOnly,
+    @Default(false) bool isSubmitting,
+    CommentItem? replyTo,
     String? noticeText,
     String? errorMessage,
     String? loadMoreErrorMessage,

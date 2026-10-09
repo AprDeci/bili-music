@@ -1,9 +1,11 @@
 import 'package:bilimusic/common/logger.dart';
+import 'package:bilimusic/common/util/toast_util.dart';
 import 'package:bilimusic/feature/comment/data/bilibili_comment_repository.dart';
 import 'package:bilimusic/feature/comment/domain/comment_item.dart';
 import 'package:bilimusic/feature/comment/domain/comment_reply_page_result.dart';
 import 'package:bilimusic/feature/comment/domain/comment_reply_state.dart';
 import 'package:bilimusic/feature/comment/domain/comment_target.dart';
+import 'package:bilimusic/feature/comment/logic/comment_controller.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
@@ -26,9 +28,112 @@ class CommentReplyController extends _$CommentReplyController {
     biliCommentRepositoryProvider,
   );
 
+  final Set<int> _likeInFlight = <int>{};
+
   @override
   CommentReplyState build(CommentReplySheetArgs args) {
     return CommentReplyState(target: args.target, rootItem: args.rootItem);
+  }
+
+  Future<void> toggleLike(CommentItem item) async {
+    if (_likeInFlight.contains(item.rpid)) {
+      return;
+    }
+
+    final bool liked = !item.isLiked;
+    _likeInFlight.add(item.rpid);
+    applyLocalUpdate(
+      item.rpid,
+      (CommentItem comment) => comment.withLike(liked),
+    );
+
+    try {
+      await _repository.likeComment(
+        state.target,
+        rpid: item.rpid,
+        liked: liked,
+      );
+      _syncMainList(
+        item.rpid,
+        (CommentItem comment) => comment.withLike(liked),
+      );
+      _logger.d('toggleLike success rpid=${item.rpid} liked=$liked');
+    } on Object catch (error) {
+      _logger.e('toggleLike failed rpid=${item.rpid}', error);
+      applyLocalUpdate(
+        item.rpid,
+        (CommentItem comment) => comment.withLike(item.isLiked),
+      );
+      ToastUtil.show(_errorText(error));
+    } finally {
+      _likeInFlight.remove(item.rpid);
+    }
+  }
+
+  Future<bool> submitReply(String message) async {
+    if (state.isSubmitting) {
+      return false;
+    }
+
+    final String content = message.trim();
+    if (content.isEmpty) {
+      return false;
+    }
+
+    state = state.copyWith(isSubmitting: true);
+
+    try {
+      final CommentItem? created = await _repository.addComment(
+        state.target,
+        message: content,
+        root: state.rootItem.rpid,
+        parent: state.rootItem.rpid,
+      );
+
+      _syncMainList(
+        state.rootItem.rpid,
+        (CommentItem comment) =>
+            comment.copyWith(replyCount: comment.replyCount + 1),
+      );
+      _logger.d('submitReply success created=${created?.rpid}');
+      ToastUtil.show('回复已发布');
+      // 楼中楼顺序由服务端决定，重拉第一页而不是猜插入位置。
+      await loadInitial();
+      return true;
+    } on Object catch (error) {
+      _logger.e('submitReply failed', error);
+      ToastUtil.show(_errorText(error));
+      return false;
+    } finally {
+      state = state.copyWith(isSubmitting: false);
+    }
+  }
+
+  void applyLocalUpdate(
+    int rpid,
+    CommentItem Function(CommentItem item) update,
+  ) {
+    state = state.copyWith(
+      rootItem: state.rootItem.rpid == rpid
+          ? update(state.rootItem)
+          : state.rootItem,
+      items: state.items
+          .map((CommentItem item) => item.rpid == rpid ? update(item) : item)
+          .toList(),
+    );
+  }
+
+  void _syncMainList(int rpid, CommentItem Function(CommentItem item) update) {
+    ref
+        .read(commentControllerProvider(state.target).notifier)
+        .applyLocalUpdate(rpid, update);
+  }
+
+  String _errorText(Object error) {
+    if (error is BiliCommentException) {
+      return error.message;
+    }
+    return '操作失败，请稍后重试';
   }
 
   Future<void> loadInitial() async {

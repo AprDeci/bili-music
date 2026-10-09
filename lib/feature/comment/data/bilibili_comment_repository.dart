@@ -8,7 +8,7 @@ import 'package:bilimusic/feature/comment/domain/comment_page_result.dart';
 import 'package:bilimusic/feature/comment/domain/comment_reply_page_result.dart';
 import 'package:bilimusic/feature/comment/domain/comment_sort.dart';
 import 'package:bilimusic/feature/comment/domain/comment_target.dart';
-
+import 'package:dio/dio.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'bilibili_comment_repository.g.dart';
@@ -23,6 +23,8 @@ class BiliCommentRepository {
 
   static const String _mainPath = '/x/v2/reply/wbi/main';
   static const String _replyPath = '/x/v2/reply/reply';
+  static const String _addPath = '/x/v2/reply/add';
+  static const String _likePath = '/x/v2/reply/action';
   static final AppLogger _logger = AppLogger('BiliCommentRepository');
 
   final BiliHttpClient _client;
@@ -120,6 +122,136 @@ class BiliCommentRepository {
       hasMore: hasMore,
       isReadOnly: _readBoolLike(config['read_only']) ?? false,
     );
+  }
+
+  Future<void> likeComment(
+    CommentTarget target, {
+    required int rpid,
+    required bool liked,
+  }) async {
+    if (rpid <= 0) {
+      throw const BiliCommentException('缺少评论 id，无法点赞');
+    }
+
+    _logger.d('likeComment rpid=$rpid liked=$liked');
+    await _postForm(_likePath, <String, dynamic>{
+      'type': target.type,
+      'oid': target.oid,
+      'rpid': rpid,
+      'action': liked ? 1 : 0,
+    });
+  }
+
+  Future<CommentItem?> addComment(
+    CommentTarget target, {
+    required String message,
+    int root = 0,
+    int parent = 0,
+  }) async {
+    final String content = message.trim();
+    if (content.isEmpty) {
+      throw const BiliCommentException('评论内容不能为空');
+    }
+
+    _logger.d(
+      'addComment oid=${target.oid} type=${target.type} '
+      'root=$root parent=$parent length=${content.length}',
+    );
+
+    final Map<String, dynamic> json =
+        await _postForm(_addPath, <String, dynamic>{
+          'type': target.type,
+          'oid': target.oid,
+          'message': content,
+          'plat': 1,
+          if (root > 0) 'root': root,
+          if (parent > 0) 'parent': parent,
+        });
+
+    final Map<String, dynamic> data = _asMapOrEmpty(json['data']);
+    _logger.d(
+      'addComment response rpid=${data['rpid']} '
+      'needCaptcha=${data['need_captcha']} '
+      'toast=${data['success_toast']}',
+    );
+
+    if (_readBoolLike(data['need_captcha']) ?? false) {
+      throw const BiliCommentException('B站要求完成验证码，请到网页端验证后再评论');
+    }
+
+    final Map<String, dynamic>? reply = _asNullableMap(data['reply']);
+    if (reply == null) {
+      return null;
+    }
+
+    try {
+      return _mapCommentItem(reply);
+    } on Object catch (error, stackTrace) {
+      _logger.e('map added comment failed', error, stackTrace);
+      return null;
+    }
+  }
+
+  Future<Map<String, dynamic>> _postForm(
+    String path,
+    Map<String, dynamic> data,
+  ) async {
+    final BiliSession? session = _client.currentSession;
+    if (session == null || !session.isLoggedIn) {
+      throw const BiliCommentException('请先登录后再操作');
+    }
+
+    final Response<dynamic> response = await _client.post<dynamic>(
+      path,
+      data: <String, dynamic>{...data, 'csrf': session.biliJct},
+      options: Options(
+        contentType: Headers.formUrlEncodedContentType,
+        headers: <String, dynamic>{'Cookie': session.cookie},
+      ),
+    );
+
+    final Map<String, dynamic> json = _asMap(response.data);
+    _ensureSuccess(json);
+    return json;
+  }
+
+  void _ensureSuccess(Map<String, dynamic> json) {
+    final int code = (json['code'] as num? ?? -1).toInt();
+    if (code == 0) {
+      return;
+    }
+
+    _logger.e('comment request failed code=$code message=${json['message']}');
+    throw BiliCommentException(
+      _errorMessage(code, json['message']),
+      code: code,
+    );
+  }
+
+  String _errorMessage(int code, dynamic rawMessage) {
+    switch (code) {
+      case -101:
+        return '请先登录后再操作';
+      case -111:
+        return '登录状态已失效，请重新登录';
+      case 12002:
+      case 12052:
+        return '评论区已关闭';
+      case 12015:
+        return 'B站要求完成验证码，请到网页端验证后再评论';
+      case 12016:
+        return '评论内容包含敏感信息';
+      case 12025:
+        return '评论字数过多';
+      case 12051:
+        return '评论发送过于频繁，请稍后再试';
+    }
+
+    final String message = rawMessage is String ? rawMessage.trim() : '';
+    if (message.isEmpty || message == '0') {
+      return '操作失败（$code）';
+    }
+    return message;
   }
 
   Future<CommentPageResult> _fetchMainComments(
@@ -448,9 +580,10 @@ class BiliCommentRepository {
 }
 
 class BiliCommentException implements Exception {
-  const BiliCommentException(this.message);
+  const BiliCommentException(this.message, {this.code});
 
   final String message;
+  final int? code;
 
   @override
   String toString() => message;
