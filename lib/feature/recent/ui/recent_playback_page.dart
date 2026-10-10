@@ -27,7 +27,6 @@ class RecentPlaybackPage extends ConsumerWidget {
         .toList(growable: false);
 
     return Scaffold(
-      backgroundColor: colorScheme.surface.withValues(alpha: 0.4),
       appBar: AppBar(title: const Text(_sourceLabel)),
       body: items.isEmpty
           ? StatusView(

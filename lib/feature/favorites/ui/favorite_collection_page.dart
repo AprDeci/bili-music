@@ -386,13 +386,11 @@ class _FavoriteCollectionPageState
     required List<FavoriteEntry> visibleItems,
     required List<PlayableItem> queueItems,
   }) {
-    final ColorScheme colorScheme = Theme.of(context).colorScheme;
     final bool showLikedTabs = collection.isLikedCollection;
 
     return DefaultTabController(
       length: showLikedTabs ? 2 : 1,
       child: Scaffold(
-        backgroundColor: colorScheme.surface.withValues(alpha: 0.4),
         appBar: AppBar(
           title: Text(collection.name),
           bottom: showLikedTabs
