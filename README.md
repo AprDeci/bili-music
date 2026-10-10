@@ -25,7 +25,7 @@ flutter 制作的 B站音乐客户端
 
 🐧 Linux
 
-🍎 macOS(未测试)
+🍎 macOS
 
 
 ## 声明
