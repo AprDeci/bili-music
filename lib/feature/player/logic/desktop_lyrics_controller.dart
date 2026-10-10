@@ -28,7 +28,7 @@ class DesktopLyricsController extends _$DesktopLyricsController {
     final bool enabled = ref
         .read(appSettingsStoreProvider)
         .readBool(HiveKeys.desktopLyricsEnabled, defaultValue: false);
-    if (!PlatformUtil.isWindows) {
+    if (!PlatformUtil.isDesktopLyricsSupported) {
       return enabled;
     }
 
@@ -57,7 +57,7 @@ class DesktopLyricsController extends _$DesktopLyricsController {
   Future<void> toggle() => setEnabled(!state);
 
   void _scheduleSync() {
-    if (!PlatformUtil.isWindows) {
+    if (!PlatformUtil.isDesktopLyricsSupported) {
       return;
     }
     _syncQueue = _syncQueue.then((_) => _sync());

@@ -795,7 +795,7 @@ class _DesktopPlayerControlDeck extends StatelessWidget {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: <Widget>[
-                        if (PlatformUtil.isWindows) ...[
+                        if (PlatformUtil.isDesktopLyricsSupported) ...[
                           BarIconButton(
                             iconSize: 28,
                             icon: BmIcons.desktopLyrics,

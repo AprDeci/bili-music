@@ -478,22 +478,22 @@ class _ActionSection extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final List<AudioQualityOption> qualities =
         state.audioStream?.availableQualities ?? const <AudioQualityOption>[];
-    final bool isDesktopLyricsEnabled = PlatformUtil.isWindows
+    final bool isDesktopLyricsEnabled = PlatformUtil.isDesktopLyricsSupported
         ? ref.watch(desktopLyricsControllerProvider)
         : false;
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.end,
       children: <Widget>[
-        if (PlatformUtil.isWindows) ...[
+        if (PlatformUtil.isDesktopLyricsSupported) ...[
           BarIconButton(
-          iconSize: 28,
+            iconSize: 28,
             onPressed: () =>
                 ref.read(desktopLyricsControllerProvider.notifier).toggle(),
             icon: BmIcons.desktopLyrics,
             tooltip: isDesktopLyricsEnabled ? '关闭桌面歌词' : '开启桌面歌词',
             isActive: isDesktopLyricsEnabled,
-        ),
+          ),
         ],
         const SizedBox(width: 10),
         DesktopQualityAttach(qualities: qualities, onSelected: onSelectQuality),

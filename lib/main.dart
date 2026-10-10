@@ -113,7 +113,7 @@ class _AppBootstrapState extends ConsumerState<_AppBootstrap>
           _desktopHotkeyController!,
         );
       }
-      if (PlatformUtil.isWindows) {
+      if (PlatformUtil.isDesktopLyricsSupported) {
         ref.read(desktopLyricsControllerProvider);
       }
     });
