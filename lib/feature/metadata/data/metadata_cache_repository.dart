@@ -18,7 +18,15 @@ class MetadataCacheRepository {
   final LazyBox<Metadata> _box;
 
   String buildCacheKey({required PlayableItem item}) {
-    return 'metadata:${item.contentId}';
+    return buildContentCacheKey(item.contentId);
+  }
+
+  String buildContentCacheKey(String contentId) {
+    return 'metadata:$contentId';
+  }
+
+  Future<Metadata?> getCachedMetadataByContentId(String contentId) {
+    return _box.get(buildContentCacheKey(contentId));
   }
 
   Future<Metadata?> getCachedMetadata({required PlayableItem item}) async {

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math';
 
 import 'package:bilimusic/common/logger.dart';
@@ -13,6 +14,7 @@ import 'package:bilimusic/feature/favorites/domain/favorite_entry.dart';
 import 'package:bilimusic/feature/favorites/domain/favorite_membership.dart';
 import 'package:bilimusic/feature/favorites/domain/favorites_state.dart';
 import 'package:bilimusic/feature/favorites/logic/remote_favorites_repositories.dart';
+import 'package:bilimusic/feature/metadata/logic/metadata_backfill_controller.dart';
 import 'package:bilimusic/feature/player/domain/playable_item.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
@@ -414,6 +416,7 @@ class FavoritesController extends _$FavoritesController {
     }
 
     await _upsertEntry(item: item, now: now);
+    _scheduleMetadataBackfill(item);
     await _repository.saveMembership(
       FavoriteMembership.create(
         collectionId: FavoriteCollection.likedCollectionId,
@@ -445,6 +448,7 @@ class FavoritesController extends _$FavoritesController {
     final DateTime now = DateTime.now();
 
     await _upsertEntry(item: item, now: now);
+    _scheduleMetadataBackfill(item);
 
     if (!state.isItemInCollection(collectionId: collectionId, itemId: itemId)) {
       await _repository.saveMembership(
@@ -589,6 +593,7 @@ class FavoritesController extends _$FavoritesController {
     for (final PlayableItem item in uniqueItems.values) {
       final String itemId = item.stableId;
       await _upsertEntry(item: item, now: now);
+      _scheduleMetadataBackfill(item);
       if (!state.isItemInCollection(
         collectionId: collectionId,
         itemId: itemId,
@@ -718,6 +723,10 @@ class FavoritesController extends _$FavoritesController {
     return true;
   }
 
+  void _scheduleMetadataBackfill(PlayableItem item) {
+    ref.read(metadataBackfillControllerProvider.notifier).enqueue(item);
+  }
+
   Future<void> _upsertEntry({
     required PlayableItem item,
     required DateTime now,
@@ -764,6 +773,7 @@ class FavoritesController extends _$FavoritesController {
       entry: FavoriteEntry.fromPlayableItem(item, now: now),
       addedAt: now,
     );
+    _scheduleMetadataBackfill(item);
     state = _loadState();
     return true;
   }

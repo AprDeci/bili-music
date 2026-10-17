@@ -60,4 +60,9 @@ abstract class FavoriteEntry with _$FavoriteEntry {
       durationText: durationText,
     );
   }
+
+  String get contentId {
+    final String videoId = bvid.isNotEmpty ? 'bvid:$bvid' : 'aid:$aid';
+    return '$videoId:page:${page ?? 1}';
+  }
 }
