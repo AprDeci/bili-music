@@ -536,14 +536,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.3.1"
-  flutter_shaders:
-    dependency: transitive
-    description:
-      name: flutter_shaders
-      sha256: "34794acadd8275d971e02df03afee3dee0f98dbfb8c4837082ad0034f612a3e2"
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.1.3"
   flutter_smart_dialog:
     dependency: "direct main"
     description:
@@ -814,10 +806,10 @@ packages:
     dependency: "direct main"
     description:
       name: liquid_glass_widgets
-      sha256: e839a79985305f732763591a005a39f8b85e225ce8688c2a97fc04ba8f33fc82
+      sha256: b66e9f72535bf7c50ffc2442693b8bbb50026e90b3674f9b0e7ae80c55c3c77c
       url: "https://pub.dev"
     source: hosted
-    version: "0.29.5"
+    version: "1.13.0"
   logger:
     dependency: "direct main"
     description:
