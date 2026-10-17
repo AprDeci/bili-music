@@ -3,7 +3,9 @@ import 'package:bilimusic/common/components/cached_image.dart';
 import 'package:bilimusic/common/components/selectable_auto_scroll_list_view.dart';
 import 'package:bilimusic/common/components/tag.dart';
 import 'package:bilimusic/feature/favorites/domain/favorite_entry.dart';
+import 'package:bilimusic/feature/favorites/logic/favorites_view_mode_logic.dart';
 import 'package:bilimusic/feature/favorites/ui/components/favorite_entry_subtitle.dart';
+import 'package:bilimusic/feature/favorites/ui/components/favorite_metadata_tile.dart';
 import 'package:bilimusic/feature/statistics/logic/statistics_tracker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -25,6 +27,7 @@ class FavoriteCollectionItemsList extends ConsumerWidget {
     required this.onTapItem,
     required this.onPlayItem,
     required this.onMoreItem,
+    this.viewMode = FavoriteListViewMode.video,
     this.onRefresh,
   });
 
@@ -38,6 +41,7 @@ class FavoriteCollectionItemsList extends ConsumerWidget {
   final FavoriteCollectionItemCallback onTapItem;
   final FavoriteCollectionItemCallback onPlayItem;
   final FavoriteCollectionItemCallback onMoreItem;
+  final FavoriteListViewMode viewMode;
   final Future<void> Function()? onRefresh;
 
   @override
@@ -62,7 +66,9 @@ class FavoriteCollectionItemsList extends ConsumerWidget {
       footer: footer,
       checkboxControlAffinity: ListTileControlAffinity.trailing,
       itemBuilder: (context, item, state) =>
-          _buildNormalItem(context, item, state, tracker),
+          viewMode == FavoriteListViewMode.metadata
+          ? _buildMetadataItem(context, item, state)
+          : _buildNormalItem(context, item, state, tracker),
       titleBuilder: _buildTitle,
       subtitleBuilder: (context, item, state) =>
           _buildSubtitle(context, item, state, tracker),
@@ -84,6 +90,7 @@ class FavoriteCollectionItemsList extends ConsumerWidget {
     StatisticsTracker tracker,
   ) {
     return Material(
+      color: Colors.transparent,
       child: ListTile(
         contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 0),
         leading: _buildLeading(context, item, state),
@@ -93,6 +100,30 @@ class FavoriteCollectionItemsList extends ConsumerWidget {
         onTap: state.handleTap,
         onLongPress: state.enterMultiSelectAndToggle,
       ),
+    );
+  }
+
+  Widget _buildMetadataItem(
+    BuildContext context,
+    FavoriteEntry item,
+    SelectableListItemState<FavoriteEntry, String> state,
+  ) {
+    final int index = items.indexOf(item);
+    return FavoriteMetadataTile(
+      entry: item,
+      selected: state.selected,
+      onTap: state.handleTap,
+      onLongPress: state.enterMultiSelectAndToggle,
+      onPlay: () {
+        if (index >= 0) {
+          onPlayItem(index, item);
+        }
+      },
+      onMore: () {
+        if (index >= 0) {
+          onMoreItem(index, item);
+        }
+      },
     );
   }
 

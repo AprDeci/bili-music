@@ -11,10 +11,12 @@ import 'package:bilimusic/feature/favorites/domain/favorite_entry.dart';
 import 'package:bilimusic/feature/favorites/domain/favorites_state.dart';
 import 'package:bilimusic/feature/favorites/logic/favorite_entry_search.dart';
 import 'package:bilimusic/feature/favorites/logic/favorites_controller.dart';
+import 'package:bilimusic/feature/favorites/logic/favorites_view_mode_logic.dart';
 import 'package:bilimusic/feature/favorites/ui/components/favorite_collection_items_list.dart';
 import 'package:bilimusic/feature/favorites/ui/components/favorite_collection_search_field.dart';
 import 'package:bilimusic/feature/favorites/ui/components/favorite_entry_subtitle.dart';
 import 'package:bilimusic/feature/favorites/ui/components/favorited_seasons_list.dart';
+import 'package:bilimusic/feature/favorites/ui/components/favorites_metadata_toolbar_buttons.dart';
 import 'package:bilimusic/feature/favorites/ui/components/remote_collection_sync_status_bar.dart';
 import 'package:bilimusic/feature/player/domain/playable_item.dart';
 import 'package:bilimusic/feature/player/logic/player_controller.dart';
@@ -481,24 +483,45 @@ class _FavoriteCollectionPageState
     FavoriteCollection collection,
     List<FavoriteEntry> visibleItems,
   ) {
+    if (_selectionMode) {
+      return Padding(
+        padding: const EdgeInsets.fromLTRB(14, 10, 14, 8),
+        child: _FavoriteBatchActionBar(
+          selectedCount: _selectedItemIds.length,
+          onAdd: () => _addSelectedItems(visibleItems),
+          onDelete: () =>
+              _deleteSelectedItems(collection: collection, items: visibleItems),
+          onExit: () => _setSelectionMode(false),
+        ),
+      );
+    }
+
+    final FavoriteListViewMode viewMode = ref.watch(
+      favoritesViewModeLogicProvider,
+    );
+
     return Padding(
       padding: const EdgeInsets.fromLTRB(14, 10, 14, 8),
-      child: _selectionMode
-          ? _FavoriteBatchActionBar(
-              selectedCount: _selectedItemIds.length,
-              onAdd: () => _addSelectedItems(visibleItems),
-              onDelete: () => _deleteSelectedItems(
-                collection: collection,
-                items: visibleItems,
-              ),
-              onExit: () => _setSelectionMode(false),
-            )
-          : FavoriteCollectionSearchField(
+      child: Row(
+        children: <Widget>[
+          Expanded(
+            child: FavoriteCollectionSearchField(
               controller: _searchController,
               query: _searchQuery,
               onChanged: _updateSearchQuery,
               onClear: _clearSearchQuery,
             ),
+          ),
+          const SizedBox(width: 6),
+          MetadataViewModeButton(
+            viewMode: viewMode,
+            onPressed: () =>
+                ref.read(favoritesViewModeLogicProvider.notifier).toggle(),
+          ),
+          const SizedBox(width: 2),
+          MetadataBackfillButton(entries: visibleItems),
+        ],
+      ),
     );
   }
 
@@ -515,6 +538,7 @@ class _FavoriteCollectionPageState
       selectionMode: _selectionMode,
       onSelectionModeChanged: _setSelectionMode,
       onSelectionChanged: _setSelectedItemIds,
+      viewMode: ref.watch(favoritesViewModeLogicProvider),
       onRefresh: collection.isRemote
           ? _refreshRemoteCollectionItemsForce
           : null,

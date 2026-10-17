@@ -3,7 +3,9 @@ import 'package:bilimusic/common/components/cached_image.dart';
 import 'package:bilimusic/common/components/selectable_auto_scroll_list_view.dart';
 import 'package:bilimusic/common/components/tag.dart';
 import 'package:bilimusic/feature/favorites/domain/favorite_entry.dart';
+import 'package:bilimusic/feature/favorites/logic/favorites_view_mode_logic.dart';
 import 'package:bilimusic/feature/favorites/ui/components/favorite_entry_subtitle.dart';
+import 'package:bilimusic/feature/favorites/ui/components/favorite_metadata_tile.dart';
 import 'package:bilimusic/feature/statistics/logic/statistics_tracker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -25,6 +27,7 @@ class DesktopFavoriteCollectionItemsList extends ConsumerWidget {
     required this.onTapItem,
     required this.onPlayItem,
     required this.onMoreItem,
+    this.viewMode = FavoriteListViewMode.video,
   });
 
   final List<FavoriteEntry> items;
@@ -37,6 +40,7 @@ class DesktopFavoriteCollectionItemsList extends ConsumerWidget {
   final DesktopFavoriteCollectionItemCallback onTapItem;
   final DesktopFavoriteCollectionItemCallback onPlayItem;
   final DesktopFavoriteCollectionItemCallback onMoreItem;
+  final FavoriteListViewMode viewMode;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -62,7 +66,9 @@ class DesktopFavoriteCollectionItemsList extends ConsumerWidget {
         separatorBuilder: (_, _) => const SizedBox.shrink(),
         checkboxControlAffinity: ListTileControlAffinity.trailing,
         itemBuilder: (context, item, state) =>
-            _buildNormalItem(context, item, state, tracker),
+            viewMode == FavoriteListViewMode.metadata
+            ? _buildMetadataItem(context, item, state)
+            : _buildNormalItem(context, item, state, tracker),
         titleBuilder: _buildTitle,
         subtitleBuilder: (context, item, state) =>
             _buildSubtitle(context, item, state, tracker),
@@ -78,15 +84,8 @@ class DesktopFavoriteCollectionItemsList extends ConsumerWidget {
     SelectableListItemState<FavoriteEntry, String> state,
     StatisticsTracker tracker,
   ) {
-    final bool isEvenRow = state.index.isEven;
-
     return Material(
-      color: isEvenRow ? Colors.transparent : null,
       child: ListTile(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
-        tileColor: isEvenRow
-            ? Colors.transparent
-            : const Color.fromARGB(255, 189, 189, 189).withValues(alpha: 0.1),
         contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 0),
         leading: _buildLeading(context, item, state),
         title: _buildTitle(context, item, state),
@@ -96,6 +95,32 @@ class DesktopFavoriteCollectionItemsList extends ConsumerWidget {
         onTap: state.handleTap,
         onLongPress: state.enterMultiSelectAndToggle,
       ),
+    );
+  }
+
+  Widget _buildMetadataItem(
+    BuildContext context,
+    FavoriteEntry item,
+    SelectableListItemState<FavoriteEntry, String> state,
+  ) {
+    final int index = items.indexOf(item);
+    return FavoriteMetadataTile(
+      entry: item,
+      selected: state.selected,
+      coverRadius: 14,
+      titleWeight: FontWeight.w700,
+      onTap: state.handleTap,
+      onLongPress: state.enterMultiSelectAndToggle,
+      onPlay: () {
+        if (index >= 0) {
+          onPlayItem(index, item);
+        }
+      },
+      onMore: () {
+        if (index >= 0) {
+          onMoreItem(index, item);
+        }
+      },
     );
   }
 

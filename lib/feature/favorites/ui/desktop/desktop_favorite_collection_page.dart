@@ -12,10 +12,12 @@ import 'package:bilimusic/feature/favorites/domain/favorite_entry.dart';
 import 'package:bilimusic/feature/favorites/domain/favorites_state.dart';
 import 'package:bilimusic/feature/favorites/logic/favorite_entry_search.dart';
 import 'package:bilimusic/feature/favorites/logic/favorites_controller.dart';
+import 'package:bilimusic/feature/favorites/logic/favorites_view_mode_logic.dart';
 import 'package:bilimusic/feature/favorites/ui/components/favorite_collection_search_field.dart';
 import 'package:bilimusic/feature/favorites/ui/components/desktop/desktop_favorite_collection_items_list.dart';
 import 'package:bilimusic/feature/favorites/ui/components/favorite_entry_subtitle.dart';
 import 'package:bilimusic/feature/favorites/ui/components/favorited_seasons_list.dart';
+import 'package:bilimusic/feature/favorites/ui/components/favorites_metadata_toolbar_buttons.dart';
 import 'package:bilimusic/feature/favorites/ui/components/remote_collection_sync_status_bar.dart';
 import 'package:bilimusic/feature/player/domain/playable_item.dart';
 import 'package:bilimusic/feature/player/logic/player_controller.dart';
@@ -404,6 +406,19 @@ class _DesktopFavoriteCollectionPageState
                                     onClear: _clearSearchQuery,
                                   ),
                                 ),
+                                const SizedBox(width: 6),
+                                MetadataViewModeButton(
+                                  viewMode: ref.watch(
+                                    favoritesViewModeLogicProvider,
+                                  ),
+                                  onPressed: () => ref
+                                      .read(
+                                        favoritesViewModeLogicProvider.notifier,
+                                      )
+                                      .toggle(),
+                                ),
+                                const SizedBox(width: 2),
+                                MetadataBackfillButton(entries: visibleItems),
                                 if (resolvedCollection.isRemote) ...<Widget>[
                                   const SizedBox(width: 6),
                                   Tooltip(
@@ -459,6 +474,9 @@ class _DesktopFavoriteCollectionPageState
                               selectionMode: _selectionMode,
                               onSelectionModeChanged: _setSelectionMode,
                               onSelectionChanged: _setSelectedItemIds,
+                              viewMode: ref.watch(
+                                favoritesViewModeLogicProvider,
+                              ),
                               onTapItem:
                                   (int itemIndex, FavoriteEntry item) async {
                                     await _playCollectionItem(
