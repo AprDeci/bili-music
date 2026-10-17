@@ -36,16 +36,24 @@ class MobileShellScaffold extends ConsumerStatefulWidget {
 class _MobileShellScaffoldState extends ConsumerState<MobileShellScaffold> {
   static const Duration _animationDuration = Duration(milliseconds: 200);
   static const Curve _animationCurve = Curves.easeInOutCubic;
-  static const double _navHiddenSlideOffset = 1.2;
   static const Duration _autoUpdateCheckDelay = Duration(milliseconds: 600);
 
-  int _currentIndex = 0;
+  // 底部浮动导航栏的尺寸，玻璃与非玻璃两套共用，切换时高度一致不抖动。
+  static const double _bottomBarWidthFactor = 0.92;
+  static const double _bottomBarCornerRadius = 40;
+  static const double _bottomBarHorizontalPadding = 64;
+  static const double _bottomBarHeight = BottomHeightHelper.bottomBarHeight;
+  static const double _glassBarVerticalPadding = 4;
+  // 玻璃栏给内部留出上下各 4 的 padding，故栏体高度取 52，
+  // 52 + 4 + 4 == 60，与非玻璃栏 / BottomHeightHelper 的高度一致。
+  static const double _glassBarHeight =
+      _bottomBarHeight - _glassBarVerticalPadding * 2;
+
   bool _didScheduleUpdateCheck = false;
 
   @override
   void initState() {
     super.initState();
-    _currentIndex = widget.navigationShell.currentIndex;
     _scheduleAutoUpdateCheck();
   }
 
@@ -68,7 +76,6 @@ class _MobileShellScaffoldState extends ConsumerState<MobileShellScaffold> {
   @override
   void didUpdateWidget(covariant MobileShellScaffold oldWidget) {
     super.didUpdateWidget(oldWidget);
-    _currentIndex = widget.navigationShell.currentIndex;
   }
 
   @override
@@ -84,8 +91,6 @@ class _MobileShellScaffoldState extends ConsumerState<MobileShellScaffold> {
   Widget _buildScaffold(BuildContext context, bool isPlayerPageVisible) {
     final double screenWidth = MediaQuery.of(context).size.width;
     final double bottomInset = MediaQuery.viewPaddingOf(context).bottom;
-    final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
     final PlayerState playerState = ref.watch(playerControllerProvider);
     final bool useGlassBar = ref.watch(appearanceSettingLogicProvider);
     final double bottomBarOffset = BottomHeightHelper.bottomBarOffset(
@@ -120,9 +125,9 @@ class _MobileShellScaffoldState extends ConsumerState<MobileShellScaffold> {
     return GlassScaffold(
       body: BottomBar(
         layout: BottomBarLayout(
-          width: screenWidth * 0.92,
+          width: screenWidth * _bottomBarWidthFactor,
           offset: bottomBarOffset,
-          borderRadius: BorderRadius.circular(40),
+          borderRadius: BorderRadius.circular(_bottomBarCornerRadius),
           fit: StackFit.expand,
           respectSafeArea: false,
         ),
@@ -131,103 +136,87 @@ class _MobileShellScaffoldState extends ConsumerState<MobileShellScaffold> {
           barDecoration: BoxDecoration(color: Colors.transparent),
         ),
         body: content,
-        child: IgnorePointer(
-          ignoring: usesCollapsedBottomChrome,
-          child: AnimatedOpacity(
-            duration: _animationDuration,
-            curve: _animationCurve,
-            opacity: usesCollapsedBottomChrome ? 0 : 1,
-            child: AnimatedSlide(
-              duration: _animationDuration,
-              curve: _animationCurve,
-              offset: usesCollapsedBottomChrome
-                  ? const Offset(0, _navHiddenSlideOffset)
-                  : Offset.zero,
-              child: useGlassBar
-                  ? GlassTabBar.bottom(
-                      spacing: 4,
-                      verticalPadding: 4,
-                      barHeight: 54,
-                      horizontalPadding: 64,
-                      unselectedIconColor:
-                          theme.textTheme.bodyMedium?.color ?? Colors.black,
-                      selectedIconColor: colorScheme.primary,
-                      indicatorColor: ColorUtil.getLight(
-                        colorScheme.primary,
-                      ).withValues(alpha: 0.2),
-                      tabs: const <GlassTab>[
-                        GlassTab(
-                          icon: HugeIcon(
-                            icon: HugeIcons.strokeRoundedHome07,
-                            size: 20,
-                          ),
-                          label: '首页',
-                        ),
-                        GlassTab(
-                          icon: HugeIcon(
-                            icon: HugeIcons.strokeRoundedUser,
-                            size: 20,
-                          ),
-                          label: '我的',
-                        ),
-                      ],
-                      selectedIndex: _currentIndex,
-                      onTabSelected: (int index) {
-                        setState(() => _currentIndex = index);
-                        widget.navigationShell.goBranch(
-                          index,
-                          initialLocation:
-                              index == widget.navigationShell.currentIndex,
-                        );
-                      },
-                    )
-                  : Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 64.0),
-                      child: DecoratedBox(
-                        decoration: BoxDecoration(
-                          color: colorScheme.surface,
-                          borderRadius: BorderRadius.circular(40),
-                          border: Border.all(
-                            color: colorScheme.primary.withValues(alpha: 0.08),
-                          ),
-                          boxShadow: const <BoxShadow>[
-                            BoxShadow(
-                              color: Color(0x14000000),
-                              blurRadius: 30,
-                              offset: Offset(0, 16),
-                            ),
-                          ],
-                        ),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(40),
-                          child: SizedBox(
-                            height: BottomHeightHelper.bottomBarHeight,
-                            child: Row(
-                              children: <Widget>[
-                                _BottomNavItem(
-                                  icon: Icons.home_outlined,
-                                  selectedIcon: Icons.home,
-                                  selected: _currentIndex == 0,
-                                  selectedColor: colorScheme.primary,
-                                  indicatorColor: colorScheme.primary
-                                      .withValues(alpha: 0.12),
-                                  onTap: () => _selectBranch(0),
-                                ),
-                                _BottomNavItem(
-                                  icon: Icons.person_outlined,
-                                  selectedIcon: Icons.person,
-                                  selected: _currentIndex == 1,
-                                  selectedColor: colorScheme.primary,
-                                  indicatorColor: colorScheme.primary
-                                      .withValues(alpha: 0.12),
-                                  onTap: () => _selectBranch(1),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
+        child: useGlassBar
+            ? _buildGlassTabBar(context)
+            : _buildFallbackTabBar(context),
+      ),
+    );
+  }
+
+  Widget _buildGlassTabBar(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+
+    return GlassTabBar.bottom(
+      spacing: 4,
+      verticalPadding: _glassBarVerticalPadding,
+      barHeight: _glassBarHeight,
+      horizontalPadding: _bottomBarHorizontalPadding,
+      unselectedIconColor: theme.textTheme.bodyMedium?.color ?? Colors.black,
+      selectedIconColor: colorScheme.primary,
+      indicatorColor: ColorUtil.getLight(
+        colorScheme.primary,
+      ).withValues(alpha: 0.2),
+      tabs: const <GlassTab>[
+        GlassTab(
+          icon: HugeIcon(icon: HugeIcons.strokeRoundedHome07, size: 20),
+          label: '首页',
+        ),
+        GlassTab(
+          icon: HugeIcon(icon: HugeIcons.strokeRoundedUser, size: 20),
+          label: '我的',
+        ),
+      ],
+      selectedIndex: widget.navigationShell.currentIndex,
+      onTabSelected: _selectBranch,
+    );
+  }
+
+  Widget _buildFallbackTabBar(BuildContext context) {
+    final ColorScheme colorScheme = Theme.of(context).colorScheme;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(
+        horizontal: _bottomBarHorizontalPadding,
+      ),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: colorScheme.surface,
+          borderRadius: BorderRadius.circular(_bottomBarCornerRadius),
+          border: Border.all(
+            color: colorScheme.primary.withValues(alpha: 0.08),
+          ),
+          boxShadow: const <BoxShadow>[
+            BoxShadow(
+              color: Color(0x14000000),
+              blurRadius: 30,
+              offset: Offset(0, 16),
+            ),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(_bottomBarCornerRadius),
+          child: SizedBox(
+            height: _bottomBarHeight,
+            child: Row(
+              children: <Widget>[
+                _BottomNavItem(
+                  icon: Icons.home_outlined,
+                  selectedIcon: Icons.home,
+                  selected: widget.navigationShell.currentIndex == 0,
+                  selectedColor: colorScheme.primary,
+                  indicatorColor: colorScheme.primary.withValues(alpha: 0.12),
+                  onTap: () => _selectBranch(0),
+                ),
+                _BottomNavItem(
+                  icon: Icons.person_outlined,
+                  selectedIcon: Icons.person,
+                  selected: widget.navigationShell.currentIndex == 1,
+                  selectedColor: colorScheme.primary,
+                  indicatorColor: colorScheme.primary.withValues(alpha: 0.12),
+                  onTap: () => _selectBranch(1),
+                ),
+              ],
             ),
           ),
         ),
@@ -236,7 +225,6 @@ class _MobileShellScaffoldState extends ConsumerState<MobileShellScaffold> {
   }
 
   void _selectBranch(int index) {
-    setState(() => _currentIndex = index);
     widget.navigationShell.goBranch(
       index,
       initialLocation: index == widget.navigationShell.currentIndex,

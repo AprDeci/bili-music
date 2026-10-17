@@ -35,5 +35,5 @@ class MiniPlayerGlassBar extends StatelessWidget {
         ),
       ),
     );
-  } 
+  }
 }
