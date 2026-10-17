@@ -25,4 +25,10 @@ abstract class Metadata with _$Metadata {
   bool get hasLyrics =>
       (lyrics != null && lyrics!.trim().isNotEmpty) ||
       (metaLyrics != null && metaLyrics!.hasRenderableMainLyric);
+
+  bool get hasContent =>
+      (artist?.trim().isNotEmpty ?? false) ||
+      (title?.trim().isNotEmpty ?? false) ||
+      (albumArtUrl?.trim().isNotEmpty ?? false) ||
+      hasLyrics;
 }

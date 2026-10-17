@@ -1,23 +1,20 @@
 import 'dart:async';
-import 'dart:convert';
 
 import 'package:bilimusic/common/logger.dart';
-import 'package:bilimusic/core/net/bm_client.dart';
 import 'package:bilimusic/feature/favorites/logic/favorites_controller.dart';
 import 'package:bilimusic/feature/metadata/data/metadata_cache_repository.dart';
 import 'package:bilimusic/feature/metadata/data/metadata_resolver.dart';
 import 'package:bilimusic/feature/metadata/domain/metadata.dart';
 import 'package:bilimusic/feature/metadata/domain/metadata_state.dart';
+import 'package:bilimusic/feature/metadata/logic/metadata_lookup_service.dart';
 import 'package:bilimusic/feature/meting/data/meting_repository.dart';
-import 'package:bilimusic/feature/meting/logic/meting_source_preference_logic.dart';
-import 'package:bilimusic/common/domain/meta_lyrics.dart';
 import 'package:bilimusic/feature/meting/domain/meting_search_item.dart';
 import 'package:bilimusic/feature/meting/domain/meting_search_response.dart';
 import 'package:bilimusic/feature/meting/domain/meting_server.dart';
+import 'package:bilimusic/feature/meting/logic/meting_source_preference_logic.dart';
 import 'package:bilimusic/feature/player/domain/playable_item.dart';
 import 'package:bilimusic/feature/player/domain/player_state.dart';
 import 'package:bilimusic/feature/player/logic/player_controller.dart';
-import 'package:dio/dio.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'metadata_controller.g.dart';
@@ -25,6 +22,10 @@ part 'metadata_controller.g.dart';
 @Riverpod(keepAlive: true)
 class MetadataController extends _$MetadataController {
   final AppLogger _logger = AppLogger('MetadataController');
+
+  late final MetadataLookupService _lookupService = ref.read(
+    metadataLookupServiceProvider,
+  );
 
   int _generation = 0;
 
@@ -160,11 +161,8 @@ class MetadataController extends _$MetadataController {
     state = state.copyWith(manualSearchError: null, isSearching: true);
 
     try {
-      final Metadata metadata = await _buildMetadataFromSearchItem(
-        item: currentItem,
-        searchItem: item,
-        metaLyrics: await _fetchLyricsOrNull(item),
-      );
+      final Metadata metadata = await _lookupService
+          .buildMetadataFromSearchItem(item: currentItem, searchItem: item);
       if (state.stableId != stableId) {
         return;
       }
@@ -252,7 +250,7 @@ class MetadataController extends _$MetadataController {
       state = MetadataState(
         stableId: stableId,
         errorMessage: error.message,
-        searchKeyword: _defaultSearchKeyword(item),
+        searchKeyword: _lookupService.defaultSearchKeyword(item),
         hasSearched: true,
       );
     } on Object catch (error) {
@@ -263,7 +261,7 @@ class MetadataController extends _$MetadataController {
       state = MetadataState(
         stableId: stableId,
         errorMessage: '元信息查询失败：$error',
-        searchKeyword: _defaultSearchKeyword(item),
+        searchKeyword: _lookupService.defaultSearchKeyword(item),
         hasSearched: true,
       );
     }
@@ -271,16 +269,6 @@ class MetadataController extends _$MetadataController {
 
   bool _isActiveRequest(int requestGeneration, String stableId) {
     return requestGeneration == _generation && state.stableId == stableId;
-  }
-
-  String? _defaultSearchKeyword(PlayableItem item) {
-    for (final String title in item.lyricSearchTitles) {
-      final String keyword = title.trim();
-      if (keyword.isNotEmpty) {
-        return keyword;
-      }
-    }
-    return null;
   }
 
   Future<void> _saveCacheIfEligible({
@@ -320,39 +308,10 @@ class MetadataController extends _$MetadataController {
     );
   }
 
-  Future<MetadataLookupResult> _resolve(PlayableItem item) async {
-    final MetingRepository metingRepository = ref.read(
-      metingRepositoryProvider,
-    );
-    final String title = _preferredMetadataTitle(item);
-    final String keyword = (await _resolveSearchKeyword(title)).trim();
-    final String? fallbackKeyword = keyword.isNotEmpty ? keyword : null;
-
-    final List<MetingSearchItem> results = await metingRepository.search(
-      keyword: keyword,
-      server: _resolveServer(item.lyricSearchTitles.join(' ')),
-    );
-    for (final MetingSearchItem result in results) {
-      final MetaLyrics? metaLyrics = _normalizeMetaLyrics(
-        await metingRepository.fetchLyrics(result),
-      );
-      if (metaLyrics != null && metaLyrics.hasRenderableMainLyric) {
-        return MetadataLookupResult(
-          metadata: await _buildMetadataFromSearchItem(
-            item: item,
-            searchItem: result,
-            metaLyrics: metaLyrics,
-          ),
-          searchKeyword: fallbackKeyword,
-          searchResults: results,
-        );
-      }
-    }
-
-    return MetadataLookupResult(
-      metadata: Metadata(stableId: item.stableId, updatedAt: DateTime.now()),
-      searchKeyword: fallbackKeyword,
-      searchResults: const <MetingSearchItem>[],
+  Future<MetadataLookupResult> _resolve(PlayableItem item) {
+    return _lookupService.lookup(
+      item: item,
+      title: _preferredMetadataTitle(item),
     );
   }
 
@@ -393,115 +352,7 @@ class MetadataController extends _$MetadataController {
     return item.title.trim();
   }
 
-  Future<Metadata> _buildMetadataFromSearchItem({
-    required PlayableItem item,
-    required MetingSearchItem searchItem,
-    required MetaLyrics? metaLyrics,
-  }) async {
-    final MetingRepository metingRepository = ref.read(
-      metingRepositoryProvider,
-    );
-    String? albumArtUrl;
-    try {
-      albumArtUrl = _normalizeText(
-        await metingRepository.fetchPicture(searchItem),
-      );
-    } on Object {
-      albumArtUrl = null;
-    }
-
-    return MetadataResolver.fromCacheLikeValues(
-      stableId: item.stableId,
-      artist: searchItem.author,
-      title: searchItem.title,
-      lyrics: metaLyrics?.preferredMainLyric,
-      metaLyrics: metaLyrics,
-      albumArtUrl: albumArtUrl,
-      updatedAt: DateTime.now(),
-    );
-  }
-
-  Future<MetaLyrics?> _fetchLyricsOrNull(MetingSearchItem searchItem) async {
-    try {
-      return _normalizeMetaLyrics(
-        await ref.read(metingRepositoryProvider).fetchLyrics(searchItem),
-      );
-    } on Object {
-      return null;
-    }
-  }
-
-  String _extractSearchKeyword(String value) {
-    String result = value.trim();
-    final RegExp priorityRegex = RegExp(r'《(.+?)》|「(.+?)」');
-    final RegExpMatch? priorityMatch = priorityRegex.firstMatch(result);
-
-    if (priorityMatch != null) {
-      final String? group1 = priorityMatch.group(1);
-      final String? group2 = priorityMatch.group(2);
-      return group1 ?? group2 ?? '';
-    }
-
-    final String replacedKeyword = result
-        .replaceAll(RegExp(r'【.*?】|“.*?”'), '')
-        .trim();
-
-    result = replacedKeyword.isNotEmpty ? replacedKeyword : result;
-    return result;
-  }
-
-  Future<String> _resolveSearchKeyword(String value) async {
-    final String rawTitle = value.trim();
-    if (rawTitle.isEmpty) {
-      return '';
-    }
-
-    final String fallbackKeyword = _extractSearchKeyword(rawTitle).trim();
-    try {
-      final Response<String> response = await ref
-          .read(bmClientProvider.notifier)
-          .post<String>(
-            '/ai',
-            data: <String, dynamic>{'message': rawTitle},
-            options: Options(responseType: ResponseType.plain),
-          );
-      final Object? decoded = jsonDecode(response.data ?? '{}');
-      if (decoded is String && decoded.isNotEmpty) {
-        return decoded;
-      }
-    } on Object catch (error) {
-      _logger.d('BM 识别失败，回退正则：$error');
-    }
-
-    return fallbackKeyword;
-  }
-
   MetingServer _resolveServer(String text) {
     return ref.read(metingSourcePreferenceLogicProvider).resolve(text);
-  }
-
-  String? _normalizeLyrics(String? value) {
-    final String trimmed = value?.trim() ?? '';
-    return trimmed.isEmpty ? null : trimmed;
-  }
-
-  MetaLyrics? _normalizeMetaLyrics(MetaLyrics? value) {
-    if (value == null) {
-      return null;
-    }
-
-    final MetaLyrics normalized = MetaLyrics(
-      lyric: _normalizeLyrics(value.lyric),
-      translatedLyric: _normalizeLyrics(value.translatedLyric),
-      romanizedLyric: _normalizeLyrics(value.romanizedLyric),
-      karaokeLyric: _normalizeLyrics(value.karaokeLyric),
-      karaokeTranslatedLyric: _normalizeLyrics(value.karaokeTranslatedLyric),
-    );
-    return normalized.hasAnyLyrics ? normalized : null;
-  }
-
-  String? _normalizeText(String? value) {
-    final String trimmed = value?.trim() ?? '';
-    return trimmed.isEmpty ? null : trimmed;
   }
 }
