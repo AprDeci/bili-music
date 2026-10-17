@@ -33,14 +33,8 @@ void main() {
     expect(find.text('已找到 26，待更新 0，已更新 4'), findsOneWidget);
   });
 
-  testWidgets('clamps arrow near the right edge without overflow', (
-    WidgetTester tester,
-  ) async {
-    await _pumpPopup(
-      tester,
-      state: const MetadataBackfillState(),
-      arrowCenterX: 260,
-    );
+  testWidgets('renders without overflow', (WidgetTester tester) async {
+    await _pumpPopup(tester, state: const MetadataBackfillState());
 
     expect(find.text('扫描完成'), findsOneWidget);
     expect(tester.takeException(), isNull);
@@ -50,7 +44,6 @@ void main() {
 Future<void> _pumpPopup(
   WidgetTester tester, {
   required MetadataBackfillState state,
-  double arrowCenterX = 134,
 }) async {
   await tester.pumpWidget(
     ProviderScope(
@@ -60,14 +53,7 @@ Future<void> _pumpPopup(
         ),
       ],
       child: MaterialApp(
-        home: Scaffold(
-          body: Center(
-            child: MetadataScanPopup(
-              foundCount: 26,
-              arrowCenterX: arrowCenterX,
-            ),
-          ),
-        ),
+        home: Scaffold(body: Center(child: MetadataScanPopup(foundCount: 26))),
       ),
     ),
   );
