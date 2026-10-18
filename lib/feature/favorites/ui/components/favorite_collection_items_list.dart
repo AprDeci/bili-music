@@ -174,7 +174,7 @@ class FavoriteCollectionItemsList extends ConsumerWidget {
       mainAxisAlignment: MainAxisAlignment.start,
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        Expanded(
+        Flexible(
           child: Text(
             buildFavoriteTileSubtitle(item),
             maxLines: 1,
@@ -185,20 +185,20 @@ class FavoriteCollectionItemsList extends ConsumerWidget {
             ),
           ),
         ),
-        const SizedBox(width: 8),
-        playCount > 0
-            ? Tag(
-                padding: EdgeInsets.symmetric(horizontal: 4),
-                text: '$playCount',
-                color: Colors.grey.withValues(alpha: 0.2),
-                textColor: const Color.fromARGB(255, 134, 134, 134),
-                size: TagSize.small,
-                icon: const HugeIcon(
-                  icon: HugeIcons.strokeRoundedHeadphones,
-                  size: 12,
-                ),
-              )
-            : const SizedBox.shrink(),
+        if (playCount > 0) ...<Widget>[
+          const SizedBox(width: 6),
+          Tag(
+            padding: const EdgeInsets.symmetric(horizontal: 4),
+            text: '$playCount',
+            color: Colors.grey.withValues(alpha: 0.2),
+            textColor: const Color.fromARGB(255, 134, 134, 134),
+            size: TagSize.small,
+            icon: const HugeIcon(
+              icon: HugeIcons.strokeRoundedHeadphones,
+              size: 12,
+            ),
+          ),
+        ],
       ],
     );
   }

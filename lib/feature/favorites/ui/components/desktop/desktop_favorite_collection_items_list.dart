@@ -169,28 +169,30 @@ class DesktopFavoriteCollectionItemsList extends ConsumerWidget {
 
     return Row(
       children: [
-        Text(
-          buildFavoriteEntrySubtitle(item),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
-            height: 1.5,
+        Flexible(
+          child: Text(
+            buildFavoriteEntrySubtitle(item),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+              height: 1.5,
+            ),
           ),
         ),
-        const SizedBox(width: 8),
-        playCount > 0
-            ? Tag(
-                text: '$playCount',
-                color: Colors.grey.withValues(alpha: 0.2),
-                textColor: const Color.fromARGB(255, 134, 134, 134),
-                size: TagSize.small,
-                icon: const HugeIcon(
-                  icon: HugeIcons.strokeRoundedHeadphones,
-                  size: 12,
-                ),
-              )
-            : const SizedBox.shrink(),
+        if (playCount > 0) ...<Widget>[
+          const SizedBox(width: 6),
+          Tag(
+            text: '$playCount',
+            color: Colors.grey.withValues(alpha: 0.2),
+            textColor: const Color.fromARGB(255, 134, 134, 134),
+            size: TagSize.small,
+            icon: const HugeIcon(
+              icon: HugeIcons.strokeRoundedHeadphones,
+              size: 12,
+            ),
+          ),
+        ],
       ],
     );
   }

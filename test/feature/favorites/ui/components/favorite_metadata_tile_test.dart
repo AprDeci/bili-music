@@ -1,12 +1,32 @@
+import 'dart:io';
+
 import 'package:bilimusic/feature/favorites/domain/favorite_entry.dart';
 import 'package:bilimusic/feature/favorites/logic/favorite_entry_metadata.dart';
 import 'package:bilimusic/feature/favorites/ui/components/favorite_metadata_tile.dart';
 import 'package:bilimusic/feature/metadata/domain/metadata.dart';
+import 'package:bilimusic/feature/statistics/data/statistics_local_repository.dart';
+import 'package:bilimusic/feature/statistics/logic/statistics_tracker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:hive_ce/hive.dart';
+
+late Box<Map> _box;
 
 void main() {
+  setUpAll(() {
+    Hive.init(Directory.systemTemp.path);
+  });
+
+  setUp(() async {
+    _box = await Hive.openBox<Map>('favorite_metadata_tile_test');
+    await _box.clear();
+  });
+
+  tearDown(() async {
+    await _box.close();
+  });
+
   testWidgets('renders metadata title and artist without lyric tag', (
     WidgetTester tester,
   ) async {
@@ -79,6 +99,12 @@ Future<void> _pumpTile(
         favoriteEntryMetadataProvider(
           entry.contentId,
         ).overrideWith((ref) async => metadata),
+        statisticsTrackerProvider.overrideWithValue(
+          StatisticsTracker(
+            const Stream.empty(),
+            StatisticsLocalRepository(_box),
+          ),
+        ),
       ],
       child: MaterialApp(
         home: Scaffold(

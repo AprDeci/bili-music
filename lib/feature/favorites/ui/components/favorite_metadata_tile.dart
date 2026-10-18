@@ -4,8 +4,10 @@ import 'package:bilimusic/common/components/tag.dart';
 import 'package:bilimusic/feature/favorites/domain/favorite_entry.dart';
 import 'package:bilimusic/feature/favorites/logic/favorite_entry_metadata.dart';
 import 'package:bilimusic/feature/metadata/domain/metadata.dart';
+import 'package:bilimusic/feature/statistics/logic/statistics_tracker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hugeicons/hugeicons.dart';
 
 // 元信息视图的行：与视频视图共用同一套 ListTile 结构（同尺寸、同内边距），
 // 只替换封面/标题/副标题的内容，保证两种视图布局一致。
@@ -54,6 +56,8 @@ class FavoriteMetadataTile extends ConsumerWidget {
     final String subtitle = resolved
         ? _firstNonEmpty(metadata?.artist, entry.author)
         : entry.author;
+    final int playCount =
+        ref.watch(statisticsTrackerProvider).read(entry.itemId)?.playCount ?? 0;
 
     return Material(
       color: Colors.transparent,
@@ -79,7 +83,7 @@ class FavoriteMetadataTile extends ConsumerWidget {
           mainAxisAlignment: MainAxisAlignment.start,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: <Widget>[
-            Expanded(
+            Flexible(
               child: Text(
                 subtitle,
                 maxLines: 1,
@@ -90,8 +94,22 @@ class FavoriteMetadataTile extends ConsumerWidget {
                 ),
               ),
             ),
+            if (playCount > 0) ...<Widget>[
+              const SizedBox(width: 6),
+              Tag(
+                text: '$playCount',
+                padding: const EdgeInsets.symmetric(horizontal: 4),
+                color: Colors.grey.withValues(alpha: 0.2),
+                textColor: const Color.fromARGB(255, 134, 134, 134),
+                size: TagSize.small,
+                icon: const HugeIcon(
+                  icon: HugeIcons.strokeRoundedHeadphones,
+                  size: 12,
+                ),
+              ),
+            ],
             if (!resolved) ...<Widget>[
-              const SizedBox(width: 8),
+              const SizedBox(width: 6),
               Tag(
                 text: '未解析',
                 padding: const EdgeInsets.symmetric(horizontal: 4),
