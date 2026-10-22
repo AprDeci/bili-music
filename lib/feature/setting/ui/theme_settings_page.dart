@@ -2,9 +2,12 @@ import 'package:bilimusic/common/util/platform_util.dart';
 import 'package:bilimusic/core/theme/theme_catalog.dart';
 import 'package:bilimusic/core/theme/theme_logic.dart';
 import 'package:bilimusic/core/theme/theme_ui_model.dart';
+import 'package:bilimusic/feature/player/domain/player_ui_style.dart';
+import 'package:bilimusic/feature/player/logic/player_ui_style_logic.dart';
 import 'package:bilimusic/feature/setting/logic/appearance_setting_logic.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 class ThemeSettingsPage extends ConsumerWidget {
   const ThemeSettingsPage({super.key});
@@ -20,6 +23,15 @@ class ThemeSettingsPage extends ConsumerWidget {
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
         children: <Widget>[
+          if (PlatformUtil.isMobile)
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.palette_outlined),
+              title: const Text('播放器风格'),
+              subtitle: Text(ref.watch(playerUiStyleLogicProvider).title),
+              trailing: const Icon(Icons.chevron_right_rounded),
+              onTap: () => context.push('/settings/theme/player-style'),
+            ),
           PlatformUtil.isMobile
               ? SwitchListTile.adaptive(
                   title: const Text('启用玻璃导航栏/播放栏'),

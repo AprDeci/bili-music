@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+// 收藏合集列表
 class FavoritedSeasonsList extends ConsumerWidget {
   const FavoritedSeasonsList({super.key});
 

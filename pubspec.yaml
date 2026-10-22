@@ -149,6 +149,7 @@ flutter:
   assets:
     - assets/icons/
     - assets/lottie/
+    - assets/player_styles/
 
   fonts:
     - family: BmIcons

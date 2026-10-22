@@ -5,12 +5,10 @@ import 'package:bilimusic/feature/meting/domain/meting_source_rule.dart';
 import 'package:bilimusic/feature/meting/logic/meting_source_preference_logic.dart';
 import 'package:bilimusic/feature/meting/ui/meting_source_rule_dialog.dart';
 import 'package:bilimusic/feature/player/domain/player_audio_quality_preference.dart';
-import 'package:bilimusic/feature/player/domain/player_ui_style.dart';
 import 'package:bilimusic/feature/player/logic/player_audio_quality_preference_logic.dart';
 import 'package:bilimusic/feature/player/logic/player_cover_settings_logic.dart';
 import 'package:bilimusic/feature/player/logic/player_controller.dart';
 import 'package:bilimusic/feature/player/logic/player_settings_logic.dart';
-import 'package:bilimusic/feature/player/logic/player_ui_style_logic.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hugeicons/hugeicons.dart';
@@ -75,18 +73,6 @@ class PlayerSettingsPage extends ConsumerWidget {
             trailing: const Icon(Icons.chevron_right_rounded),
             onTap: () => _showAudioQualitySheet(context, ref),
           ),
-          if (PlatformUtil.isMobile)
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              leading: const Icon(Icons.palette_outlined),
-              title: const Text('播放器风格'),
-              subtitle: Text(
-                ref.watch(playerUiStyleLogicProvider).title,
-                style: theme.textTheme.bodySmall,
-              ),
-              trailing: const Icon(Icons.chevron_right_rounded),
-              onTap: () => _showPlayerUiStyleSheet(context, ref),
-            ),
           const Divider(height: 32),
           Text('歌词源', style: theme.textTheme.titleMedium),
           ListTile(
@@ -186,51 +172,6 @@ Future<void> _showAudioQualitySheet(BuildContext context, WidgetRef ref) async {
                 await ref
                     .read(playerControllerProvider.notifier)
                     .setAudioQualityPreference(preference);
-              },
-            );
-          },
-        ),
-      );
-    },
-  );
-}
-
-Future<void> _showPlayerUiStyleSheet(
-  BuildContext context,
-  WidgetRef ref,
-) async {
-  final ThemeData theme = Theme.of(context);
-  final PlayerUiStyle currentStyle = ref.read(playerUiStyleLogicProvider);
-  const List<PlayerUiStyle> styles = <PlayerUiStyle>[
-    PlayerUiStyle.classic,
-    PlayerUiStyle.appleMusic,
-  ];
-
-  await showModalBottomSheet<void>(
-    context: context,
-    showDragHandle: true,
-    builder: (BuildContext context) {
-      return SafeArea(
-        child: ListView.separated(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-          itemCount: styles.length,
-          separatorBuilder: (_, _) => const SizedBox(height: 8),
-          itemBuilder: (BuildContext context, int index) {
-            final PlayerUiStyle style = styles[index];
-            final bool isSelected = style == currentStyle;
-            return ListTile(
-              tileColor: isSelected
-                  ? theme.colorScheme.primary.withValues(alpha: 0.1)
-                  : null,
-              title: Text(style.title),
-              trailing: isSelected
-                  ? Icon(Icons.check_rounded, color: theme.colorScheme.primary)
-                  : null,
-              onTap: () async {
-                Navigator.of(context).pop();
-                await ref
-                    .read(playerUiStyleLogicProvider.notifier)
-                    .setStyle(style);
               },
             );
           },

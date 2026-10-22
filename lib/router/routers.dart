@@ -19,6 +19,7 @@ import 'package:bilimusic/feature/setting/ui/cache_settings_page.dart';
 import 'package:bilimusic/feature/setting/ui/app_transfer_page.dart';
 import 'package:bilimusic/feature/setting/ui/hotkey_settings_page.dart';
 import 'package:bilimusic/feature/setting/ui/player_settings_page.dart';
+import 'package:bilimusic/feature/setting/ui/player_style_settings_page.dart';
 import 'package:bilimusic/feature/setting/ui/setting_page.dart';
 import 'package:bilimusic/feature/setting/ui/theme_settings_page.dart';
 import 'package:bilimusic/feature/up/ui/collection_detail_page.dart';
@@ -124,6 +125,12 @@ final List<Map<String, dynamic>> mobileHiddenBranches = [
       GoRoute(
         path: 'theme',
         builder: (context, state) => const ThemeSettingsPage(),
+        routes: <RouteBase>[
+          GoRoute(
+            path: 'player-style',
+            builder: (context, state) => const PlayerStyleSettingsPage(),
+          ),
+        ],
       ),
       GoRoute(
         path: 'cache',
