@@ -65,6 +65,9 @@ class _PlayerPageState extends ConsumerState<PlayerPage> {
   }
 
   void _loadInitialItem() {
+    if (!mounted) {
+      return;
+    }
     final PlayableItem? item = widget.initialItem;
     if (item == null) {
       return;
@@ -73,7 +76,8 @@ class _PlayerPageState extends ConsumerState<PlayerPage> {
       playerControllerProvider.notifier,
     );
     final PlayerState state = ref.read(playerControllerProvider);
-    if (state.currentItem?.stableId == item.stableId && state.isReady) {
+    // 同曲加载中也复用队列，避免重播。
+    if (state.currentItem?.stableId == item.stableId) {
       return;
     }
     controller.setQueue(

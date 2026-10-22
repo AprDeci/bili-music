@@ -1,7 +1,7 @@
 import 'package:bilimusic/common/logger.dart';
 import 'package:bilimusic/common/util/platform_util.dart';
 import 'package:bilimusic/feature/player/domain/playable_item.dart';
-import 'package:bilimusic/feature/player/ui/player_page.dart';
+import 'package:bilimusic/router/util/player_page_entry.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
@@ -56,7 +56,7 @@ Route<void> _createMobilePlayerRoute(PlayableItem? item) {
     transitionDuration: const Duration(milliseconds: 250),
     reverseTransitionDuration: const Duration(milliseconds: 220),
     pageBuilder: (BuildContext context, Animation<double> animation, _) {
-      return PlayerPage(initialItem: item);
+      return PlayerPageEntry(initialItem: item);
     },
     transitionsBuilder:
         (
