@@ -32,7 +32,14 @@ class MiniPlayerContent extends ConsumerWidget {
     );
     final bool useMetadataCover =
         ref.watch(playerCoverLogicProvider) ?? defaultUseMetadataCover;
-    final String subtitle = buildMiniPlayerSubtitle(state);
+    final String subtitle = buildMiniPlayerSubtitle(
+      state,
+      displayArtist: resolveDisplayArtist(
+        item: state.currentItem,
+        metadata: metadataState.metadata,
+        useMetadata: useMetadataCover,
+      ),
+    );
     final double progress = buildMiniPlayerProgress(state);
     final String? displayCoverUrl = resolveDisplayCoverUrl(
       item: state.currentItem,
@@ -55,7 +62,12 @@ class MiniPlayerContent extends ConsumerWidget {
               mainAxisSize: MainAxisSize.min,
               children: <Widget>[
                 Text(
-                  state.currentItem?.title ?? '未选择播放内容',
+                  resolveDisplayTitle(
+                        item: state.currentItem,
+                        metadata: metadataState.metadata,
+                        useMetadata: useMetadataCover,
+                      ) ??
+                      '未选择播放内容',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: theme.textTheme.titleSmall?.copyWith(
@@ -87,14 +99,14 @@ class MiniPlayerContent extends ConsumerWidget {
   }
 }
 
-String buildMiniPlayerSubtitle(PlayerState state) {
+String buildMiniPlayerSubtitle(PlayerState state, {String? displayArtist}) {
   return switch (state.statusHint) {
     PlayerStatusHint.resolvingAudio => '正在解析音频...',
     PlayerStatusHint.connectingStream => '正在连接播放流...',
     PlayerStatusHint.loadingCache => '正在加载缓存音频...',
     PlayerStatusHint.buffering => '缓冲中...',
     PlayerStatusHint.error => state.errorMessage ?? '播放失败，请稍后重试',
-    null => state.audioStream?.qualityLabel ?? state.currentItem?.author ?? '',
+    null => displayArtist ?? state.currentItem?.author ?? '',
   };
 }
 

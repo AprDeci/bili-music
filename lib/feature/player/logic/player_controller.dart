@@ -7,6 +7,7 @@ import 'package:bilimusic/core/bili/session/bili_session_controller.dart';
 import 'package:bilimusic/core/hive/hive_keys.dart';
 import 'package:bilimusic/core/settings/app_settings_store.dart';
 import 'package:bilimusic/core/window/windows_taskbar_thumbnail_toolbar.dart';
+import 'package:bilimusic/feature/metadata/domain/metadata.dart';
 import 'package:bilimusic/feature/player/data/audio_cache_repository.dart';
 import 'package:bilimusic/feature/player/data/bili_player_repository.dart';
 import 'package:bilimusic/feature/player/data/player_queue_local_repository.dart';
@@ -73,6 +74,8 @@ class PlayerController extends Notifier<PlayerState>
   _EnginePlaybackSnapshot _enginePlaybackSnapshot =
       const _EnginePlaybackSnapshot();
 
+  Metadata? _displayMetadata;
+  bool _useMetadata = true;
   bool _isBound = false;
   bool _isDisposed = false;
   bool _isAdvancingQueue = false;
@@ -292,7 +295,7 @@ class PlayerController extends Notifier<PlayerState>
     return _audioEngine.seek(position);
   }
 
-// seek即播放
+  // seek即播放
   Future<void> seekFromProgressBar(Duration position) async {
     await seek(position);
     if (!state.isPlaying) {
@@ -1533,12 +1536,29 @@ class PlayerController extends Notifier<PlayerState>
     return position.inMilliseconds.clamp(0, duration.inMilliseconds);
   }
 
+  void updateDisplayMetadata({
+    required Metadata? metadata,
+    required bool useMetadata,
+  }) {
+    if (_isDisposed ||
+        (_displayMetadata == metadata && _useMetadata == useMetadata)) {
+      return;
+    }
+    _displayMetadata = metadata;
+    _useMetadata = useMetadata;
+    _publishMediaSession();
+  }
+
   void _publishMediaSession({AudioProcessingState? processingState}) {
     final List<MediaItem> queueItems = state.queue
         .map(
           (PlayableItem item) => buildPlayerQueueMediaItem(
             item,
             queueSourceLabel: state.queueSourceLabel,
+            metadata: item.stableId == state.currentItem?.stableId
+                ? _displayMetadata
+                : null,
+            useMetadata: _useMetadata,
           ),
         )
         .toList(growable: false);
@@ -1554,6 +1574,8 @@ class PlayerController extends Notifier<PlayerState>
                 currentItem,
                 queueSourceLabel: state.queueSourceLabel,
                 duration: state.duration,
+                metadata: _displayMetadata,
+                useMetadata: _useMetadata,
               ),
       );
     } else {
@@ -1563,6 +1585,8 @@ class PlayerController extends Notifier<PlayerState>
           audioStream: audioStream,
           queueSourceLabel: state.queueSourceLabel,
           duration: state.duration,
+          metadata: _displayMetadata,
+          useMetadata: _useMetadata,
         ),
       );
     }

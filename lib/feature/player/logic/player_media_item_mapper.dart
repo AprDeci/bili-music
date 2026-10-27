@@ -1,54 +1,66 @@
+import 'package:audio_service/audio_service.dart';
+import 'package:bilimusic/feature/metadata/domain/metadata.dart';
 import 'package:bilimusic/feature/player/domain/audio_stream_info.dart';
 import 'package:bilimusic/feature/player/domain/playable_item.dart';
-import 'package:audio_service/audio_service.dart';
+import 'package:bilimusic/feature/player/logic/utils/player_display_metadata.dart';
 
 MediaItem buildPlayerMediaItem(
   PlayableItem item, {
   required AudioStreamInfo audioStream,
   required String? queueSourceLabel,
   Duration? duration,
+  Metadata? metadata,
+  bool useMetadata = true,
 }) {
-  final String album = _resolveAlbumLabel(queueSourceLabel);
   final String pageTitle = audioStream.pageTitle?.trim() ?? '';
   final String qualityLabel = audioStream.qualityLabel?.trim() ?? '';
   final List<String> descriptionParts = <String>[
     if (pageTitle.isNotEmpty) pageTitle,
     if (qualityLabel.isNotEmpty) qualityLabel,
   ];
-  final Uri? artUri = _tryParseUri(item.coverUrl);
 
-  return MediaItem(
-    id: item.stableId,
-    album: album,
-    title: item.title,
-    artist: item.author,
-    artUri: artUri,
+  return buildPlayerQueueMediaItem(
+    item,
+    queueSourceLabel: queueSourceLabel,
     duration: duration ?? audioStream.duration,
-    displayTitle: item.title,
-    displaySubtitle: item.author,
-    displayDescription: descriptionParts.join(' · '),
-  );
+    metadata: metadata,
+    useMetadata: useMetadata,
+  ).copyWith(displayDescription: descriptionParts.join(' · '));
 }
 
 MediaItem buildPlayerQueueMediaItem(
   PlayableItem item, {
   required String? queueSourceLabel,
   Duration? duration,
+  Metadata? metadata,
+  bool useMetadata = true,
 }) {
-  final String album = _resolveAlbumLabel(queueSourceLabel);
-  final String pageTitle = item.pageTitle?.trim() ?? '';
-  final Uri? artUri = _tryParseUri(item.coverUrl);
+  final String title = resolveDisplayTitle(
+    item: item,
+    metadata: metadata,
+    useMetadata: useMetadata,
+  )!;
+  final String artist = resolveDisplayArtist(
+    item: item,
+    metadata: metadata,
+    useMetadata: useMetadata,
+  )!;
+  final String? coverUrl = resolveDisplayCoverUrl(
+    item: item,
+    metadata: metadata,
+    useMetadataCover: useMetadata,
+  );
 
   return MediaItem(
     id: item.stableId,
-    album: album,
-    title: item.title,
-    artist: item.author,
-    artUri: artUri,
+    album: _resolveAlbumLabel(queueSourceLabel),
+    title: title,
+    artist: artist,
+    artUri: _tryParseUri(coverUrl),
     duration: duration,
-    displayTitle: item.title,
-    displaySubtitle: item.author,
-    displayDescription: pageTitle,
+    displayTitle: title,
+    displaySubtitle: artist,
+    displayDescription: item.pageTitle?.trim() ?? '',
   );
 }
 
@@ -57,10 +69,7 @@ String _resolveAlbumLabel(String? queueSourceLabel) {
   return trimmed.isEmpty ? 'Bilibili' : trimmed;
 }
 
-Uri? _tryParseUri(String value) {
-  final String trimmed = value.trim();
-  if (trimmed.isEmpty) {
-    return null;
-  }
-  return Uri.tryParse(trimmed);
+Uri? _tryParseUri(String? value) {
+  final String trimmed = value?.trim() ?? '';
+  return trimmed.isEmpty ? null : Uri.tryParse(trimmed);
 }

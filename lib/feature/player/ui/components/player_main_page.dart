@@ -24,6 +24,9 @@ class PlayerMainPage extends ConsumerWidget {
     required this.state,
     required this.item,
     required this.displayCoverUrl,
+    required this.displayTitle,
+    required this.displayArtist,
+    required this.usesMetadataArtist,
     required this.commentCount,
     required this.availableParts,
     required this.onPartTap,
@@ -44,6 +47,9 @@ class PlayerMainPage extends ConsumerWidget {
   final PlayerState state;
   final PlayableItem? item;
   final String? displayCoverUrl;
+  final String? displayTitle;
+  final String? displayArtist;
+  final bool usesMetadataArtist;
   final int? commentCount;
   final List<PlayableItem> availableParts;
   final VoidCallback? onPartTap;
@@ -86,6 +92,9 @@ class PlayerMainPage extends ConsumerWidget {
             artworkSize: artworkSize,
             item: item,
             displayCoverUrl: displayCoverUrl,
+            displayTitle: displayTitle,
+            displayArtist: displayArtist,
+            usesMetadataArtist: usesMetadataArtist,
             isFavorite: isFavorite,
             onlineAudienceLabel: onlineAudienceLabel,
             onFavoriteToggle: onFavoriteToggle,
@@ -148,6 +157,9 @@ class _PlayerHeroAndTitle extends StatelessWidget {
     required this.artworkSize,
     required this.item,
     required this.displayCoverUrl,
+    required this.displayTitle,
+    required this.displayArtist,
+    required this.usesMetadataArtist,
     required this.isFavorite,
     required this.onlineAudienceLabel,
     required this.onFavoriteToggle,
@@ -158,6 +170,9 @@ class _PlayerHeroAndTitle extends StatelessWidget {
   final double artworkSize;
   final PlayableItem? item;
   final String? displayCoverUrl;
+  final String? displayTitle;
+  final String? displayArtist;
+  final bool usesMetadataArtist;
   final bool isFavorite;
   final String? onlineAudienceLabel;
   final VoidCallback? onFavoriteToggle;
@@ -189,12 +204,16 @@ class _PlayerHeroAndTitle extends StatelessWidget {
         ),
         const SizedBox(height: 28),
         PlayerTrackHeader(
-          title: item?.title ?? '还没有选择播放内容',
-          subtitle: item == null ? '从搜索页选一条视频或音频后，这里会显示当前播放信息。' : item!.author,
+          title: displayTitle ?? '还没有选择播放内容',
+          subtitle: item == null
+              ? '从搜索页选一条视频或音频后，这里会显示当前播放信息。'
+              : displayArtist ?? '',
           isFavoriteEnabled: item != null,
           isFavorite: isFavorite,
           onFavoriteToggle: onFavoriteToggle,
-          onSubtitleTap: _buildUpTapHandler(context, item),
+          onSubtitleTap: usesMetadataArtist
+              ? null
+              : _buildUpTapHandler(context, item),
         ),
         if (onlineAudienceLabel != null) ...<Widget>[
           const SizedBox(height: 12),

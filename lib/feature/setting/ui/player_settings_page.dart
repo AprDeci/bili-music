@@ -50,9 +50,9 @@ class PlayerSettingsPage extends ConsumerWidget {
           SwitchListTile.adaptive(
             contentPadding: EdgeInsets.zero,
             secondary: const HugeIcon(icon: HugeIcons.strokeRoundedScanImage),
-            title: const Text('自动使用元信息封面'),
+            title: const Text('优先使用元信息'),
             subtitle: Text(
-              '优先显示歌词与歌曲元信息中的专辑封面',
+              '默认显示元信息中的封面、歌曲名和歌手，双击封面可切换为 B站信息',
               style: theme.textTheme.bodySmall,
             ),
             value: useMetadataCover,

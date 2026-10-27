@@ -150,6 +150,21 @@ class _PlayerPageState extends ConsumerState<PlayerPage> {
                               state: state,
                               item: item,
                               displayCoverUrl: displayCoverUrl,
+                              displayTitle: resolveDisplayTitle(
+                                item: item,
+                                metadata: metadataState.metadata,
+                                useMetadata: useMetadataCover,
+                              ),
+                              displayArtist: resolveDisplayArtist(
+                                item: item,
+                                metadata: metadataState.metadata,
+                                useMetadata: useMetadataCover,
+                              ),
+                              usesMetadataArtist: usesMetadataArtist(
+                                item: item,
+                                metadata: metadataState.metadata,
+                                useMetadata: useMetadataCover,
+                              ),
                               commentCount: item?.replyCount,
                               availableParts: availableParts,
                               onPartTap:
@@ -172,7 +187,7 @@ class _PlayerPageState extends ConsumerState<PlayerPage> {
                               onFavoriteToggle: item == null
                                   ? null
                                   : () => _toggleFavorite(item),
-                              canToggleCover: hasSwitchableCover(
+                              canToggleCover: hasSwitchableDisplay(
                                 item: item,
                                 metadata: metadataState.metadata,
                               ),

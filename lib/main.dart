@@ -12,6 +12,8 @@ import 'package:bilimusic/feature/metadata/logic/metadata_controller.dart';
 import 'package:bilimusic/feature/player/logic/app_audio_handler.dart';
 import 'package:bilimusic/feature/player/logic/desktop_lyrics_controller.dart';
 import 'package:bilimusic/feature/player/logic/player_controller.dart';
+import 'package:bilimusic/feature/player/logic/player_cover_logic.dart';
+import 'package:bilimusic/feature/player/logic/player_cover_settings_logic.dart';
 import 'package:bilimusic/feature/player/logic/sleep_timer_controller.dart';
 import 'package:bilimusic/feature/statistics/logic/statistics_tracker.dart';
 import 'package:bilimusic/feature/up/logic/favorite_up_controller.dart';
@@ -93,6 +95,19 @@ class _AppBootstrapState extends ConsumerState<_AppBootstrap>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    ref.listenManual(
+      metadataControllerProvider,
+      (_, _) => _syncPlayerDisplayMetadata(),
+    );
+    ref.listenManual(
+      playerCoverLogicProvider,
+      (_, _) => _syncPlayerDisplayMetadata(),
+    );
+    ref.listenManual(
+      playerCoverSettingsLogicProvider,
+      (_, _) => _syncPlayerDisplayMetadata(),
+      fireImmediately: true,
+    );
     Future<void>.microtask(() async {
       if (!mounted || _didBootstrap) {
         return;
@@ -155,9 +170,17 @@ class _AppBootstrapState extends ConsumerState<_AppBootstrap>
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    ref.listen(metadataControllerProvider, (previous, next) {});
-    return widget.child;
+  void _syncPlayerDisplayMetadata() {
+    ref
+        .read(playerControllerProvider.notifier)
+        .updateDisplayMetadata(
+          metadata: ref.read(metadataControllerProvider).metadata,
+          useMetadata:
+              ref.read(playerCoverLogicProvider) ??
+              ref.read(playerCoverSettingsLogicProvider),
+        );
   }
+
+  @override
+  Widget build(BuildContext context) => widget.child;
 }

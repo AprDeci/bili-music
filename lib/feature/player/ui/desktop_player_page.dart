@@ -186,7 +186,7 @@ class _DesktopPlayerPageState extends ConsumerState<DesktopPlayerPage> {
                     activeColor: coverColor,
                     showTranslation: showTranslation,
                     useMetadataCover: useMetadataCover,
-                    canToggleCover: hasSwitchableCover(
+                    canToggleCover: hasSwitchableDisplay(
                       item: item,
                       metadata: metadataState.metadata,
                     ),
