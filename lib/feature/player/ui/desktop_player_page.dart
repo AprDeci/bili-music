@@ -18,6 +18,7 @@ import 'package:bilimusic/feature/player/domain/audio_stream_info.dart';
 import 'package:bilimusic/feature/player/domain/playable_item.dart';
 import 'package:bilimusic/feature/player/domain/player_state.dart';
 import 'package:bilimusic/feature/player/logic/desktop_lyrics_controller.dart';
+import 'package:bilimusic/feature/player/logic/player_lyric_settings_logic.dart';
 import 'package:bilimusic/feature/player/logic/player_controller.dart';
 import 'package:bilimusic/feature/player/logic/player_cover_color_provider.dart';
 import 'package:bilimusic/feature/player/logic/player_cover_logic.dart';
@@ -29,6 +30,7 @@ import 'package:bilimusic/feature/player/ui/components/player_collection_sheet.d
 import 'package:bilimusic/feature/player/logic/utils/player_display_metadata.dart';
 import 'package:bilimusic/feature/player/ui/components/player_dynamic_backdrop.dart';
 import 'package:bilimusic/feature/player/ui/components/player_lyric_panel.dart';
+import 'package:bilimusic/feature/player/ui/components/player_lyric_settings_sheet.dart';
 import 'package:bilimusic/feature/player/ui/components/player_part_selector.dart';
 import 'package:bilimusic/feature/player/ui/components/player_queue_sheet.dart';
 import 'package:bilimusic/feature/player/logic/utils/player_ui_helpers.dart';
@@ -48,8 +50,6 @@ class DesktopPlayerPage extends ConsumerStatefulWidget {
 }
 
 class _DesktopPlayerPageState extends ConsumerState<DesktopPlayerPage> {
-  bool _showTranslation = true;
-
   @override
   void initState() {
     super.initState();
@@ -91,6 +91,11 @@ class _DesktopPlayerPageState extends ConsumerState<DesktopPlayerPage> {
 
   @override
   Widget build(BuildContext context) {
+    final bool showTranslation = ref.watch(
+      playerLyricSettingsLogicProvider.select(
+        (settings) => settings.showTranslation,
+      ),
+    );
     final PlayerState state = ref.watch(playerControllerProvider);
     final PlayerController controller = ref.read(
       playerControllerProvider.notifier,
@@ -147,12 +152,24 @@ class _DesktopPlayerPageState extends ConsumerState<DesktopPlayerPage> {
                 onOffset: item == null
                     ? null
                     : () => showLyricOffsetSheet(context),
+                onAppearance: () =>
+                    showPlayerLyricSettings(context, activeColor: coverColor),
                 toggleTranslation: canToggleTranslation
-                    ? () => setState(() {
-                        _showTranslation = !_showTranslation;
-                      })
+                    ? () async {
+                        try {
+                          await ref
+                              .read(playerLyricSettingsLogicProvider.notifier)
+                              .setShowTranslation(!showTranslation);
+                        } on Object {
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('译文设置保存失败，请重试')),
+                            );
+                          }
+                        }
+                      }
                     : null,
-                showTranslation: _showTranslation,
+                showTranslation: showTranslation,
               ),
             ),
             Column(
@@ -167,7 +184,7 @@ class _DesktopPlayerPageState extends ConsumerState<DesktopPlayerPage> {
                     metadataState: metadataState,
                     onSeek: controller.seek,
                     activeColor: coverColor,
-                    showTranslation: _showTranslation,
+                    showTranslation: showTranslation,
                     useMetadataCover: useMetadataCover,
                     canToggleCover: hasSwitchableCover(
                       item: item,
@@ -482,12 +499,14 @@ class _DesktopLyricToolRail extends StatelessWidget {
   const _DesktopLyricToolRail({
     required this.onSearch,
     required this.onOffset,
+    required this.onAppearance,
     this.toggleTranslation,
     required this.showTranslation,
   });
 
   final VoidCallback? onSearch;
   final VoidCallback? onOffset;
+  final VoidCallback onAppearance;
   final VoidCallback? toggleTranslation;
   final bool showTranslation;
 
@@ -522,6 +541,14 @@ class _DesktopLyricToolRail extends StatelessWidget {
                 icon: Icons.hourglass_empty_rounded,
                 tooltip: '歌词偏移',
                 onPressed: onOffset,
+              ),
+              const SizedBox(height: 4),
+              BarIconButton(
+                icon: const HugeIcon(
+                  icon: HugeIcons.strokeRoundedPreferenceHorizontal,
+                ),
+                tooltip: '歌词外观',
+                onPressed: onAppearance,
               ),
             ],
           ),

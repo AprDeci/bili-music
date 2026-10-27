@@ -6,14 +6,17 @@ import 'package:bilimusic/feature/metadata/ui/components/lyric_offset_sheet.dart
 import 'package:bilimusic/feature/metadata/ui/components/lyric_search_sheet.dart';
 import 'package:bilimusic/feature/player/domain/playable_item.dart';
 import 'package:bilimusic/feature/player/domain/player_state.dart';
+import 'package:bilimusic/feature/player/logic/player_lyric_settings_logic.dart';
 import 'package:bilimusic/feature/player/logic/player_progress_provider.dart';
 import 'package:bilimusic/feature/player/logic/utils/player_display_metadata.dart';
-import 'package:bilimusic/feature/player/ui/components/player_lyric_panel.dart';
 import 'package:bilimusic/feature/player/logic/utils/player_progress_ui_helpers.dart';
+import 'package:bilimusic/feature/player/ui/components/player_lyric_panel.dart';
+import 'package:bilimusic/feature/player/ui/components/player_lyric_settings_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hugeicons/hugeicons.dart';
 
-class PlayerLyricPage extends ConsumerStatefulWidget {
+class PlayerLyricPage extends ConsumerWidget {
   const PlayerLyricPage({
     super.key,
     required this.state,
@@ -30,16 +33,14 @@ class PlayerLyricPage extends ConsumerStatefulWidget {
   final Color? activeColor;
 
   @override
-  ConsumerState<PlayerLyricPage> createState() => _PlayerLyricPageState();
-}
-
-class _PlayerLyricPageState extends ConsumerState<PlayerLyricPage> {
-  bool _showTranslation = true;
-
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final bool showTranslation = ref.watch(
+      playerLyricSettingsLogicProvider.select(
+        (settings) => settings.showTranslation,
+      ),
+    );
     final MetadataState metadataState = ref.watch(metadataControllerProvider);
-    final PlayableItem? item = widget.item;
+    final PlayableItem? item = this.item;
     final String translationLyrics =
         resolveDisplayTranslationLyrics(metadataState.metadata)?.trim() ?? '';
     final bool canToggleTranslation =
@@ -47,12 +48,12 @@ class _PlayerLyricPageState extends ConsumerState<PlayerLyricPage> {
         translationLyrics.isNotEmpty;
 
     final Widget content = _PlayerLyricPanelHost(
-      baseState: widget.state,
+      baseState: state,
       item: item,
-      isActive: widget.isActive,
-      onSeek: widget.onSeek,
-      activeColor: widget.activeColor,
-      showTranslation: _showTranslation,
+      isActive: isActive,
+      onSeek: onSeek,
+      activeColor: activeColor,
+      showTranslation: showTranslation,
     );
     if (item == null) {
       return content;
@@ -62,7 +63,9 @@ class _PlayerLyricPageState extends ConsumerState<PlayerLyricPage> {
       children: <Widget>[
         Expanded(child: content),
         _PlayerLyricToolbar(
-          activeColor: ColorUtil.getAllShades(widget.activeColor!)[600]!,
+          activeColor: ColorUtil.getAllShades(
+            activeColor ?? Theme.of(context).colorScheme.primary,
+          )[600]!,
           onSearch: () => showManualLyricSearchSheet(
             context: context,
             initialKeyword: resolveLyricSearchKeyword(
@@ -71,9 +74,23 @@ class _PlayerLyricPageState extends ConsumerState<PlayerLyricPage> {
             ),
           ),
           onOffset: () => showLyricOffsetSheet(context),
-          showTranslation: _showTranslation,
+          onAppearance: () =>
+              showPlayerLyricSettings(context, activeColor: activeColor),
+          showTranslation: showTranslation,
           toggleTranslation: canToggleTranslation
-              ? () => setState(() => _showTranslation = !_showTranslation)
+              ? () async {
+                  try {
+                    await ref
+                        .read(playerLyricSettingsLogicProvider.notifier)
+                        .setShowTranslation(!showTranslation);
+                  } on Object {
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('译文设置保存失败，请重试')),
+                      );
+                    }
+                  }
+                }
               : null,
         ),
       ],
@@ -126,6 +143,7 @@ class _PlayerLyricToolbar extends StatelessWidget {
   const _PlayerLyricToolbar({
     required this.activeColor,
     this.onOffset,
+    this.onAppearance,
     this.onSearch,
     this.toggleTranslation,
     required this.showTranslation,
@@ -134,6 +152,7 @@ class _PlayerLyricToolbar extends StatelessWidget {
   final Color activeColor;
   final VoidCallback? onSearch;
   final VoidCallback? onOffset;
+  final VoidCallback? onAppearance;
   final VoidCallback? toggleTranslation;
   final bool showTranslation;
 
@@ -160,6 +179,16 @@ class _PlayerLyricToolbar extends StatelessWidget {
               onPressed: onOffset,
               color: iconColor,
               icon: const Icon(Icons.hourglass_empty_rounded),
+            ),
+            const SizedBox(width: 20),
+            IconButton(
+              tooltip: '歌词外观',
+              onPressed: onAppearance,
+              color: iconColor,
+              icon: HugeIcon(
+                icon: HugeIcons.strokeRoundedPreferenceHorizontal,
+                color: iconColor,
+              ),
             ),
             if (toggleTranslation != null) ...<Widget>[
               const SizedBox(width: 20),

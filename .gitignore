@@ -53,3 +53,4 @@ apr-release-key.jks
 # Flutter Demon user preferences (not tracked)
 .fdemon/settings.local.toml
 .fdemon/config.toml
+/.agent-teams/

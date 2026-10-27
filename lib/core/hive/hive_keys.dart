@@ -16,6 +16,7 @@ class HiveKeys {
   static const String playerAudioQualityPreference =
       'player.audio_quality_preference';
   static const String playerUseMetadataCover = 'player.use_metadata_cover';
+  static const String playerLyricSettings = 'player.lyric_settings';
   static const String playerVolume = 'player.volume';
   static const String playerAudioCacheIndex = 'player.audio_cache_index';
   static const String searchHistory = 'search.history';
