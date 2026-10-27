@@ -3,7 +3,9 @@ import 'package:bilimusic/feature/metadata/domain/metadata_state.dart';
 import 'package:bilimusic/feature/metadata/logic/metadata_controller.dart';
 import 'package:bilimusic/feature/player/domain/playable_item.dart';
 import 'package:bilimusic/feature/player/domain/player_state.dart';
+import 'package:bilimusic/feature/player/logic/player_lyric_settings_logic.dart';
 import 'package:bilimusic/feature/player/logic/utils/player_display_metadata.dart';
+import 'package:bilimusic/feature/player/ui/components/player_lyric_style.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_lyric/flutter_lyric.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -183,7 +185,10 @@ class _PlayerLyricPanelState extends ConsumerState<PlayerLyricPanel> {
     );
 
     final String? rawLyrics = resolveDisplayLyrics(metadataState.metadata);
-    final String? translationLyrics = widget.showTranslation
+    final bool showTranslation =
+        widget.showTranslation &&
+        ref.watch(playerLyricSettingsLogicProvider).showTranslation;
+    final String? translationLyrics = showTranslation
         ? resolveDisplayTranslationLyrics(metadataState.metadata)
         : null;
     final String? stableId = metadataState.stableId;
@@ -225,33 +230,12 @@ class _PlayerLyricPanelState extends ConsumerState<PlayerLyricPanel> {
   }
 
   LyricPreset _buildLyricPreset(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final Color? activeColor = widget.activeColor;
-    final ColorScheme colors = activeColor == null
-        ? theme.colorScheme
-        : ColorScheme.fromSeed(
-            seedColor: activeColor,
-            brightness: theme.brightness,
-          );
-    const LyricPreset preset = LyricPresets.appleMusic;
-    return preset.copyWith(
-      textStyle: preset.textStyle.copyWith(
-        fontSize: 30,
-        color: colors.onSurface.withValues(alpha: 0.6),
-      ),
-      translationTextStyle: preset.translationTextStyle.copyWith(
-        color: colors.onSurface.withValues(alpha: 0.7),
-      ),
-      activeTranslationTextStyle: preset.activeTranslationTextStyle.copyWith(
-        color: colors.primary,
-      ),
-      selectedTextColor: colors.onSurface,
-      selectedTranslationTextColor: colors.onSurface,
-      highlight: LyricHighlight.solid(
-        colors.primary,
-        tailFadeWidth: preset.highlight.tailFadeWidth,
-      ),
-      countdown: preset.countdown.copyWith(color: colors.primary),
+    return buildPlayerLyricPreset(
+      theme: Theme.of(context),
+      settings: ref.watch(playerLyricSettingsLogicProvider),
+      activeColor: widget.activeColor,
+      reduceMotion: MediaQuery.disableAnimationsOf(context),
+    ).copyWith(
       selectionForegroundBuilder:
           (BuildContext context, LyricSelectionDetails details) {
             return _PlayerLyricSelectionProgress(

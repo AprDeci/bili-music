@@ -3,7 +3,9 @@ import 'package:bilimusic/feature/metadata/domain/metadata.dart';
 import 'package:bilimusic/feature/metadata/domain/metadata_state.dart';
 import 'package:bilimusic/feature/metadata/logic/metadata_controller.dart';
 import 'package:bilimusic/feature/player/domain/playable_item.dart';
+import 'package:bilimusic/feature/player/domain/player_lyric_settings.dart';
 import 'package:bilimusic/feature/player/domain/player_state.dart';
+import 'package:bilimusic/feature/player/logic/player_lyric_settings_logic.dart';
 import 'package:bilimusic/feature/player/ui/components/player_dynamic_backdrop.dart';
 import 'package:bilimusic/feature/player/ui/components/player_lyric_panel.dart';
 import 'package:flutter/material.dart';
@@ -24,6 +26,129 @@ const String _lyrics =
     '[00:07.000]第三行\n[00:10.000]第四行';
 
 void main() {
+  for (final PlayerLyricPanelVariant variant
+      in PlayerLyricPanelVariant.values) {
+    testWidgets(
+      '${variant.name} applies saved appearance without reloading lyrics',
+      (tester) async {
+        await _pumpPanel(tester, variant: variant);
+        final LyricView initial = tester.widget<LyricView>(
+          find.byType(LyricView),
+        );
+        final LyricController controller = initial.controller;
+        final LyricDocument document = controller.document!;
+        final ProviderContainer container = ProviderScope.containerOf(
+          tester.element(find.byType(PlayerLyricPanel)),
+        );
+        final PlayerLyricSettingsLogic settings = container.read(
+          playerLyricSettingsLogicProvider.notifier,
+        );
+        await settings.update(
+          const PlayerLyricSettings(
+            fontScale: 1.5,
+            lineSpacing: 40,
+            alignment: PlayerLyricAlignment.center,
+            colorMode: PlayerLyricColorMode.custom,
+            customColor: 0xff123456,
+            motion: PlayerLyricMotion.reduced,
+          ),
+        );
+        await tester.pump(const Duration(seconds: 1));
+        final LyricPreset preset = tester
+            .widget<LyricView>(find.byType(LyricView))
+            .preset!;
+        expect(preset.textStyle.fontSize, 45);
+        expect(preset.translationTextStyle.fontSize, 24);
+        expect(preset.lineSpacing, 40);
+        expect(preset.textAlign, TextAlign.center);
+        expect(preset.contentAlignment, LyricContentAlignment.center);
+        expect(preset.highlight.color, const Color(0xff123456));
+        expect(
+          preset.activeTranslationTextStyle.color,
+          const Color(0xff123456),
+        );
+        expect(preset.countdown.color, const Color(0xff123456));
+        expect(preset.countdown.breathDuration, Duration.zero);
+        expect(preset.wordEffects.floatAmplitude, 0);
+        expect(preset.lineMotion.maxLag, 0);
+        expect(preset.distanceBlur.maxSigma, 0);
+        expect(controller.document, same(document));
+        expect(controller.position, const Duration(seconds: 2));
+        await settings.update(
+          container
+              .read(playerLyricSettingsLogicProvider)
+              .copyWith(
+                activeFontSize: 52,
+                activeFontWeight: 800,
+                textOpacity: 0.4,
+                activeTextOpacity: 0.9,
+                activeTextColor: 0xffabcdef,
+                translationFontSize: 18,
+                activeTranslationFontSize: 22,
+                translationSpacing: 12,
+                contentAlignment: PlayerLyricAlignment.end,
+                displayMode: PlayerLyricDisplayMode.activeLine,
+                layoutMode: PlayerLyricLayoutMode.dualStyle,
+                horizontalPadding: 36,
+                activeAnchorUnit: PlayerLyricAnchorUnit.pixels,
+                activeAnchorPosition: 120,
+                activeAnchorTarget: PlayerLyricAnchorTarget.lineCenter,
+                selectionAnchorPosition: 0.6,
+                selectionAnchorTarget: PlayerLyricAnchorTarget.translationText,
+              ),
+        );
+        await tester.pump(const Duration(seconds: 1));
+        final LyricView updated = tester.widget<LyricView>(
+          find.byType(LyricView),
+        );
+        expect(updated.controller, same(controller));
+        expect(controller.document, same(document));
+        expect(updated.preset!.activeTextStyle.fontSize, 52);
+        expect(updated.preset!.activeTextStyle.fontWeight, FontWeight.w800);
+        expect(updated.preset!.activeTextStyle.color!.a, closeTo(0.9, 0.01));
+        expect(updated.preset!.translationTextStyle.fontSize, 18);
+        expect(updated.preset!.activeTranslationTextStyle.fontSize, 22);
+        expect(updated.preset!.translationSpacing, 12);
+        expect(updated.preset!.textAlign, TextAlign.center);
+        expect(updated.preset!.contentAlignment, LyricContentAlignment.end);
+        expect(updated.preset!.displayMode, LyricDisplayMode.activeLine);
+        expect(updated.preset!.layoutMode, LyricLayoutMode.dualStyle);
+        expect(
+          updated.preset!.padding,
+          const EdgeInsets.symmetric(horizontal: 36),
+        );
+        expect(
+          updated.preset!.activeAnchor,
+          const LyricAnchor.pixels(120, target: LyricAnchorTarget.lineCenter),
+        );
+        expect(
+          updated.preset!.selectionAnchor,
+          const LyricAnchor.fraction(
+            0.6,
+            target: LyricAnchorTarget.translationText,
+          ),
+        );
+        await settings.setShowTranslation(false);
+        await tester.pump(const Duration(seconds: 1));
+        expect(controller.document!.lines.first.translation, isNull);
+        expect(
+          tester.widget<LyricView>(find.byType(LyricView)).controller,
+          same(controller),
+        );
+        await settings.reset();
+        await tester.pump(const Duration(seconds: 1));
+        expect(controller.document!.lines.first.translation, '翻译一');
+        expect(
+          tester
+              .widget<LyricView>(find.byType(LyricView))
+              .preset!
+              .textStyle
+              .fontSize,
+          30,
+        );
+      },
+    );
+  }
   for (final PlayerLyricPanelVariant variant
       in PlayerLyricPanelVariant.values) {
     testWidgets('${variant.name} seeks using both lyric offsets', (
@@ -48,7 +173,7 @@ void main() {
       );
       expect(
         view.preset!.textStyle.copyWith(color: base.textStyle.color),
-        base.textStyle,
+        base.textStyle.copyWith(fontSize: 30),
       );
       expect(
         view.preset!.translationTextStyle.copyWith(
@@ -235,6 +360,7 @@ Future<void> _pumpPanel(
     ProviderScope(
       overrides: [
         metadataControllerProvider.overrideWith(_MetadataController.new),
+        playerLyricSettingsLogicProvider.overrideWith(_LyricSettingsLogic.new),
       ],
       child: MaterialApp(
         theme: ThemeData(
@@ -274,6 +400,14 @@ Future<void> _pumpPanel(
   );
   // Apple Music 持续浮动，不会进入 pumpAndSettle 等待的静止状态。
   await tester.pump(const Duration(seconds: 1));
+}
+
+class _LyricSettingsLogic extends PlayerLyricSettingsLogic {
+  @override
+  PlayerLyricSettings build() => const PlayerLyricSettings();
+
+  @override
+  Future<void> update(PlayerLyricSettings value) async => state = value;
 }
 
 class _MetadataController extends MetadataController {
