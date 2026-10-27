@@ -52,13 +52,7 @@ class _PlayerLyricPanelState extends ConsumerState<PlayerLyricPanel> {
   @override
   void initState() {
     super.initState();
-    _lyricController = LyricController()
-      ..setOnTapLineCallback((Duration position) {
-        if (_loadedStableId != widget.item?.stableId) {
-          return;
-        }
-        widget.onSeek(position);
-      });
+    _lyricController = LyricController();
   }
 
   @override
@@ -145,35 +139,21 @@ class _PlayerLyricPanelState extends ConsumerState<PlayerLyricPanel> {
     }
 
     if (metadataState.hasLyrics) {
-      return LayoutBuilder(
+      return Padding(
         key: ValueKey<String>('lyrics-$itemKey'),
-        builder: (BuildContext context, BoxConstraints constraints) {
-          final LyricStyle style = _buildLyricStyle(context);
-          final EdgeInsets lyricPadding = _isDesktop
-              ? const EdgeInsets.symmetric(horizontal: 30)
-              : EdgeInsets.zero;
-          return Stack(
-            children: <Widget>[
-              Padding(
-                padding: lyricPadding,
-                child: LyricView(
-                  controller: _lyricController,
-                  style: style,
-                  width: constraints.maxWidth,
-                  height: constraints.maxHeight,
-                ),
-              ),
-              _PlayerLyricSelectionProgress(
-                controller: _lyricController,
-                variant: widget.variant,
-                onPlay: (SelectionState state) {
-                  _lyricController.stopSelection();
-                  widget.onSeek(state.duration);
-                },
-              ),
-            ],
-          );
-        },
+        padding: _isDesktop
+            ? const EdgeInsets.symmetric(horizontal: 30)
+            : EdgeInsets.zero,
+        child: LyricView(
+          controller: _lyricController,
+          preset: _buildLyricPreset(context),
+          onLineTap: (LyricLineDetails details) {
+            if (_loadedStableId != widget.item?.stableId) {
+              return;
+            }
+            widget.onSeek(details.seekPosition);
+          },
+        ),
       );
     }
 
@@ -200,8 +180,8 @@ class _PlayerLyricPanelState extends ConsumerState<PlayerLyricPanel> {
   }
 
   void _syncLyrics(MetadataState metadataState) {
-    _lyricController.lyricOffset = resolveDisplayLyricOffsetMs(
-      metadataState.metadata,
+    _lyricController.timeOffset = Duration(
+      milliseconds: resolveDisplayLyricOffsetMs(metadataState.metadata),
     );
 
     final String? rawLyrics = resolveDisplayLyrics(metadataState.metadata);
@@ -220,7 +200,7 @@ class _PlayerLyricPanelState extends ConsumerState<PlayerLyricPanel> {
         _loadedStableId = null;
         _loadedRenderableLyrics = null;
         _loadedTranslationLyrics = null;
-        _lyricController.loadLyric('');
+        _lyricController.clear();
       }
       return;
     }
@@ -235,10 +215,7 @@ class _PlayerLyricPanelState extends ConsumerState<PlayerLyricPanel> {
     _loadedStableId = stableId;
     _loadedRenderableLyrics = renderableLyrics;
     _loadedTranslationLyrics = translationLyrics;
-    _lyricController.loadLyric(
-      renderableLyrics,
-      translationLyric: translationLyrics,
-    );
+    _lyricController.load(renderableLyrics, translation: translationLyrics);
     _syncProgressIfNeeded();
   }
 
@@ -246,10 +223,10 @@ class _PlayerLyricPanelState extends ConsumerState<PlayerLyricPanel> {
     if (_loadedStableId != widget.item?.stableId) {
       return;
     }
-    _lyricController.setProgress(widget.state.position);
+    _lyricController.setPosition(widget.state.position);
   }
 
-  LyricStyle _buildLyricStyle(BuildContext context) {
+  LyricPreset _buildLyricPreset(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
     final TextTheme textTheme = theme.textTheme;
@@ -259,39 +236,51 @@ class _PlayerLyricPanelState extends ConsumerState<PlayerLyricPanel> {
     )[600]!.withValues(alpha: 0.8);
     final Color normalColor = colorScheme.onSurface;
     final bool isDesktop = PlatformUtil.isDesktop;
-    return LyricStyles.default1.copyWith(
+    return LyricPresets.aurora.copyWith(
       textStyle: (textTheme.bodyLarge ?? const TextStyle()).copyWith(
         color: normalColor.withValues(alpha: 0.7),
         fontSize: isDesktop ? 20 : 24,
         height: 1.25,
         fontWeight: FontWeight.w500,
       ),
-      activeStyle: (textTheme.titleLarge ?? const TextStyle()).copyWith(
+      activeTextStyle: (textTheme.titleLarge ?? const TextStyle()).copyWith(
         color: const Color.fromARGB(255, 168, 168, 168),
         fontSize: isDesktop ? 20 : 30,
         height: 1.2,
         fontWeight: FontWeight.w800,
       ),
-      translationStyle: (textTheme.bodyMedium ?? const TextStyle()).copyWith(
-        color: colorScheme.onSurfaceVariant.withValues(alpha: 0.62),
-        fontSize: 14,
-        height: 1.2,
-      ),
+      translationTextStyle: (textTheme.bodyMedium ?? const TextStyle())
+          .copyWith(
+            color: colorScheme.onSurfaceVariant.withValues(alpha: 0.62),
+            fontSize: 14,
+            height: 1.2,
+          ),
+      activeTranslationTextStyle: const TextStyle(),
       textAlign: isDesktop ? TextAlign.center : TextAlign.left,
       contentAlignment: isDesktop
-          ? CrossAxisAlignment.center
-          : CrossAxisAlignment.start,
-      contentPadding: const EdgeInsets.fromLTRB(8, 24, 8, 36),
-      lineGap: isDesktop ? 20 : 36,
-      translationLineGap: 8,
-      activeHighlightColor: activeColor,
-      selectedColor: const Color.fromARGB(255, 168, 168, 168),
-      selectedTranslationColor: const Color.fromARGB(255, 168, 168, 168),
-      highlightAlign: MainAxisAlignment.start,
-      activeAlignment: MainAxisAlignment.start,
-      anchorPosition: 0.42,
-      activeAnchorPosition: 0.42,
-      fadeRange: FadeRange(top: 0.42, bottom: 0.8),
+          ? LyricContentAlignment.center
+          : LyricContentAlignment.start,
+      padding: const EdgeInsets.fromLTRB(8, 24, 8, 36),
+      lineSpacing: isDesktop ? 20 : 36,
+      translationSpacing: 8,
+      highlight: LyricHighlight.solid(activeColor),
+      selectedTextColor: const Color.fromARGB(255, 168, 168, 168),
+      selectedTranslationTextColor: const Color.fromARGB(255, 168, 168, 168),
+      activeAnchor: const LyricAnchor.fraction(
+        0.42,
+        target: LyricAnchorTarget.mainText,
+      ),
+      selectionAnchor: const LyricAnchor.fraction(0.42),
+      edgeFade: const LyricEdgeFade.fraction(top: 0.42, bottom: 0.8),
+      lineTransition: const LyricLineTransition.none(),
+      selectionSnapMode: LyricSelectionSnapMode.onDragPause,
+      selectionForegroundBuilder:
+          (BuildContext context, LyricSelectionDetails details) {
+            return _PlayerLyricSelectionProgress(
+              details: details,
+              variant: widget.variant,
+            );
+          },
     );
   }
 
@@ -407,14 +396,12 @@ class _PlayerLyricPanelStatus extends StatelessWidget {
 
 class _PlayerLyricSelectionProgress extends StatelessWidget {
   const _PlayerLyricSelectionProgress({
-    required this.controller,
+    required this.details,
     required this.variant,
-    required this.onPlay,
   });
 
-  final LyricController controller;
+  final LyricSelectionDetails details;
   final PlayerLyricPanelVariant variant;
-  final ValueChanged<SelectionState> onPlay;
 
   bool get _isDesktop => variant == PlayerLyricPanelVariant.desktop;
 
@@ -425,11 +412,10 @@ class _PlayerLyricSelectionProgress extends StatelessWidget {
     final Color labelBackground = colorScheme.surfaceContainerHighest
         .withValues(alpha: 0.52);
 
-    return SelectListenableBuilder(
-      controller: controller,
-      builder: (SelectionState state, Widget? child) {
-        return Positioned(
-          top: state.centerY,
+    return Stack(
+      children: <Widget>[
+        Positioned(
+          top: details.anchorY,
           right: 0,
           left: 0,
           child: FractionalTranslation(
@@ -440,21 +426,17 @@ class _PlayerLyricSelectionProgress extends StatelessWidget {
               child: Stack(
                 alignment: AlignmentDirectional.center,
                 children: _isDesktop
-                    ? _buildDesktopSelection(context, state, labelColor)
-                    : _buildMobileSelection(state, labelColor, labelBackground),
+                    ? _buildDesktopSelection(context, labelColor)
+                    : _buildMobileSelection(labelColor, labelBackground),
               ),
             ),
           ),
-        );
-      },
+        ),
+      ],
     );
   }
 
-  List<Widget> _buildDesktopSelection(
-    BuildContext context,
-    SelectionState state,
-    Color labelColor,
-  ) {
+  List<Widget> _buildDesktopSelection(BuildContext context, Color labelColor) {
     final Color dividerColor = Theme.of(
       context,
     ).colorScheme.outlineVariant.withValues(alpha: 0.72);
@@ -463,7 +445,7 @@ class _PlayerLyricSelectionProgress extends StatelessWidget {
       Positioned(
         left: 0,
         child: Text(
-          _formatDuration(state.duration),
+          _formatDuration(details.line.seekPosition),
           style: TextStyle(
             color: labelColor,
             fontSize: 12,
@@ -481,23 +463,20 @@ class _PlayerLyricSelectionProgress extends StatelessWidget {
         right: 0,
         child: IconButton(
           visualDensity: VisualDensity.compact,
-          onPressed: () => onPlay(state),
+          tooltip: '播放这一句',
+          onPressed: details.onTap,
           icon: Icon(Icons.play_arrow_rounded, size: 24, color: labelColor),
         ),
       ),
     ];
   }
 
-  List<Widget> _buildMobileSelection(
-    SelectionState state,
-    Color labelColor,
-    Color labelBackground,
-  ) {
+  List<Widget> _buildMobileSelection(Color labelColor, Color labelBackground) {
     return <Widget>[
       Positioned(
         right: 0,
         child: GestureDetector(
-          onTap: () => onPlay(state),
+          onTap: details.onTap,
           child: DecoratedBox(
             decoration: _PlayerLyricSelectionDecoration(color: labelBackground),
             child: Padding(
@@ -511,7 +490,7 @@ class _PlayerLyricSelectionProgress extends StatelessWidget {
                   Icon(Icons.play_arrow_rounded, size: 13, color: labelColor),
                   const SizedBox(width: 1),
                   Text(
-                    _formatDuration(state.duration),
+                    _formatDuration(details.line.seekPosition),
                     style: TextStyle(
                       color: labelColor,
                       fontSize: 11,
