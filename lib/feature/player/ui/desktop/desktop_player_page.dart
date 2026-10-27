@@ -1,0 +1,862 @@
+import 'package:bilimusic/common/bm_icons.dart';
+import 'package:bilimusic/common/components/badged_icon_button.dart';
+import 'package:bilimusic/common/components/bar_icon_button.dart';
+import 'package:bilimusic/common/components/cached_image.dart';
+import 'package:bilimusic/common/components/desktop/desktop_side_panel.dart';
+import 'package:bilimusic/common/components/desktop/volumn_attach.dart';
+import 'package:bilimusic/common/util/platform_util.dart';
+import 'package:bilimusic/common/util/toast_util.dart';
+import 'package:bilimusic/feature/comment/domain/comment_target.dart';
+import 'package:bilimusic/feature/comment/ui/comment_page.dart';
+import 'package:bilimusic/feature/favorites/logic/favorites_controller.dart';
+import 'package:bilimusic/feature/favorites/ui/components/favorite_like_button.dart';
+import 'package:bilimusic/feature/metadata/domain/metadata_state.dart';
+import 'package:bilimusic/feature/metadata/logic/metadata_controller.dart';
+import 'package:bilimusic/feature/metadata/ui/components/lyric_offset_sheet.dart';
+import 'package:bilimusic/feature/metadata/ui/components/lyric_search_sheet.dart';
+import 'package:bilimusic/feature/player/domain/audio_stream_info.dart';
+import 'package:bilimusic/feature/player/domain/playable_item.dart';
+import 'package:bilimusic/feature/player/domain/player_state.dart';
+import 'package:bilimusic/feature/player/logic/lyrics/desktop_lyrics_controller.dart';
+import 'package:bilimusic/feature/player/logic/lyrics/player_lyric_settings_logic.dart';
+import 'package:bilimusic/feature/player/logic/player_controller.dart';
+import 'package:bilimusic/feature/player/logic/display/player_cover_color_provider.dart';
+import 'package:bilimusic/feature/player/domain/player_display_info.dart';
+import 'package:bilimusic/feature/player/logic/display/player_display_provider.dart';
+import 'package:bilimusic/feature/player/logic/display/player_display_source_logic.dart';
+import 'package:bilimusic/feature/player/ui/desktop/components/play_pause_button.dart';
+import 'package:bilimusic/feature/player/ui/desktop/components/quality_attach.dart';
+import 'package:bilimusic/feature/player/ui/desktop/components/queue_mode_attach.dart';
+import 'package:bilimusic/feature/player/ui/components/player_collection_sheet.dart';
+import 'package:bilimusic/feature/player/logic/display/player_display_metadata.dart';
+import 'package:bilimusic/feature/player/ui/components/player_dynamic_backdrop.dart';
+import 'package:bilimusic/feature/player/ui/lyrics/player_lyric_panel.dart';
+import 'package:bilimusic/feature/player/ui/lyrics/player_lyric_settings_sheet.dart';
+import 'package:bilimusic/feature/player/ui/components/player_part_selector.dart';
+import 'package:bilimusic/feature/player/ui/components/player_queue_sheet.dart';
+import 'package:bilimusic/feature/player/logic/utils/player_ui_helpers.dart';
+import 'package:bilimusic/router/util/player_navigation.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hugeicons/hugeicons.dart';
+import 'package:window_manager/window_manager.dart';
+
+class DesktopPlayerPage extends ConsumerStatefulWidget {
+  const DesktopPlayerPage({super.key, this.initialItem});
+
+  final PlayableItem? initialItem;
+
+  @override
+  ConsumerState<DesktopPlayerPage> createState() => _DesktopPlayerPageState();
+}
+
+class _DesktopPlayerPageState extends ConsumerState<DesktopPlayerPage> {
+  @override
+  void initState() {
+    super.initState();
+    markPlayerPageVisible();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadInitialItem();
+    });
+  }
+
+  @override
+  void dispose() {
+    markPlayerPageHidden();
+    super.dispose();
+  }
+
+  @override
+  void didUpdateWidget(covariant DesktopPlayerPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.initialItem != widget.initialItem) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _loadInitialItem();
+      });
+    }
+  }
+
+  void _loadInitialItem() {
+    final PlayableItem? item = widget.initialItem;
+    if (item == null) {
+      return;
+    }
+    final PlayerState state = ref.read(playerControllerProvider);
+    if (state.currentItem?.stableId == item.stableId && state.isReady) {
+      return;
+    }
+    ref
+        .read(playerControllerProvider.notifier)
+        .setQueue(<PlayableItem>[item], startIndex: 0, sourceLabel: '当前播放');
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final bool showTranslation = ref.watch(
+      playerLyricSettingsLogicProvider.select(
+        (settings) => settings.showTranslation,
+      ),
+    );
+    final PlayerState state = ref.watch(playerControllerProvider);
+    final PlayerController controller = ref.read(
+      playerControllerProvider.notifier,
+    );
+    final PlayableItem? item = state.currentItem ?? widget.initialItem;
+    final MetadataState metadataState = ref.watch(metadataControllerProvider);
+    final bool canToggleTranslation =
+        item != null &&
+        metadataState.stableId == item.stableId &&
+        resolveDisplayTranslationLyrics(
+              metadataState.metadata,
+            )?.trim().isNotEmpty ==
+            true;
+    final bool isFavorite = item != null
+        ? ref.watch(favoritesControllerProvider).isLiked(item)
+        : false;
+    final ColorScheme colorScheme = Theme.of(context).colorScheme;
+    final Color? coverColor = ref.watch(playerCoverColorControllerProvider);
+    final PlayerDisplayInfo display = ref.watch(playerDisplayProvider);
+    final bool isDesktopLyricsEnabled = ref.watch(
+      desktopLyricsControllerProvider,
+    );
+
+    return Scaffold(
+      backgroundColor: colorScheme.surface,
+      body: SafeArea(
+        child: Stack(
+          children: <Widget>[
+            Positioned.fill(
+              child: PlayerDynamicBackdrop(
+                baseColor: coverColor,
+                variant: PlayerBackdropVariant.desktop,
+              ),
+            ),
+            Positioned(
+              bottom: 80,
+              right: 20,
+              child: _DesktopLyricToolRail(
+                onSearch: item == null
+                    ? null
+                    : () {
+                        showManualLyricSearchSheet(
+                          context: context,
+                          initialKeyword: resolveLyricSearchKeyword(
+                            metadataState: metadataState,
+                            item: item,
+                          ),
+                        );
+                      },
+                onOffset: item == null
+                    ? null
+                    : () => showLyricOffsetSheet(context),
+                onAppearance: () =>
+                    showPlayerLyricSettings(context, activeColor: coverColor),
+                toggleTranslation: canToggleTranslation
+                    ? () async {
+                        try {
+                          await ref
+                              .read(playerLyricSettingsLogicProvider.notifier)
+                              .setShowTranslation(!showTranslation);
+                        } on Object {
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('译文设置保存失败，请重试')),
+                            );
+                          }
+                        }
+                      }
+                    : null,
+                showTranslation: showTranslation,
+              ),
+            ),
+            Column(
+              children: <Widget>[
+                _DesktopPlayerTopBar(
+                  onBack: () => Navigator.of(context).maybePop(),
+                ),
+                Expanded(
+                  child: _DesktopPlayerHeroSection(
+                    state: state,
+                    item: item,
+                    display: display,
+                    onSeek: controller.seek,
+                    activeColor: coverColor,
+                    showTranslation: showTranslation,
+                    onToggleSource: () {
+                      ref
+                          .read(playerDisplaySourceLogicProvider.notifier)
+                          .toggle();
+                    },
+                  ),
+                ),
+                _DesktopPlayerControlDeck(
+                  state: state,
+                  item: item,
+                  isFavorite: isFavorite,
+                  onFavoriteToggle: item == null
+                      ? null
+                      : () => _toggleFavorite(item),
+                  onOpenComments: item == null || item.aid <= 0
+                      ? null
+                      : () => _openComments(item),
+                  onOpenCollectionSheet: item == null
+                      ? null
+                      : () => showPlayerCollectionSheet(
+                          context: context,
+                          item: item,
+                        ),
+                  onPartTap: item == null || state.availableParts.length < 2
+                      ? null
+                      : () => showDesktopPlayerPartSelectorPanel(
+                          context: context,
+                          parts: state.availableParts,
+                          currentItem: item,
+                          state: state,
+                          controller: controller,
+                        ),
+                  onOpenQueue: () => showDesktopPlayerQueuePanel(
+                    context: context,
+                    state: state,
+                  ),
+                  onSelectQuality: controller.switchCurrentAudioQuality,
+                  onSelectQueueMode: controller.setQueueMode,
+                  onPrevious: controller.skipToPrevious,
+                  onTogglePlayback: controller.togglePlayback,
+                  onNext: controller.skipToNext,
+                  onVolumeChanged: controller.setVolume,
+                  onToggleMute: controller.toggleMute,
+                  isDesktopLyricsEnabled: isDesktopLyricsEnabled,
+                  onDesktopLyricsToggle: () => ref
+                      .read(desktopLyricsControllerProvider.notifier)
+                      .toggle(),
+                  onSeek: (double value) {
+                    final Duration total = _resolveTotalDuration(state);
+                    controller.seekFromProgressBar(
+                      Duration(
+                        milliseconds: (total.inMilliseconds * value).round(),
+                      ),
+                    );
+                  },
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _toggleFavorite(PlayableItem item) async {
+    final bool isLiked = await ref
+        .read(favoritesControllerProvider.notifier)
+        .toggleLiked(item);
+    if (!mounted) {
+      return;
+    }
+    ToastUtil.show(isLiked ? '已加入“我喜欢”' : '已从“我喜欢”移除');
+  }
+
+  Future<void> _openComments(PlayableItem item) async {
+    await showDesktopSidePanel(
+      tag: 'player_comments_panel',
+      context: context,
+      width: 520,
+      builder: (BuildContext context) => CommentPage(
+        target: CommentTarget.video(
+          aid: item.aid,
+          bvid: item.bvid,
+          title: item.title,
+          coverUrl: item.coverUrl,
+        ),
+      ),
+    );
+  }
+}
+
+class _DesktopPlayerTopBar extends StatefulWidget {
+  const _DesktopPlayerTopBar({required this.onBack});
+
+  final VoidCallback onBack;
+
+  @override
+  State<_DesktopPlayerTopBar> createState() => _DesktopPlayerTopBarState();
+}
+
+class _DesktopPlayerTopBarState extends State<_DesktopPlayerTopBar>
+    with WindowListener {
+  bool _isMaximized = false;
+
+  @override
+  void initState() {
+    super.initState();
+    windowManager.addListener(this);
+    _syncWindowState();
+  }
+
+  @override
+  void dispose() {
+    windowManager.removeListener(this);
+    super.dispose();
+  }
+
+  @override
+  void onWindowMaximize() {
+    _syncWindowState();
+  }
+
+  @override
+  void onWindowUnmaximize() {
+    _syncWindowState();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 56,
+      child: DragToMoveArea(
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onDoubleTap: _toggleMaximize,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 22),
+            child: Row(
+              children: <Widget>[
+                Tooltip(
+                  waitDuration: const Duration(seconds: 1),
+                  message: '收起播放页',
+                  child: BarIconButton(
+                    icon: Icons.keyboard_arrow_down_rounded,
+                    iconSize: 30,
+                    onPressed: widget.onBack,
+                  ),
+                ),
+                const Spacer(),
+                // macOS 已经自带交通灯按钮，避免重复绘制窗口操作按钮。
+                if (!PlatformUtil.isMacOS) ...[
+                  Tooltip(
+                    waitDuration: const Duration(seconds: 1),
+                    message: '最小化',
+                    child: BarIconButton(
+                      icon: Icons.remove_rounded,
+                      iconSize: 18,
+                      onPressed: () => windowManager.minimize(),
+                    ),
+                  ),
+                  Tooltip(
+                    waitDuration: const Duration(seconds: 1),
+                    message: _isMaximized ? '还原' : '最大化',
+                    child: BarIconButton(
+                      icon: _isMaximized
+                          ? Icons.filter_none_rounded
+                          : Icons.crop_square_rounded,
+                      iconSize: 16,
+                      onPressed: _toggleMaximize,
+                    ),
+                  ),
+                  Tooltip(
+                    waitDuration: const Duration(seconds: 1),
+                    message: '关闭',
+                    child: BarIconButton(
+                      icon: Icons.close_rounded,
+                      iconSize: 18,
+                      onPressed: () => windowManager.close(),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _syncWindowState() async {
+    final bool isMaximized = await windowManager.isMaximized();
+    if (!mounted || isMaximized == _isMaximized) {
+      return;
+    }
+
+    setState(() {
+      _isMaximized = isMaximized;
+    });
+  }
+
+  Future<void> _toggleMaximize() async {
+    if (await windowManager.isMaximized()) {
+      await windowManager.unmaximize();
+    } else {
+      await windowManager.maximize();
+    }
+    await _syncWindowState();
+  }
+}
+
+class _DesktopPlayerHeroSection extends StatelessWidget {
+  const _DesktopPlayerHeroSection({
+    required this.state,
+    required this.item,
+    required this.display,
+    required this.onSeek,
+    required this.showTranslation,
+    required this.onToggleSource,
+    this.activeColor,
+  });
+
+  final PlayerState state;
+  final PlayableItem? item;
+  final PlayerDisplayInfo display;
+  final ValueChanged<Duration> onSeek;
+  final bool showTranslation;
+  final VoidCallback onToggleSource;
+  final Color? activeColor;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) {
+        final double artworkSize = (constraints.maxHeight * 0.4).clamp(
+          250.0,
+          360.0,
+        );
+        final double contentGap = (constraints.maxWidth * 0.11).clamp(100, 190);
+        final double lyricWidth = (constraints.maxWidth * 0.36).clamp(
+          300.0,
+          560.0,
+        );
+
+        return Center(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(80, 8, 0, 12),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: <Widget>[
+                SizedBox(
+                  width: artworkSize,
+                  height: artworkSize,
+                  child: GestureDetector(
+                    onDoubleTap: display.canToggleSource
+                        ? onToggleSource
+                        : null,
+                    child: _DesktopArtwork(coverUrl: display.coverUrl),
+                  ),
+                ),
+                SizedBox(width: contentGap),
+                SizedBox(
+                  width: lyricWidth,
+                  child: Row(
+                    children: <Widget>[
+                      Expanded(
+                        child: Align(
+                          alignment: Alignment.center,
+                          child: SizedBox(
+                            height: 360,
+                            child: PlayerLyricPanel(
+                              state: state,
+                              item: item,
+                              isActive: true,
+                              onSeek: onSeek,
+                              activeColor: activeColor,
+                              variant: PlayerLyricPanelVariant.desktop,
+                              showTranslation: showTranslation,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _DesktopLyricToolRail extends StatelessWidget {
+  const _DesktopLyricToolRail({
+    required this.onSearch,
+    required this.onOffset,
+    required this.onAppearance,
+    this.toggleTranslation,
+    required this.showTranslation,
+  });
+
+  final VoidCallback? onSearch;
+  final VoidCallback? onOffset;
+  final VoidCallback onAppearance;
+  final VoidCallback? toggleTranslation;
+  final bool showTranslation;
+
+  @override
+  Widget build(BuildContext context) {
+    return Align(
+      alignment: Alignment.bottomCenter,
+      child: Padding(
+        padding: const EdgeInsets.only(bottom: 46),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 6),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              if (toggleTranslation != null) ...<Widget>[
+                BarIconButton(
+                  iconSize: 28,
+                  icon: BmIcons.translate,
+                  tooltip: showTranslation ? '隐藏译文' : '显示译文',
+                  onPressed: toggleTranslation,
+                  isActive: showTranslation,
+                ),
+              ],
+              const SizedBox(height: 6),
+              BarIconButton(
+                icon: Icons.search_rounded,
+                tooltip: '手动匹配歌词',
+                onPressed: onSearch,
+              ),
+              const SizedBox(height: 4),
+              BarIconButton(
+                icon: Icons.hourglass_empty_rounded,
+                tooltip: '歌词偏移',
+                onPressed: onOffset,
+              ),
+              const SizedBox(height: 4),
+              BarIconButton(
+                icon: const HugeIcon(
+                  icon: HugeIcons.strokeRoundedPreferenceHorizontal,
+                ),
+                tooltip: '歌词外观',
+                onPressed: onAppearance,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _DesktopArtwork extends StatelessWidget {
+  const _DesktopArtwork({required this.coverUrl});
+
+  final String? coverUrl;
+
+  @override
+  Widget build(BuildContext context) {
+    final ColorScheme colorScheme = Theme.of(context).colorScheme;
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: colorScheme.surface.withValues(alpha: 0.76),
+        borderRadius: BorderRadius.circular(26),
+        boxShadow: <BoxShadow>[
+          BoxShadow(
+            color: colorScheme.shadow.withValues(alpha: 0.10),
+            blurRadius: 34,
+            offset: const Offset(0, 18),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(26),
+        child: CommonCachedImage(
+          imageUrl: coverUrl,
+          fit: BoxFit.cover,
+          fallbackIcon: Icons.music_note_rounded,
+          iconSize: 72,
+          iconColor: colorScheme.primary.withValues(alpha: 0.58),
+          backgroundGradient: LinearGradient(
+            colors: <Color>[
+              colorScheme.primary.withValues(alpha: 0.16),
+              colorScheme.surfaceContainerHighest.withValues(alpha: 0.52),
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _DesktopPlayerControlDeck extends StatelessWidget {
+  const _DesktopPlayerControlDeck({
+    required this.state,
+    required this.item,
+    required this.isFavorite,
+    required this.onFavoriteToggle,
+    required this.onOpenComments,
+    required this.onOpenCollectionSheet,
+    required this.onPartTap,
+    required this.onOpenQueue,
+    required this.onSelectQuality,
+    required this.onSelectQueueMode,
+    required this.onPrevious,
+    required this.onTogglePlayback,
+    required this.onNext,
+    required this.onVolumeChanged,
+    required this.onToggleMute,
+    required this.isDesktopLyricsEnabled,
+    required this.onDesktopLyricsToggle,
+    required this.onSeek,
+  });
+
+  final PlayerState state;
+  final PlayableItem? item;
+  final bool isFavorite;
+  final VoidCallback? onFavoriteToggle;
+  final VoidCallback? onOpenComments;
+  final VoidCallback? onOpenCollectionSheet;
+  final VoidCallback? onPartTap;
+  final VoidCallback onOpenQueue;
+  final ValueChanged<int?> onSelectQuality;
+  final ValueChanged<PlayerQueueMode> onSelectQueueMode;
+  final VoidCallback onPrevious;
+  final VoidCallback onTogglePlayback;
+  final VoidCallback onNext;
+  final ValueChanged<double> onVolumeChanged;
+  final Future<double> Function() onToggleMute;
+  final bool isDesktopLyricsEnabled;
+  final VoidCallback onDesktopLyricsToggle;
+  final ValueChanged<double> onSeek;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+    final Duration total = _resolveTotalDuration(state);
+    final double progress = total.inMilliseconds <= 0
+        ? 0
+        : (state.position.inMilliseconds / total.inMilliseconds).clamp(
+            0.0,
+            1.0,
+          );
+    final bool canTogglePlayback = state.hasQueue && !state.isLoading;
+    final bool canGoPrevious = state.isReady && state.hasPrevious;
+    final bool canGoNext =
+        state.isReady &&
+        (state.queueMode == PlayerQueueMode.singleRepeat || state.hasNext);
+    final List<AudioQualityOption> qualities =
+        state.audioStream?.availableQualities ?? const <AudioQualityOption>[];
+
+    return SizedBox(
+      height: 84,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(26, 0, 26, 10),
+        child: Column(
+          children: <Widget>[
+            Expanded(
+              child: Row(
+                children: <Widget>[
+                  SizedBox(
+                    width: 190,
+                    child: Row(
+                      children: <Widget>[
+                        BarIconButton(
+                          icon: HugeIcon(
+                            icon: HugeIcons.strokeRoundedArrowShrink02,
+                            size: 20,
+                            strokeWidth: 2,
+                          ),
+                          tooltip: '收起播放页',
+                          onPressed: () => Navigator.of(context).maybePop(),
+                        ),
+                        const SizedBox(width: 8),
+                        FavoriteLikeBarButton(
+                          isLiked: isFavorite,
+                          onPressed: onFavoriteToggle,
+                        ),
+                        const SizedBox(width: 8),
+                        BadgedIconButton(
+                          noBadgeIcon: HugeIcon(
+                            icon: HugeIcons.strokeRoundedComment01,
+                            size: 20,
+                            strokeWidth: 2,
+                          ),
+                          badgeIcon: const Icon(
+                            BmIcons.commentWithBadge,
+                            size: 26,
+                          ),
+                          badge: formatCommentBadgeCount(item?.replyCount),
+                          tooltip: '评论',
+                          onPressed: onOpenComments,
+                        ),
+                        const SizedBox(width: 8),
+                      ],
+                    ),
+                  ),
+                  Expanded(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: <Widget>[
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: <Widget>[
+                            DesktopQueueModeAttach(
+                              mode: state.queueMode,
+                              enabled: state.hasQueue,
+                              onSelected: onSelectQueueMode,
+                              iconSize: 22,
+                            ),
+                            const SizedBox(width: 28),
+                            BarIconButton(
+                              icon: Icons.skip_previous_rounded,
+                              tooltip: '上一首',
+                              iconSize: 26,
+                              onPressed: canGoPrevious ? onPrevious : null,
+                            ),
+                            const SizedBox(width: 14),
+                            DesktopPlayPauseButton(
+                              isPlaying: state.isPlaying,
+                              onPressed: canTogglePlayback
+                                  ? onTogglePlayback
+                                  : null,
+                              backgroundColor: colorScheme.primary,
+                              disabledBackgroundColor: colorScheme.primary
+                                  .withValues(alpha: 0.32),
+                              foregroundColor: colorScheme.onPrimary,
+                            ),
+                            const SizedBox(width: 14),
+                            BarIconButton(
+                              icon: Icons.skip_next_rounded,
+                              tooltip: '下一首',
+                              iconSize: 26,
+                              onPressed: canGoNext ? onNext : null,
+                            ),
+                            const SizedBox(width: 28),
+                            DesktopVolumnAttach(
+                              enabled: state.hasQueue,
+                              volume: state.volume,
+                              onVolumeChanged: onVolumeChanged,
+                              onToggleMute: onToggleMute,
+                              iconSize: 22,
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: <Widget>[
+                            SizedBox(
+                              width: 44,
+                              child: Text(
+                                formatPlayerDuration(state.position),
+                                style: theme.textTheme.labelSmall?.copyWith(
+                                  color: colorScheme.onSurface.withValues(
+                                    alpha: 0.62,
+                                  ),
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ),
+                            ConstrainedBox(
+                              constraints: const BoxConstraints(maxWidth: 300),
+                              child: SliderTheme(
+                                data: SliderTheme.of(context).copyWith(
+                                  trackHeight: 1,
+                                  inactiveTrackColor: colorScheme.onSurface
+                                      .withValues(alpha: 0.14),
+                                  activeTrackColor: colorScheme.onSurface
+                                      .withValues(alpha: 0.82),
+                                  thumbColor: colorScheme.onSurface,
+                                  thumbShape: const RoundSliderThumbShape(
+                                    enabledThumbRadius: 3.5,
+                                  ),
+                                  overlayShape: const RoundSliderOverlayShape(
+                                    overlayRadius: 10,
+                                  ),
+                                  overlayColor: colorScheme.onSurface
+                                      .withValues(alpha: 0.08),
+                                ),
+                                child: Slider(
+                                  value: progress,
+                                  onChanged:
+                                      total > Duration.zero && state.isReady
+                                      ? onSeek
+                                      : null,
+                                ),
+                              ),
+                            ),
+                            SizedBox(
+                              width: 44,
+                              child: Text(
+                                formatPlayerDuration(total),
+                                textAlign: TextAlign.right,
+                                style: theme.textTheme.labelSmall?.copyWith(
+                                  color: colorScheme.onSurface.withValues(
+                                    alpha: 0.62,
+                                  ),
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  SizedBox(
+                    width: 200,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: <Widget>[
+                        if (PlatformUtil.isDesktopLyricsSupported) ...[
+                          BarIconButton(
+                            iconSize: 28,
+                            icon: BmIcons.desktopLyrics,
+                            tooltip: isDesktopLyricsEnabled
+                                ? '关闭桌面歌词'
+                                : '开启桌面歌词',
+                            isActive: isDesktopLyricsEnabled,
+                            onPressed: onDesktopLyricsToggle,
+                          ),
+                        ],
+                        const SizedBox(width: 16),
+                        DesktopQualityAttach(
+                          qualities: qualities,
+                          onSelected: onSelectQuality,
+                        ),
+                        const SizedBox(width: 16),
+                        BadgedIconButton(
+                          noBadgeIcon: const HugeIcon(
+                            icon: HugeIcons.strokeRoundedListVideo,
+                            size: 22,
+                          ),
+                          badgeIcon: const Icon(
+                            BmIcons.partListWithBadge,
+                            size: 26,
+                          ),
+                          badge: formatPartBadge(item),
+                          badgeOffset: const Offset(-4, -2),
+                          tooltip: '选择分 P',
+                          onPressed: onPartTap,
+                        ),
+                        const SizedBox(width: 16),
+                        BarIconButton(
+                          icon: HugeIcon(
+                            icon: HugeIcons.strokeRoundedListMusic,
+                            size: 22,
+                          ),
+                          tooltip: '播放队列',
+                          onPressed: state.hasQueue ? onOpenQueue : null,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+Duration _resolveTotalDuration(PlayerState state) {
+  return state.duration ?? state.audioStream?.duration ?? Duration.zero;
+}

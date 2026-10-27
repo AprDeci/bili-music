@@ -2,7 +2,7 @@ import 'package:bilimusic/common/components/desktop/desktop_top_bar.dart';
 import 'package:bilimusic/common/components/desktop/desktop_side_panel.dart';
 import 'package:bilimusic/common/util/platform_util.dart';
 import 'package:bilimusic/feature/profile/ui/desktop_profile_sidebar.dart';
-import 'package:bilimusic/feature/player/ui/desktop_player_bar.dart';
+import 'package:bilimusic/feature/player/ui/desktop/desktop_player_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';

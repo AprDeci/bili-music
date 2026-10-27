@@ -1,7 +1,7 @@
 import 'package:bilimusic/common/util/color_util.dart';
 import 'package:bilimusic/feature/player/domain/playable_item.dart';
 import 'package:bilimusic/feature/player/domain/player_state.dart';
-import 'package:bilimusic/feature/player/logic/player_cover_color_provider.dart';
+import 'package:bilimusic/feature/player/logic/display/player_cover_color_provider.dart';
 import 'package:bilimusic/feature/player/logic/utils/player_ui_helpers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';

@@ -7,7 +7,7 @@ import 'package:bilimusic/feature/favorites/ui/desktop/desktop_favorite_collecti
 import 'package:bilimusic/feature/favorites/ui/favorite_collection_page.dart';
 import 'package:bilimusic/feature/home/ui/home_page.dart';
 import 'package:bilimusic/feature/player/domain/playable_item.dart';
-import 'package:bilimusic/feature/player/ui/desktop_player_page.dart';
+import 'package:bilimusic/feature/player/ui/desktop/desktop_player_page.dart';
 import 'package:bilimusic/feature/favorites/ui/import/import_page.dart';
 import 'package:bilimusic/feature/profile/ui/profile_page.dart';
 import 'package:bilimusic/feature/recent/ui/desktop/desktop_recent_playback_page.dart';
