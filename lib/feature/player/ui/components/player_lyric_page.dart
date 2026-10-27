@@ -62,7 +62,9 @@ class _PlayerLyricPageState extends ConsumerState<PlayerLyricPage> {
       children: <Widget>[
         Expanded(child: content),
         _PlayerLyricToolbar(
-          activeColor: ColorUtil.getAllShades(widget.activeColor!)[600]!,
+          activeColor: ColorUtil.getAllShades(
+            widget.activeColor ?? Theme.of(context).colorScheme.primary,
+          )[600]!,
           onSearch: () => showManualLyricSearchSheet(
             context: context,
             initialKeyword: resolveLyricSearchKeyword(

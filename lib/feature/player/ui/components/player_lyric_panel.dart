@@ -1,5 +1,3 @@
-import 'package:bilimusic/common/util/color_util.dart';
-import 'package:bilimusic/common/util/platform_util.dart';
 import 'package:bilimusic/common/util/player_util.dart';
 import 'package:bilimusic/feature/metadata/domain/metadata_state.dart';
 import 'package:bilimusic/feature/metadata/logic/metadata_controller.dart';
@@ -228,52 +226,32 @@ class _PlayerLyricPanelState extends ConsumerState<PlayerLyricPanel> {
 
   LyricPreset _buildLyricPreset(BuildContext context) {
     final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
-    final TextTheme textTheme = theme.textTheme;
-    final Color accentColor = _resolveAccentColor(context);
-    final Color activeColor = ColorUtil.getAllShades(
-      accentColor,
-    )[600]!.withValues(alpha: 0.8);
-    final Color normalColor = colorScheme.onSurface;
-    final bool isDesktop = PlatformUtil.isDesktop;
-    return LyricPresets.aurora.copyWith(
-      textStyle: (textTheme.bodyLarge ?? const TextStyle()).copyWith(
-        color: normalColor.withValues(alpha: 0.7),
-        fontSize: isDesktop ? 20 : 24,
-        height: 1.25,
-        fontWeight: FontWeight.w500,
+    final Color? activeColor = widget.activeColor;
+    final ColorScheme colors = activeColor == null
+        ? theme.colorScheme
+        : ColorScheme.fromSeed(
+            seedColor: activeColor,
+            brightness: theme.brightness,
+          );
+    const LyricPreset preset = LyricPresets.appleMusic;
+    return preset.copyWith(
+      textStyle: preset.textStyle.copyWith(
+        fontSize: 30,
+        color: colors.onSurface.withValues(alpha: 0.6),
       ),
-      activeTextStyle: (textTheme.titleLarge ?? const TextStyle()).copyWith(
-        color: const Color.fromARGB(255, 168, 168, 168),
-        fontSize: isDesktop ? 20 : 30,
-        height: 1.2,
-        fontWeight: FontWeight.w800,
+      translationTextStyle: preset.translationTextStyle.copyWith(
+        color: colors.onSurface.withValues(alpha: 0.7),
       ),
-      translationTextStyle: (textTheme.bodyMedium ?? const TextStyle())
-          .copyWith(
-            color: colorScheme.onSurfaceVariant.withValues(alpha: 0.62),
-            fontSize: 14,
-            height: 1.2,
-          ),
-      activeTranslationTextStyle: const TextStyle(),
-      textAlign: isDesktop ? TextAlign.center : TextAlign.left,
-      contentAlignment: isDesktop
-          ? LyricContentAlignment.center
-          : LyricContentAlignment.start,
-      padding: const EdgeInsets.fromLTRB(8, 24, 8, 36),
-      lineSpacing: isDesktop ? 20 : 36,
-      translationSpacing: 8,
-      highlight: LyricHighlight.solid(activeColor),
-      selectedTextColor: const Color.fromARGB(255, 168, 168, 168),
-      selectedTranslationTextColor: const Color.fromARGB(255, 168, 168, 168),
-      activeAnchor: const LyricAnchor.fraction(
-        0.42,
-        target: LyricAnchorTarget.mainText,
+      activeTranslationTextStyle: preset.activeTranslationTextStyle.copyWith(
+        color: colors.primary,
       ),
-      selectionAnchor: const LyricAnchor.fraction(0.42),
-      edgeFade: const LyricEdgeFade.fraction(top: 0.42, bottom: 0.8),
-      lineTransition: const LyricLineTransition.none(),
-      selectionSnapMode: LyricSelectionSnapMode.onDragPause,
+      selectedTextColor: colors.onSurface,
+      selectedTranslationTextColor: colors.onSurface,
+      highlight: LyricHighlight.solid(
+        colors.primary,
+        tailFadeWidth: preset.highlight.tailFadeWidth,
+      ),
+      countdown: preset.countdown.copyWith(color: colors.primary),
       selectionForegroundBuilder:
           (BuildContext context, LyricSelectionDetails details) {
             return _PlayerLyricSelectionProgress(
@@ -282,10 +260,6 @@ class _PlayerLyricPanelState extends ConsumerState<PlayerLyricPanel> {
             );
           },
     );
-  }
-
-  Color _resolveAccentColor(BuildContext context) {
-    return widget.activeColor ?? Theme.of(context).colorScheme.primary;
   }
 }
 

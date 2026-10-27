@@ -5,8 +5,10 @@ import 'package:bilimusic/feature/metadata/logic/metadata_controller.dart';
 import 'package:bilimusic/feature/player/domain/playable_item.dart';
 import 'package:bilimusic/feature/player/domain/player_state.dart';
 import 'package:bilimusic/feature/player/logic/player_controller.dart';
+import 'package:bilimusic/feature/player/logic/player_cover_color_provider.dart';
 import 'package:bilimusic/feature/player/logic/player_cover_settings_logic.dart';
 import 'package:bilimusic/feature/player/logic/sleep_timer_controller.dart';
+import 'package:bilimusic/feature/player/ui/components/player_lyric_panel.dart';
 import 'package:bilimusic/feature/player/ui/player_page.dart';
 import 'package:bilimusic/feature/player/ui/sleep_timer_page.dart';
 import 'package:flutter/material.dart';
@@ -32,6 +34,56 @@ const PlayableItem _testItem = PlayableItem(
 );
 
 void main() {
+  testWidgets('lyric page receives live cover colors and accepts no palette', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          favoritesControllerProvider.overrideWith(
+            _FakeFavoritesController.new,
+          ),
+          playerControllerProvider.overrideWith(
+            () => _FakePlayerController(_testItem),
+          ),
+          metadataControllerProvider.overrideWith(
+            () => _FakeMetadataController(_testItem),
+          ),
+          playerCoverColorControllerProvider.overrideWith(
+            _FakeCoverColorController.new,
+          ),
+          playerCoverSettingsLogicProvider.overrideWithValue(true),
+        ],
+        child: const MaterialApp(home: PlayerPage(initialItem: _testItem)),
+      ),
+    );
+    await tester.pump();
+    await tester.fling(find.byType(PageView), const Offset(-400, 0), 1000);
+    await tester.pumpAndSettle();
+    expect(
+      tester
+          .widget<PlayerLyricPanel>(find.byType(PlayerLyricPanel))
+          .activeColor,
+      isNull,
+    );
+    final ProviderContainer container = ProviderScope.containerOf(
+      tester.element(find.byType(PlayerPage)),
+    );
+    final _FakeCoverColorController colors =
+        container.read(playerCoverColorControllerProvider.notifier)
+            as _FakeCoverColorController;
+    for (final Color color in <Color>[Colors.cyan, Colors.red]) {
+      colors.setColor(color);
+      await tester.pumpAndSettle();
+      expect(
+        tester
+            .widget<PlayerLyricPanel>(find.byType(PlayerLyricPanel))
+            .activeColor,
+        color,
+      );
+    }
+  });
+
   testWidgets('player page shows swipe indicator and meta page', (
     WidgetTester tester,
   ) async {
@@ -175,6 +227,13 @@ void main() {
     container.read(sleepTimerControllerProvider.notifier).cancel();
     await tester.pump();
   });
+}
+
+class _FakeCoverColorController extends PlayerCoverColorController {
+  @override
+  Color? build() => null;
+
+  void setColor(Color color) => state = color;
 }
 
 class _FakeFavoritesController extends FavoritesController {
