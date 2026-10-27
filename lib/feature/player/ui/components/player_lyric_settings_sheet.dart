@@ -170,7 +170,7 @@ class _PlayerLyricSettingsPanelState
                 child: Text(
                   MediaQuery.disableAnimationsOf(context)
                       ? '系统已开启减少动态效果，歌词动效将关闭。'
-                      : '修改后自动保存，应用于所有歌曲。',
+                      : '',
                   style: theme.textTheme.bodySmall,
                 ),
               ),
@@ -188,16 +188,7 @@ class _PlayerLyricSettingsPanelState
   );
 
   List<Widget> _typography() => <Widget>[
-    _section('歌词文字', '当前句指正在播放的歌词；未单独调整的字号会沿用正文。'),
-    _slider(
-      'lyricFontScale',
-      '正文大小',
-      _draft.fontScale,
-      10 / 30,
-      1.6,
-      (double v) => _draft.copyWith(fontScale: v),
-      display: '${(30 * _draft.fontScale).round()} px',
-    ),
+    _section('歌词文字', '当前句指正在播放的歌词。'),
     _slider(
       'lyricActiveFontSize',
       '当前句大小',
@@ -481,11 +472,10 @@ class _PlayerLyricSettingsPanelState
     double max,
     PlayerLyricSettings Function(double) change, {
     bool percent = false,
-    String? display,
   }) {
     String format(double v) =>
         percent ? '${(v * 100).round()}%' : '${v.round()} px';
-    final String formatted = display ?? format(value);
+    final String formatted = format(value);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
@@ -498,9 +488,7 @@ class _PlayerLyricSettingsPanelState
             min: min,
             max: max,
             label: formatted,
-            semanticFormatterCallback: key == 'lyricFontScale'
-                ? (double v) => '${(v * 30).round()} px'
-                : format,
+            semanticFormatterCallback: format,
             onChanged: _saving
                 ? null
                 : (double v) => setState(() => _draft = change(v)),

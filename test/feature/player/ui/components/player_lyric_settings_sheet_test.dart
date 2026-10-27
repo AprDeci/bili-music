@@ -28,6 +28,8 @@ void main() {
     expect(find.textContaining('预设'), findsNothing);
     expect(find.textContaining('Apple Music'), findsNothing);
     expect(find.text('显示译文'), findsNothing);
+    expect(find.textContaining('正文大小'), findsNothing);
+    expect(find.byKey(const Key('lyricFontScale')), findsNothing);
     expect(find.byType(SwitchListTile), findsNothing);
     expect(_preview(tester).preset!.interactive, isFalse);
     expect(
@@ -38,7 +40,6 @@ void main() {
     final Rect previewBounds = tester.getRect(find.byType(LyricView));
     final LyricController previewController = _preview(tester).controller;
     for (final (String key, double value) in <(String, double)>[
-      ('lyricFontScale', 1),
       ('lyricActiveFontSize', 30),
       ('lyricTextOpacity', 0.6),
       ('lyricActiveTextOpacity', 0.6),
@@ -78,20 +79,16 @@ void main() {
   testWidgets('previews typography drafts and automatically saves on release', (
     WidgetTester tester,
   ) async {
-    final _SettingsLogic logic = _SettingsLogic();
+    final _SettingsLogic logic = _SettingsLogic(
+      initial: const PlayerLyricSettings(fontScale: 1.3),
+    );
     final ProviderContainer container = await _pumpHost(tester, logic);
     await _open(tester);
 
-    _slider(tester, 'lyricFontScale').onChanged!(1.3);
-    await tester.pump();
-    expect(find.text('正文大小 · 39 px'), findsOneWidget);
     expect(_preview(tester).preset!.textStyle.fontSize, 39);
     expect(_activeTextStyle(tester).fontSize, 39);
-    expect(container.read(playerLyricSettingsLogicProvider).fontScale, 1);
+    expect(_slider(tester, 'lyricActiveFontSize').value, 39);
     expect(logic.updates, isEmpty);
-    _slider(tester, 'lyricFontScale').onChangeEnd!(1.3);
-    await tester.pump();
-    expect(container.read(playerLyricSettingsLogicProvider).fontScale, 1.3);
 
     final List<
       (
@@ -181,11 +178,12 @@ void main() {
     final PlayerLyricSettings saved = container.read(
       playerLyricSettingsLogicProvider,
     );
+    expect(saved.fontScale, 1.3);
     final LyricPreset savedPreview = _preview(tester).preset!;
     await _close(tester);
     await _open(tester);
     expect(container.read(playerLyricSettingsLogicProvider), saved);
-    expect(find.text('正文大小 · 39 px'), findsOneWidget);
+    expect(find.text('当前句大小 · 44 px'), findsOneWidget);
     expect(_preview(tester).preset!, savedPreview);
     for (final (key, value, _, _) in edits) {
       await _reveal(tester, find.byKey(Key(key)));
@@ -581,8 +579,6 @@ void main() {
         LyricPresets.appleMusic.lineMotion,
       );
       await _tap(tester, find.text('文字'));
-      await _reveal(tester, find.byKey(const Key('lyricFontScale')));
-      expect(_slider(tester, 'lyricFontScale').value, 1);
       await _reveal(tester, find.byKey(const Key('lyricActiveFontSize')));
       expect(_slider(tester, 'lyricActiveFontSize').value, 30);
       await _tap(tester, find.text('布局'));
@@ -595,7 +591,7 @@ void main() {
         container.read(playerLyricSettingsLogicProvider),
         const PlayerLyricSettings(),
       );
-      expect(_slider(tester, 'lyricFontScale').value, 1);
+      expect(_slider(tester, 'lyricActiveFontSize').value, 30);
       expect(_preview(tester).preset!.textAlign, TextAlign.start);
     },
   );
@@ -614,17 +610,17 @@ void main() {
     await _open(tester);
     logic.failUpdates = true;
 
-    _slider(tester, 'lyricFontScale').onChanged!(1.5);
+    _slider(tester, 'lyricActiveFontSize').onChanged!(50);
     await tester.pump();
-    expect(_preview(tester).preset!.textStyle.fontSize, 45);
-    _slider(tester, 'lyricFontScale').onChangeEnd!(1.5);
+    expect(_activeTextStyle(tester).fontSize, 50);
+    _slider(tester, 'lyricActiveFontSize').onChangeEnd!(50);
     await tester.pump();
     expect(find.text('歌词外观保存失败，请重试'), findsOneWidget);
     expect(container.read(playerLyricSettingsLogicProvider), saved);
-    expect(find.text('正文大小 · 36 px'), findsOneWidget);
+    expect(find.text('当前句大小 · 44 px'), findsOneWidget);
     expect(_preview(tester).preset!.textStyle.fontSize, 36);
     expect(_activeTextStyle(tester).fontSize, 44);
-    expect(_slider(tester, 'lyricFontScale').value, 1.2);
+    expect(_slider(tester, 'lyricActiveFontSize').value, 44);
 
     await _choose(
       tester,
