@@ -2,6 +2,7 @@ import 'package:bilimusic/common/bm_icons.dart';
 import 'package:bilimusic/common/components/badged_icon_button.dart';
 import 'package:bilimusic/feature/player/domain/audio_stream_info.dart';
 import 'package:bilimusic/feature/player/domain/playable_item.dart';
+import 'package:bilimusic/feature/player/domain/player_display_info.dart';
 import 'package:bilimusic/feature/player/domain/player_online_audience.dart';
 import 'package:bilimusic/feature/player/domain/player_state.dart';
 import 'package:bilimusic/feature/player/logic/player_controller.dart';
@@ -23,18 +24,14 @@ class PlayerMainPage extends ConsumerWidget {
     super.key,
     required this.state,
     required this.item,
-    required this.displayCoverUrl,
-    required this.displayTitle,
-    required this.displayArtist,
-    required this.usesMetadataArtist,
+    required this.display,
     required this.commentCount,
     required this.availableParts,
     required this.onPartTap,
     required this.onOpenCollectionSheet,
     required this.isFavorite,
     required this.onFavoriteToggle,
-    required this.canToggleCover,
-    required this.onToggleCover,
+    required this.onToggleSource,
     required this.onSeek,
     required this.onToggleQueueMode,
     required this.onBackward,
@@ -46,18 +43,14 @@ class PlayerMainPage extends ConsumerWidget {
 
   final PlayerState state;
   final PlayableItem? item;
-  final String? displayCoverUrl;
-  final String? displayTitle;
-  final String? displayArtist;
-  final bool usesMetadataArtist;
+  final PlayerDisplayInfo display;
   final int? commentCount;
   final List<PlayableItem> availableParts;
   final VoidCallback? onPartTap;
   final VoidCallback? onOpenCollectionSheet;
   final bool isFavorite;
   final VoidCallback? onFavoriteToggle;
-  final bool canToggleCover;
-  final VoidCallback onToggleCover;
+  final VoidCallback onToggleSource;
   final ValueChanged<double> onSeek;
   final VoidCallback onToggleQueueMode;
   final VoidCallback onBackward;
@@ -91,15 +84,11 @@ class PlayerMainPage extends ConsumerWidget {
           child: _PlayerHeroAndTitle(
             artworkSize: artworkSize,
             item: item,
-            displayCoverUrl: displayCoverUrl,
-            displayTitle: displayTitle,
-            displayArtist: displayArtist,
-            usesMetadataArtist: usesMetadataArtist,
+            display: display,
             isFavorite: isFavorite,
             onlineAudienceLabel: onlineAudienceLabel,
             onFavoriteToggle: onFavoriteToggle,
-            canToggleCover: canToggleCover,
-            onToggleCover: onToggleCover,
+            onToggleSource: onToggleSource,
           ),
         ),
         const Spacer(),
@@ -156,28 +145,20 @@ class _PlayerHeroAndTitle extends StatelessWidget {
   const _PlayerHeroAndTitle({
     required this.artworkSize,
     required this.item,
-    required this.displayCoverUrl,
-    required this.displayTitle,
-    required this.displayArtist,
-    required this.usesMetadataArtist,
+    required this.display,
     required this.isFavorite,
     required this.onlineAudienceLabel,
     required this.onFavoriteToggle,
-    required this.canToggleCover,
-    required this.onToggleCover,
+    required this.onToggleSource,
   });
 
   final double artworkSize;
   final PlayableItem? item;
-  final String? displayCoverUrl;
-  final String? displayTitle;
-  final String? displayArtist;
-  final bool usesMetadataArtist;
+  final PlayerDisplayInfo display;
   final bool isFavorite;
   final String? onlineAudienceLabel;
   final VoidCallback? onFavoriteToggle;
-  final bool canToggleCover;
-  final VoidCallback onToggleCover;
+  final VoidCallback onToggleSource;
 
   @override
   Widget build(BuildContext context) {
@@ -192,10 +173,10 @@ class _PlayerHeroAndTitle extends StatelessWidget {
             child: Stack(
               children: <Widget>[
                 GestureDetector(
-                  onDoubleTap: canToggleCover ? onToggleCover : null,
+                  onDoubleTap: display.canToggleSource ? onToggleSource : null,
                   child: Hero(
                     tag: 'artwork',
-                    child: PlayerArtworkFrame(coverUrl: displayCoverUrl ?? ''),
+                    child: PlayerArtworkFrame(coverUrl: display.coverUrl ?? ''),
                   ),
                 ),
               ],
@@ -204,16 +185,14 @@ class _PlayerHeroAndTitle extends StatelessWidget {
         ),
         const SizedBox(height: 28),
         PlayerTrackHeader(
-          title: displayTitle ?? '还没有选择播放内容',
-          subtitle: item == null
+          title: display.title ?? '还没有选择播放内容',
+          subtitle: display.stableId == null
               ? '从搜索页选一条视频或音频后，这里会显示当前播放信息。'
-              : displayArtist ?? '',
+              : display.artist ?? '',
           isFavoriteEnabled: item != null,
           isFavorite: isFavorite,
           onFavoriteToggle: onFavoriteToggle,
-          onSubtitleTap: usesMetadataArtist
-              ? null
-              : _buildUpTapHandler(context, item),
+          onSubtitleTap: _buildUpTapHandler(context, display.artistUpMid),
         ),
         if (onlineAudienceLabel != null) ...<Widget>[
           const SizedBox(height: 12),
@@ -223,8 +202,7 @@ class _PlayerHeroAndTitle extends StatelessWidget {
     );
   }
 
-  VoidCallback? _buildUpTapHandler(BuildContext context, PlayableItem? item) {
-    final int? ownerMid = item?.ownerMid;
+  VoidCallback? _buildUpTapHandler(BuildContext context, int? ownerMid) {
     if (ownerMid == null || ownerMid <= 0) {
       return null;
     }

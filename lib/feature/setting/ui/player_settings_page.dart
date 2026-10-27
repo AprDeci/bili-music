@@ -6,7 +6,7 @@ import 'package:bilimusic/feature/meting/logic/meting_source_preference_logic.da
 import 'package:bilimusic/feature/meting/ui/meting_source_rule_dialog.dart';
 import 'package:bilimusic/feature/player/domain/player_audio_quality_preference.dart';
 import 'package:bilimusic/feature/player/logic/player_audio_quality_preference_logic.dart';
-import 'package:bilimusic/feature/player/logic/player_cover_settings_logic.dart';
+import 'package:bilimusic/feature/player/logic/player_display_settings_logic.dart';
 import 'package:bilimusic/feature/player/logic/player_controller.dart';
 import 'package:bilimusic/feature/player/logic/player_settings_logic.dart';
 import 'package:flutter/material.dart';
@@ -20,7 +20,7 @@ class PlayerSettingsPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final ThemeData theme = Theme.of(context);
     final bool allowMixWithOthers = ref.watch(playerSettingsLogicProvider);
-    final bool useMetadataCover = ref.watch(playerCoverSettingsLogicProvider);
+    final bool preferMetadata = ref.watch(playerDisplaySettingsLogicProvider);
     final PlayerAudioQualityPreference audioQualityPreference = ref.watch(
       playerAudioQualityPreferenceLogicProvider,
     );
@@ -55,11 +55,11 @@ class PlayerSettingsPage extends ConsumerWidget {
               '默认显示元信息中的封面、歌曲名和歌手，双击封面可切换为 B站信息',
               style: theme.textTheme.bodySmall,
             ),
-            value: useMetadataCover,
+            value: preferMetadata,
             onChanged: (bool value) async {
               await ref
-                  .read(playerCoverSettingsLogicProvider.notifier)
-                  .setUseMetadataCover(value);
+                  .read(playerDisplaySettingsLogicProvider.notifier)
+                  .setPreferMetadata(value);
             },
           ),
           ListTile(

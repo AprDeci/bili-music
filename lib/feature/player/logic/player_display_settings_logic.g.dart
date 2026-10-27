@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of 'player_cover_settings_logic.dart';
+part of 'player_display_settings_logic.dart';
 
 // **************************************************************************
 // RiverpodGenerator
@@ -9,28 +9,29 @@ part of 'player_cover_settings_logic.dart';
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
 
-@ProviderFor(PlayerCoverSettingsLogic)
-final playerCoverSettingsLogicProvider = PlayerCoverSettingsLogicProvider._();
+@ProviderFor(PlayerDisplaySettingsLogic)
+final playerDisplaySettingsLogicProvider =
+    PlayerDisplaySettingsLogicProvider._();
 
-final class PlayerCoverSettingsLogicProvider
-    extends $NotifierProvider<PlayerCoverSettingsLogic, bool> {
-  PlayerCoverSettingsLogicProvider._()
+final class PlayerDisplaySettingsLogicProvider
+    extends $NotifierProvider<PlayerDisplaySettingsLogic, bool> {
+  PlayerDisplaySettingsLogicProvider._()
     : super(
         from: null,
         argument: null,
         retry: null,
-        name: r'playerCoverSettingsLogicProvider',
+        name: r'playerDisplaySettingsLogicProvider',
         isAutoDispose: true,
         dependencies: null,
         $allTransitiveDependencies: null,
       );
 
   @override
-  String debugGetCreateSourceHash() => _$playerCoverSettingsLogicHash();
+  String debugGetCreateSourceHash() => _$playerDisplaySettingsLogicHash();
 
   @$internal
   @override
-  PlayerCoverSettingsLogic create() => PlayerCoverSettingsLogic();
+  PlayerDisplaySettingsLogic create() => PlayerDisplaySettingsLogic();
 
   /// {@macro riverpod.override_with_value}
   Override overrideWithValue(bool value) {
@@ -41,10 +42,10 @@ final class PlayerCoverSettingsLogicProvider
   }
 }
 
-String _$playerCoverSettingsLogicHash() =>
-    r'4aa47c56a22e2b7e3d249607d81fb9da228b23ae';
+String _$playerDisplaySettingsLogicHash() =>
+    r'2abb5bcb8c1ec8783faeacc38c2794901a8d30c0';
 
-abstract class _$PlayerCoverSettingsLogic extends $Notifier<bool> {
+abstract class _$PlayerDisplaySettingsLogic extends $Notifier<bool> {
   bool build();
   @$mustCallSuper
   @override

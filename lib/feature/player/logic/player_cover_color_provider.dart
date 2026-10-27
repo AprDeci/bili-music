@@ -2,16 +2,10 @@ import 'dart:async';
 
 import 'package:adaptive_palette/adaptive_palette.dart';
 import 'package:bilimusic/core/cache/cache_util.dart';
-import 'package:bilimusic/feature/metadata/domain/metadata_state.dart';
-import 'package:bilimusic/feature/metadata/logic/metadata_controller.dart';
-import 'package:bilimusic/feature/player/domain/playable_item.dart';
-import 'package:bilimusic/feature/player/domain/player_state.dart';
-import 'package:bilimusic/feature/player/logic/player_controller.dart';
-import 'package:bilimusic/feature/player/logic/player_cover_logic.dart';
-import 'package:bilimusic/feature/player/logic/player_cover_settings_logic.dart';
-import 'package:bilimusic/feature/player/logic/utils/player_display_metadata.dart';
+import 'package:bilimusic/feature/player/logic/player_display_provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'player_cover_color_provider.g.dart';
@@ -25,35 +19,19 @@ class PlayerCoverColorController extends _$PlayerCoverColorController {
 
   @override
   Color? build() {
-    ref.listen<PlayerState>(playerControllerProvider, (
-      PlayerState? previous,
-      PlayerState next,
-    ) {
-      if (previous?.currentItem?.stableId == next.currentItem?.stableId) {
-        return;
-      }
-
-      _scheduleUseCurrentCoverUrl();
-    }, fireImmediately: true);
-
-    ref.listen<MetadataState>(metadataControllerProvider, (
-      MetadataState? previous,
-      MetadataState next,
-    ) {
-      if (previous?.metadata?.albumArtUrl == next.metadata?.albumArtUrl &&
-          previous?.stableId == next.stableId) {
-        return;
-      }
-
-      _scheduleUseCurrentCoverUrl();
-    }, fireImmediately: true);
-
-    ref.listen<bool>(playerCoverSettingsLogicProvider, (_, _) {
-      _scheduleUseCurrentCoverUrl();
-    });
-    ref.listen<bool?>(playerCoverLogicProvider, (_, _) {
-      _scheduleUseCurrentCoverUrl();
-    });
+    ref.listen<String?>(
+      playerDisplayProvider.select((display) => display.coverUrl),
+      (_, coverUrl) {
+        unawaited(
+          Future<void>(() {
+            if (ref.mounted) {
+              _useCoverUrl(coverUrl);
+            }
+          }),
+        );
+      },
+      fireImmediately: true,
+    );
 
     return null;
   }
@@ -62,35 +40,6 @@ class PlayerCoverColorController extends _$PlayerCoverColorController {
 
   Color? getCurrentColor() {
     return state;
-  }
-
-  void _scheduleUseCurrentCoverUrl() {
-    unawaited(
-      Future<void>(() {
-        _useCoverUrl(_resolveCurrentCoverUrl());
-      }),
-    );
-  }
-
-  String? _resolveCurrentCoverUrl() {
-    final PlayableItem? item = ref.read(playerControllerProvider).currentItem;
-    if (item == null) {
-      return null;
-    }
-
-    final MetadataState metadataState = ref.read(metadataControllerProvider);
-    final bool defaultUseMetadataCover = ref.read(
-      playerCoverSettingsLogicProvider,
-    );
-    final bool useMetadataCover =
-        ref.read(playerCoverLogicProvider) ?? defaultUseMetadataCover;
-    return resolveDisplayCoverUrl(
-      item: item,
-      metadata: metadataState.stableId == item.stableId
-          ? metadataState.metadata
-          : null,
-      useMetadataCover: useMetadataCover,
-    );
   }
 
   void _useCoverUrl(String? coverUrl) {

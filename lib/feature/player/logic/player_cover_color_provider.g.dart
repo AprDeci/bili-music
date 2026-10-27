@@ -43,7 +43,7 @@ final class PlayerCoverColorControllerProvider
 }
 
 String _$playerCoverColorControllerHash() =>
-    r'3fb5bcdf52782a7433076ffad0ab6dfccc903fb6';
+    r'6e93bdc34fc8514c022eaa0f2b2a26c5a11022a9';
 
 abstract class _$PlayerCoverColorController extends $Notifier<Color?> {
   Color? build();

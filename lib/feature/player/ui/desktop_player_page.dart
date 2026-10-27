@@ -21,8 +21,9 @@ import 'package:bilimusic/feature/player/logic/desktop_lyrics_controller.dart';
 import 'package:bilimusic/feature/player/logic/player_lyric_settings_logic.dart';
 import 'package:bilimusic/feature/player/logic/player_controller.dart';
 import 'package:bilimusic/feature/player/logic/player_cover_color_provider.dart';
-import 'package:bilimusic/feature/player/logic/player_cover_logic.dart';
-import 'package:bilimusic/feature/player/logic/player_cover_settings_logic.dart';
+import 'package:bilimusic/feature/player/domain/player_display_info.dart';
+import 'package:bilimusic/feature/player/logic/player_display_provider.dart';
+import 'package:bilimusic/feature/player/logic/player_display_source_logic.dart';
 import 'package:bilimusic/feature/player/ui/components/desktop/play_pause_button.dart';
 import 'package:bilimusic/feature/player/ui/components/desktop/quality_attach.dart';
 import 'package:bilimusic/feature/player/ui/components/desktop/queue_mode_attach.dart';
@@ -114,11 +115,7 @@ class _DesktopPlayerPageState extends ConsumerState<DesktopPlayerPage> {
         : false;
     final ColorScheme colorScheme = Theme.of(context).colorScheme;
     final Color? coverColor = ref.watch(playerCoverColorControllerProvider);
-    final bool defaultUseMetadataCover = ref.watch(
-      playerCoverSettingsLogicProvider,
-    );
-    final bool useMetadataCover =
-        ref.watch(playerCoverLogicProvider) ?? defaultUseMetadataCover;
+    final PlayerDisplayInfo display = ref.watch(playerDisplayProvider);
     final bool isDesktopLyricsEnabled = ref.watch(
       desktopLyricsControllerProvider,
     );
@@ -181,21 +178,14 @@ class _DesktopPlayerPageState extends ConsumerState<DesktopPlayerPage> {
                   child: _DesktopPlayerHeroSection(
                     state: state,
                     item: item,
-                    metadataState: metadataState,
+                    display: display,
                     onSeek: controller.seek,
                     activeColor: coverColor,
                     showTranslation: showTranslation,
-                    useMetadataCover: useMetadataCover,
-                    canToggleCover: hasSwitchableDisplay(
-                      item: item,
-                      metadata: metadataState.metadata,
-                    ),
-                    onToggleCover: () {
+                    onToggleSource: () {
                       ref
-                          .read(playerCoverLogicProvider.notifier)
-                          .toggle(
-                            defaultUseMetadataCover: defaultUseMetadataCover,
-                          );
+                          .read(playerDisplaySourceLogicProvider.notifier)
+                          .toggle();
                     },
                   ),
                 ),
@@ -403,31 +393,27 @@ class _DesktopPlayerTopBarState extends State<_DesktopPlayerTopBar>
   }
 }
 
-class _DesktopPlayerHeroSection extends ConsumerWidget {
+class _DesktopPlayerHeroSection extends StatelessWidget {
   const _DesktopPlayerHeroSection({
     required this.state,
     required this.item,
-    required this.metadataState,
+    required this.display,
     required this.onSeek,
     required this.showTranslation,
-    required this.useMetadataCover,
-    required this.canToggleCover,
-    required this.onToggleCover,
+    required this.onToggleSource,
     this.activeColor,
   });
 
   final PlayerState state;
   final PlayableItem? item;
-  final MetadataState metadataState;
+  final PlayerDisplayInfo display;
   final ValueChanged<Duration> onSeek;
   final bool showTranslation;
-  final bool useMetadataCover;
-  final bool canToggleCover;
-  final VoidCallback onToggleCover;
+  final VoidCallback onToggleSource;
   final Color? activeColor;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
         final double artworkSize = (constraints.maxHeight * 0.4).clamp(
@@ -451,14 +437,10 @@ class _DesktopPlayerHeroSection extends ConsumerWidget {
                   width: artworkSize,
                   height: artworkSize,
                   child: GestureDetector(
-                    onDoubleTap: canToggleCover ? onToggleCover : null,
-                    child: _DesktopArtwork(
-                      coverUrl: resolveDisplayCoverUrl(
-                        item: item,
-                        metadata: metadataState.metadata,
-                        useMetadataCover: useMetadataCover,
-                      ),
-                    ),
+                    onDoubleTap: display.canToggleSource
+                        ? onToggleSource
+                        : null,
+                    child: _DesktopArtwork(coverUrl: display.coverUrl),
                   ),
                 ),
                 SizedBox(width: contentGap),

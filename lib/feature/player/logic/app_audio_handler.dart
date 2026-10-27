@@ -60,17 +60,12 @@ class AppAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler {
   }
 
   @override
-  Future<void> updateQueue(List<MediaItem> items) async {
-    queue.add(List<MediaItem>.unmodifiable(items));
+  Future<void> updateQueue(List<MediaItem> queue) async {
+    this.queue.add(List<MediaItem>.unmodifiable(queue));
   }
 
   void updateCurrentMediaItem(MediaItem? item) {
     mediaItem.add(item);
-  }
-
-  void clearSession() {
-    queue.add(const <MediaItem>[]);
-    mediaItem.add(null);
   }
 
   void updatePlaybackSnapshot({
@@ -80,7 +75,7 @@ class AppAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler {
     required bool hasNext,
     required Duration position,
     required Duration bufferedPosition,
-    required Duration? duration,
+    required int? queueIndex,
     required double speed,
     required AudioProcessingState processingState,
   }) {
@@ -110,29 +105,9 @@ class AppAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler {
         updatePosition: position,
         bufferedPosition: bufferedPosition,
         speed: speed,
-        queueIndex: queue.value.isEmpty ? null : _resolveQueueIndex(),
+        queueIndex: queueIndex,
       ),
     );
-
-    final MediaItem? current = mediaItem.value;
-    if (current != null && duration != null && current.duration != duration) {
-      mediaItem.add(current.copyWith(duration: duration));
-    }
-  }
-
-  int? _resolveQueueIndex() {
-    final MediaItem? current = mediaItem.value;
-    if (current == null) {
-      return null;
-    }
-
-    final List<MediaItem> items = queue.value;
-    for (int index = 0; index < items.length; index++) {
-      if (items[index].id == current.id) {
-        return index;
-      }
-    }
-    return null;
   }
 
   List<int> _compactActionIndices(List<MediaControl> controls) {

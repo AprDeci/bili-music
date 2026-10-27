@@ -8,7 +8,7 @@ import 'package:bilimusic/feature/player/domain/player_state.dart';
 import 'package:bilimusic/feature/player/logic/desktop_lyrics_controller.dart';
 import 'package:bilimusic/feature/player/logic/player_controller.dart';
 import 'package:bilimusic/feature/player/logic/player_cover_color_provider.dart';
-import 'package:bilimusic/feature/player/logic/player_cover_settings_logic.dart';
+import 'package:bilimusic/feature/player/logic/player_display_settings_logic.dart';
 import 'package:bilimusic/feature/player/logic/player_lyric_settings_logic.dart';
 import 'package:bilimusic/feature/player/logic/sleep_timer_controller.dart';
 import 'package:bilimusic/feature/player/ui/components/player_lyric_panel.dart';
@@ -72,7 +72,7 @@ void main() {
             playerLyricSettingsLogicProvider.overrideWith(
               _FakeLyricSettingsLogic.new,
             ),
-            playerCoverSettingsLogicProvider.overrideWithValue(true),
+            playerDisplaySettingsLogicProvider.overrideWithValue(true),
             desktopLyricsControllerProvider.overrideWithValue(false),
           ],
           child: const MaterialApp(
@@ -123,7 +123,7 @@ void main() {
           playerLyricSettingsLogicProvider.overrideWith(
             _FakeLyricSettingsLogic.new,
           ),
-          playerCoverSettingsLogicProvider.overrideWithValue(true),
+          playerDisplaySettingsLogicProvider.overrideWithValue(true),
         ],
         child: const MaterialApp(home: PlayerPage(initialItem: _testItem)),
       ),
@@ -184,7 +184,7 @@ void main() {
           playerLyricSettingsLogicProvider.overrideWith(
             _FakeLyricSettingsLogic.new,
           ),
-          playerCoverSettingsLogicProvider.overrideWithValue(true),
+          playerDisplaySettingsLogicProvider.overrideWithValue(true),
         ],
         child: MaterialApp(home: PlayerPage(initialItem: item)),
       ),
@@ -220,7 +220,7 @@ void main() {
           playerLyricSettingsLogicProvider.overrideWith(
             _FakeLyricSettingsLogic.new,
           ),
-          playerCoverSettingsLogicProvider.overrideWithValue(true),
+          playerDisplaySettingsLogicProvider.overrideWithValue(true),
         ],
         child: MaterialApp(home: PlayerPage(initialItem: item)),
       ),
@@ -260,7 +260,7 @@ void main() {
           playerLyricSettingsLogicProvider.overrideWith(
             _FakeLyricSettingsLogic.new,
           ),
-          playerCoverSettingsLogicProvider.overrideWithValue(true),
+          playerDisplaySettingsLogicProvider.overrideWithValue(true),
         ],
         child: const MaterialApp(home: PlayerPage(initialItem: _testItem)),
       ),

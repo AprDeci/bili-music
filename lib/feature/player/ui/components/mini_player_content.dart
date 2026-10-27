@@ -1,12 +1,9 @@
 import 'dart:math';
 
 import 'package:bilimusic/common/components/cached_image.dart';
-import 'package:bilimusic/feature/metadata/domain/metadata_state.dart';
-import 'package:bilimusic/feature/metadata/logic/metadata_controller.dart';
+import 'package:bilimusic/feature/player/domain/player_display_info.dart';
 import 'package:bilimusic/feature/player/domain/player_state.dart';
-import 'package:bilimusic/feature/player/logic/player_cover_logic.dart';
-import 'package:bilimusic/feature/player/logic/player_cover_settings_logic.dart';
-import 'package:bilimusic/feature/player/logic/utils/player_display_metadata.dart';
+import 'package:bilimusic/feature/player/logic/player_display_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -26,26 +23,12 @@ class MiniPlayerContent extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
-    final MetadataState metadataState = ref.watch(metadataControllerProvider);
-    final bool defaultUseMetadataCover = ref.watch(
-      playerCoverSettingsLogicProvider,
-    );
-    final bool useMetadataCover =
-        ref.watch(playerCoverLogicProvider) ?? defaultUseMetadataCover;
+    final PlayerDisplayInfo display = ref.watch(playerDisplayProvider);
     final String subtitle = buildMiniPlayerSubtitle(
       state,
-      displayArtist: resolveDisplayArtist(
-        item: state.currentItem,
-        metadata: metadataState.metadata,
-        useMetadata: useMetadataCover,
-      ),
+      displayArtist: display.artist,
     );
     final double progress = buildMiniPlayerProgress(state);
-    final String? displayCoverUrl = resolveDisplayCoverUrl(
-      item: state.currentItem,
-      metadata: metadataState.metadata,
-      useMetadataCover: useMetadataCover,
-    );
 
     return Padding(
       padding: padding,
@@ -53,7 +36,7 @@ class MiniPlayerContent extends ConsumerWidget {
         children: <Widget>[
           Hero(
             tag: 'artwork',
-            child: MiniPlayerArtwork(coverUrl: displayCoverUrl),
+            child: MiniPlayerArtwork(coverUrl: display.coverUrl),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -62,12 +45,7 @@ class MiniPlayerContent extends ConsumerWidget {
               mainAxisSize: MainAxisSize.min,
               children: <Widget>[
                 Text(
-                  resolveDisplayTitle(
-                        item: state.currentItem,
-                        metadata: metadataState.metadata,
-                        useMetadata: useMetadataCover,
-                      ) ??
-                      '未选择播放内容',
+                  display.title ?? '未选择播放内容',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: theme.textTheme.titleSmall?.copyWith(
@@ -106,7 +84,7 @@ String buildMiniPlayerSubtitle(PlayerState state, {String? displayArtist}) {
     PlayerStatusHint.loadingCache => '正在加载缓存音频...',
     PlayerStatusHint.buffering => '缓冲中...',
     PlayerStatusHint.error => state.errorMessage ?? '播放失败，请稍后重试',
-    null => displayArtist ?? state.currentItem?.author ?? '',
+    null => displayArtist ?? '',
   };
 }
 

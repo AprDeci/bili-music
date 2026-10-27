@@ -1,71 +1,40 @@
 import 'package:bilimusic/common/domain/meta_lyrics.dart';
 import 'package:bilimusic/feature/metadata/domain/metadata.dart';
 import 'package:bilimusic/feature/player/domain/playable_item.dart';
+import 'package:bilimusic/feature/player/domain/player_display_info.dart';
 
-String? resolveDisplayTitle({
+PlayerDisplayInfo resolvePlayerDisplayInfo({
   required PlayableItem? item,
   required Metadata? metadata,
-  required bool useMetadata,
+  required PlayerDisplaySource source,
 }) {
-  final String title = useMetadata
-      ? _metadataForItem(item, metadata)?.title?.trim() ?? ''
-      : '';
-  return title.isNotEmpty ? title : item?.title;
-}
-
-String? resolveDisplayArtist({
-  required PlayableItem? item,
-  required Metadata? metadata,
-  required bool useMetadata,
-}) {
-  final String artist = useMetadata
-      ? _metadataForItem(item, metadata)?.artist?.trim() ?? ''
-      : '';
-  return artist.isNotEmpty ? artist : item?.author;
-}
-
-bool usesMetadataArtist({
-  required PlayableItem? item,
-  required Metadata? metadata,
-  required bool useMetadata,
-}) {
-  return useMetadata &&
-      (_metadataForItem(item, metadata)?.artist?.trim().isNotEmpty ?? false);
-}
-
-String? resolveDisplayCoverUrl({
-  required PlayableItem? item,
-  required Metadata? metadata,
-  required bool useMetadataCover,
-}) {
-  if (useMetadataCover) {
-    final String metadataCoverUrl =
-        _metadataForItem(item, metadata)?.albumArtUrl?.trim() ?? '';
-    if (metadataCoverUrl.isNotEmpty) {
-      return metadataCoverUrl;
-    }
+  if (item == null) {
+    return PlayerDisplayInfo(source: source);
   }
+  final Metadata? matchedMetadata = metadata?.stableId == item.stableId
+      ? metadata
+      : null;
+  final String title = matchedMetadata?.title?.trim() ?? '';
+  final String artist = matchedMetadata?.artist?.trim() ?? '';
+  final String coverUrl = matchedMetadata?.albumArtUrl?.trim() ?? '';
+  final bool useMetadata = source == PlayerDisplaySource.metadata;
+  final bool useMetadataArtist = useMetadata && artist.isNotEmpty;
+  final String selectedCover = useMetadata && coverUrl.isNotEmpty
+      ? coverUrl
+      : item.coverUrl.trim();
 
-  final String itemCoverUrl = item?.coverUrl.trim() ?? '';
-  if (itemCoverUrl.isNotEmpty) {
-    return itemCoverUrl;
-  }
-
-  return null;
-}
-
-bool hasSwitchableDisplay({
-  required PlayableItem? item,
-  required Metadata? metadata,
-}) {
-  final Metadata? currentMetadata = _metadataForItem(item, metadata);
-  return (currentMetadata?.title?.trim().isNotEmpty ?? false) ||
-      (currentMetadata?.artist?.trim().isNotEmpty ?? false) ||
-      (currentMetadata?.albumArtUrl?.trim().isNotEmpty ?? false);
-}
-
-Metadata? _metadataForItem(PlayableItem? item, Metadata? metadata) {
-  return item != null && metadata?.stableId == item.stableId ? metadata : null;
+  return PlayerDisplayInfo(
+    stableId: item.stableId,
+    title: useMetadata && title.isNotEmpty ? title : item.title,
+    artist: useMetadataArtist ? artist : item.author,
+    coverUrl: selectedCover.isEmpty ? null : selectedCover,
+    source: source,
+    canToggleSource:
+        title.isNotEmpty || artist.isNotEmpty || coverUrl.isNotEmpty,
+    artistUpMid: !useMetadataArtist && (item.ownerMid ?? 0) > 0
+        ? item.ownerMid
+        : null,
+  );
 }
 
 String? resolveDisplayLyrics(Metadata? metadata) {

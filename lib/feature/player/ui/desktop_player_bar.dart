@@ -8,19 +8,16 @@ import 'package:bilimusic/common/util/color_util.dart';
 import 'package:bilimusic/common/util/platform_util.dart';
 import 'package:bilimusic/feature/comment/domain/comment_target.dart';
 import 'package:bilimusic/feature/favorites/logic/favorites_controller.dart';
-import 'package:bilimusic/feature/metadata/domain/metadata_state.dart';
-import 'package:bilimusic/feature/metadata/logic/metadata_controller.dart';
 import 'package:bilimusic/feature/player/domain/audio_stream_info.dart';
 import 'package:bilimusic/feature/player/domain/playable_item.dart';
+import 'package:bilimusic/feature/player/domain/player_display_info.dart';
 import 'package:bilimusic/feature/player/domain/player_state.dart';
 import 'package:bilimusic/feature/player/logic/player_controller.dart';
-import 'package:bilimusic/feature/player/logic/player_cover_logic.dart';
-import 'package:bilimusic/feature/player/logic/player_cover_settings_logic.dart';
+import 'package:bilimusic/feature/player/logic/player_display_provider.dart';
 import 'package:bilimusic/feature/player/logic/desktop_lyrics_controller.dart';
 import 'package:bilimusic/feature/player/ui/components/desktop/quality_attach.dart';
 import 'package:bilimusic/feature/player/ui/components/desktop/play_pause_button.dart';
 import 'package:bilimusic/feature/player/ui/components/desktop/queue_mode_attach.dart';
-import 'package:bilimusic/feature/player/logic/utils/player_display_metadata.dart';
 import 'package:bilimusic/feature/player/ui/components/player_part_selector.dart';
 import 'package:bilimusic/feature/player/ui/components/player_queue_sheet.dart';
 import 'package:bilimusic/feature/player/logic/utils/player_ui_helpers.dart';
@@ -38,12 +35,7 @@ class DesktopPlayerBar extends ConsumerWidget {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
     final PlayerState state = ref.watch(playerControllerProvider);
-    final MetadataState metadataState = ref.watch(metadataControllerProvider);
-    final bool defaultUseMetadataCover = ref.watch(
-      playerCoverSettingsLogicProvider,
-    );
-    final bool useMetadataCover =
-        ref.watch(playerCoverLogicProvider) ?? defaultUseMetadataCover;
+    final PlayerDisplayInfo display = ref.watch(playerDisplayProvider);
     final PlayerController controller = ref.read(
       playerControllerProvider.notifier,
     );
@@ -79,8 +71,7 @@ class DesktopPlayerBar extends ConsumerWidget {
               width: 220,
               child: _TrackSection(
                 item: item,
-                metadataState: metadataState,
-                useMetadataCover: useMetadataCover,
+                display: display,
                 state: state,
                 isFavorite: isFavorite,
                 onFavoritePressed: item == null
@@ -160,8 +151,7 @@ class DesktopPlayerBar extends ConsumerWidget {
 class _TrackSection extends StatelessWidget {
   const _TrackSection({
     required this.item,
-    required this.metadataState,
-    required this.useMetadataCover,
+    required this.display,
     required this.state,
     required this.isFavorite,
     required this.onFavoritePressed,
@@ -169,8 +159,7 @@ class _TrackSection extends StatelessWidget {
   });
 
   final PlayableItem? item;
-  final MetadataState metadataState;
-  final bool useMetadataCover;
+  final PlayerDisplayInfo display;
   final PlayerState state;
   final bool isFavorite;
   final VoidCallback? onFavoritePressed;
@@ -179,19 +168,11 @@ class _TrackSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
-    final String? displayArtist = resolveDisplayArtist(
-      item: item,
-      metadata: metadataState.metadata,
-      useMetadata: useMetadataCover,
-    );
+    final String? displayArtist = display.artist;
 
     return Row(
       children: <Widget>[
-        _ArtworkHoverButton(
-          item: item,
-          metadataState: metadataState,
-          useMetadataCover: useMetadataCover,
-        ),
+        _ArtworkHoverButton(item: item, display: display),
         const SizedBox(width: 12),
         Expanded(
           child: Column(
@@ -201,13 +182,7 @@ class _TrackSection extends StatelessWidget {
               Semantics(
                 child: ExcludeSemantics(
                   child: PingPongMarqueePlus(
-                    text:
-                        resolveDisplayTitle(
-                          item: item,
-                          metadata: metadataState.metadata,
-                          useMetadata: useMetadataCover,
-                        ) ??
-                        '未选择播放内容',
+                    text: display.title ?? '未选择播放内容',
                     style: theme.textTheme.titleSmall?.copyWith(
                       fontWeight: FontWeight.w600,
                     ),
@@ -259,15 +234,10 @@ class _TrackSection extends StatelessWidget {
 }
 
 class _ArtworkHoverButton extends StatefulWidget {
-  const _ArtworkHoverButton({
-    required this.item,
-    required this.metadataState,
-    required this.useMetadataCover,
-  });
+  const _ArtworkHoverButton({required this.item, required this.display});
 
   final PlayableItem? item;
-  final MetadataState metadataState;
-  final bool useMetadataCover;
+  final PlayerDisplayInfo display;
 
   @override
   State<_ArtworkHoverButton> createState() => _ArtworkHoverButtonState();
@@ -304,11 +274,7 @@ class _ArtworkHoverButtonState extends State<_ArtworkHoverButton> {
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(8),
                   child: CommonCachedImage(
-                    imageUrl: resolveDisplayCoverUrl(
-                      item: widget.item,
-                      metadata: widget.metadataState.metadata,
-                      useMetadataCover: widget.useMetadataCover,
-                    ),
+                    imageUrl: widget.display.coverUrl,
                     fit: BoxFit.cover,
                     fallbackIcon: Icons.music_note_rounded,
                     iconColor: colorScheme.onSurfaceVariant,

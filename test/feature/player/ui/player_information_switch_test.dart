@@ -6,14 +6,15 @@ import 'package:bilimusic/feature/metadata/domain/metadata.dart';
 import 'package:bilimusic/feature/metadata/domain/metadata_state.dart';
 import 'package:bilimusic/feature/metadata/logic/metadata_controller.dart';
 import 'package:bilimusic/feature/player/domain/playable_item.dart';
+import 'package:bilimusic/feature/player/domain/player_display_info.dart';
 import 'package:bilimusic/feature/player/domain/player_lyric_settings.dart';
 import 'package:bilimusic/feature/player/domain/player_online_audience.dart';
 import 'package:bilimusic/feature/player/domain/player_state.dart';
 import 'package:bilimusic/feature/player/logic/desktop_lyrics_controller.dart';
 import 'package:bilimusic/feature/player/logic/player_controller.dart';
 import 'package:bilimusic/feature/player/logic/player_cover_color_provider.dart';
-import 'package:bilimusic/feature/player/logic/player_cover_logic.dart';
-import 'package:bilimusic/feature/player/logic/player_cover_settings_logic.dart';
+import 'package:bilimusic/feature/player/logic/player_display_settings_logic.dart';
+import 'package:bilimusic/feature/player/logic/player_display_source_logic.dart';
 import 'package:bilimusic/feature/player/logic/player_lyric_settings_logic.dart';
 import 'package:bilimusic/feature/player/logic/player_online_audience_controller.dart';
 import 'package:bilimusic/feature/player/ui/components/mini_player_content.dart';
@@ -52,7 +53,8 @@ void main() {
       expect(
         tester
             .widget<PlayerMainPage>(find.byType(PlayerMainPage))
-            .canToggleCover,
+            .display
+            .canToggleSource,
         isTrue,
       );
       expect(
@@ -64,12 +66,18 @@ void main() {
 
       await _doubleTapCover(tester);
 
-      expect(container.read(playerCoverLogicProvider), isFalse);
+      expect(
+        container.read(playerDisplaySourceLogicProvider),
+        PlayerDisplaySource.bilibili,
+      );
       _expectInformation(tester, _item.title, _item.author, opensUp: true);
 
       await _doubleTapCover(tester);
 
-      expect(container.read(playerCoverLogicProvider), isTrue);
+      expect(
+        container.read(playerDisplaySourceLogicProvider),
+        PlayerDisplaySource.metadata,
+      );
       _expectInformation(tester, 'Song title', 'Song artist', opensUp: false);
       expect(tester.takeException(), isNull);
     },
@@ -94,7 +102,8 @@ void main() {
       expect(
         tester
             .widget<PlayerMainPage>(find.byType(PlayerMainPage))
-            .canToggleCover,
+            .display
+            .canToggleSource,
         isFalse,
       );
 
@@ -104,7 +113,10 @@ void main() {
 
       _expectInformation(tester, 'Song title', 'Song artist', opensUp: false);
       await _doubleTapCover(tester);
-      expect(container.read(playerCoverLogicProvider), isFalse);
+      expect(
+        container.read(playerDisplaySourceLogicProvider),
+        PlayerDisplaySource.bilibili,
+      );
       _expectInformation(tester, _item.title, _item.author, opensUp: true);
 
       final PlayableItem nextItem = _item.copyWith(
@@ -120,7 +132,7 @@ void main() {
       );
       await tester.pump();
 
-      expect(container.read(playerCoverLogicProvider), isNull);
+      expect(container.read(playerDisplaySourceLogicProvider), isNull);
       _expectInformation(
         tester,
         nextItem.title,
@@ -130,7 +142,8 @@ void main() {
       expect(
         tester
             .widget<PlayerMainPage>(find.byType(PlayerMainPage))
-            .canToggleCover,
+            .display
+            .canToggleSource,
         isFalse,
       );
 
@@ -146,7 +159,8 @@ void main() {
       expect(
         tester
             .widget<PlayerMainPage>(find.byType(PlayerMainPage))
-            .canToggleCover,
+            .display
+            .canToggleSource,
         isFalse,
       );
 
@@ -213,9 +227,7 @@ void main() {
       );
       expect(tester.takeException(), isNull);
 
-      container
-          .read(playerCoverLogicProvider.notifier)
-          .toggle(defaultUseMetadataCover: true);
+      container.read(playerDisplaySourceLogicProvider.notifier).toggle();
       await tester.pump();
 
       expect(find.text(_item.title), findsOneWidget);
@@ -254,7 +266,7 @@ Future<ProviderContainer> _pumpPlayer(
         playerOnlineAudienceControllerProvider.overrideWith(
           _FakeOnlineAudienceController.new,
         ),
-        playerCoverSettingsLogicProvider.overrideWithValue(true),
+        playerDisplaySettingsLogicProvider.overrideWithValue(true),
         desktopLyricsControllerProvider.overrideWithValue(false),
       ],
       child: MaterialApp(

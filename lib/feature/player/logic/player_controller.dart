@@ -7,7 +7,6 @@ import 'package:bilimusic/core/bili/session/bili_session_controller.dart';
 import 'package:bilimusic/core/hive/hive_keys.dart';
 import 'package:bilimusic/core/settings/app_settings_store.dart';
 import 'package:bilimusic/core/window/windows_taskbar_thumbnail_toolbar.dart';
-import 'package:bilimusic/feature/metadata/domain/metadata.dart';
 import 'package:bilimusic/feature/player/data/audio_cache_repository.dart';
 import 'package:bilimusic/feature/player/data/bili_player_repository.dart';
 import 'package:bilimusic/feature/player/data/player_queue_local_repository.dart';
@@ -23,7 +22,6 @@ import 'package:bilimusic/feature/player/logic/player_audio_engine.dart';
 import 'package:bilimusic/feature/player/logic/player_audio_quality_preference_logic.dart';
 import 'package:bilimusic/feature/player/logic/player_audio_session_coordinator.dart';
 import 'package:bilimusic/feature/player/logic/player_event_hub.dart';
-import 'package:bilimusic/feature/player/logic/player_media_item_mapper.dart';
 import 'package:bilimusic/feature/player/logic/player_settings_logic.dart';
 import 'package:bilimusic/feature/recent/logic/recent_playback_controller.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -74,8 +72,6 @@ class PlayerController extends Notifier<PlayerState>
   _EnginePlaybackSnapshot _enginePlaybackSnapshot =
       const _EnginePlaybackSnapshot();
 
-  Metadata? _displayMetadata;
-  bool _useMetadata = true;
   bool _isBound = false;
   bool _isDisposed = false;
   bool _isAdvancingQueue = false;
@@ -194,7 +190,7 @@ class PlayerController extends Notifier<PlayerState>
         isBuffering: false,
         statusHint: null,
       );
-      _publishMediaSession();
+      _publishPlaybackState();
     }
     await _persistQueueSnapshot();
   }
@@ -247,7 +243,7 @@ class PlayerController extends Notifier<PlayerState>
     if (!wasPlaying && state.isReady) {
       await _audioEngine.pause();
       state = state.copyWith(isPlaying: false, isBuffering: false);
-      _publishMediaSession();
+      _publishPlaybackState();
       await _persistQueueSnapshot();
     }
   }
@@ -284,7 +280,7 @@ class PlayerController extends Notifier<PlayerState>
     if (!wasPlaying && state.isReady) {
       await _audioEngine.pause();
       state = state.copyWith(isPlaying: false, isBuffering: false);
-      _publishMediaSession();
+      _publishPlaybackState();
       await _persistQueueSnapshot();
     }
   }
@@ -362,7 +358,7 @@ class PlayerController extends Notifier<PlayerState>
       bufferedPosition: Duration.zero,
     );
     _emitPlayerEvent(PlayerEventType.stop);
-    _publishMediaSession();
+    _publishPlaybackState();
     await _persistQueueSnapshot();
   }
 
@@ -408,7 +404,7 @@ class PlayerController extends Notifier<PlayerState>
       errorMessage: null,
     );
     _emitPlayerEvent(PlayerEventType.trackChanged);
-    _publishMediaSession();
+    _publishPlaybackState();
     await _loadQueueIndex(
       resolvedIndex,
       autoplay: autoplay,
@@ -455,7 +451,7 @@ class PlayerController extends Notifier<PlayerState>
       errorMessage: null,
     );
     _emitPlayerEvent(PlayerEventType.trackChanged);
-    _publishMediaSession();
+    _publishPlaybackState();
     await _loadQueueIndex(
       currentIndex,
       autoplay: autoplay,
@@ -494,7 +490,7 @@ class PlayerController extends Notifier<PlayerState>
     }
 
     state = state.copyWith(queue: queue);
-    _publishMediaSession();
+    _publishPlaybackState();
     await _persistQueueSnapshot();
   }
 
@@ -520,7 +516,7 @@ class PlayerController extends Notifier<PlayerState>
     final List<PlayableItem> nextQueue = List<PlayableItem>.of(state.queue)
       ..insert(insertIndex, item);
     state = state.copyWith(queue: List<PlayableItem>.unmodifiable(nextQueue));
-    _publishMediaSession();
+    _publishPlaybackState();
     await _persistQueueSnapshot();
   }
 
@@ -549,7 +545,7 @@ class PlayerController extends Notifier<PlayerState>
           ? null
           : reorder.queue[nextCurrentIndex],
     );
-    _publishMediaSession();
+    _publishPlaybackState();
     await _persistQueueSnapshot();
   }
 
@@ -598,7 +594,7 @@ class PlayerController extends Notifier<PlayerState>
       statusHint: removal.removedCurrentItem ? null : state.statusHint,
       errorMessage: null,
     );
-    _publishMediaSession();
+    _publishPlaybackState();
 
     if (nextCurrentIndex == null) {
       await _persistQueueSnapshot();
@@ -641,7 +637,7 @@ class PlayerController extends Notifier<PlayerState>
       statusHint: null,
       errorMessage: null,
     );
-    _audioHandler.clearSession();
+    _publishPlaybackState(processingState: AudioProcessingState.idle);
     await _queueRepository.clear();
   }
 
@@ -675,7 +671,7 @@ class PlayerController extends Notifier<PlayerState>
       );
       if (targetIndex == null) {
         state = state.copyWith(isPlaying: false, isBuffering: false);
-        _publishMediaSession();
+        _publishPlaybackState();
         return;
       }
       await skipToQueueIndex(targetIndex);
@@ -716,7 +712,7 @@ class PlayerController extends Notifier<PlayerState>
       currentIndex: state.currentQueueIndex,
     );
     state = state.copyWith(queueMode: mode);
-    _publishMediaSession();
+    _publishPlaybackState();
     unawaited(_persistQueueSnapshot());
   }
 
@@ -759,7 +755,7 @@ class PlayerController extends Notifier<PlayerState>
       statusHint: null,
       errorMessage: null,
     );
-    _publishMediaSession();
+    _publishPlaybackState();
 
     final bool restored = await _loadQueueIndex(
       restoredIndex,
@@ -782,7 +778,7 @@ class PlayerController extends Notifier<PlayerState>
       isBuffering: false,
       position: Duration(milliseconds: snapshot.resumePositionMs),
     );
-    _publishMediaSession();
+    _publishPlaybackState();
     await _persistQueueSnapshot();
   }
 
@@ -836,7 +832,7 @@ class PlayerController extends Notifier<PlayerState>
       bufferedPosition: Duration.zero,
       errorMessage: null,
     );
-    _publishMediaSession();
+    _publishPlaybackState();
 
     try {
       await _activateAudioSessionForPlayback();
@@ -885,7 +881,7 @@ class PlayerController extends Notifier<PlayerState>
               .recordItem(entry.item),
         );
       }
-      _publishMediaSession();
+      _publishPlaybackState();
 
       if (autoplay) {
         await _playCurrentSource();
@@ -899,7 +895,7 @@ class PlayerController extends Notifier<PlayerState>
       if (persistAfterLoad) {
         await _persistQueueSnapshot();
       }
-      _publishMediaSession();
+      _publishPlaybackState();
       return true;
     } on BiliPlayerException catch (error) {
       if (!_isCurrentGeneration(effectiveGeneration)) {
@@ -984,7 +980,7 @@ class PlayerController extends Notifier<PlayerState>
         statusHint: PlayerStatusHint.connectingStream,
         errorMessage: null,
       );
-      _publishMediaSession();
+      _publishPlaybackState();
       final int retryGeneration = _retryGeneration;
       _isWaitingForRetry = true;
       try {
@@ -1105,7 +1101,7 @@ class PlayerController extends Notifier<PlayerState>
       duration: null,
       errorMessage: error.toString(),
     );
-    _publishMediaSession();
+    _publishPlaybackState();
     if (persistAfterLoad) {
       await _persistQueueSnapshot();
     }
@@ -1165,7 +1161,7 @@ class PlayerController extends Notifier<PlayerState>
       currentItem: completed.item,
       availableParts: completed.availableParts,
     );
-    _publishMediaSession();
+    _publishPlaybackState();
     unawaited(_persistQueueSnapshot());
   }
 
@@ -1322,16 +1318,8 @@ class PlayerController extends Notifier<PlayerState>
 
     // 先更新 PlayerState，再执行依赖它的发布和完成处理。
     state = reduction.nextState;
-    if (reduction.shouldPublishMediaSession) {
-      switch (change) {
-        case _EnginePlaybackChange.position ||
-            _EnginePlaybackChange.bufferedPosition:
-          _publishPlaybackState(
-            processingState: reduction.mediaProcessingState,
-          );
-        default:
-          _publishMediaSession(processingState: reduction.mediaProcessingState);
-      }
+    if (reduction.shouldPublishPlaybackState) {
+      _publishPlaybackState(processingState: reduction.mediaProcessingState);
     }
     if (reduction.shouldHandleCompleted) {
       _emitPlayerEvent(PlayerEventType.completed);
@@ -1373,7 +1361,7 @@ class PlayerController extends Notifier<PlayerState>
       ),
       _EnginePlaybackChange.volume => _EnginePlaybackReduction(
         nextState: current.copyWith(volume: next.volume),
-        shouldPublishMediaSession: false,
+        shouldPublishPlaybackState: false,
       ),
       _EnginePlaybackChange.playerState => _reduceEnginePlayerState(
         current: current,
@@ -1536,64 +1524,6 @@ class PlayerController extends Notifier<PlayerState>
     return position.inMilliseconds.clamp(0, duration.inMilliseconds);
   }
 
-  void updateDisplayMetadata({
-    required Metadata? metadata,
-    required bool useMetadata,
-  }) {
-    if (_isDisposed ||
-        (_displayMetadata == metadata && _useMetadata == useMetadata)) {
-      return;
-    }
-    _displayMetadata = metadata;
-    _useMetadata = useMetadata;
-    _publishMediaSession();
-  }
-
-  void _publishMediaSession({AudioProcessingState? processingState}) {
-    final List<MediaItem> queueItems = state.queue
-        .map(
-          (PlayableItem item) => buildPlayerQueueMediaItem(
-            item,
-            queueSourceLabel: state.queueSourceLabel,
-            metadata: item.stableId == state.currentItem?.stableId
-                ? _displayMetadata
-                : null,
-            useMetadata: _useMetadata,
-          ),
-        )
-        .toList(growable: false);
-    _audioHandler.updateQueue(queueItems);
-
-    final PlayableItem? currentItem = state.currentItem;
-    final audioStream = state.audioStream;
-    if (currentItem == null || audioStream == null) {
-      _audioHandler.updateCurrentMediaItem(
-        currentItem == null
-            ? null
-            : buildPlayerQueueMediaItem(
-                currentItem,
-                queueSourceLabel: state.queueSourceLabel,
-                duration: state.duration,
-                metadata: _displayMetadata,
-                useMetadata: _useMetadata,
-              ),
-      );
-    } else {
-      _audioHandler.updateCurrentMediaItem(
-        buildPlayerMediaItem(
-          currentItem,
-          audioStream: audioStream,
-          queueSourceLabel: state.queueSourceLabel,
-          duration: state.duration,
-          metadata: _displayMetadata,
-          useMetadata: _useMetadata,
-        ),
-      );
-    }
-
-    _publishPlaybackState(processingState: processingState);
-  }
-
   void _publishPlaybackState({AudioProcessingState? processingState}) {
     _audioHandler.updatePlaybackSnapshot(
       isPlaying: state.isPlaying,
@@ -1602,7 +1532,7 @@ class PlayerController extends Notifier<PlayerState>
       hasNext: state.queueMode == PlayerQueueMode.singleRepeat || state.hasNext,
       position: state.position,
       bufferedPosition: state.bufferedPosition,
-      duration: state.duration,
+      queueIndex: state.hasActiveQueueIndex ? state.currentQueueIndex : null,
       speed: state.speed,
       processingState:
           processingState ??
@@ -1704,13 +1634,13 @@ class _EnginePlaybackSnapshot {
 class _EnginePlaybackReduction {
   const _EnginePlaybackReduction({
     required this.nextState,
-    this.shouldPublishMediaSession = true,
+    this.shouldPublishPlaybackState = true,
     this.mediaProcessingState,
     this.shouldHandleCompleted = false,
   });
 
   final PlayerState nextState;
-  final bool shouldPublishMediaSession;
+  final bool shouldPublishPlaybackState;
   final AudioProcessingState? mediaProcessingState;
   final bool shouldHandleCompleted;
 }
