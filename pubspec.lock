@@ -516,10 +516,10 @@ packages:
     description:
       path: "."
       ref: main
-      resolved-ref: "0cbbe38b5fca22c567c331990eebc5039d2c5412"
+      resolved-ref: "511865bd26c0d2e8de8704b12131b4260d997b85"
       url: "https://github.com/AprDeci/flutter_lyric.git"
     source: git
-    version: "3.0.3"
+    version: "4.1.0"
   flutter_plugin_android_lifecycle:
     dependency: transitive
     description:
