@@ -2,6 +2,7 @@
 
 ## Purpose
 - This repository is a Flutter app named `bilimusic`.
+- GitHub repository: `AprDeci/bili-music` (`https://github.com/AprDeci/bili-music`). Use this exact repository when looking up or managing its GitHub issues and pull requests.
 - Stack: Flutter, Riverpod code generation, Dio, Hive CE, Freezed, GoRouter.
 - Current app focus: Bilibili QR-code authentication and local session persistence.
 - Use this file as the default operating guide for coding agents working in this repo.
@@ -94,6 +95,7 @@ Before running any `flutter` or `dart` command, first ensure the command is exec
 
 ## Formatting
 - Use `dart format`; do not preserve custom spacing that conflicts with formatter output.
+- Do not add comments to code.
 - Prefer trailing commas in multi-line widget trees, argument lists, and constructors.
 - Keep lines formatter-friendly instead of fighting wrapping.
 - Use blank lines to separate logical sections, not every small statement.
