@@ -31,6 +31,10 @@ final NotifierProvider<PlayerController, PlayerState> playerControllerProvider =
 
 class PlayerController extends Notifier<PlayerState>
     implements PlayerCommandTarget {
+  PlayerController({PlayerAudioEngine? audioEngine})
+    : _providedAudioEngine = audioEngine;
+
+  final PlayerAudioEngine? _providedAudioEngine;
   final AppLogger _logger = AppLogger('PlayerController');
 
   late final PlayerQueueLocalRepository _queueRepository = ref.read(
@@ -40,7 +44,8 @@ class PlayerController extends Notifier<PlayerState>
     appSettingsStoreProvider,
   );
   late final AppAudioHandler _audioHandler = ref.read(appAudioHandlerProvider);
-  late final PlayerAudioEngine _audioEngine = PlayerAudioEngine();
+  late final PlayerAudioEngine _audioEngine =
+      _providedAudioEngine ?? PlayerAudioEngine();
   late final PlayerPlaybackLoader _playbackLoader = PlayerPlaybackLoader(
     repository: ref.read(biliPlayerRepositoryProvider),
     audioCacheRepository: ref.read(playerAudioCacheRepositoryProvider),
@@ -835,6 +840,11 @@ class PlayerController extends Notifier<PlayerState>
     _publishPlaybackState();
 
     try {
+      await _audioEngine.stop();
+      if (!_isCurrentGeneration(effectiveGeneration)) {
+        return false;
+      }
+
       await _activateAudioSessionForPlayback();
       final ResolvedQueueEntry entry = await _playbackLoader.resolveQueueEntry(
         targetItem,
