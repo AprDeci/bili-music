@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:bilimusic/common/util/player_util.dart';
 import 'package:bilimusic/feature/metadata/domain/metadata_state.dart';
 import 'package:bilimusic/feature/metadata/logic/metadata_controller.dart';
@@ -7,6 +9,7 @@ import 'package:bilimusic/feature/player/logic/lyrics/player_lyric_settings_logi
 import 'package:bilimusic/feature/player/logic/display/player_display_metadata.dart';
 import 'package:bilimusic/feature/player/ui/lyrics/player_lyric_style.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter_lyric/flutter_lyric.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -38,50 +41,40 @@ class PlayerLyricPanel extends ConsumerStatefulWidget {
 }
 
 class _PlayerLyricPanelState extends ConsumerState<PlayerLyricPanel> {
-  static const Duration _inactiveSyncInterval = Duration(seconds: 1);
-
+  late final _PlayerLyricProgressSource _progressSource;
   late final LyricController _lyricController;
 
   String? _loadedStableId;
   String? _loadedRenderableLyrics;
   String? _loadedTranslationLyrics;
-  Duration? _lastInactiveSyncedPosition;
 
   bool get _isDesktop => widget.variant == PlayerLyricPanelVariant.desktop;
 
   @override
   void initState() {
     super.initState();
-    _lyricController = LyricController();
+    _progressSource = _PlayerLyricProgressSource(
+      widget.state,
+      widget.isActive,
+      widget.item?.stableId,
+    );
+    _lyricController = LyricController(progressSource: _progressSource);
   }
 
   @override
   void didUpdateWidget(covariant PlayerLyricPanel oldWidget) {
     super.didUpdateWidget(oldWidget);
-    _syncProgressIfNeeded();
-  }
-
-  void _syncProgressIfNeeded() {
-    if (widget.isActive) {
-      _lastInactiveSyncedPosition = null;
-      _syncProgress();
-      return;
-    }
-
-    final Duration position = widget.state.position;
-    final Duration? lastPosition = _lastInactiveSyncedPosition;
-    if (lastPosition != null &&
-        (position - lastPosition).abs() < _inactiveSyncInterval) {
-      return;
-    }
-
-    _lastInactiveSyncedPosition = position;
-    _syncProgress();
+    _progressSource.update(
+      widget.state,
+      enabled: widget.isActive,
+      stableId: widget.item?.stableId,
+    );
   }
 
   @override
   void dispose() {
     _lyricController.dispose();
+    _progressSource.dispose();
     super.dispose();
   }
 
@@ -144,15 +137,18 @@ class _PlayerLyricPanelState extends ConsumerState<PlayerLyricPanel> {
         padding: _isDesktop
             ? const EdgeInsets.symmetric(horizontal: 30)
             : EdgeInsets.zero,
-        child: LyricView(
-          controller: _lyricController,
-          preset: _buildLyricPreset(context),
-          onLineTap: (LyricLineDetails details) {
-            if (_loadedStableId != widget.item?.stableId) {
-              return;
-            }
-            widget.onSeek(details.seekPosition);
-          },
+        child: TickerMode(
+          enabled: widget.isActive,
+          child: LyricView(
+            controller: _lyricController,
+            preset: _buildLyricPreset(context),
+            onLineTap: (LyricLineDetails details) {
+              if (_loadedStableId != widget.item?.stableId) {
+                return;
+              }
+              widget.onSeek(details.seekPosition);
+            },
+          ),
         ),
       );
     }
@@ -211,7 +207,6 @@ class _PlayerLyricPanelState extends ConsumerState<PlayerLyricPanel> {
     if (_loadedStableId == stableId &&
         _loadedRenderableLyrics == renderableLyrics &&
         _loadedTranslationLyrics == translationLyrics) {
-      _syncProgressIfNeeded();
       return;
     }
 
@@ -219,14 +214,6 @@ class _PlayerLyricPanelState extends ConsumerState<PlayerLyricPanel> {
     _loadedRenderableLyrics = renderableLyrics;
     _loadedTranslationLyrics = translationLyrics;
     _lyricController.load(renderableLyrics, translation: translationLyrics);
-    _syncProgressIfNeeded();
-  }
-
-  void _syncProgress() {
-    if (_loadedStableId != widget.item?.stableId) {
-      return;
-    }
-    _lyricController.setPosition(widget.state.position);
   }
 
   LyricPreset _buildLyricPreset(BuildContext context) {
@@ -235,16 +222,84 @@ class _PlayerLyricPanelState extends ConsumerState<PlayerLyricPanel> {
       settings: ref.watch(playerLyricSettingsLogicProvider),
       activeColor: widget.activeColor,
       reduceMotion: MediaQuery.disableAnimationsOf(context),
-    ).copyWith(
-      selectionForegroundBuilder:
-          (BuildContext context, LyricSelectionDetails details) {
-            return _PlayerLyricSelectionProgress(
-              details: details,
-              variant: widget.variant,
-            );
-          },
-    );
+    ).copyWith(selectionForegroundBuilder: _buildSelectionForeground);
   }
+
+  Widget _buildSelectionForeground(
+    BuildContext context,
+    LyricSelectionDetails details,
+  ) => _PlayerLyricSelectionProgress(details: details, variant: widget.variant);
+}
+
+class _PlayerLyricProgressSource implements LyricProgressSource {
+  _PlayerLyricProgressSource(this._state, this._enabled, this._stableId)
+    : _position = _state.position,
+      _sampledAt = SchedulerBinding.instance.currentFrameTimeStamp;
+
+  final StreamController<void> _changes = StreamController<void>.broadcast(
+    sync: true,
+  );
+  PlayerState _state;
+  bool _enabled;
+  String? _stableId;
+  Duration _position;
+  Duration _sampledAt;
+
+  @override
+  Stream<void> get changes => _changes.stream;
+
+  @override
+  bool get isAdvancing =>
+      _enabled &&
+      _state.isReady &&
+      _state.isPlaying &&
+      !_state.isBuffering &&
+      !_state.isLoading &&
+      !_state.hasError;
+
+  @override
+  Duration get position {
+    final Duration elapsed = isAdvancing
+        ? SchedulerBinding.instance.currentFrameTimeStamp - _sampledAt
+        : Duration.zero;
+    final Duration next =
+        _position +
+        Duration(microseconds: (elapsed.inMicroseconds * _state.speed).round());
+    final Duration? duration = _state.duration;
+    return duration != null && next > duration ? duration : next;
+  }
+
+  void update(
+    PlayerState state, {
+    required bool enabled,
+    required String? stableId,
+  }) {
+    if (_state.position == state.position &&
+        _state.duration == state.duration &&
+        _state.isReady == state.isReady &&
+        _state.isPlaying == state.isPlaying &&
+        _state.isBuffering == state.isBuffering &&
+        _state.isLoading == state.isLoading &&
+        _state.hasError == state.hasError &&
+        _state.speed == state.speed &&
+        _enabled == enabled &&
+        _stableId == stableId) {
+      return;
+    }
+    _position =
+        _state.position != state.position ||
+            _stableId != stableId ||
+            _enabled != enabled
+        ? state.position
+        : position;
+    _sampledAt = SchedulerBinding.instance.currentFrameTimeStamp;
+    _state = state;
+    _enabled = enabled;
+    _stableId = stableId;
+    _changes.add(null);
+  }
+
+  void dispose() => unawaited(_changes.close());
 }
 
 class _PlayerLyricPanelStatus extends StatelessWidget {

@@ -6,8 +6,11 @@ import 'package:bilimusic/feature/player/domain/playable_item.dart';
 import 'package:bilimusic/feature/player/domain/player_lyric_settings.dart';
 import 'package:bilimusic/feature/player/domain/player_state.dart';
 import 'package:bilimusic/feature/player/logic/lyrics/player_lyric_settings_logic.dart';
+import 'package:bilimusic/feature/player/logic/player_controller.dart';
+import 'package:bilimusic/feature/player/logic/player_progress_provider.dart';
 import 'package:bilimusic/feature/player/ui/components/player_dynamic_backdrop.dart';
 import 'package:bilimusic/feature/player/ui/lyrics/player_lyric_panel.dart';
+import 'package:bilimusic/feature/player/ui/lyrics/player_lyric_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_lyric/flutter_lyric.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -26,6 +29,191 @@ const String _lyrics =
     '[00:07.000]第三行\n[00:10.000]第四行';
 
 void main() {
+  testWidgets(
+    'visible playback advances every frame without rebuilding lyrics',
+    (tester) async {
+      await _pumpPanel(tester, isPlaying: true);
+      final LyricView view = tester.widget<LyricView>(find.byType(LyricView));
+      final LyricController controller = view.controller;
+      final Duration start = controller.position;
+      expect(controller.isAdvancing, isTrue);
+      for (int frame = 1; frame <= 3; frame++) {
+        await tester.pump(const Duration(milliseconds: 16));
+        expect(controller.position, start + Duration(milliseconds: 16 * frame));
+        expect(tester.widget<LyricView>(find.byType(LyricView)), same(view));
+      }
+    },
+  );
+
+  testWidgets('hidden lyrics sync snapshots without advancing between frames', (
+    tester,
+  ) async {
+    await _pumpPanel(tester, isPlaying: true);
+    final LyricController controller = tester
+        .widget<LyricView>(find.byType(LyricView))
+        .controller;
+    await _pumpPanel(
+      tester,
+      isPlaying: true,
+      isActive: false,
+      position: const Duration(seconds: 5),
+    );
+    expect(controller.isAdvancing, isFalse);
+    expect(controller.position, const Duration(seconds: 5));
+    expect(
+      TickerMode.valuesOf(tester.element(find.byType(LyricView))).enabled,
+      isFalse,
+    );
+    await tester.pump(const Duration(milliseconds: 16));
+    expect(controller.position, const Duration(seconds: 5));
+    await _pumpPanel(
+      tester,
+      isPlaying: true,
+      isActive: false,
+      position: const Duration(milliseconds: 5250),
+      settleDuration: Duration.zero,
+    );
+    expect(controller.position, const Duration(milliseconds: 5250));
+    await _pumpPanel(
+      tester,
+      isPlaying: true,
+      position: const Duration(seconds: 6),
+      settleDuration: Duration.zero,
+    );
+    expect(controller.isAdvancing, isTrue);
+    await tester.pump(const Duration(milliseconds: 16));
+    expect(controller.position, const Duration(milliseconds: 6016));
+  });
+
+  testWidgets('pause buffering speed and seek preserve the lyric clock', (
+    tester,
+  ) async {
+    await _pumpPanel(tester, isPlaying: true, speed: 2);
+    final LyricController controller = tester
+        .widget<LyricView>(find.byType(LyricView))
+        .controller;
+    final Duration start = controller.position;
+    await tester.pump(const Duration(milliseconds: 16));
+    expect(controller.position, start + const Duration(milliseconds: 32));
+    for (final bool buffering in <bool>[false, true]) {
+      await _pumpPanel(
+        tester,
+        isPlaying: buffering,
+        isBuffering: buffering,
+        position: controller.position,
+        settleDuration: Duration.zero,
+      );
+      final Duration stopped = controller.position;
+      expect(controller.isAdvancing, isFalse);
+      await tester.pump(const Duration(milliseconds: 80));
+      expect(controller.position, stopped);
+    }
+    await _pumpPanel(
+      tester,
+      position: const Duration(seconds: 1),
+      settleDuration: Duration.zero,
+    );
+    expect(controller.position, const Duration(seconds: 1));
+    await _pumpPanel(
+      tester,
+      isPlaying: true,
+      position: const Duration(seconds: 14),
+    );
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(controller.position, const Duration(seconds: 15));
+  });
+
+  testWidgets('ordinary progress rebuilds preserve an in-flight scroll', (
+    tester,
+  ) async {
+    await _pumpPanel(tester);
+    final LyricPreset preset = tester
+        .widget<LyricView>(find.byType(LyricView))
+        .preset!;
+    await _pumpPanel(
+      tester,
+      position: const Duration(seconds: 5),
+      settleDuration: Duration.zero,
+    );
+    final ScrollableState scrollable = tester.state<ScrollableState>(
+      find.descendant(
+        of: find.byType(LyricView),
+        matching: find.byType(Scrollable),
+      ),
+    );
+    await tester.pump(const Duration(milliseconds: 100));
+    final double before = scrollable.position.pixels;
+    await _pumpPanel(
+      tester,
+      position: const Duration(seconds: 5),
+      settleDuration: Duration.zero,
+    );
+    expect(tester.widget<LyricView>(find.byType(LyricView)).preset, preset);
+    expect(scrollable.position.pixels, closeTo(before, 0.001));
+    await tester.pump(const Duration(milliseconds: 600));
+    expect(scrollable.position.pixels, greaterThan(before));
+  });
+
+  testWidgets('lyric page uses live progress only while visible', (
+    tester,
+  ) async {
+    final ValueNotifier<bool> active = ValueNotifier(true);
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          metadataControllerProvider.overrideWith(_MetadataController.new),
+          playerLyricSettingsLogicProvider.overrideWith(
+            _LyricSettingsLogic.new,
+          ),
+          playerControllerProvider.overrideWith(_PlayerController.new),
+        ],
+        child: MaterialApp(
+          home: Scaffold(
+            body: ValueListenableBuilder<bool>(
+              valueListenable: active,
+              builder: (context, isActive, _) => PlayerLyricPage(
+                state: const PlayerState(isReady: true),
+                item: _item,
+                isActive: isActive,
+                onSeek: (_) {},
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+    final ProviderContainer container = ProviderScope.containerOf(
+      tester.element(find.byType(PlayerLyricPage)),
+    );
+    final _PlayerController player =
+        container.read(playerControllerProvider.notifier) as _PlayerController;
+    final LyricController controller = tester
+        .widget<LyricView>(find.byType(LyricView))
+        .controller;
+    player.setPosition(const Duration(milliseconds: 2016));
+    await tester.pump(const Duration(milliseconds: 16));
+    expect(controller.position, const Duration(milliseconds: 2016));
+    active.value = false;
+    await tester.pump();
+    player.setPosition(const Duration(seconds: 3));
+    await tester.pump(const Duration(milliseconds: 249));
+    expect(controller.position, const Duration(milliseconds: 2016));
+    await tester.pump(const Duration(milliseconds: 1));
+    await tester.pump();
+    expect(controller.position, const Duration(seconds: 3));
+    active.value = true;
+    player.setPosition(const Duration(milliseconds: 3016));
+    await tester.pump();
+    expect(controller.position, const Duration(milliseconds: 3016));
+    expect(
+      container.read(playerProgressProvider).asData!.value.position,
+      const Duration(seconds: 3),
+    );
+    await tester.pumpWidget(const SizedBox.shrink());
+    active.dispose();
+  });
+
   for (final PlayerLyricPanelVariant variant
       in PlayerLyricPanelVariant.values) {
     testWidgets(
@@ -352,6 +540,11 @@ Future<void> _pumpPanel(
   PlayerLyricPanelVariant variant = PlayerLyricPanelVariant.mobile,
   Duration position = const Duration(seconds: 2),
   bool showTranslation = true,
+  bool isActive = true,
+  bool isPlaying = false,
+  bool isBuffering = false,
+  double speed = 1,
+  Duration settleDuration = const Duration(seconds: 1),
   Color? activeColor,
   Brightness brightness = Brightness.light,
   ValueChanged<Duration>? onSeek,
@@ -382,9 +575,13 @@ Future<void> _pumpPanel(
                     state: PlayerState(
                       position: position,
                       duration: const Duration(seconds: 15),
+                      isReady: true,
+                      isPlaying: isPlaying,
+                      isBuffering: isBuffering,
+                      speed: speed,
                     ),
                     item: _item,
-                    isActive: true,
+                    isActive: isActive,
                     variant: variant,
                     activeColor: activeColor,
                     showTranslation: showTranslation,
@@ -399,7 +596,20 @@ Future<void> _pumpPanel(
     ),
   );
   // Apple Music 持续浮动，不会进入 pumpAndSettle 等待的静止状态。
-  await tester.pump(const Duration(seconds: 1));
+  await tester.pump(settleDuration);
+}
+
+class _PlayerController extends PlayerController {
+  @override
+  PlayerState build() => const PlayerState(
+    currentItem: _item,
+    position: Duration(seconds: 2),
+    duration: Duration(seconds: 15),
+    isReady: true,
+  );
+
+  void setPosition(Duration position) =>
+      state = state.copyWith(position: position);
 }
 
 class _LyricSettingsLogic extends PlayerLyricSettingsLogic {
