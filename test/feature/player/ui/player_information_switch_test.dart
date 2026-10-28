@@ -19,8 +19,14 @@ import 'package:bilimusic/feature/player/logic/lyrics/player_lyric_settings_logi
 import 'package:bilimusic/feature/player/logic/player_online_audience_controller.dart';
 import 'package:bilimusic/feature/player/ui/mini/mini_player_content.dart';
 import 'package:bilimusic/feature/player/ui/components/player_artwork.dart';
+import 'package:bilimusic/feature/player/ui/components/player_controls.dart';
+import 'package:bilimusic/feature/player/ui/components/player_dynamic_backdrop.dart';
+import 'package:bilimusic/feature/player/ui/components/player_landscape_page.dart';
+import 'package:bilimusic/feature/player/ui/components/player_landscape_controls.dart';
 import 'package:bilimusic/feature/player/ui/components/player_main_page.dart';
 import 'package:bilimusic/feature/player/ui/components/player_shared.dart';
+import 'package:bilimusic/feature/player/ui/components/player_top_bar.dart';
+import 'package:bilimusic/feature/player/ui/lyrics/player_lyric_page.dart';
 import 'package:bilimusic/feature/player/ui/desktop/desktop_player_bar.dart';
 import 'package:bilimusic/feature/player/ui/player_page.dart';
 import 'package:flutter/material.dart';
@@ -237,6 +243,337 @@ void main() {
       expect(tester.takeException(), isNull);
     },
   );
+
+  testWidgets(
+    'landscape places artwork beside active lyrics above shared controls',
+    (WidgetTester tester) async {
+      await _pumpPlayer(
+        tester,
+        _metadata.copyWith(
+          lyrics: '[00:00.000]First line\n[00:30.000]Next line',
+        ),
+        size: const Size(900, 420),
+        home: const PlayerPage(initialItem: _item),
+      );
+
+      expect(find.byType(PlayerLandscapePage), findsOneWidget);
+      expect(find.byType(PlayerArtworkFrame), findsOneWidget);
+      expect(find.byType(PlayerLyricPage), findsOneWidget);
+      expect(find.byType(PlayerProgressSection), findsOneWidget);
+      expect(find.byType(PlayerLandscapeControls), findsOneWidget);
+      expect(find.byType(PlayerTrackHeader), findsNothing);
+      expect(find.byType(PlayerTopBar), findsNothing);
+      expect(find.byType(PlayerDynamicBackdrop), findsNothing);
+      expect(find.byType(PageView), findsNothing);
+      expect(find.text('Song title'), findsNothing);
+      expect(find.text('Song artist'), findsNothing);
+      final PlayerLyricPage lyrics = tester.widget<PlayerLyricPage>(
+        find.byType(PlayerLyricPage),
+      );
+      expect(lyrics.isActive, isTrue);
+      expect(lyrics.showToolbar, isFalse);
+      for (final String tooltip in <String>[
+        '手动匹配歌词',
+        '歌词偏移',
+        '歌词外观',
+        '隐藏译文',
+        '显示译文',
+      ]) {
+        expect(find.byTooltip(tooltip), findsNothing);
+      }
+      for (final String tooltip in <String>['上一首', '播放', '下一首', '播放队列']) {
+        expect(find.byTooltip(tooltip), findsOneWidget);
+      }
+      expect(
+        find.byWidgetPredicate(
+          (Widget widget) =>
+              widget is Tooltip &&
+              <String>['喜欢', '加入我喜欢'].contains(widget.message),
+        ),
+        findsOneWidget,
+      );
+
+      final Rect artwork = tester.getRect(find.byType(PlayerArtworkFrame));
+      final Rect lyricPanel = tester.getRect(find.byType(PlayerLyricPage));
+      final Rect progress = tester.getRect(find.byType(PlayerProgressSection));
+      final Rect controls = tester.getRect(
+        find.byType(PlayerLandscapeControls),
+      );
+      expect(artwork.right, lessThanOrEqualTo(lyricPanel.left));
+      expect(artwork.width, closeTo(artwork.height, 0.01));
+      final double centerY = tester
+          .getRect(find.byType(PlayerLandscapePage))
+          .center
+          .dy;
+      expect(artwork.center.dy, closeTo(centerY, 0.01));
+      expect((lyricPanel.top + controls.bottom) / 2, closeTo(centerY, 0.01));
+      expect(find.byTooltip('返回'), findsNothing);
+      expect(find.byIcon(Icons.keyboard_arrow_down_rounded), findsNothing);
+      expect(lyricPanel.bottom, lessThanOrEqualTo(progress.top));
+      expect(progress.bottom, lessThanOrEqualTo(controls.top));
+      expect(find.byTooltip('播放模式'), findsNothing);
+      expect(
+        find.descendant(
+          of: find.byType(PlayerLandscapeControls),
+          matching: find.byType(IconButton),
+        ),
+        findsNWidgets(5),
+      );
+      final double playX = tester.getCenter(find.byTooltip('播放')).dx;
+      expect(playX, closeTo(controls.center.dx, 0.01));
+      expect(
+        playX - tester.getCenter(find.byTooltip('上一首')).dx,
+        closeTo(tester.getCenter(find.byTooltip('下一首')).dx - playX, 0.01),
+      );
+      expect(
+        playX - tester.getCenter(find.byTooltip('喜欢')).dx,
+        closeTo(tester.getCenter(find.byTooltip('播放队列')).dx - playX, 0.01),
+      );
+      tester.view.physicalSize = const Size(420, 900);
+      await tester.pumpAndSettle();
+      expect(find.byType(PlayerMainPage), findsOneWidget);
+      expect(
+        tester.widget<PageView>(find.byType(PageView)).controller!.page,
+        1,
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets('landscape controls use the existing playback callbacks', (
+    WidgetTester tester,
+  ) async {
+    final ProviderContainer container = await _pumpPlayer(
+      tester,
+      _metadata,
+      size: const Size(900, 420),
+      home: const PlayerPage(initialItem: _item),
+    );
+    final _FakePlayerController player =
+        container.read(playerControllerProvider.notifier)
+            as _FakePlayerController;
+    player.show(
+      container
+          .read(playerControllerProvider)
+          .copyWith(
+            queue: <PlayableItem>[
+              _item,
+              _item.copyWith(bvid: 'BV2xx411c7mD'),
+            ],
+          ),
+    );
+    await tester.pump();
+
+    await tester.tap(find.byTooltip('播放'));
+    await tester.pump();
+    expect(player.togglePlaybackCalls, 1);
+    expect(find.byTooltip('暂停'), findsOneWidget);
+    await tester.tap(find.byTooltip('暂停'));
+    await tester.pump();
+    expect(player.togglePlaybackCalls, 2);
+    expect(container.read(playerControllerProvider).isPlaying, isFalse);
+
+    await tester.tap(find.byTooltip('上一首'));
+    await tester.tap(find.byTooltip('下一首'));
+    expect(player.previousCalls, 1);
+    expect(player.nextCalls, 1);
+
+    expect(find.byTooltip('播放模式'), findsNothing);
+    expect(
+      container.read(playerControllerProvider).queueMode,
+      PlayerQueueMode.sequence,
+    );
+
+    await tester.tapAt(tester.getCenter(find.byType(Slider)));
+    await tester.pump();
+    expect(player.progressSeeks, hasLength(1));
+    expect(player.progressSeeks.single.inSeconds, closeTo(90, 1));
+    expect(container.read(playerControllerProvider).isPlaying, isTrue);
+    tester
+        .widget<PlayerLyricPage>(find.byType(PlayerLyricPage))
+        .onSeek(const Duration(seconds: 12));
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(player.lyricSeeks, <Duration>[const Duration(seconds: 12)]);
+    expect(player.progressSeeks, hasLength(1));
+    expect(
+      tester.widget<Slider>(find.byType(Slider)).value,
+      closeTo(12 / 180, 0.001),
+    );
+
+    await tester.tapAt(tester.getCenter(find.byType(Slider)));
+    await tester.pump();
+    tester
+        .widget<PlayerLyricPage>(find.byType(PlayerLyricPage))
+        .onSeek(const Duration(seconds: 12));
+    await tester.pump(const Duration(milliseconds: 600));
+    expect(
+      tester.widget<Slider>(find.byType(Slider)).value,
+      closeTo(12 / 180, 0.001),
+    );
+
+    await tester.tap(find.byTooltip('播放队列'));
+    await tester.pumpAndSettle();
+    expect(find.text('播放队列'), findsOneWidget);
+    expect(find.text('2 项 · 列表循环'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets(
+    'rotation preserves playback and the selected portrait lyric tab',
+    (WidgetTester tester) async {
+      final ProviderContainer container = await _pumpPlayer(
+        tester,
+        _metadata,
+        home: const PlayerPage(initialItem: _item),
+      );
+      final _FakePlayerController player =
+          container.read(playerControllerProvider.notifier)
+              as _FakePlayerController;
+      final PlayerState playing = container
+          .read(playerControllerProvider)
+          .copyWith(
+            queue: <PlayableItem>[
+              _item,
+              _item.copyWith(bvid: 'BV2xx411c7mD'),
+            ],
+            queueMode: PlayerQueueMode.shuffle,
+            queueSourceLabel: 'Saved queue',
+            position: const Duration(seconds: 42),
+            isPlaying: true,
+          );
+      player.show(playing);
+      await tester.pump();
+      expect(find.byType(PlayerMainPage), findsOneWidget);
+      expect(find.byType(PlayerTrackHeader), findsOneWidget);
+      expect(find.byType(PlayerTopBar), findsOneWidget);
+      expect(find.byType(PlayerDynamicBackdrop), findsOneWidget);
+      expect(
+        tester.widget<PageView>(find.byType(PageView)).key,
+        const PageStorageKey<String>('playerPages'),
+      );
+
+      await tester.drag(find.byType(PageView), const Offset(-380, 0));
+      await tester.pumpAndSettle();
+      expect(
+        tester.widget<PageView>(find.byType(PageView)).controller!.page,
+        2,
+      );
+      expect(find.byTooltip('手动匹配歌词'), findsOneWidget);
+      final State portraitPage = tester.state(find.byType(PlayerPage));
+
+      tester.view.physicalSize = const Size(900, 420);
+      await tester.pumpAndSettle();
+      expect(tester.state(find.byType(PlayerPage)), same(portraitPage));
+      expect(find.byType(PlayerLandscapePage), findsOneWidget);
+      expect(find.byType(PageView), findsNothing);
+      expect(find.byTooltip('手动匹配歌词'), findsNothing);
+      expect(container.read(playerControllerProvider), playing);
+      expect(
+        tester
+            .widget<PlayerProgressSection>(find.byType(PlayerProgressSection))
+            .position,
+        playing.position,
+      );
+
+      tester.view.physicalSize = const Size(420, 900);
+      await tester.pumpAndSettle();
+      expect(tester.state(find.byType(PlayerPage)), same(portraitPage));
+      expect(find.byType(PlayerLandscapePage), findsNothing);
+      expect(
+        tester.widget<PageView>(find.byType(PageView)).controller!.page,
+        2,
+      );
+      expect(
+        tester.widget<PlayerTopBar>(find.byType(PlayerTopBar)).currentPage,
+        2,
+      );
+      final PlayerLyricPage lyrics = tester.widget<PlayerLyricPage>(
+        find.byType(PlayerLyricPage),
+      );
+      expect(lyrics.isActive, isTrue);
+      expect(lyrics.showToolbar, isTrue);
+      expect(find.byTooltip('手动匹配歌词'), findsOneWidget);
+      expect(container.read(playerControllerProvider), playing);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets('compact dark landscape respects safe insets and large text', (
+    WidgetTester tester,
+  ) async {
+    const Size size = Size(640, 320);
+    const EdgeInsets padding = EdgeInsets.fromLTRB(44, 8, 20, 16);
+    await _pumpPlayer(
+      tester,
+      _metadata.copyWith(lyrics: '[00:00.000]First line\n[00:30.000]Next line'),
+      size: size,
+      padding: padding,
+      textScaler: TextScaler.linear(2),
+      theme: ThemeData.dark(),
+      home: const PlayerPage(initialItem: _item),
+    );
+
+    expect(find.byType(PlayerLandscapePage), findsOneWidget);
+    final BuildContext context = tester.element(
+      find.byType(PlayerLandscapePage),
+    );
+    expect(Theme.of(context).brightness, Brightness.dark);
+    expect(MediaQuery.textScalerOf(context).scale(10), 20);
+    final Rect safeRect = Rect.fromLTRB(
+      padding.left,
+      padding.top,
+      size.width - padding.right,
+      size.height - padding.bottom,
+    );
+    for (final Type type in <Type>[
+      PlayerArtworkFrame,
+      PlayerLyricPage,
+      PlayerProgressSection,
+      PlayerLandscapeControls,
+    ]) {
+      final Rect rect = tester.getRect(find.byType(type));
+      expect(rect.width, greaterThan(0));
+      expect(rect.height, greaterThan(0));
+      expect(rect.left, greaterThanOrEqualTo(safeRect.left));
+      expect(rect.top, greaterThanOrEqualTo(safeRect.top));
+      expect(rect.right, lessThanOrEqualTo(safeRect.right));
+      expect(rect.bottom, lessThanOrEqualTo(safeRect.bottom));
+    }
+    expect(tester.takeException(), isNull);
+  });
+
+  for (final String status in <String>[
+    'loading',
+    'missing',
+    'error',
+    'empty',
+  ]) {
+    testWidgets('compact landscape fits $status lyrics with large text', (
+      WidgetTester tester,
+    ) async {
+      final ProviderContainer container = await _pumpPlayer(
+        tester,
+        status == 'loading' ? null : _metadata,
+        size: const Size(640, 320),
+        padding: const EdgeInsets.fromLTRB(44, 8, 20, 16),
+        textScaler: TextScaler.linear(2),
+        home: const PlayerPage(),
+      );
+      if (status == 'error') {
+        (container.read(metadataControllerProvider.notifier)
+                as _FakeMetadataController)
+            .fail('歌词查询失败，请重试');
+      } else if (status == 'empty') {
+        (container.read(playerControllerProvider.notifier)
+                as _FakePlayerController)
+            .show(const PlayerState());
+      }
+      await tester.pump();
+      expect(find.byType(PlayerLandscapePage), findsOneWidget);
+      expect(find.byType(PlayerLandscapeControls), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+  }
 }
 
 Future<ProviderContainer> _pumpPlayer(
@@ -244,6 +581,9 @@ Future<ProviderContainer> _pumpPlayer(
   Metadata? metadata, {
   Size size = const Size(420, 900),
   Widget? home,
+  EdgeInsets padding = EdgeInsets.zero,
+  TextScaler textScaler = TextScaler.noScaling,
+  ThemeData? theme,
 }) async {
   tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1;
@@ -270,6 +610,15 @@ Future<ProviderContainer> _pumpPlayer(
         desktopLyricsControllerProvider.overrideWithValue(false),
       ],
       child: MaterialApp(
+        theme: theme,
+        builder: (BuildContext context, Widget? child) => MediaQuery(
+          data: MediaQuery.of(context).copyWith(
+            padding: padding,
+            viewPadding: padding,
+            textScaler: textScaler,
+          ),
+          child: child!,
+        ),
         home:
             home ??
             Scaffold(
@@ -347,6 +696,12 @@ class _FakeFavoritesController extends FavoritesController {
 }
 
 class _FakePlayerController extends PlayerController {
+  int togglePlaybackCalls = 0;
+  int previousCalls = 0;
+  int nextCalls = 0;
+  final List<Duration> progressSeeks = <Duration>[];
+  final List<Duration> lyricSeeks = <Duration>[];
+
   @override
   PlayerState build() => const PlayerState(
     currentItem: _item,
@@ -357,6 +712,38 @@ class _FakePlayerController extends PlayerController {
   );
 
   void show(PlayerState value) => state = value;
+
+  @override
+  Future<void> togglePlayback() async {
+    togglePlaybackCalls++;
+    state = state.copyWith(isPlaying: !state.isPlaying);
+  }
+
+  @override
+  Future<void> skipToPrevious() async => previousCalls++;
+
+  @override
+  Future<void> skipToNext() async => nextCalls++;
+
+  @override
+  void toggleQueueMode() {
+    state = state.copyWith(
+      queueMode: PlayerQueueMode
+          .values[(state.queueMode.index + 1) % PlayerQueueMode.values.length],
+    );
+  }
+
+  @override
+  Future<void> seek(Duration position) async {
+    lyricSeeks.add(position);
+    state = state.copyWith(position: position);
+  }
+
+  @override
+  Future<void> seekFromProgressBar(Duration position) async {
+    progressSeeks.add(position);
+    state = state.copyWith(position: position, isPlaying: true);
+  }
 }
 
 class _FakeMetadataController extends MetadataController {
@@ -373,6 +760,10 @@ class _FakeMetadataController extends MetadataController {
   );
 
   Future<void> receive(Future<Metadata> result) async => show(await result);
+
+  void fail(String message) {
+    state = MetadataState(stableId: _item.stableId, errorMessage: message);
+  }
 
   void show(Metadata value, {String? stableId}) {
     state = MetadataState(

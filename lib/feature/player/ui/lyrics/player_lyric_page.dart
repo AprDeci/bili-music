@@ -25,6 +25,7 @@ class PlayerLyricPage extends ConsumerWidget {
     required this.isActive,
     required this.onSeek,
     this.activeColor,
+    this.showToolbar = true,
   });
 
   final PlayerState state;
@@ -32,6 +33,7 @@ class PlayerLyricPage extends ConsumerWidget {
   final bool isActive;
   final ValueChanged<Duration> onSeek;
   final Color? activeColor;
+  final bool showToolbar;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -56,7 +58,7 @@ class PlayerLyricPage extends ConsumerWidget {
       activeColor: activeColor,
       showTranslation: showTranslation,
     );
-    if (item == null) {
+    if (item == null || !showToolbar) {
       return content;
     }
 

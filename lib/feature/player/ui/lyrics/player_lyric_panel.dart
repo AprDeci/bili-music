@@ -393,16 +393,21 @@ class _PlayerLyricPanelStatus extends StatelessWidget {
     );
 
     return Center(
-      child: _isDesktop
-          ? ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 320),
-              child: content,
-            )
-          : Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 30),
-              child: content,
-            ),
+      child: SingleChildScrollView(
+        child: _isDesktop
+            ? ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 320),
+                child: content,
+              )
+            : Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 30,
+                ),
+                child: content,
+              ),
+      ),
     );
   }
 }

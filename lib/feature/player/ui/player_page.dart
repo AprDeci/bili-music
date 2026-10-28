@@ -11,6 +11,7 @@ import 'package:bilimusic/feature/player/logic/display/player_display_provider.d
 import 'package:bilimusic/feature/player/logic/display/player_display_source_logic.dart';
 import 'package:bilimusic/feature/player/logic/display/player_cover_color_provider.dart';
 import 'package:bilimusic/feature/player/ui/components/player_dynamic_backdrop.dart';
+import 'package:bilimusic/feature/player/ui/components/player_landscape_page.dart';
 import 'package:bilimusic/feature/player/ui/lyrics/player_lyric_page.dart';
 import 'package:bilimusic/feature/player/ui/components/player_main_page.dart';
 import 'package:bilimusic/feature/player/ui/components/player_collection_sheet.dart';
@@ -99,6 +100,26 @@ class _PlayerPageState extends ConsumerState<PlayerPage> {
     final ColorScheme colorScheme = theme.colorScheme;
     final Color? coverColor = ref.watch(playerCoverColorControllerProvider);
 
+    if (MediaQuery.orientationOf(context) == Orientation.landscape) {
+      return Scaffold(
+        backgroundColor: colorScheme.surface,
+        body: SafeArea(
+          child: PlayerLandscapePage(
+            state: state,
+            item: item,
+            display: display,
+            activeColor: coverColor,
+            isFavorite: isFavorite,
+            onFavoriteToggle: item == null ? null : () => _toggleFavorite(item),
+            onToggleSource: display.canToggleSource
+                ? _toggleDisplaySource
+                : null,
+            onSeek: _seekFromProgressBar,
+          ),
+        ),
+      );
+    }
+
     return Scaffold(
       backgroundColor: colorScheme.surface,
       body: Stack(
@@ -121,6 +142,7 @@ class _PlayerPageState extends ConsumerState<PlayerPage> {
                     const SizedBox(height: 18),
                     Expanded(
                       child: PageView(
+                        key: const PageStorageKey<String>('playerPages'),
                         controller: _pageController,
                         onPageChanged: (int index) {
                           setState(() {
@@ -160,26 +182,8 @@ class _PlayerPageState extends ConsumerState<PlayerPage> {
                               onFavoriteToggle: item == null
                                   ? null
                                   : () => _toggleFavorite(item),
-                              onToggleSource: () {
-                                HapticFeedback.lightImpact();
-                                ref
-                                    .read(
-                                      playerDisplaySourceLogicProvider.notifier,
-                                    )
-                                    .toggle();
-                              },
-                              onSeek: (double value) {
-                                final int totalMs =
-                                    (ref
-                                                .read(playerControllerProvider)
-                                                .duration ??
-                                            Duration.zero)
-                                        .inMilliseconds;
-                                final Duration position = Duration(
-                                  milliseconds: (totalMs * value).round(),
-                                );
-                                playerController.seekFromProgressBar(position);
-                              },
+                              onToggleSource: _toggleDisplaySource,
+                              onSeek: _seekFromProgressBar,
                               onToggleQueueMode:
                                   playerController.toggleQueueMode,
                               onBackward: playerController.skipToPrevious,
@@ -215,6 +219,21 @@ class _PlayerPageState extends ConsumerState<PlayerPage> {
         ],
       ),
     );
+  }
+
+  void _toggleDisplaySource() {
+    HapticFeedback.lightImpact();
+    ref.read(playerDisplaySourceLogicProvider.notifier).toggle();
+  }
+
+  void _seekFromProgressBar(double value) {
+    final Duration duration =
+        ref.read(playerControllerProvider).duration ?? Duration.zero;
+    ref
+        .read(playerControllerProvider.notifier)
+        .seekFromProgressBar(
+          Duration(milliseconds: (duration.inMilliseconds * value).round()),
+        );
   }
 
   Future<void> _toggleFavorite(PlayableItem item) async {
