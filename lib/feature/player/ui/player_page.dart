@@ -103,19 +103,28 @@ class _PlayerPageState extends ConsumerState<PlayerPage> {
     if (MediaQuery.orientationOf(context) == Orientation.landscape) {
       return Scaffold(
         backgroundColor: colorScheme.surface,
-        body: SafeArea(
-          child: PlayerLandscapePage(
-            state: state,
-            item: item,
-            display: display,
-            activeColor: coverColor,
-            isFavorite: isFavorite,
-            onFavoriteToggle: item == null ? null : () => _toggleFavorite(item),
-            onToggleSource: display.canToggleSource
-                ? _toggleDisplaySource
-                : null,
-            onSeek: _seekFromProgressBar,
-          ),
+        body: Stack(
+          children: <Widget>[
+            Positioned.fill(
+              child: PlayerDynamicBackdrop(baseColor: coverColor),
+            ),
+            SafeArea(
+              child: PlayerLandscapePage(
+                state: state,
+                item: item,
+                display: display,
+                activeColor: coverColor,
+                isFavorite: isFavorite,
+                onFavoriteToggle: item == null
+                    ? null
+                    : () => _toggleFavorite(item),
+                onToggleSource: display.canToggleSource
+                    ? _toggleDisplaySource
+                    : null,
+                onSeek: _seekFromProgressBar,
+              ),
+            ),
+          ],
         ),
       );
     }

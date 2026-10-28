@@ -41,16 +41,18 @@ class PlayerLandscapePage extends ConsumerWidget {
     );
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+      padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
       child: LayoutBuilder(
         builder: (BuildContext context, BoxConstraints constraints) {
-          final double artworkSize = math.min(
-            constraints.maxHeight,
-            math.min(
-              constraints.maxWidth * 0.4,
-              math.max(0, constraints.maxWidth - 324),
-            ),
-          );
+          final double artworkSize =
+              math.min(
+                constraints.maxHeight,
+                math.min(
+                  constraints.maxWidth * 0.4,
+                  math.max(0, constraints.maxWidth - 324),
+                ),
+              ) *
+              0.85;
 
           return Row(
             children: <Widget>[

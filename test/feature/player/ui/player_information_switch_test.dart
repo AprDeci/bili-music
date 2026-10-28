@@ -247,7 +247,7 @@ void main() {
   testWidgets(
     'landscape places artwork beside active lyrics above shared controls',
     (WidgetTester tester) async {
-      await _pumpPlayer(
+      final ProviderContainer container = await _pumpPlayer(
         tester,
         _metadata.copyWith(
           lyrics: '[00:00.000]First line\n[00:30.000]Next line',
@@ -263,7 +263,24 @@ void main() {
       expect(find.byType(PlayerLandscapeControls), findsOneWidget);
       expect(find.byType(PlayerTrackHeader), findsNothing);
       expect(find.byType(PlayerTopBar), findsNothing);
-      expect(find.byType(PlayerDynamicBackdrop), findsNothing);
+      expect(find.byType(PlayerDynamicBackdrop), findsOneWidget);
+      expect(
+        tester.getSize(find.byType(PlayerDynamicBackdrop)),
+        const Size(900, 420),
+      );
+      final _FakeCoverColorController coverColor =
+          container.read(playerCoverColorControllerProvider.notifier)
+              as _FakeCoverColorController;
+      for (final Color color in <Color>[Colors.blue, Colors.orange]) {
+        coverColor.show(color);
+        await tester.pumpAndSettle();
+        expect(
+          tester
+              .widget<PlayerDynamicBackdrop>(find.byType(PlayerDynamicBackdrop))
+              .baseColor,
+          color,
+        );
+      }
       expect(find.byType(PageView), findsNothing);
       expect(find.text('Song title'), findsNothing);
       expect(find.text('Song artist'), findsNothing);
@@ -301,12 +318,18 @@ void main() {
       );
       expect(artwork.right, lessThanOrEqualTo(lyricPanel.left));
       expect(artwork.width, closeTo(artwork.height, 0.01));
+      expect(artwork.width, lessThan(320));
+      expect(artwork.top, greaterThan(32));
+      expect(artwork.bottom, lessThan(388));
       final double centerY = tester
           .getRect(find.byType(PlayerLandscapePage))
           .center
           .dy;
-      expect(artwork.center.dy, closeTo(centerY, 0.01));
-      expect((lyricPanel.top + controls.bottom) / 2, closeTo(centerY, 0.01));
+      expect(artwork.center.dy, closeTo(centerY - 8, 0.01));
+      expect(
+        (lyricPanel.top + controls.bottom) / 2,
+        closeTo(centerY - 8, 0.01),
+      );
       expect(find.byTooltip('返回'), findsNothing);
       expect(find.byIcon(Icons.keyboard_arrow_down_rounded), findsNothing);
       expect(lyricPanel.bottom, lessThanOrEqualTo(progress.top));
@@ -777,6 +800,8 @@ class _FakeMetadataController extends MetadataController {
 class _FakeCoverColorController extends PlayerCoverColorController {
   @override
   Color? build() => null;
+
+  void show(Color color) => state = color;
 }
 
 class _FakeLyricSettingsLogic extends PlayerLyricSettingsLogic {
