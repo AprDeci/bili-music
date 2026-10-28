@@ -181,6 +181,88 @@ void main() {
     expect(jsonDecode(indexJson), isEmpty);
     expect(removedKeys, contains(key));
   });
+
+  test(
+    'legacy metadata matches cid but does not guess a missing page',
+    () async {
+      final PlayableItem item = _item(bvid: 'BV1', aid: 1, cid: 10);
+      await repository.cacheAudio(
+        item: item,
+        audioStream: _stream(url: 'https://audio', cid: 10, qualityId: 30280),
+      );
+      final List<dynamic> entries = jsonDecode(indexJson) as List<dynamic>;
+      (entries.single as Map<String, dynamic>).remove('page');
+      indexJson = jsonEncode(entries);
+
+      expect(
+        await repository.lookupCachedAudio(
+          item: item,
+          preference: PlayerAudioQualityPreference.auto,
+        ),
+        isNotNull,
+      );
+      expect(
+        await repository.lookupCachedAudio(
+          item: _itemWithoutCid(bvid: 'BV1', aid: 1),
+          preference: PlayerAudioQualityPreference.auto,
+        ),
+        isNull,
+      );
+      expect(jsonDecode(indexJson), hasLength(1));
+    },
+  );
+
+  test('strict quality lookup does not use another quality', () async {
+    final PlayableItem item = _item(bvid: 'BV1', aid: 1, cid: 10);
+    await repository.cacheAudio(
+      item: item,
+      audioStream: _stream(url: 'https://audio', cid: 10, qualityId: 30280),
+    );
+    expect(
+      await repository.lookupCachedAudio(
+        item: item,
+        preference: PlayerAudioQualityPreference.k132,
+        allowQualityFallback: false,
+      ),
+      isNull,
+    );
+  });
+
+  test(
+    'auto skips a damaged best candidate and uses the next valid one',
+    () async {
+      final PlayableItem item = _item(bvid: 'BV1', aid: 1, cid: 10);
+      final AudioStreamInfo high = _stream(
+        url: 'https://high',
+        cid: 10,
+        qualityId: 30280,
+        bandwidth: 192000,
+      );
+      await repository.cacheAudio(item: item, audioStream: high);
+      await repository.cacheAudio(
+        item: item,
+        audioStream: _stream(
+          url: 'https://low',
+          cid: 10,
+          qualityId: 30232,
+          bandwidth: 132000,
+        ),
+      );
+      final String key = repository.buildCacheKey(
+        item: item,
+        audioStream: high,
+      );
+      await files[key]!.writeAsString('damaged');
+      final CachedAudio? cached = await repository.lookupCachedAudio(
+        item: item,
+        preference: PlayerAudioQualityPreference.auto,
+      );
+
+      expect(cached?.metadata.qualityId, 30232);
+      expect(removedKeys, contains(key));
+      expect(jsonDecode(indexJson), hasLength(1));
+    },
+  );
 }
 
 PlayableItem _item({required String bvid, required int aid, required int cid}) {
@@ -188,6 +270,7 @@ PlayableItem _item({required String bvid, required int aid, required int cid}) {
     aid: aid,
     bvid: bvid,
     cid: cid,
+    page: 1,
     title: 'title',
     author: 'author',
     coverUrl: '',

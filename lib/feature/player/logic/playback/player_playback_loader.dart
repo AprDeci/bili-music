@@ -10,6 +10,7 @@ import 'package:bilimusic/feature/player/domain/player_audio_quality_preference.
 import 'package:bilimusic/feature/player/domain/playable_item.dart';
 import 'package:bilimusic/feature/player/domain/player_state.dart';
 import 'package:bilimusic/feature/player/logic/playback/player_audio_engine.dart';
+import 'package:dio/dio.dart';
 
 typedef PlayerControllerLogger =
     void Function(String event, {Map<String, Object?>? details});
@@ -65,10 +66,21 @@ class PlayerPlaybackLoader {
     int? preferredQualityId,
   }) {
     final String overrideKey = preferredQualityId?.toString() ?? 'default';
-    return '${item.stableId}:${preference.storageValue}:$overrideKey';
+    final String partKey = item.cid == null || item.cid! <= 0
+        ? ':page:${item.page ?? 1}'
+        : '';
+    return '${item.stableId}$partKey:${preference.storageValue}:$overrideKey';
   }
 
   Future<ResolvedQueueEntry> resolveQueueEntry(
+    PlayableItem item, {
+    int? preferredQualityId,
+  }) => _resolveQueueEntry(
+    item,
+    preferredQualityId: preferredQualityId,
+  ).timeout(const Duration(seconds: 5));
+
+  Future<ResolvedQueueEntry> _resolveQueueEntry(
     PlayableItem item, {
     int? preferredQualityId,
   }) async {
@@ -79,25 +91,32 @@ class PlayerPlaybackLoader {
       preference: qualityPreference,
       preferredQualityId: preferredQualityId,
     );
-    final bool offline = await _isOffline();
-    if (offline) {
-      if (!item.hasIdentity) {
-        throw const BiliPlayerException('当前搜索结果缺少可播放的视频标识。');
-      }
-      return _resolveOfflineEntry(
-        item,
-        preference: qualityPreference,
-        preferredQualityId: preferredQualityId,
-      );
+    if (!item.hasIdentity) {
+      throw const BiliPlayerException('当前搜索结果缺少可播放的视频标识。');
+    }
+
+    final ResolvedQueueEntry? diskCache = await _resolveCachedEntry(
+      item,
+      preference: qualityPreference,
+      preferredQualityId: preferredQualityId,
+    );
+    if (diskCache != null) {
+      return diskCache;
+    }
+
+    if (await _isOffline()) {
+      return await _resolveCachedEntry(
+            item,
+            preference: qualityPreference,
+            preferredQualityId: preferredQualityId,
+            allowQualityFallback: true,
+          ) ??
+          (throw const BiliPlayerException('设备处于离线状态，且没有可用的音频缓存。'));
     }
 
     final ResolvedQueueEntry? cached = _resolvedEntries[cacheKey];
     if (cached != null) {
       return cached;
-    }
-
-    if (!item.hasIdentity) {
-      throw const BiliPlayerException('当前搜索结果缺少可播放的视频标识。');
     }
 
     late final PlayerLoadResult loadResult;
@@ -109,12 +128,20 @@ class PlayerPlaybackLoader {
         preferredQualityId: preferredQualityId,
       );
     } on Object catch (error, stackTrace) {
-      if (await _isOffline()) {
-        return _resolveOfflineEntry(
+      if (error is SocketException ||
+          error is TimeoutException ||
+          (error is DioException &&
+              error.type != DioExceptionType.badResponse &&
+              error.type != DioExceptionType.cancel)) {
+        final ResolvedQueueEntry? fallback = await _resolveCachedEntry(
           item,
           preference: qualityPreference,
           preferredQualityId: preferredQualityId,
+          allowQualityFallback: true,
         );
+        if (fallback != null) {
+          return fallback;
+        }
       }
       Error.throwWithStackTrace(error, stackTrace);
     }
@@ -139,24 +166,27 @@ class PlayerPlaybackLoader {
     return entry;
   }
 
-  Future<ResolvedQueueEntry> _resolveOfflineEntry(
+  Future<ResolvedQueueEntry?> _resolveCachedEntry(
     PlayableItem item, {
     required PlayerAudioQualityPreference preference,
     int? preferredQualityId,
+    bool allowQualityFallback = false,
   }) async {
     final CachedAudio? diskCache = await _audioCacheRepository
         .lookupCachedAudio(
           item: item,
           preference: preference,
           preferredQualityId: preferredQualityId,
+          allowQualityFallback: allowQualityFallback,
         );
     if (diskCache == null) {
-      throw const BiliPlayerException('设备处于离线状态，且没有可用的音频缓存。');
+      return null;
     }
     final AudioCacheMetadata metadata = diskCache.metadata;
     return ResolvedQueueEntry(
       item: item.copyWith(
         cid: metadata.cid,
+        page: metadata.page ?? item.page,
         pageTitle: (item.pageTitle?.trim().isNotEmpty ?? false)
             ? item.pageTitle
             : metadata.pageTitle,
@@ -191,6 +221,9 @@ class PlayerPlaybackLoader {
     ResolvedQueueEntry entry,
   ) async {
     try {
+      if (entry.availableParts.isNotEmpty || await _isOffline()) {
+        return null;
+      }
       final List<PlayableItem> parts = await _resolveAllParts(entry.item);
       final int cid = entry.item.cid ?? entry.audioStream.cid;
       final PlayableItem? item = parts
@@ -206,10 +239,51 @@ class PlayerPlaybackLoader {
         );
         return null;
       }
+      AudioStreamInfo audioStream = entry.audioStream;
+      try {
+        final PlayerLoadResult result = await _repository.resolveAudioStream(
+          item,
+          session: _readSession(),
+          qualityPreference: _readQualityPreference(),
+          preferredQualityId: audioStream.qualityId,
+        );
+        final List<AudioQualityOption> qualities = <AudioQualityOption>[
+          AudioQualityOption(
+            qualityId: audioStream.qualityId,
+            bandwidth: audioStream.bandwidth,
+            label: audioStream.qualityLabel ?? '本地缓存',
+            isSelected: true,
+          ),
+          for (final AudioQualityOption option
+              in result.audioStream.availableQualities)
+            if (option.qualityId != audioStream.qualityId)
+              option.copyWith(isSelected: false),
+        ];
+        audioStream = AudioStreamInfo(
+          streamUrl: audioStream.streamUrl,
+          backupUrls: audioStream.backupUrls,
+          headers: audioStream.headers,
+          cid: audioStream.cid,
+          duration: audioStream.duration,
+          bandwidth: audioStream.bandwidth,
+          availableQualities: qualities,
+          pageTitle: audioStream.pageTitle,
+          qualityId: audioStream.qualityId,
+          qualityLabel: audioStream.qualityLabel,
+        );
+      } on Object catch (error) {
+        _logEvent(
+          'cache-qualities:failed',
+          details: <String, Object?>{
+            'stableId': entry.item.stableId,
+            'error': error,
+          },
+        );
+      }
       return ResolvedQueueEntry(
         item: item,
         availableParts: List<PlayableItem>.unmodifiable(parts),
-        audioStream: entry.audioStream,
+        audioStream: audioStream,
         cachedFile: entry.cachedFile,
       );
     } on Object catch (error) {

@@ -952,7 +952,7 @@ class PlayerController extends Notifier<PlayerState>
     required int retryCount,
     required Set<String> skippedUnavailableStableIds,
   }) async {
-    if (retryCount < _maxPlaybackRetries) {
+    if (error is! TimeoutException && retryCount < _maxPlaybackRetries) {
       final int nextRetryCount = retryCount + 1;
       _enginePlaybackRetryCount = nextRetryCount;
       final PlayableItem failedItem = state.queue[failedIndex];
@@ -1160,6 +1160,7 @@ class PlayerController extends Notifier<PlayerState>
       ),
       currentItem: completed.item,
       availableParts: completed.availableParts,
+      audioStream: completed.audioStream,
     );
     _publishPlaybackState();
     unawaited(_persistQueueSnapshot());

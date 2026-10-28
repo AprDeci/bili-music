@@ -39,6 +39,7 @@ class AudioCacheMetadata {
     required this.byteLength,
     required this.sha256Hash,
     required this.completedAt,
+    this.page,
     this.schemaVersion = 2,
   });
 
@@ -46,6 +47,7 @@ class AudioCacheMetadata {
   final String bvid;
   final int aid;
   final int cid;
+  final int? page;
   final int? qualityId;
   final String? qualityLabel;
   final int bandwidth;
@@ -61,6 +63,7 @@ class AudioCacheMetadata {
     'bvid': bvid,
     'aid': aid,
     'cid': cid,
+    'page': page,
     'qualityId': qualityId,
     'qualityLabel': qualityLabel,
     'bandwidth': bandwidth,
@@ -102,6 +105,7 @@ class AudioCacheMetadata {
       bvid: value['bvid'] as String? ?? '',
       aid: aid,
       cid: cid,
+      page: readInt('page'),
       qualityId: readInt('qualityId'),
       qualityLabel: value['qualityLabel'] as String?,
       bandwidth: bandwidth,
@@ -175,13 +179,16 @@ class PlayerAudioCacheRepository {
     required PlayableItem item,
     required PlayerAudioQualityPreference preference,
     int? preferredQualityId,
+    bool allowQualityFallback = true,
   }) async {
     final int? cid = item.cid;
     await _indexUpdates;
     final List<AudioCacheMetadata> matching = (await _readMetadata())
         .where(
           (AudioCacheMetadata metadata) =>
-              (cid == null || cid <= 0 || metadata.cid == cid) &&
+              (cid != null && cid > 0
+                  ? metadata.cid == cid
+                  : metadata.page == (item.page ?? 1)) &&
               (item.bvid.isNotEmpty
                   ? metadata.bvid == item.bvid
                   : metadata.bvid.isEmpty && metadata.aid == item.aid),
@@ -195,24 +202,31 @@ class PlayerAudioCacheRepository {
           PlayerAudioQualityPreference.k132 => 30232,
           PlayerAudioQualityPreference.auto => null,
         };
-    final List<AudioCacheMetadata> preferredCandidates = targetQualityId == null
-        ? matching
-        : matching
-              .where(
-                (AudioCacheMetadata metadata) =>
-                    metadata.qualityId == targetQualityId,
-              )
-              .toList(growable: false);
-    final Iterable<AudioCacheMetadata> candidates = preferredCandidates.isEmpty
-        ? matching
-        : preferredCandidates;
-    AudioCacheMetadata? selected;
+    final List<AudioCacheMetadata> candidates = matching
+        .where(
+          (AudioCacheMetadata metadata) =>
+              allowQualityFallback ||
+              targetQualityId == null ||
+              metadata.qualityId == targetQualityId,
+        )
+        .toList();
+    candidates.sort((AudioCacheMetadata left, AudioCacheMetadata right) {
+      if (targetQualityId != null) {
+        final bool leftPreferred = left.qualityId == targetQualityId;
+        final bool rightPreferred = right.qualityId == targetQualityId;
+        if (leftPreferred != rightPreferred) {
+          return leftPreferred ? -1 : 1;
+        }
+      }
+      return right.bandwidth.compareTo(left.bandwidth);
+    });
     for (final AudioCacheMetadata candidate in candidates) {
-      if (selected == null || candidate.bandwidth > selected.bandwidth) {
-        selected = candidate;
+      final CachedAudio? cached = await _validated(candidate);
+      if (cached != null) {
+        return cached;
       }
     }
-    return selected == null ? null : _validated(selected);
+    return null;
   }
 
   Future<File?> getCachedFile({
@@ -305,6 +319,7 @@ class PlayerAudioCacheRepository {
       bvid: item.bvid,
       aid: item.aid,
       cid: stream.cid,
+      page: item.page,
       qualityId: stream.qualityId,
       qualityLabel: stream.qualityLabel,
       bandwidth: stream.bandwidth,
