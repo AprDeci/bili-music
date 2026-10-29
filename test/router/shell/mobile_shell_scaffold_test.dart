@@ -63,7 +63,7 @@ void main() {
           final Rect miniRect = tester.getRect(mini);
           final Rect tabsRect = tester.getRect(tabs);
           expect(tabsRect.top - miniRect.bottom, closeTo(10, 0.01));
-          expect(tabsRect.height, 60);
+          expect(tabsRect.height, 52);
           expect(tabsRect.bottom, 900 - (inset == 0 ? 10 : inset));
           expect(tester.getRect(find.byKey(_viewportKey)).bottom, 900);
           expect(_spacerHeight(tester), closeTo(900 - miniRect.top + 16, 0.01));
@@ -124,7 +124,7 @@ void main() {
       controller.clear();
       await tester.pumpAndSettle();
       expect(find.byType(MiniPlayerBar), findsNothing);
-      expect(_spacerHeight(tester), 86);
+      expect(_spacerHeight(tester), 78);
 
       controller.load();
       await tester.pumpAndSettle();

@@ -37,7 +37,7 @@ class _MobileShellScaffoldState extends ConsumerState<MobileShellScaffold> {
   static const Duration _autoUpdateCheckDelay = Duration(milliseconds: 600);
 
   static const double _bottomBarCornerRadius = 40;
-  static const double _bottomBarHeight = 60;
+  static const double _bottomBarHeight = 52;
 
   bool _didScheduleUpdateCheck = false;
 
