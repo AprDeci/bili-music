@@ -164,7 +164,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                 ),
               ),
             ),
-          const BottomPageSpacer.tab(),
+          const BottomPageSpacer(),
         ],
       ),
     );

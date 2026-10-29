@@ -1,16 +1,8 @@
-import 'package:bilimusic/common/bottom_height_helper.dart';
 import 'package:bilimusic/common/util/screen_util.dart';
 import 'package:flutter/material.dart';
 
-enum BottomPageSpacerType { tab, overlay }
-
 class BottomPageSpacer extends StatelessWidget {
-  const BottomPageSpacer.tab({super.key}) : type = BottomPageSpacerType.tab;
-
-  const BottomPageSpacer.overlay({super.key})
-    : type = BottomPageSpacerType.overlay;
-
-  final BottomPageSpacerType type;
+  const BottomPageSpacer({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -18,14 +10,6 @@ class BottomPageSpacer extends StatelessWidget {
       return const SizedBox.shrink();
     }
 
-    final double height = switch (type) {
-      BottomPageSpacerType.tab => BottomHeightHelper.tabPageBottomSpacing(
-        context,
-      ),
-      BottomPageSpacerType.overlay =>
-        BottomHeightHelper.overlayPageBottomSpacing(context),
-    };
-
-    return SizedBox(height: height);
+    return SizedBox(height: MediaQuery.paddingOf(context).bottom + 16);
   }
 }

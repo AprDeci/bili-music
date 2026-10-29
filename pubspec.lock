@@ -455,14 +455,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.4.1"
-  flutter_floating_bottom_bar:
-    dependency: "direct main"
-    description:
-      name: flutter_floating_bottom_bar
-      sha256: "2b41cfea2aaf2738da74b097f5a2c7d6dc38f2e0255f1355118ad0834a2348e5"
-      url: "https://pub.dev"
-    source: hosted
-    version: "2.0.0"
   flutter_launcher_icons:
     dependency: "direct dev"
     description:
@@ -947,14 +939,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "5.6.3"
-  motor:
-    dependency: transitive
-    description:
-      name: motor
-      sha256: cbd49f21b00e568c2b1a55f134ed803614a107782f4fea7769693bca32940c58
-      url: "https://pub.dev"
-    source: hosted
-    version: "1.1.0"
   multi_reorderable:
     dependency: "direct main"
     description:

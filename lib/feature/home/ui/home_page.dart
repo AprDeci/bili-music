@@ -34,7 +34,7 @@ class HomePage extends ConsumerWidget {
             const RecentPlaybackSection(),
             const SizedBox(height: 30),
             const MusicRankingSection(),
-            const BottomPageSpacer.tab(),
+            const BottomPageSpacer(),
           ],
         ),
       ),

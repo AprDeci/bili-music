@@ -30,7 +30,7 @@ class FavoriteUpListPage extends ConsumerWidget {
               },
               itemBuilder: (BuildContext context, int index) {
                 if (index == ups.length) {
-                  return const BottomPageSpacer.tab();
+                  return const BottomPageSpacer();
                 }
                 return _FavoriteUpTile(up: ups[index]);
               },

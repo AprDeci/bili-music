@@ -39,7 +39,7 @@ class DesktopRecentPlaybackPage extends ConsumerWidget {
               itemCount: items.length + 1,
               itemBuilder: (BuildContext context, int index) {
                 if (index == items.length) {
-                  return const BottomPageSpacer.overlay();
+                  return const BottomPageSpacer();
                 }
 
                 final RecentPlaybackEntry item = items[index];

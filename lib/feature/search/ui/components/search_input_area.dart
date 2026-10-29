@@ -125,7 +125,7 @@ class SearchIdleView extends StatelessWidget {
                 onClearHistory: onClearHistory,
                 onSelectKeyword: onSelectKeyword,
               ),
-            const SliverToBoxAdapter(child: BottomPageSpacer.overlay()),
+            const SliverToBoxAdapter(child: BottomPageSpacer()),
           ],
         ),
         if (isShowingSuggestions)

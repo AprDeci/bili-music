@@ -532,7 +532,7 @@ class _FavoriteCollectionPageState
   ) {
     return FavoriteCollectionItemsList(
       items: visibleItems,
-      footer: const BottomPageSpacer.overlay(),
+      footer: const BottomPageSpacer(),
       onNotification: (_) => false,
       selectedItemIds: _selectedItemIds,
       selectionMode: _selectionMode,

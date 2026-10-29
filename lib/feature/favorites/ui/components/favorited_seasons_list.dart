@@ -33,7 +33,7 @@ class FavoritedSeasonsList extends ConsumerWidget {
           const SizedBox(height: 8),
       itemBuilder: (BuildContext context, int index) {
         if (index == seasons.length) {
-          return const BottomPageSpacer.overlay();
+          return const BottomPageSpacer();
         }
         final FavoritedSeason season = seasons[index];
         return Material(

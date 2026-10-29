@@ -1,4 +1,3 @@
-import 'package:bilimusic/common/bottom_height_helper.dart';
 import 'package:bilimusic/common/util/color_util.dart';
 import 'package:bilimusic/feature/player/domain/player_state.dart';
 import 'package:bilimusic/feature/player/logic/player_controller.dart';
@@ -10,7 +9,6 @@ import 'package:bilimusic/router/util/mobile_branch_navigator_keys.dart';
 import 'package:bilimusic/router/util/mobile_chrome_config.dart';
 import 'package:bilimusic/router/util/player_navigation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_floating_bottom_bar/flutter_floating_bottom_bar.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hugeicons/hugeicons.dart';
@@ -38,16 +36,8 @@ class _MobileShellScaffoldState extends ConsumerState<MobileShellScaffold> {
   static const Curve _animationCurve = Curves.easeInOutCubic;
   static const Duration _autoUpdateCheckDelay = Duration(milliseconds: 600);
 
-  // 底部浮动导航栏的尺寸，玻璃与非玻璃两套共用，切换时高度一致不抖动。
-  static const double _bottomBarWidthFactor = 0.92;
   static const double _bottomBarCornerRadius = 40;
-  static const double _bottomBarHorizontalPadding = 64;
-  static const double _bottomBarHeight = BottomHeightHelper.bottomBarHeight;
-  static const double _glassBarVerticalPadding = 4;
-  // 玻璃栏给内部留出上下各 4 的 padding，故栏体高度取 52，
-  // 52 + 4 + 4 == 60，与非玻璃栏 / BottomHeightHelper 的高度一致。
-  static const double _glassBarHeight =
-      _bottomBarHeight - _glassBarVerticalPadding * 2;
+  static const double _bottomBarHeight = 60;
 
   bool _didScheduleUpdateCheck = false;
 
@@ -74,11 +64,6 @@ class _MobileShellScaffoldState extends ConsumerState<MobileShellScaffold> {
   }
 
   @override
-  void didUpdateWidget(covariant MobileShellScaffold oldWidget) {
-    super.didUpdateWidget(oldWidget);
-  }
-
-  @override
   Widget build(BuildContext context) {
     return ValueListenableBuilder<bool>(
       valueListenable: playerPageVisibilityListenable,
@@ -89,56 +74,55 @@ class _MobileShellScaffoldState extends ConsumerState<MobileShellScaffold> {
   }
 
   Widget _buildScaffold(BuildContext context, bool isPlayerPageVisible) {
-    final double screenWidth = MediaQuery.of(context).size.width;
-    final double bottomInset = MediaQuery.viewPaddingOf(context).bottom;
     final PlayerState playerState = ref.watch(playerControllerProvider);
     final bool useGlassBar = ref.watch(appearanceSettingLogicProvider);
-    final double bottomBarOffset = BottomHeightHelper.bottomBarOffset(
-      bottomInset: bottomInset,
-    );
-    final bool usesCollapsedBottomChrome =
-        isPlayerPageVisible || !widget.chrome.showBottomTabs;
-    final double miniPlayerVisibleBottomPadding =
-        BottomHeightHelper.miniPlayerBottomPaddingWithBottomBar(
-          bottomInset: bottomInset,
-          bottomBarOffset: bottomBarOffset,
-        );
-    final double miniPlayerCollapsedBottomPadding =
-        BottomHeightHelper.miniPlayerBottomPaddingWithoutBottomBar(
-          bottomInset: bottomInset,
-        );
+    final bool showTabs = widget.chrome.showBottomTabs && !isPlayerPageVisible;
+    final bool showMiniPlayer =
+        widget.chrome.showMiniPlayer &&
+        playerState.hasItem &&
+        !isPlayerPageVisible;
 
-    final Widget content = _buildShellContent(
-      context,
-      playerState,
-      isPlayerPageVisible,
-      usesCollapsedBottomChrome,
-      useGlassBar,
-      miniPlayerVisibleBottomPadding,
-      miniPlayerCollapsedBottomPadding,
-    );
-
-    if (usesCollapsedBottomChrome) {
-      return Scaffold(body: content);
-    }
-
-    return GlassScaffold(
-      body: BottomBar(
-        layout: BottomBarLayout(
-          width: screenWidth * _bottomBarWidthFactor,
-          offset: bottomBarOffset,
-          borderRadius: BorderRadius.circular(_bottomBarCornerRadius),
-          fit: StackFit.expand,
-          respectSafeArea: false,
-        ),
-        scrollBehavior: const BottomBarScrollBehavior(hideOnScroll: false),
-        theme: const BottomBarThemeData(
-          barDecoration: BoxDecoration(color: Colors.transparent),
-        ),
-        body: content,
-        child: useGlassBar
-            ? _buildGlassTabBar(context)
-            : _buildFallbackTabBar(context),
+    return GlassPage(
+      child: Scaffold(
+        extendBody: true,
+        body: widget.navigationShell,
+        bottomNavigationBar: !showTabs && !showMiniPlayer
+            ? null
+            : SafeArea(
+                top: false,
+                minimum: EdgeInsets.only(bottom: showTabs ? 10 : 20),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[
+                    if (showMiniPlayer)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        child: useGlassBar
+                            ? MiniPlayerGlassBar(
+                                state: playerState,
+                                onTap: _openMiniPlayer,
+                                onTogglePlayback: _togglePlayback,
+                              )
+                            : MiniPlayerBar(
+                                state: playerState,
+                                onTap: _openMiniPlayer,
+                                onTogglePlayback: _togglePlayback,
+                              ),
+                      ),
+                    if (showMiniPlayer && showTabs) const SizedBox(height: 10),
+                    if (showTabs)
+                      FractionallySizedBox(
+                        widthFactor: 0.92,
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 64),
+                          child: useGlassBar
+                              ? _buildGlassTabBar(context)
+                              : _buildFallbackTabBar(context),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
       ),
     );
   }
@@ -149,9 +133,9 @@ class _MobileShellScaffoldState extends ConsumerState<MobileShellScaffold> {
 
     return GlassTabBar.bottom(
       spacing: 4,
-      verticalPadding: _glassBarVerticalPadding,
-      barHeight: _glassBarHeight,
-      horizontalPadding: _bottomBarHorizontalPadding,
+      verticalPadding: 0,
+      barHeight: _bottomBarHeight,
+      horizontalPadding: 0,
       unselectedIconColor: theme.textTheme.bodyMedium?.color ?? Colors.black,
       selectedIconColor: colorScheme.primary,
       indicatorColor: ColorUtil.getLight(
@@ -175,49 +159,42 @@ class _MobileShellScaffoldState extends ConsumerState<MobileShellScaffold> {
   Widget _buildFallbackTabBar(BuildContext context) {
     final ColorScheme colorScheme = Theme.of(context).colorScheme;
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(
-        horizontal: _bottomBarHorizontalPadding,
-      ),
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          color: colorScheme.surface,
-          borderRadius: BorderRadius.circular(_bottomBarCornerRadius),
-          border: Border.all(
-            color: colorScheme.primary.withValues(alpha: 0.08),
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        borderRadius: BorderRadius.circular(_bottomBarCornerRadius),
+        border: Border.all(color: colorScheme.primary.withValues(alpha: 0.08)),
+        boxShadow: const <BoxShadow>[
+          BoxShadow(
+            color: Color(0x14000000),
+            blurRadius: 30,
+            offset: Offset(0, 16),
           ),
-          boxShadow: const <BoxShadow>[
-            BoxShadow(
-              color: Color(0x14000000),
-              blurRadius: 30,
-              offset: Offset(0, 16),
-            ),
-          ],
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(_bottomBarCornerRadius),
-          child: SizedBox(
-            height: _bottomBarHeight,
-            child: Row(
-              children: <Widget>[
-                _BottomNavItem(
-                  icon: Icons.home_outlined,
-                  selectedIcon: Icons.home,
-                  selected: widget.navigationShell.currentIndex == 0,
-                  selectedColor: colorScheme.primary,
-                  indicatorColor: colorScheme.primary.withValues(alpha: 0.12),
-                  onTap: () => _selectBranch(0),
-                ),
-                _BottomNavItem(
-                  icon: Icons.person_outlined,
-                  selectedIcon: Icons.person,
-                  selected: widget.navigationShell.currentIndex == 1,
-                  selectedColor: colorScheme.primary,
-                  indicatorColor: colorScheme.primary.withValues(alpha: 0.12),
-                  onTap: () => _selectBranch(1),
-                ),
-              ],
-            ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(_bottomBarCornerRadius),
+        child: SizedBox(
+          height: _bottomBarHeight,
+          child: Row(
+            children: <Widget>[
+              _BottomNavItem(
+                icon: Icons.home_outlined,
+                selectedIcon: Icons.home,
+                selected: widget.navigationShell.currentIndex == 0,
+                selectedColor: colorScheme.primary,
+                indicatorColor: colorScheme.primary.withValues(alpha: 0.12),
+                onTap: () => _selectBranch(0),
+              ),
+              _BottomNavItem(
+                icon: Icons.person_outlined,
+                selectedIcon: Icons.person,
+                selected: widget.navigationShell.currentIndex == 1,
+                selectedColor: colorScheme.primary,
+                indicatorColor: colorScheme.primary.withValues(alpha: 0.12),
+                onTap: () => _selectBranch(1),
+              ),
+            ],
           ),
         ),
       ),
@@ -241,59 +218,8 @@ class _MobileShellScaffoldState extends ConsumerState<MobileShellScaffold> {
     return openPlayerPage(context, navigator: branchNavigator);
   }
 
-  Widget _buildShellContent(
-    BuildContext context,
-    PlayerState playerState,
-    bool isPlayerPageVisible,
-    bool usesCollapsedBottomChrome,
-    bool useGlassBar,
-    double miniPlayerVisibleBottomPadding,
-    double miniPlayerCollapsedBottomPadding,
-  ) {
-    return Stack(
-      fit: StackFit.expand,
-      children: <Widget>[
-        widget.navigationShell,
-        if (widget.chrome.showMiniPlayer &&
-            playerState.hasItem &&
-            !isPlayerPageVisible)
-          Align(
-            alignment: Alignment.bottomCenter,
-            child: AnimatedSlide(
-              duration: _animationDuration,
-              curve: _animationCurve,
-              offset: usesCollapsedBottomChrome
-                  ? const Offset(0, 0.12)
-                  : Offset.zero,
-              child: useGlassBar
-                  ? MiniPlayerGlassBar(
-                      state: playerState,
-                      bottomPadding: usesCollapsedBottomChrome
-                          ? miniPlayerCollapsedBottomPadding
-                          : miniPlayerVisibleBottomPadding,
-                      onTap: _openMiniPlayer,
-                      onTogglePlayback: () {
-                        ref
-                            .read(playerControllerProvider.notifier)
-                            .togglePlayback();
-                      },
-                    )
-                  : MiniPlayerBar(
-                      state: playerState,
-                      bottomPadding: usesCollapsedBottomChrome
-                          ? miniPlayerCollapsedBottomPadding
-                          : miniPlayerVisibleBottomPadding,
-                      onTap: _openMiniPlayer,
-                      onTogglePlayback: () {
-                        ref
-                            .read(playerControllerProvider.notifier)
-                            .togglePlayback();
-                      },
-                    ),
-            ),
-          ),
-      ],
-    );
+  void _togglePlayback() {
+    ref.read(playerControllerProvider.notifier).togglePlayback();
   }
 }
 

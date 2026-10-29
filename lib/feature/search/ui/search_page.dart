@@ -125,6 +125,7 @@ class _SearchPageState extends ConsumerState<SearchPage>
       },
       child: Scaffold(
         body: SafeArea(
+          bottom: false,
           child: Column(
             children: <Widget>[
               if (!isDesktop)

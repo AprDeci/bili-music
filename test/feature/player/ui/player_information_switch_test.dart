@@ -17,7 +17,6 @@ import 'package:bilimusic/feature/player/logic/display/player_display_settings_l
 import 'package:bilimusic/feature/player/logic/display/player_display_source_logic.dart';
 import 'package:bilimusic/feature/player/logic/lyrics/player_lyric_settings_logic.dart';
 import 'package:bilimusic/feature/player/logic/player_online_audience_controller.dart';
-import 'package:bilimusic/common/bottom_height_helper.dart';
 import 'package:bilimusic/feature/player/ui/mini/mini_player_bar.dart';
 import 'package:bilimusic/feature/player/ui/mini/mini_player_content.dart';
 import 'package:bilimusic/feature/player/ui/components/player_artwork.dart';
@@ -69,7 +68,6 @@ void main() {
               alignment: Alignment.bottomCenter,
               child: MiniPlayerBar(
                 state: const PlayerState(currentItem: _item),
-                bottomPadding: 0,
                 onTap: () => openCalls++,
                 onTogglePlayback: () => toggleCalls++,
               ),
@@ -78,12 +76,7 @@ void main() {
         );
 
         final double height = tester.getSize(find.byType(MiniPlayerBar)).height;
-        expect(
-          height,
-          textScale == 1
-              ? BottomHeightHelper.miniPlayerBarHeight
-              : greaterThan(BottomHeightHelper.miniPlayerBarHeight),
-        );
+        expect(height, textScale == 1 ? 52 : greaterThan(52));
         expect(
           tester.getSize(find.byType(MiniPlayerArtwork)),
           const Size(44, 44),

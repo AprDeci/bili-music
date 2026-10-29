@@ -247,7 +247,7 @@ class _SearchTabScrollViewState extends State<_SearchTabScrollView> {
       controller: _controller,
       slivers: <Widget>[
         widget.sliver,
-        const SliverToBoxAdapter(child: BottomPageSpacer.overlay()),
+        const SliverToBoxAdapter(child: BottomPageSpacer()),
       ],
     );
   }
