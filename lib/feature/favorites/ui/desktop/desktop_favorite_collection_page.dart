@@ -406,7 +406,7 @@ class _DesktopFavoriteCollectionPageState
                                     onClear: _clearSearchQuery,
                                   ),
                                 ),
-                                const SizedBox(width: 6),
+                                const SizedBox(width: 8),
                                 MetadataViewModeButton(
                                   viewMode: ref.watch(
                                     favoritesViewModeLogicProvider,
@@ -417,10 +417,10 @@ class _DesktopFavoriteCollectionPageState
                                       )
                                       .toggle(),
                                 ),
-                                const SizedBox(width: 2),
+                                const SizedBox(width: 8),
                                 MetadataBackfillButton(entries: visibleItems),
                                 if (resolvedCollection.isRemote) ...<Widget>[
-                                  const SizedBox(width: 6),
+                                  const SizedBox(width: 8),
                                   Tooltip(
                                     message: '同步网络歌单',
                                     child: IconButton(
@@ -428,10 +428,11 @@ class _DesktopFavoriteCollectionPageState
                                           ? null
                                           : _refreshRemoteCollectionItemsForce,
                                       padding: EdgeInsets.zero,
+                                      visualDensity: VisualDensity.compact,
                                       constraints:
                                           const BoxConstraints.tightFor(
-                                            width: 30,
-                                            height: 30,
+                                            width: 32,
+                                            height: 32,
                                           ),
                                       icon: _isSyncingRemoteCollection
                                           ? const SizedBox(
