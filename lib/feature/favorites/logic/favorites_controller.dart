@@ -42,6 +42,7 @@ class FavoritesController extends _$FavoritesController {
   final Random _remoteImportRandom = Random();
   final Map<String, Future<RemoteCollectionSyncResult>> _collectionSyncs =
       <String, Future<RemoteCollectionSyncResult>>{};
+  final Set<String> _pendingRemoteAdds = <String>{};
 
   @override
   FavoritesState build() {
@@ -625,9 +626,9 @@ class FavoritesController extends _$FavoritesController {
 
     int addedCount = 0;
     for (final PlayableItem item in uniqueItems.values) {
-      if (state.isItemInCollection(
+      if (state.containsItemInCollection(
         collectionId: collection.id,
-        itemId: item.stableId,
+        item: item,
       )) {
         continue;
       }
@@ -758,24 +759,36 @@ class FavoritesController extends _$FavoritesController {
     required PlayableItem item,
   }) async {
     final String? remoteId = collection.remoteId;
-    if (remoteId == null) {
+    if (remoteId == null ||
+        state.containsItemInCollection(
+          collectionId: collection.id,
+          item: item,
+        )) {
+      return false;
+    }
+    final String pendingId = '${collection.id}::aid:${item.aid}';
+    if (!_pendingRemoteAdds.add(pendingId)) {
       return false;
     }
 
-    await _remoteRepository.addVideoToCollection(
-      session: _getSession(),
-      remoteId: remoteId,
-      item: item,
-    );
-    final DateTime now = DateTime.now();
-    await _remoteCache.saveEntryToCollection(
-      collectionId: collection.id,
-      entry: FavoriteEntry.fromPlayableItem(item, now: now),
-      addedAt: now,
-    );
-    _scheduleMetadataBackfill(item);
-    state = _loadState();
-    return true;
+    try {
+      await _remoteRepository.addVideoToCollection(
+        session: _getSession(),
+        remoteId: remoteId,
+        item: item,
+      );
+      final DateTime now = DateTime.now();
+      await _remoteCache.saveEntryToCollection(
+        collectionId: collection.id,
+        entry: FavoriteEntry.fromPlayableItem(item, now: now),
+        addedAt: now,
+      );
+      _scheduleMetadataBackfill(item);
+      state = _loadState();
+      return true;
+    } finally {
+      _pendingRemoteAdds.remove(pendingId);
+    }
   }
 
   Future<bool> _removeFromRemoteCollection({

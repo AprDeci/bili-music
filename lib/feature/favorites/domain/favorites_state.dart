@@ -85,6 +85,17 @@ abstract class FavoritesState with _$FavoritesState {
     required String collectionId,
     required PlayableItem item,
   }) {
+    final bool isRemote = collections.any(
+      (FavoriteCollection collection) =>
+          collection.id == collectionId && collection.isRemote,
+    );
+    if (isRemote) {
+      return itemsForCollection(collectionId).any(
+        (FavoriteEntry entry) =>
+            (item.aid > 0 && item.aid == entry.aid) ||
+            (item.bvid.isNotEmpty && item.bvid == entry.bvid),
+      );
+    }
     return isItemInCollection(
       collectionId: collectionId,
       itemId: item.stableId,
