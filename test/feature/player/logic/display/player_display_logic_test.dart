@@ -1,5 +1,7 @@
 import 'dart:io';
 
+import 'package:bilimusic/core/hive/hive_adapters.dart';
+import 'package:bilimusic/feature/metadata/data/metadata_cache_repository.dart';
 import 'package:bilimusic/core/hive/hive_keys.dart';
 import 'package:bilimusic/core/settings/app_settings_store.dart';
 import 'package:bilimusic/feature/metadata/domain/metadata.dart';
@@ -48,6 +50,10 @@ void main() {
     );
     Hive.init(tempDirectory.path);
     prefsBox = await Hive.openBox<String>(HiveBoxNames.prefs);
+    if (!Hive.isAdapterRegistered(9)) {
+      Hive.registerAdapter(MetadataAdapter());
+    }
+    await Hive.openLazyBox<Metadata>(metadataCacheBoxName);
     container = createContainer();
   });
 
@@ -162,6 +168,61 @@ void main() {
       await container.pump();
       expect(container.read(playerDisplaySourceLogicProvider), isNull);
       expect(container.read(playerDisplayProvider).stableId, isNull);
+    },
+  );
+
+  test(
+    'queue preview uses current display and cached metadata without playing',
+    () async {
+      final PlayableItem next = _item.copyWith(bvid: 'next');
+      await container
+          .read(metadataCacheRepositoryProvider)
+          .putCachedMetadata(
+            item: next,
+            metadata: Metadata(
+              stableId: next.stableId,
+              title: 'Cached song',
+              artist: 'Cached artist',
+              albumArtUrl: 'https://example.com/album.jpg',
+            ),
+          );
+      final PlayerDisplayInfo current = await container.read(
+        playerQueueDisplayProvider(_item).future,
+      );
+      expect(current.title, 'Song title');
+      final PlayerDisplayInfo preview = await container.read(
+        playerQueueDisplayProvider(next).future,
+      );
+      expect(preview.title, 'Cached song');
+      expect(preview.artist, 'Cached artist');
+      expect(preview.coverUrl, 'https://example.com/album.jpg');
+      expect(container.read(playerControllerProvider).currentItem, _item);
+      final PlayableItem uncached = _item.copyWith(bvid: 'uncached');
+      expect(
+        (await container.read(
+          playerQueueDisplayProvider(uncached).future,
+        )).title,
+        uncached.title,
+      );
+    },
+  );
+
+  test(
+    'queue preview respects the saved Bilibili display preference',
+    () async {
+      await prefsBox.put(HiveKeys.playerUseMetadataCover, 'false');
+      final PlayableItem next = _item.copyWith(bvid: 'next');
+      await container
+          .read(metadataCacheRepositoryProvider)
+          .putCachedMetadata(
+            item: next,
+            metadata: Metadata(stableId: next.stableId, title: 'Cached song'),
+          );
+      final PlayerDisplayInfo preview = await container.read(
+        playerQueueDisplayProvider(next).future,
+      );
+      expect(preview.title, next.title);
+      expect(preview.source, PlayerDisplaySource.bilibili);
     },
   );
 

@@ -9,6 +9,76 @@ part of 'player_cover_color_provider.dart';
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
 
+@ProviderFor(playerArtworkColor)
+final playerArtworkColorProvider = PlayerArtworkColorFamily._();
+
+final class PlayerArtworkColorProvider
+    extends $FunctionalProvider<AsyncValue<Color?>, Color?, FutureOr<Color?>>
+    with $FutureModifier<Color?>, $FutureProvider<Color?> {
+  PlayerArtworkColorProvider._({
+    required PlayerArtworkColorFamily super.from,
+    required String super.argument,
+  }) : super(
+         retry: null,
+         name: r'playerArtworkColorProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
+
+  @override
+  String debugGetCreateSourceHash() => _$playerArtworkColorHash();
+
+  @override
+  String toString() {
+    return r'playerArtworkColorProvider'
+        ''
+        '($argument)';
+  }
+
+  @$internal
+  @override
+  $FutureProviderElement<Color?> $createElement($ProviderPointer pointer) =>
+      $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<Color?> create(Ref ref) {
+    final argument = this.argument as String;
+    return playerArtworkColor(ref, argument);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is PlayerArtworkColorProvider && other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$playerArtworkColorHash() =>
+    r'ffca33ca88edb5f8a602fdabfdea5ce551766459';
+
+final class PlayerArtworkColorFamily extends $Family
+    with $FunctionalFamilyOverride<FutureOr<Color?>, String> {
+  PlayerArtworkColorFamily._()
+    : super(
+        retry: null,
+        name: r'playerArtworkColorProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
+
+  PlayerArtworkColorProvider call(String coverUrl) =>
+      PlayerArtworkColorProvider._(argument: coverUrl, from: this);
+
+  @override
+  String toString() => r'playerArtworkColorProvider';
+}
+
 @ProviderFor(PlayerCoverColorController)
 final playerCoverColorControllerProvider =
     PlayerCoverColorControllerProvider._();
@@ -43,7 +113,7 @@ final class PlayerCoverColorControllerProvider
 }
 
 String _$playerCoverColorControllerHash() =>
-    r'6e93bdc34fc8514c022eaa0f2b2a26c5a11022a9';
+    r'104611ab0b8696c32a50116069771331ed2a8c6f';
 
 abstract class _$PlayerCoverColorController extends $Notifier<Color?> {
   Color? build();

@@ -1,4 +1,7 @@
+import 'package:bilimusic/feature/metadata/data/metadata_cache_repository.dart';
+import 'package:bilimusic/feature/metadata/domain/metadata.dart';
 import 'package:bilimusic/feature/metadata/logic/metadata_controller.dart';
+import 'package:bilimusic/feature/player/domain/playable_item.dart';
 import 'package:bilimusic/feature/player/domain/player_display_info.dart';
 import 'package:bilimusic/feature/player/logic/player_controller.dart';
 import 'package:bilimusic/feature/player/logic/display/player_display_settings_logic.dart';
@@ -28,6 +31,33 @@ PlayerDisplayInfo playerDisplay(Ref ref) {
   return resolvePlayerDisplayInfo(
     item: item,
     metadata: metadata.stableId == item?.stableId ? metadata.metadata : null,
+    source: source,
+  );
+}
+
+@riverpod
+Future<PlayerDisplayInfo> playerQueueDisplay(Ref ref, PlayableItem item) async {
+  final PlayerDisplayInfo current = ref.watch(playerDisplayProvider);
+  if (current.stableId == item.stableId) {
+    return current;
+  }
+  final PlayerDisplaySource source =
+      ref.watch(playerDisplaySettingsLogicProvider)
+      ? PlayerDisplaySource.metadata
+      : PlayerDisplaySource.bilibili;
+  Metadata? metadata;
+  if (source == PlayerDisplaySource.metadata) {
+    try {
+      metadata = await ref
+          .read(metadataCacheRepositoryProvider)
+          .getCachedMetadata(item: item);
+    } on Object {
+      metadata = null;
+    }
+  }
+  return resolvePlayerDisplayInfo(
+    item: item,
+    metadata: metadata,
     source: source,
   );
 }

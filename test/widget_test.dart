@@ -105,6 +105,7 @@ void main() {
   testWidgets('lyric page receives live cover colors and accepts no palette', (
     WidgetTester tester,
   ) async {
+    _usePortraitViewport(tester);
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
@@ -167,6 +168,7 @@ void main() {
   testWidgets('player page shows swipe indicator and meta page', (
     WidgetTester tester,
   ) async {
+    _usePortraitViewport(tester);
     const PlayableItem item = _testItem;
 
     await tester.pumpWidget(
@@ -203,6 +205,7 @@ void main() {
   testWidgets('player menu opens sleep timer page', (
     WidgetTester tester,
   ) async {
+    _usePortraitViewport(tester);
     const PlayableItem item = _testItem;
 
     await tester.pumpWidget(
@@ -243,6 +246,7 @@ void main() {
   testWidgets('player menu applies playback speed', (
     WidgetTester tester,
   ) async {
+    _usePortraitViewport(tester);
     const PlayableItem item = _testItem;
 
     await tester.pumpWidget(
@@ -316,6 +320,13 @@ void main() {
     container.read(sleepTimerControllerProvider.notifier).cancel();
     await tester.pump();
   });
+}
+
+void _usePortraitViewport(WidgetTester tester) {
+  tester.view.physicalSize = const Size(420, 900);
+  tester.view.devicePixelRatio = 1;
+  addTearDown(tester.view.resetPhysicalSize);
+  addTearDown(tester.view.resetDevicePixelRatio);
 }
 
 class _FakeLyricSettingsLogic extends PlayerLyricSettingsLogic {

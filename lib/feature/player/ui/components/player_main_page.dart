@@ -7,12 +7,10 @@ import 'package:bilimusic/feature/player/domain/player_online_audience.dart';
 import 'package:bilimusic/feature/player/domain/player_state.dart';
 import 'package:bilimusic/feature/player/logic/player_controller.dart';
 import 'package:bilimusic/feature/player/logic/player_online_audience_controller.dart';
-import 'package:bilimusic/feature/player/logic/player_progress_provider.dart';
 import 'package:bilimusic/feature/player/ui/components/player_artwork.dart';
 import 'package:bilimusic/feature/player/ui/components/player_controls.dart';
 import 'package:bilimusic/feature/player/ui/components/player_quality_badge.dart';
 import 'package:bilimusic/feature/player/ui/components/player_shared.dart';
-import 'package:bilimusic/feature/player/logic/utils/player_progress_ui_helpers.dart';
 import 'package:bilimusic/feature/player/logic/utils/player_ui_helpers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -117,7 +115,7 @@ class PlayerMainPage extends ConsumerWidget {
                       ),
                       SizedBox(height: isCompact ? 6 : 10),
                       _RepaintSection(
-                        child: _PlayerProgressHost(
+                        child: PlayerProgressHost(
                           state: state,
                           onChanged: onSeek,
                         ),
@@ -273,31 +271,6 @@ class _PlayerStatusAndTools extends StatelessWidget {
           onOpenComments: onOpenComments,
         ),
       ],
-    );
-  }
-}
-
-class _PlayerProgressHost extends ConsumerWidget {
-  const _PlayerProgressHost({required this.state, required this.onChanged});
-
-  final PlayerState state;
-  final ValueChanged<double> onChanged;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final AsyncValue<PlayerProgressSnapshot> progressAsync = ref.watch(
-      playerProgressProvider,
-    );
-    final PlayerProgressSnapshot progress = resolvePlayerProgressSnapshot(
-      progressAsync,
-      state,
-    );
-
-    return PlayerProgressSection(
-      position: progress.position,
-      duration: progress.duration,
-      isReady: progress.isReady,
-      onChanged: onChanged,
     );
   }
 }
