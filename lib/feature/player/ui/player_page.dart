@@ -205,7 +205,7 @@ class _PlayerPageState extends ConsumerState<PlayerPage> {
                             ),
                           ),
                           Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            padding: const EdgeInsets.symmetric(horizontal: 4),
                             child: PlayerLyricPage(
                               state: state,
                               item: item,

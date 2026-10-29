@@ -173,7 +173,7 @@ class _PlayerLyricToolbar extends StatelessWidget {
     return SafeArea(
       top: false,
       child: Padding(
-        padding: const EdgeInsets.only(bottom: 4),
+        padding: const EdgeInsets.fromLTRB(12, 0, 12, 4),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.start,
           children: <Widget>[

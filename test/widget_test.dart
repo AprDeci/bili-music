@@ -132,6 +132,23 @@ void main() {
     await tester.pump();
     await tester.fling(find.byType(PageView), const Offset(-400, 0), 1000);
     await tester.pumpAndSettle();
+    final Rect lyricsRect = tester.getRect(find.byType(PlayerLyricPanel));
+    final Rect toolbarRect = tester.getRect(
+      find
+          .ancestor(of: find.byTooltip('手动匹配歌词'), matching: find.byType(Row))
+          .first,
+    );
+    expect(lyricsRect.left, 4);
+    expect(
+      lyricsRect.width,
+      tester.view.physicalSize.width / tester.view.devicePixelRatio - 8,
+    );
+    expect(toolbarRect.left, lyricsRect.left + 12);
+    expect(toolbarRect.right, lyricsRect.right - 12);
+    expect(
+      tester.getRect(find.byIcon(Icons.search_rounded)).left,
+      lyricsRect.left + const PlayerLyricSettings().horizontalPadding,
+    );
     expect(
       tester
           .widget<PlayerLyricPanel>(find.byType(PlayerLyricPanel))
