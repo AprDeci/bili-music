@@ -312,13 +312,13 @@ class _DesktopPlayerTopBarState extends State<_DesktopPlayerTopBar>
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 56,
+      height: PlatformUtil.isMacOS ? 80 : 56,
       child: DragToMoveArea(
         child: GestureDetector(
           behavior: HitTestBehavior.opaque,
           onDoubleTap: _toggleMaximize,
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 22),
+            padding: EdgeInsets.fromLTRB(22, PlatformUtil.isMacOS ? 24 : 0, 22, 0),
             child: Row(
               children: <Widget>[
                 Tooltip(
