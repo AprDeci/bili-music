@@ -6,6 +6,7 @@ import 'package:bilimusic/feature/metadata/domain/metadata_backfill_state.dart';
 import 'package:bilimusic/feature/metadata/logic/metadata_backfill_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hugeicons/hugeicons.dart';
 import 'package:popover/popover.dart';
 
 const double _scanPopupWidth = 268;
@@ -33,7 +34,13 @@ class MetadataViewModeButton extends StatelessWidget {
         padding: EdgeInsets.zero,
         visualDensity: VisualDensity.compact,
         constraints: const BoxConstraints.tightFor(width: 32, height: 32),
-        icon: Icon(isMetadata ? Icons.music_note_rounded : Icons.album_rounded),
+        icon: HugeIcon(
+          icon: isMetadata
+              ? HugeIcons.strokeRoundedMusicNoteSquare01
+              : HugeIcons.strokeRoundedPlaySquare,
+          size: 22,
+          strokeWidth: 1.8,
+        ),
       ),
     );
   }
@@ -80,7 +87,11 @@ class MetadataBackfillButton extends ConsumerWidget {
             padding: EdgeInsets.zero,
             visualDensity: VisualDensity.compact,
             constraints: const BoxConstraints.tightFor(width: 32, height: 32),
-            icon: const Icon(Icons.auto_fix_high_rounded),
+            icon: HugeIcon(
+              icon: HugeIcons.strokeRoundedMagicWand01,
+              size: 22,
+              strokeWidth: 1.8,
+            ),
           ),
         );
       },

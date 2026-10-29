@@ -25,6 +25,7 @@ import 'package:bilimusic/feature/player/ui/components/player_collection_sheet.d
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:hugeicons/hugeicons.dart';
 
 class DesktopFavoriteCollectionPage extends ConsumerStatefulWidget {
   const DesktopFavoriteCollectionPage({super.key, required this.collectionId});
@@ -442,7 +443,12 @@ class _DesktopFavoriteCollectionPageState
                                                 strokeWidth: 2,
                                               ),
                                             )
-                                          : const Icon(Icons.sync_rounded),
+                                          : HugeIcon(
+                                              icon: HugeIcons
+                                                  .strokeRoundedRefresh03,
+                                              size: 22,
+                                              strokeWidth: 1.8,
+                                            ),
                                     ),
                                   ),
                                 ],
