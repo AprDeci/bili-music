@@ -65,10 +65,22 @@ class DesktopFavoriteCollectionItemsList extends ConsumerWidget {
         footer: footer,
         separatorBuilder: (_, _) => const SizedBox.shrink(),
         checkboxControlAffinity: ListTileControlAffinity.trailing,
-        itemBuilder: (context, item, state) =>
-            viewMode == FavoriteListViewMode.metadata
-            ? _buildMetadataItem(context, item, state)
-            : _buildNormalItem(context, item, state, tracker),
+        itemBuilder: (context, item, state) => ListTileTheme(
+          data: ListTileTheme.of(context).copyWith(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(4),
+            ),
+            tileColor: state.index.isEven
+                ? Colors.transparent
+                : Color.alphaBlend(
+                    const Color(0xFFBDBDBD).withValues(alpha: 0.1),
+                    Theme.of(context).colorScheme.surface,
+                  ),
+          ),
+          child: viewMode == FavoriteListViewMode.metadata
+              ? _buildMetadataItem(context, item, state)
+              : _buildNormalItem(context, item, state, tracker),
+        ),
         titleBuilder: _buildTitle,
         subtitleBuilder: (context, item, state) =>
             _buildSubtitle(context, item, state, tracker),
@@ -85,6 +97,7 @@ class DesktopFavoriteCollectionItemsList extends ConsumerWidget {
     StatisticsTracker tracker,
   ) {
     return Material(
+      color: Colors.transparent,
       child: ListTile(
         contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 0),
         leading: _buildLeading(context, item, state),
