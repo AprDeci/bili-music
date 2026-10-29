@@ -64,7 +64,10 @@ class PlayerMainPage extends ConsumerWidget {
     final MediaQueryData mediaQuery = MediaQuery.of(context);
     final Size screenSize = mediaQuery.size;
     final bool canOpenPartSelector = item != null && availableParts.length > 1;
-    final double artworkSize = (screenSize.height * 0.31).clamp(190.0, 320.0);
+    final bool isCompact = screenSize.height < 600;
+    final double artworkSize = isCompact
+        ? (screenSize.height * 0.27).clamp(150.0, 190.0)
+        : (screenSize.height * 0.31).clamp(190.0, 320.0);
     final AsyncValue<PlayerOnlineAudience?> onlineAudienceAsync = ref.watch(
       playerOnlineAudienceControllerProvider,
     );
@@ -76,56 +79,73 @@ class PlayerMainPage extends ConsumerWidget {
         ? null
         : _buildAudienceLabel(onlineAudience);
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: <Widget>[
-        // 封面和标题
-        _RepaintSection(
-          child: _PlayerHeroAndTitle(
-            artworkSize: artworkSize,
-            item: item,
-            display: display,
-            isFavorite: isFavorite,
-            onlineAudienceLabel: onlineAudienceLabel,
-            onFavoriteToggle: onFavoriteToggle,
-            onToggleSource: onToggleSource,
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) {
+        return SingleChildScrollView(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: constraints.maxHeight),
+            child: IntrinsicHeight(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: <Widget>[
+                  _RepaintSection(
+                    child: _PlayerHeroAndTitle(
+                      artworkSize: artworkSize,
+                      isCompact: isCompact,
+                      item: item,
+                      display: display,
+                      isFavorite: isFavorite,
+                      onlineAudienceLabel: onlineAudienceLabel,
+                      onFavoriteToggle: onFavoriteToggle,
+                      onToggleSource: onToggleSource,
+                    ),
+                  ),
+                  const Spacer(),
+                  Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: <Widget>[
+                      _RepaintSection(
+                        child: _PlayerStatusAndTools(
+                          state: state,
+                          item: item,
+                          commentCount: commentCount,
+                          canOpenPartSelector: canOpenPartSelector,
+                          onPartTap: onPartTap,
+                          onOpenCollectionSheet: onOpenCollectionSheet,
+                          onOpenComments: onOpenComments,
+                        ),
+                      ),
+                      SizedBox(height: isCompact ? 6 : 10),
+                      _RepaintSection(
+                        child: _PlayerProgressHost(
+                          state: state,
+                          onChanged: onSeek,
+                        ),
+                      ),
+                      SizedBox(height: isCompact ? 6 : 10),
+                      _RepaintSection(
+                        child: PlayerTransportControls(
+                          state: state,
+                          onToggleQueueMode: onToggleQueueMode,
+                          onBackward: onBackward,
+                          onTogglePlayback: onTogglePlayback,
+                          onForward: onForward,
+                          onOpenQueue: onOpenQueue,
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(
+                    height: isCompact
+                        ? 8
+                        : (mediaQuery.padding.bottom > 0 ? 8 : 18),
+                  ),
+                ],
+              ),
+            ),
           ),
-        ),
-        const Spacer(),
-        // 底部工具栏
-        Column(
-          mainAxisSize: MainAxisSize.min,
-          children: <Widget>[
-            _RepaintSection(
-              child: _PlayerStatusAndTools(
-                state: state,
-                item: item,
-                commentCount: commentCount,
-                canOpenPartSelector: canOpenPartSelector,
-                onPartTap: onPartTap,
-                onOpenCollectionSheet: onOpenCollectionSheet,
-                onOpenComments: onOpenComments,
-              ),
-            ),
-            const SizedBox(height: 10),
-            _RepaintSection(
-              child: _PlayerProgressHost(state: state, onChanged: onSeek),
-            ),
-            const SizedBox(height: 10),
-            _RepaintSection(
-              child: PlayerTransportControls(
-                state: state,
-                onToggleQueueMode: onToggleQueueMode,
-                onBackward: onBackward,
-                onTogglePlayback: onTogglePlayback,
-                onForward: onForward,
-                onOpenQueue: onOpenQueue,
-              ),
-            ),
-          ],
-        ),
-        SizedBox(height: mediaQuery.padding.bottom > 0 ? 8 : 18),
-      ],
+        );
+      },
     );
   }
 }
@@ -144,6 +164,7 @@ class _RepaintSection extends StatelessWidget {
 class _PlayerHeroAndTitle extends StatelessWidget {
   const _PlayerHeroAndTitle({
     required this.artworkSize,
+    required this.isCompact,
     required this.item,
     required this.display,
     required this.isFavorite,
@@ -153,6 +174,7 @@ class _PlayerHeroAndTitle extends StatelessWidget {
   });
 
   final double artworkSize;
+  final bool isCompact;
   final PlayableItem? item;
   final PlayerDisplayInfo display;
   final bool isFavorite;
@@ -165,7 +187,7 @@ class _PlayerHeroAndTitle extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
-        const SizedBox(height: 12),
+        SizedBox(height: isCompact ? 8 : 12),
         Center(
           child: SizedBox(
             width: artworkSize,
@@ -183,7 +205,7 @@ class _PlayerHeroAndTitle extends StatelessWidget {
             ),
           ),
         ),
-        const SizedBox(height: 28),
+        SizedBox(height: isCompact ? 16 : 28),
         PlayerTrackHeader(
           title: display.title ?? '还没有选择播放内容',
           subtitle: display.stableId == null
