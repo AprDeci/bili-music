@@ -82,6 +82,7 @@ dependencies:
   multi_reorderable: ^0.2.2
   photo_view: ^0.15.0
   coverflow_carousel: ^2.1.0
+  popover: ^0.4.0
 
   # 系统
   open_filex: ^4.7.0
@@ -100,7 +101,7 @@ dependencies:
   audio_service_win: ^0.0.3
   desktop_lyrics: ^0.0.8
   flutter_local_notifications: ^22.3.1
-  popover: ^0.4.0
+
 
 dependency_overrides: 
   flutter_lyric: 
