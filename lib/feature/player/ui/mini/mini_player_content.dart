@@ -123,11 +123,11 @@ class MiniPlayerArtwork extends StatelessWidget {
             width: _imageSize,
             height: _imageSize,
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(8),
               color: colorScheme.surfaceContainerHigh,
             ),
             child: ClipRRect(
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(8),
               child: CommonCachedImage(
                 imageUrl: coverUrl,
                 fit: BoxFit.cover,

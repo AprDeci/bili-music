@@ -956,7 +956,7 @@ class _PlaylistCover extends StatelessWidget {
       width: 64,
       height: 64,
       fit: BoxFit.cover,
-      borderRadius: BorderRadius.circular(18),
+      borderRadius: BorderRadius.circular(8),
       placeholder: _PlaylistPlaceholder(primary: primary),
       errorWidget: _PlaylistPlaceholder(primary: primary),
     );
@@ -982,7 +982,7 @@ class _PlaylistPlaceholder extends StatelessWidget {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(8),
       ),
       child: Icon(Icons.queue_music_rounded, color: primary, size: 28),
     );

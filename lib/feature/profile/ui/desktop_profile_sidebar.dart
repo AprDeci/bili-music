@@ -1047,7 +1047,7 @@ class _SidebarPlaylistCover extends StatelessWidget {
       width: 28,
       height: 28,
       fit: BoxFit.cover,
-      borderRadius: BorderRadius.circular(5),
+      borderRadius: BorderRadius.circular(8),
       placeholder: _SidebarPlaylistPlaceholder(primary: primary),
       errorWidget: _SidebarPlaylistPlaceholder(primary: primary),
     );
