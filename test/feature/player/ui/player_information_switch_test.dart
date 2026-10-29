@@ -300,7 +300,7 @@ void main() {
       ]) {
         expect(find.byTooltip(tooltip), findsNothing);
       }
-      for (final String tooltip in <String>['上一首', '播放', '下一首', '播放队列']) {
+      for (final String tooltip in <String>['上一首', '播放', '下一首', '列表循环']) {
         expect(find.byTooltip(tooltip), findsOneWidget);
       }
       expect(
@@ -365,7 +365,7 @@ void main() {
       );
       expect(
         playX - tester.getCenter(find.byTooltip('喜欢')).dx,
-        closeTo(tester.getCenter(find.byTooltip('播放队列')).dx - playX, 0.01),
+        closeTo(tester.getCenter(find.byTooltip('列表循环')).dx - playX, 0.01),
       );
       tester.view.physicalSize = const Size(420, 900);
       await tester.pumpAndSettle();
@@ -670,11 +670,22 @@ void main() {
     expect(player.previousCalls, 1);
     expect(player.nextCalls, 1);
 
-    expect(find.byTooltip('播放模式'), findsNothing);
-    expect(
-      container.read(playerControllerProvider).queueMode,
-      PlayerQueueMode.sequence,
-    );
+    expect(find.byTooltip('播放队列'), findsNothing);
+    for (final (String, PlayerQueueMode) mode in [
+      ('列表循环', PlayerQueueMode.singleRepeat),
+      ('单曲循环', PlayerQueueMode.shuffle),
+      ('随机播放', PlayerQueueMode.sequence),
+    ]) {
+      final Finder modeButton = find.byTooltip(mode.$1);
+      final Finder buttons = find.descendant(
+        of: find.byType(PlayerLandscapeControls),
+        matching: find.byType(IconButton),
+      );
+      expect(tester.getRect(modeButton), tester.getRect(buttons.last));
+      await tester.tap(modeButton);
+      await tester.pump();
+      expect(container.read(playerControllerProvider).queueMode, mode.$2);
+    }
 
     final Rect track = tester.getRect(find.byType(Slider));
     await tester.tapAt(Offset(track.left + track.width / 4, track.center.dy));
@@ -704,10 +715,21 @@ void main() {
       closeTo(12 / 180, 0.001),
     );
 
-    await tester.tap(find.byTooltip('播放队列'));
-    await tester.pumpAndSettle();
-    expect(find.text('播放队列'), findsOneWidget);
-    expect(find.text('2 项 · 列表循环'), findsOneWidget);
+    player.show(const PlayerState());
+    await tester.pump();
+    expect(
+      tester
+          .widget<IconButton>(
+            find
+                .descendant(
+                  of: find.byType(PlayerLandscapeControls),
+                  matching: find.byType(IconButton),
+                )
+                .last,
+          )
+          .onPressed,
+      isNull,
+    );
     expect(tester.takeException(), isNull);
   });
 

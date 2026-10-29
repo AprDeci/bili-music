@@ -1,7 +1,7 @@
+import 'package:bilimusic/common/components/queue_mode_icon.dart';
 import 'package:bilimusic/core/theme/theme_colors.dart';
 import 'package:bilimusic/feature/player/domain/player_state.dart';
 import 'package:flutter/material.dart';
-import 'package:hugeicons/hugeicons.dart';
 
 class PlayerLandscapeControls extends StatelessWidget {
   const PlayerLandscapeControls({
@@ -12,7 +12,7 @@ class PlayerLandscapeControls extends StatelessWidget {
     required this.onBackward,
     required this.onTogglePlayback,
     required this.onForward,
-    required this.onOpenQueue,
+    required this.onToggleQueueMode,
   });
 
   final PlayerState state;
@@ -21,7 +21,7 @@ class PlayerLandscapeControls extends StatelessWidget {
   final VoidCallback onBackward;
   final VoidCallback onTogglePlayback;
   final VoidCallback onForward;
-  final VoidCallback onOpenQueue;
+  final VoidCallback onToggleQueueMode;
 
   @override
   Widget build(BuildContext context) {
@@ -73,9 +73,13 @@ class PlayerLandscapeControls extends StatelessWidget {
           ),
           IconButton(
             alignment: Alignment.centerRight,
-            tooltip: '播放队列',
-            onPressed: state.hasQueue ? onOpenQueue : null,
-            icon: const HugeIcon(icon: HugeIcons.strokeRoundedListMusic),
+            tooltip: switch (state.queueMode) {
+              PlayerQueueMode.sequence => '列表循环',
+              PlayerQueueMode.singleRepeat => '单曲循环',
+              PlayerQueueMode.shuffle => '随机播放',
+            },
+            onPressed: state.hasQueue ? onToggleQueueMode : null,
+            icon: queueModeIcon(state.queueMode),
           ),
         ],
       ),

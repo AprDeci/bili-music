@@ -9,7 +9,6 @@ import 'package:bilimusic/feature/player/ui/components/player_artwork.dart';
 import 'package:bilimusic/feature/player/ui/components/player_cover_browser_page.dart';
 import 'package:bilimusic/feature/player/ui/components/player_controls.dart';
 import 'package:bilimusic/feature/player/ui/components/player_landscape_controls.dart';
-import 'package:bilimusic/feature/player/ui/components/player_queue_sheet.dart';
 import 'package:bilimusic/feature/player/ui/lyrics/player_lyric_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -151,10 +150,7 @@ class PlayerLandscapePage extends ConsumerWidget {
                                   onBackward: controller.skipToPrevious,
                                   onTogglePlayback: controller.togglePlayback,
                                   onForward: controller.skipToNext,
-                                  onOpenQueue: () => showPlayerQueueSheet(
-                                    context: context,
-                                    state: state,
-                                  ),
+                                  onToggleQueueMode: controller.toggleQueueMode,
                                 ),
                               ],
                             ),
