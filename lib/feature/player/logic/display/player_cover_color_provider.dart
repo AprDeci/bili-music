@@ -12,13 +12,35 @@ part 'player_cover_color_provider.g.dart';
 
 const int _paletteCacheExtent = 96;
 
+@riverpod
+Future<Color?> playerArtworkColor(Ref ref, String coverUrl) async {
+  if (coverUrl.trim().isEmpty) {
+    return null;
+  }
+  try {
+    final List<Color> colors = await FluidPaletteExtractor.extractColors(
+      CachedNetworkImageProvider(
+        coverUrl,
+        cacheManager: CacheUtil.imageCacheManager,
+        maxWidth: _paletteCacheExtent,
+        maxHeight: _paletteCacheExtent,
+      ),
+      count: 1,
+    );
+    return colors.isEmpty ? null : colors.first;
+  } on Object {
+    return null;
+  }
+}
+
 @Riverpod(keepAlive: true)
 class PlayerCoverColorController extends _$PlayerCoverColorController {
   String? _currentCoverUrl;
-  int _generation = 0;
+  ProviderSubscription<AsyncValue<Color?>>? _colorSubscription;
 
   @override
   Color? build() {
+    ref.onDispose(() => _colorSubscription?.close());
     ref.listen<String?>(
       playerDisplayProvider.select((display) => display.coverUrl),
       (_, coverUrl) {
@@ -49,39 +71,21 @@ class PlayerCoverColorController extends _$PlayerCoverColorController {
     }
 
     _currentCoverUrl = resolvedUrl;
-    final int generation = ++_generation;
+    _colorSubscription?.close();
 
     if (resolvedUrl.isEmpty) {
       state = null;
       return;
     }
 
-    unawaited(_loadColor(resolvedUrl, generation));
-  }
-
-  Future<void> _loadColor(String coverUrl, int generation) async {
-    try {
-      final List<Color> colors = await FluidPaletteExtractor.extractColors(
-        CachedNetworkImageProvider(
-          coverUrl,
-          cacheManager: CacheUtil.imageCacheManager,
-          maxWidth: _paletteCacheExtent,
-          maxHeight: _paletteCacheExtent,
-        ),
-        count: 1,
-      );
-
-      if (_currentCoverUrl != coverUrl || _generation != generation) {
-        return;
-      }
-
-      state = colors.isEmpty ? null : colors.first;
-    } on Object {
-      if (_currentCoverUrl != coverUrl || _generation != generation) {
-        return;
-      }
-
-      state = null;
-    }
+    _colorSubscription = ref.listen<AsyncValue<Color?>>(
+      playerArtworkColorProvider(resolvedUrl),
+      (_, color) {
+        if (!color.isLoading) {
+          state = color.asData?.value;
+        }
+      },
+      fireImmediately: true,
+    );
   }
 }

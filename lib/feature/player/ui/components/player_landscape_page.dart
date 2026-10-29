@@ -6,6 +6,7 @@ import 'package:bilimusic/feature/player/domain/player_state.dart';
 import 'package:bilimusic/feature/player/logic/lyrics/player_lyric_settings_logic.dart';
 import 'package:bilimusic/feature/player/logic/player_controller.dart';
 import 'package:bilimusic/feature/player/ui/components/player_artwork.dart';
+import 'package:bilimusic/feature/player/ui/components/player_cover_browser_page.dart';
 import 'package:bilimusic/feature/player/ui/components/player_controls.dart';
 import 'package:bilimusic/feature/player/ui/components/player_landscape_controls.dart';
 import 'package:bilimusic/feature/player/ui/components/player_queue_sheet.dart';
@@ -21,7 +22,6 @@ class PlayerLandscapePage extends ConsumerWidget {
     required this.display,
     required this.isFavorite,
     required this.onFavoriteToggle,
-    required this.onToggleSource,
     required this.onSeek,
     this.activeColor,
   });
@@ -31,9 +31,38 @@ class PlayerLandscapePage extends ConsumerWidget {
   final PlayerDisplayInfo display;
   final bool isFavorite;
   final VoidCallback? onFavoriteToggle;
-  final VoidCallback? onToggleSource;
   final ValueChanged<double> onSeek;
   final Color? activeColor;
+
+  Future<void> _browseCovers(BuildContext context, WidgetRef ref) async {
+    final PlayerState initial = ref.read(playerControllerProvider);
+    if (!initial.hasQueue) {
+      return;
+    }
+    final PlayableItem? selected = await Navigator.of(context)
+        .push<PlayableItem>(
+          MaterialPageRoute<PlayableItem>(
+            builder: (BuildContext context) => PlayerCoverBrowserPage(
+              queue: List<PlayableItem>.unmodifiable(initial.queue),
+              initialIndex: initial.hasActiveQueueIndex
+                  ? initial.currentQueueIndex!
+                  : 0,
+              activeColor: activeColor,
+            ),
+          ),
+        );
+    if (!context.mounted || selected == null) {
+      return;
+    }
+    final PlayerState current = ref.read(playerControllerProvider);
+    final int index = current.queue.indexWhere(
+      (PlayableItem candidate) => candidate.contentId == selected.contentId,
+    );
+    if (index < 0 || current.currentQueueIndex == index) {
+      return;
+    }
+    await ref.read(playerControllerProvider.notifier).skipToQueueIndex(index);
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -67,12 +96,18 @@ class PlayerLandscapePage extends ConsumerWidget {
               children: <Widget>[
                 SizedBox.square(
                   dimension: artworkSize,
-                  child: GestureDetector(
-                    onDoubleTap: onToggleSource,
-                    child: Hero(
-                      tag: 'artwork',
-                      child: PlayerArtworkFrame(
-                        coverUrl: display.coverUrl ?? '',
+                  child: Semantics(
+                    button: state.hasQueue,
+                    label: '浏览播放队列封面',
+                    child: GestureDetector(
+                      onTap: state.hasQueue
+                          ? () => _browseCovers(context, ref)
+                          : null,
+                      child: Hero(
+                        tag: 'artwork',
+                        child: PlayerArtworkFrame(
+                          coverUrl: display.coverUrl ?? '',
+                        ),
                       ),
                     ),
                   ),

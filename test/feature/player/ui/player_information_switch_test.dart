@@ -19,6 +19,7 @@ import 'package:bilimusic/feature/player/logic/lyrics/player_lyric_settings_logi
 import 'package:bilimusic/feature/player/logic/player_online_audience_controller.dart';
 import 'package:bilimusic/feature/player/ui/mini/mini_player_content.dart';
 import 'package:bilimusic/feature/player/ui/components/player_artwork.dart';
+import 'package:bilimusic/feature/player/ui/components/player_cover_browser_page.dart';
 import 'package:bilimusic/feature/player/ui/components/player_controls.dart';
 import 'package:bilimusic/feature/player/ui/components/player_dynamic_backdrop.dart';
 import 'package:bilimusic/feature/player/ui/components/player_landscape_page.dart';
@@ -378,7 +379,7 @@ void main() {
               ),
             )
             .borderRadius,
-        BorderRadius.circular(34),
+        BorderRadius.circular(8),
       );
       expect(
         tester.widget<PageView>(find.byType(PageView)).controller!.page,
@@ -387,6 +388,171 @@ void main() {
       expect(tester.takeException(), isNull);
     },
   );
+
+  testWidgets('landscape cover browses queue and only plays on confirmation', (
+    WidgetTester tester,
+  ) async {
+    final ProviderContainer container = await _pumpPlayer(
+      tester,
+      _metadata,
+      size: const Size(900, 420),
+      home: const PlayerPage(initialItem: _item),
+    );
+    final _FakePlayerController player =
+        container.read(playerControllerProvider.notifier)
+            as _FakePlayerController;
+    final PlayableItem next = _item.copyWith(bvid: 'next', title: 'Next song');
+    player.show(
+      container
+          .read(playerControllerProvider)
+          .copyWith(queue: <PlayableItem>[_item, next]),
+    );
+    await tester.pump();
+    final GestureDetector gesture = tester.widget<GestureDetector>(
+      find
+          .ancestor(
+            of: find.byType(PlayerArtworkFrame),
+            matching: find.byType(GestureDetector),
+          )
+          .first,
+    );
+    expect(gesture.onDoubleTap, isNull);
+    await tester.tap(find.byType(PlayerArtworkFrame));
+    await tester.pumpAndSettle();
+    expect(find.byType(PlayerCoverBrowserPage), findsOneWidget);
+    expect(find.text('Song title'), findsOneWidget);
+    expect(container.read(playerDisplaySourceLogicProvider), isNull);
+    final Finder carousel = find.byKey(
+      const ValueKey<String>('player-cover-carousel'),
+    );
+    await tester.drag(carousel, const Offset(-300, 0));
+    await tester.pumpAndSettle();
+    expect(find.text('Next song'), findsOneWidget);
+    expect(player.queueSelections, isEmpty);
+    expect(container.read(playerControllerProvider).currentItem, _item);
+    await tester.tap(
+      find.byKey(ValueKey<String>('queue-cover-${next.contentId}')),
+    );
+    await tester.pumpAndSettle();
+    expect(find.byType(PlayerCoverBrowserPage), findsNothing);
+    expect(player.queueSelections, <int>[1]);
+    expect(container.read(playerControllerProvider).currentItem, next);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets(
+    'cover browser starts at current track and back cancels preview',
+    (WidgetTester tester) async {
+      final ProviderContainer container = await _pumpPlayer(
+        tester,
+        _metadata,
+        size: const Size(640, 320),
+        textScaler: TextScaler.linear(2),
+        padding: const EdgeInsets.fromLTRB(44, 8, 20, 16),
+        home: const PlayerPage(initialItem: _item),
+      );
+      final _FakePlayerController player =
+          container.read(playerControllerProvider.notifier)
+              as _FakePlayerController;
+      final PlayableItem previous = _item.copyWith(bvid: 'previous');
+      player.show(
+        container
+            .read(playerControllerProvider)
+            .copyWith(
+              queue: <PlayableItem>[previous, _item],
+              currentQueueIndex: 1,
+            ),
+      );
+      await tester.pump();
+      await tester.tap(find.byType(PlayerArtworkFrame));
+      await tester.pumpAndSettle();
+      final PageView carousel = tester.widget<PageView>(
+        find.byKey(const ValueKey<String>('player-cover-carousel')),
+      );
+      expect(carousel.controller!.page, 1);
+      expect(find.text('Song title'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+      await tester.drag(find.byType(PageView).last, const Offset(200, 0));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byTooltip('返回播放器'));
+      await tester.pumpAndSettle();
+      expect(find.byType(PlayerCoverBrowserPage), findsNothing);
+      expect(player.queueSelections, isEmpty);
+      expect(container.read(playerControllerProvider).currentItem, _item);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets('confirming the current cover preserves playback position', (
+    WidgetTester tester,
+  ) async {
+    final ProviderContainer container = await _pumpPlayer(
+      tester,
+      _metadata,
+      size: const Size(900, 420),
+      home: const PlayerPage(initialItem: _item),
+    );
+    final _FakePlayerController player =
+        container.read(playerControllerProvider.notifier)
+            as _FakePlayerController;
+    player.show(
+      container
+          .read(playerControllerProvider)
+          .copyWith(position: const Duration(seconds: 42)),
+    );
+    await tester.pump();
+    await tester.tap(find.byType(PlayerArtworkFrame));
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.byKey(ValueKey<String>('queue-cover-${_item.contentId}')),
+    );
+    await tester.pumpAndSettle();
+    expect(player.queueSelections, isEmpty);
+    expect(
+      container.read(playerControllerProvider).position,
+      const Duration(seconds: 42),
+    );
+    expect(find.byType(PlayerCoverBrowserPage), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('cover confirmation resolves the live queue after reordering', (
+    WidgetTester tester,
+  ) async {
+    final ProviderContainer container = await _pumpPlayer(
+      tester,
+      _metadata,
+      size: const Size(900, 420),
+      home: const PlayerPage(initialItem: _item),
+    );
+    final _FakePlayerController player =
+        container.read(playerControllerProvider.notifier)
+            as _FakePlayerController;
+    final PlayableItem next = _item.copyWith(bvid: 'next', title: 'Next song');
+    player.show(
+      container
+          .read(playerControllerProvider)
+          .copyWith(queue: <PlayableItem>[_item, next]),
+    );
+    await tester.pump();
+    await tester.tap(find.byType(PlayerArtworkFrame));
+    await tester.pumpAndSettle();
+    await tester.drag(find.byType(PageView), const Offset(-300, 0));
+    await tester.pumpAndSettle();
+    player.show(
+      container
+          .read(playerControllerProvider)
+          .copyWith(queue: <PlayableItem>[next, _item], currentQueueIndex: 1),
+    );
+    await tester.pump();
+    await tester.tap(
+      find.byKey(ValueKey<String>('queue-cover-${next.contentId}')),
+    );
+    await tester.pumpAndSettle();
+    expect(player.queueSelections, <int>[0]);
+    expect(container.read(playerControllerProvider).currentItem, next);
+    expect(tester.takeException(), isNull);
+  });
 
   testWidgets('landscape aligns lyrics progress labels and control edges', (
     WidgetTester tester,
@@ -835,6 +1001,7 @@ class _FakePlayerController extends PlayerController {
   int togglePlaybackCalls = 0;
   int previousCalls = 0;
   int nextCalls = 0;
+  final List<int> queueSelections = <int>[];
   final List<Duration> progressSeeks = <Duration>[];
   final List<Duration> lyricSeeks = <Duration>[];
 
@@ -853,6 +1020,17 @@ class _FakePlayerController extends PlayerController {
   Future<void> togglePlayback() async {
     togglePlaybackCalls++;
     state = state.copyWith(isPlaying: !state.isPlaying);
+  }
+
+  @override
+  Future<void> skipToQueueIndex(int index, {bool autoplay = true}) async {
+    queueSelections.add(index);
+    state = state.copyWith(
+      currentItem: state.queue[index],
+      currentQueueIndex: index,
+      position: Duration.zero,
+      isPlaying: autoplay,
+    );
   }
 
   @override

@@ -118,9 +118,6 @@ class _PlayerPageState extends ConsumerState<PlayerPage> {
                 onFavoriteToggle: item == null
                     ? null
                     : () => _toggleFavorite(item),
-                onToggleSource: display.canToggleSource
-                    ? _toggleDisplaySource
-                    : null,
                 onSeek: _seekFromProgressBar,
               ),
             ),
