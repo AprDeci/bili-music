@@ -41,7 +41,7 @@ class PlayerLandscapePage extends ConsumerWidget {
     );
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
+      padding: const EdgeInsets.fromLTRB(64, 8, 64, 24),
       child: LayoutBuilder(
         builder: (BuildContext context, BoxConstraints constraints) {
           final double artworkSize =
@@ -54,50 +54,60 @@ class PlayerLandscapePage extends ConsumerWidget {
               ) *
               0.85;
 
-          return Row(
-            children: <Widget>[
-              SizedBox.square(
-                dimension: artworkSize,
-                child: GestureDetector(
-                  onDoubleTap: onToggleSource,
-                  child: Hero(
-                    tag: 'artwork',
-                    child: PlayerArtworkFrame(coverUrl: display.coverUrl ?? ''),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 24),
-              Expanded(
-                child: Column(
-                  children: <Widget>[
-                    Expanded(
-                      child: PlayerLyricPage(
-                        state: state,
-                        item: item,
-                        isActive: true,
-                        onSeek: controller.seek,
-                        activeColor: activeColor,
-                        showToolbar: false,
+          return Center(
+            child: Row(
+              children: <Widget>[
+                SizedBox.square(
+                  dimension: artworkSize,
+                  child: GestureDetector(
+                    onDoubleTap: onToggleSource,
+                    child: Hero(
+                      tag: 'artwork',
+                      child: PlayerArtworkFrame(
+                        coverUrl: display.coverUrl ?? '',
+                        borderRadius: 8,
                       ),
                     ),
-                    if (state.statusHint != null)
-                      PlayerPlaybackStatusChip(state: state),
-                    PlayerProgressHost(state: state, onChanged: onSeek),
-                    const SizedBox(height: 8),
-                    PlayerLandscapeControls(
-                      state: state,
-                      isFavorite: isFavorite,
-                      onFavoriteToggle: onFavoriteToggle,
-                      onBackward: controller.skipToPrevious,
-                      onTogglePlayback: controller.togglePlayback,
-                      onForward: controller.skipToNext,
-                      onOpenQueue: () =>
-                          showPlayerQueueSheet(context: context, state: state),
-                    ),
-                  ],
+                  ),
                 ),
-              ),
-            ],
+                const SizedBox(width: 24),
+                Expanded(
+                  child: SizedBox(
+                    height: artworkSize,
+                    child: Column(
+                      children: <Widget>[
+                        Expanded(
+                          child: PlayerLyricPage(
+                            state: state,
+                            item: item,
+                            isActive: true,
+                            onSeek: controller.seek,
+                            activeColor: activeColor,
+                            showToolbar: false,
+                          ),
+                        ),
+                        if (state.statusHint != null)
+                          PlayerPlaybackStatusChip(state: state),
+                        PlayerProgressHost(state: state, onChanged: onSeek),
+                        const SizedBox.shrink(),
+                        PlayerLandscapeControls(
+                          state: state,
+                          isFavorite: isFavorite,
+                          onFavoriteToggle: onFavoriteToggle,
+                          onBackward: controller.skipToPrevious,
+                          onTogglePlayback: controller.togglePlayback,
+                          onForward: controller.skipToNext,
+                          onOpenQueue: () => showPlayerQueueSheet(
+                            context: context,
+                            state: state,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
           );
         },
       ),

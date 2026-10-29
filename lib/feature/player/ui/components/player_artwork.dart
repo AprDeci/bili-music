@@ -2,19 +2,25 @@ import 'package:bilimusic/common/components/cached_image.dart';
 import 'package:flutter/material.dart';
 
 class PlayerArtworkFrame extends StatelessWidget {
-  const PlayerArtworkFrame({super.key, required this.coverUrl});
+  const PlayerArtworkFrame({
+    super.key,
+    required this.coverUrl,
+    this.borderRadius = 34,
+  });
 
   final String coverUrl;
+  final double borderRadius;
 
   @override
   Widget build(BuildContext context) {
-
     return AspectRatio(
       aspectRatio: 1,
       child: DecoratedBox(
-        decoration: BoxDecoration(borderRadius: BorderRadius.circular(34)),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(borderRadius),
+        ),
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(34),
+          borderRadius: BorderRadius.circular(borderRadius),
           child: Stack(
             fit: StackFit.expand,
             children: <Widget>[

@@ -318,6 +318,19 @@ void main() {
       );
       expect(artwork.right, lessThanOrEqualTo(lyricPanel.left));
       expect(artwork.width, closeTo(artwork.height, 0.01));
+      expect(artwork.top, closeTo(lyricPanel.top, 0.01));
+      expect(artwork.bottom, closeTo(controls.bottom, 0.01));
+      expect(
+        tester
+            .widget<ClipRRect>(
+              find.descendant(
+                of: find.byType(PlayerArtworkFrame),
+                matching: find.byType(ClipRRect),
+              ),
+            )
+            .borderRadius,
+        BorderRadius.circular(8),
+      );
       expect(artwork.width, lessThan(320));
       expect(artwork.top, greaterThan(32));
       expect(artwork.bottom, lessThan(388));
@@ -355,6 +368,17 @@ void main() {
       tester.view.physicalSize = const Size(420, 900);
       await tester.pumpAndSettle();
       expect(find.byType(PlayerMainPage), findsOneWidget);
+      expect(
+        tester
+            .widget<ClipRRect>(
+              find.descendant(
+                of: find.byType(PlayerArtworkFrame),
+                matching: find.byType(ClipRRect),
+              ),
+            )
+            .borderRadius,
+        BorderRadius.circular(34),
+      );
       expect(
         tester.widget<PageView>(find.byType(PageView)).controller!.page,
         1,
@@ -542,6 +566,18 @@ void main() {
     );
     expect(Theme.of(context).brightness, Brightness.dark);
     expect(MediaQuery.textScalerOf(context).scale(10), 20);
+    final Rect artwork = tester.getRect(find.byType(PlayerArtworkFrame));
+    expect(
+      artwork.top,
+      closeTo(tester.getRect(find.byType(PlayerLyricPage)).top, 0.01),
+    );
+    expect(
+      artwork.bottom,
+      closeTo(
+        tester.getRect(find.byType(PlayerLandscapeControls)).bottom,
+        0.01,
+      ),
+    );
     final Rect safeRect = Rect.fromLTRB(
       padding.left,
       padding.top,
