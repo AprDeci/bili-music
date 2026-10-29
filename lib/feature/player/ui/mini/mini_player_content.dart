@@ -104,8 +104,8 @@ double buildMiniPlayerProgress(PlayerState state) {
 class MiniPlayerArtwork extends StatelessWidget {
   const MiniPlayerArtwork({super.key, required this.coverUrl});
 
-  static const double _outerSize = 52;
-  static const double _imageSize = 48;
+  static const double _outerSize = 44;
+  static const double _imageSize = 40;
 
   final String? coverUrl;
 

@@ -39,7 +39,7 @@ class MiniPlayerBar extends StatelessWidget {
             child: MiniPlayerContent(
               state: state,
               onTogglePlayback: onTogglePlayback,
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 3),
             ),
           ),
         ),

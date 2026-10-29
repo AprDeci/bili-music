@@ -17,6 +17,8 @@ import 'package:bilimusic/feature/player/logic/display/player_display_settings_l
 import 'package:bilimusic/feature/player/logic/display/player_display_source_logic.dart';
 import 'package:bilimusic/feature/player/logic/lyrics/player_lyric_settings_logic.dart';
 import 'package:bilimusic/feature/player/logic/player_online_audience_controller.dart';
+import 'package:bilimusic/common/bottom_height_helper.dart';
+import 'package:bilimusic/feature/player/ui/mini/mini_player_bar.dart';
 import 'package:bilimusic/feature/player/ui/mini/mini_player_content.dart';
 import 'package:bilimusic/feature/player/ui/components/player_artwork.dart';
 import 'package:bilimusic/feature/player/ui/components/player_cover_browser_page.dart';
@@ -52,6 +54,54 @@ final Metadata _metadata = Metadata(
 );
 
 void main() {
+  for (final double textScale in <double>[1, 2]) {
+    testWidgets(
+      'slim minibar fits text at scale $textScale and keeps actions',
+      (WidgetTester tester) async {
+        int openCalls = 0;
+        int toggleCalls = 0;
+        await _pumpPlayer(
+          tester,
+          _metadata,
+          textScaler: TextScaler.linear(textScale),
+          home: Scaffold(
+            body: Align(
+              alignment: Alignment.bottomCenter,
+              child: MiniPlayerBar(
+                state: const PlayerState(currentItem: _item),
+                bottomPadding: 0,
+                onTap: () => openCalls++,
+                onTogglePlayback: () => toggleCalls++,
+              ),
+            ),
+          ),
+        );
+
+        final double height = tester.getSize(find.byType(MiniPlayerBar)).height;
+        expect(
+          height,
+          textScale == 1
+              ? BottomHeightHelper.miniPlayerBarHeight
+              : greaterThan(BottomHeightHelper.miniPlayerBarHeight),
+        );
+        expect(
+          tester.getSize(find.byType(MiniPlayerArtwork)),
+          const Size(44, 44),
+        );
+        expect(
+          tester.getSize(find.byType(MiniPlayerPlaybackButton)),
+          const Size(44, 44),
+        );
+        await tester.tap(find.byType(IconButton));
+        expect(toggleCalls, 1);
+        expect(openCalls, 0);
+        await tester.tap(find.byType(MiniPlayerArtwork));
+        expect(openCalls, 1);
+        expect(tester.takeException(), isNull);
+      },
+    );
+  }
+
   testWidgets(
     'cover double tap switches page and mini information without artwork',
     (WidgetTester tester) async {
