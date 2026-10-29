@@ -96,73 +96,77 @@ class _PlayerProgressSectionState extends State<PlayerProgressSection> {
 
     return Column(
       children: <Widget>[
-        SliderTheme(
-          data: SliderTheme.of(context).copyWith(
-            trackHeight: 2,
-            inactiveTrackColor: neutralColor.withValues(alpha: 0.18),
-            activeTrackColor: neutralColor,
-            thumbColor: neutralColor,
-            thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 3),
-            overlayShape: const RoundSliderOverlayShape(overlayRadius: 16),
-            overlayColor: neutralColor.withValues(alpha: 0.14),
-          ),
-          child: Slider(
-            value: visualProgress,
-            onChangeStart: widget.isReady
-                ? (double value) {
-                    _settleTimer?.cancel();
-                    setState(() {
-                      _isDragging = true;
-                      _dragProgress = value;
-                      _settledProgress = null;
-                    });
-                  }
-                : null,
-            onChanged: widget.isReady
-                ? (double value) {
-                    setState(() {
-                      _dragProgress = value;
-                    });
-                  }
-                : null,
-            onChangeEnd: widget.isReady
-                ? (double value) {
-                    setState(() {
-                      _isDragging = false;
-                      _dragProgress = value;
-                      _settledProgress = value;
-                    });
-                    _settleTimer = Timer(const Duration(milliseconds: 500), () {
-                      setState(() => _settledProgress = null);
-                    });
-                    widget.onChanged(value);
-                  }
-                : null,
+        SizedBox(
+          height: 48,
+          child: SliderTheme(
+            data: SliderTheme.of(context).copyWith(
+              trackHeight: 2,
+              inactiveTrackColor: neutralColor.withValues(alpha: 0.18),
+              activeTrackColor: neutralColor,
+              thumbColor: neutralColor,
+              thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 3),
+              overlayShape: const RoundSliderOverlayShape(overlayRadius: 16),
+              overlayColor: neutralColor.withValues(alpha: 0.14),
+            ),
+            child: Slider(
+              padding: EdgeInsets.zero,
+              value: visualProgress,
+              onChangeStart: widget.isReady
+                  ? (double value) {
+                      _settleTimer?.cancel();
+                      setState(() {
+                        _isDragging = true;
+                        _dragProgress = value;
+                        _settledProgress = null;
+                      });
+                    }
+                  : null,
+              onChanged: widget.isReady
+                  ? (double value) {
+                      setState(() {
+                        _dragProgress = value;
+                      });
+                    }
+                  : null,
+              onChangeEnd: widget.isReady
+                  ? (double value) {
+                      setState(() {
+                        _isDragging = false;
+                        _dragProgress = value;
+                        _settledProgress = value;
+                      });
+                      _settleTimer = Timer(
+                        const Duration(milliseconds: 500),
+                        () {
+                          setState(() => _settledProgress = null);
+                        },
+                      );
+                      widget.onChanged(value);
+                    }
+                  : null,
+            ),
           ),
         ),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 2),
-          child: Row(
-            children: <Widget>[
-              Text(
-                formatPlayerDuration(visualPosition),
-                style: theme.textTheme.labelMedium?.copyWith(
-                  color: colorScheme.onSurface.withValues(alpha: 0.55),
-                  fontWeight: FontWeight.w700,
-                  fontSize: 8,
-                ),
+        Row(
+          children: <Widget>[
+            Text(
+              formatPlayerDuration(visualPosition),
+              style: theme.textTheme.labelMedium?.copyWith(
+                color: colorScheme.onSurface.withValues(alpha: 0.55),
+                fontWeight: FontWeight.w700,
+                fontSize: 8,
               ),
-              const Spacer(),
-              Text(
-                formatPlayerDuration(total),
-                style: theme.textTheme.labelMedium?.copyWith(
-                  fontSize: 8,
-                  color: colorScheme.onSurface.withValues(alpha: 0.55),
-                  fontWeight: FontWeight.w700,
-                ),
+            ),
+            const Spacer(),
+            Text(
+              formatPlayerDuration(total),
+              style: theme.textTheme.labelMedium?.copyWith(
+                fontSize: 8,
+                color: colorScheme.onSurface.withValues(alpha: 0.55),
+                fontWeight: FontWeight.w700,
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ],
     );

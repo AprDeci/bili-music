@@ -30,6 +30,7 @@ import 'package:bilimusic/feature/player/ui/lyrics/player_lyric_page.dart';
 import 'package:bilimusic/feature/player/ui/desktop/desktop_player_bar.dart';
 import 'package:bilimusic/feature/player/ui/player_page.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_lyric/flutter_lyric.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -387,6 +388,84 @@ void main() {
     },
   );
 
+  testWidgets('landscape aligns lyrics progress labels and control edges', (
+    WidgetTester tester,
+  ) async {
+    final ProviderContainer container = await _pumpPlayer(
+      tester,
+      _metadata.copyWith(lyrics: '[00:00.000]First line\n[00:30.000]Next line'),
+      size: const Size(900, 420),
+      home: const PlayerPage(initialItem: _item),
+    );
+    final _FakeLyricSettingsLogic settings =
+        container.read(playerLyricSettingsLogicProvider.notifier)
+            as _FakeLyricSettingsLogic;
+    for (final double padding in <double>[0, 24, 36]) {
+      settings.show(PlayerLyricSettings(horizontalPadding: padding));
+      await tester.pump();
+      final Finder lyrics = find.byType(LyricView);
+      final Rect content = tester
+          .widget<LyricView>(lyrics)
+          .preset!
+          .padding
+          .resolve(TextDirection.ltr)
+          .deflateRect(tester.getRect(lyrics));
+      for (final Type type in <Type>[
+        PlayerProgressSection,
+        Slider,
+        PlayerLandscapeControls,
+      ]) {
+        final Rect rect = tester.getRect(find.byType(type));
+        expect(rect.left, closeTo(content.left, 0.01));
+        expect(rect.right, closeTo(content.right, 0.01));
+      }
+      final Finder labels = find.descendant(
+        of: find.byType(PlayerProgressSection),
+        matching: find.byType(Text),
+      );
+      expect(tester.getRect(labels.first).left, closeTo(content.left, 0.01));
+      expect(tester.getRect(labels.last).right, closeTo(content.right, 0.01));
+      expect(
+        tester.widget<Slider>(find.byType(Slider)).padding,
+        EdgeInsets.zero,
+      );
+      expect(
+        tester.getSize(find.byType(Slider)).height,
+        greaterThanOrEqualTo(48),
+      );
+      final Finder buttons = find.descendant(
+        of: find.byType(PlayerLandscapeControls),
+        matching: find.byType(IconButton),
+      );
+      final Widget firstIcon = tester.widget<IconButton>(buttons.first).icon;
+      final Widget lastIcon = tester.widget<IconButton>(buttons.last).icon;
+      expect(
+        tester.getRect(find.byWidget(firstIcon)).left,
+        closeTo(content.left, 0.01),
+      );
+      expect(
+        tester.getRect(find.byWidget(lastIcon)).right,
+        closeTo(content.right, 0.01),
+      );
+      for (final Element button in buttons.evaluate()) {
+        final Size size = tester.getSize(find.byWidget(button.widget));
+        expect(size.width, greaterThanOrEqualTo(48));
+        expect(size.height, greaterThanOrEqualTo(48));
+      }
+      expect(tester.takeException(), isNull);
+    }
+    tester.view.physicalSize = const Size(420, 900);
+    await tester.pumpAndSettle();
+    final Rect slider = tester.getRect(find.byType(Slider));
+    final Finder labels = find.descendant(
+      of: find.byType(PlayerProgressSection),
+      matching: find.byType(Text),
+    );
+    expect(tester.getRect(labels.first).left, closeTo(slider.left, 0.01));
+    expect(tester.getRect(labels.last).right, closeTo(slider.right, 0.01));
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('landscape controls use the existing playback callbacks', (
     WidgetTester tester,
   ) async {
@@ -431,10 +510,11 @@ void main() {
       PlayerQueueMode.sequence,
     );
 
-    await tester.tapAt(tester.getCenter(find.byType(Slider)));
+    final Rect track = tester.getRect(find.byType(Slider));
+    await tester.tapAt(Offset(track.left + track.width / 4, track.center.dy));
     await tester.pump();
     expect(player.progressSeeks, hasLength(1));
-    expect(player.progressSeeks.single.inSeconds, closeTo(90, 1));
+    expect(player.progressSeeks.single.inSeconds, closeTo(45, 1));
     expect(container.read(playerControllerProvider).isPlaying, isTrue);
     tester
         .widget<PlayerLyricPage>(find.byType(PlayerLyricPage))
@@ -843,6 +923,8 @@ class _FakeCoverColorController extends PlayerCoverColorController {
 class _FakeLyricSettingsLogic extends PlayerLyricSettingsLogic {
   @override
   PlayerLyricSettings build() => const PlayerLyricSettings();
+
+  void show(PlayerLyricSettings value) => state = value;
 }
 
 class _FakeOnlineAudienceController extends PlayerOnlineAudienceController {

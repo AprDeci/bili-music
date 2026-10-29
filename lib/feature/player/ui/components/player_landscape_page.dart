@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:bilimusic/feature/player/domain/playable_item.dart';
 import 'package:bilimusic/feature/player/domain/player_display_info.dart';
 import 'package:bilimusic/feature/player/domain/player_state.dart';
+import 'package:bilimusic/feature/player/logic/lyrics/player_lyric_settings_logic.dart';
 import 'package:bilimusic/feature/player/logic/player_controller.dart';
 import 'package:bilimusic/feature/player/ui/components/player_artwork.dart';
 import 'package:bilimusic/feature/player/ui/components/player_controls.dart';
@@ -40,8 +41,15 @@ class PlayerLandscapePage extends ConsumerWidget {
       playerControllerProvider.notifier,
     );
 
+    final double contentPadding = ref.watch(
+      playerLyricSettingsLogicProvider.select(
+        (settings) => settings.horizontalPadding,
+      ),
+    );
+    final double sidePadding = MediaQuery.sizeOf(context).width < 700 ? 24 : 64;
+
     return Padding(
-      padding: const EdgeInsets.fromLTRB(64, 8, 64, 24),
+      padding: EdgeInsets.fromLTRB(sidePadding, 8, sidePadding, 24),
       child: LayoutBuilder(
         builder: (BuildContext context, BoxConstraints constraints) {
           final double artworkSize =
@@ -88,18 +96,31 @@ class PlayerLandscapePage extends ConsumerWidget {
                         ),
                         if (state.statusHint != null)
                           PlayerPlaybackStatusChip(state: state),
-                        PlayerProgressHost(state: state, onChanged: onSeek),
-                        const SizedBox.shrink(),
-                        PlayerLandscapeControls(
-                          state: state,
-                          isFavorite: isFavorite,
-                          onFavoriteToggle: onFavoriteToggle,
-                          onBackward: controller.skipToPrevious,
-                          onTogglePlayback: controller.togglePlayback,
-                          onForward: controller.skipToNext,
-                          onOpenQueue: () => showPlayerQueueSheet(
-                            context: context,
-                            state: state,
+                        Padding(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: contentPadding,
+                          ),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: <Widget>[
+                              PlayerProgressHost(
+                                state: state,
+                                onChanged: onSeek,
+                              ),
+                              PlayerLandscapeControls(
+                                state: state,
+                                isFavorite: isFavorite,
+                                onFavoriteToggle: onFavoriteToggle,
+                                onBackward: controller.skipToPrevious,
+                                onTogglePlayback: controller.togglePlayback,
+                                onForward: controller.skipToNext,
+                                onOpenQueue: () => showPlayerQueueSheet(
+                                  context: context,
+                                  state: state,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ],
