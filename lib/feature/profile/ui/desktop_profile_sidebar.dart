@@ -13,6 +13,7 @@ import 'package:bilimusic/feature/auth/logic/bili_auth_controller.dart';
 import 'package:bilimusic/feature/favorites/domain/favorite_collection.dart';
 import 'package:bilimusic/feature/favorites/domain/favorite_entry.dart';
 import 'package:bilimusic/feature/favorites/domain/favorites_state.dart';
+import 'package:bilimusic/feature/favorites/logic/favorite_entry_metadata.dart';
 import 'package:bilimusic/feature/favorites/logic/favorites_controller.dart';
 import 'package:bilimusic/feature/profile/ui/components/remote_collection_import_dialog.dart';
 import 'package:bilimusic/feature/recent/logic/recent_playback_controller.dart';
@@ -193,7 +194,9 @@ class _DesktopProfileSidebarState extends ConsumerState<DesktopProfileSidebar> {
 
                       return _SidebarListItem(
                         leading: _SidebarPlaylistCover(
-                          coverUrl: latestItem?.coverUrl,
+                          coverUrl: ref.watch(
+                            favoriteEntryCoverUrlProvider(latestItem),
+                          ),
                         ),
                         title: collection.name,
                         count: favoritesState.itemCountForCollection(

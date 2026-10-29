@@ -83,3 +83,81 @@ final class FavoriteEntryMetadataFamily extends $Family
   @override
   String toString() => r'favoriteEntryMetadataProvider';
 }
+
+@ProviderFor(favoriteEntryCoverUrl)
+final favoriteEntryCoverUrlProvider = FavoriteEntryCoverUrlFamily._();
+
+final class FavoriteEntryCoverUrlProvider
+    extends $FunctionalProvider<String?, String?, String?>
+    with $Provider<String?> {
+  FavoriteEntryCoverUrlProvider._({
+    required FavoriteEntryCoverUrlFamily super.from,
+    required FavoriteEntry? super.argument,
+  }) : super(
+         retry: null,
+         name: r'favoriteEntryCoverUrlProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
+
+  @override
+  String debugGetCreateSourceHash() => _$favoriteEntryCoverUrlHash();
+
+  @override
+  String toString() {
+    return r'favoriteEntryCoverUrlProvider'
+        ''
+        '($argument)';
+  }
+
+  @$internal
+  @override
+  $ProviderElement<String?> $createElement($ProviderPointer pointer) =>
+      $ProviderElement(pointer);
+
+  @override
+  String? create(Ref ref) {
+    final argument = this.argument as FavoriteEntry?;
+    return favoriteEntryCoverUrl(ref, argument);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(String? value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<String?>(value),
+    );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is FavoriteEntryCoverUrlProvider && other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$favoriteEntryCoverUrlHash() =>
+    r'a0c81c975753b02551cbded6955e2f1050a471b4';
+
+final class FavoriteEntryCoverUrlFamily extends $Family
+    with $FunctionalFamilyOverride<String?, FavoriteEntry?> {
+  FavoriteEntryCoverUrlFamily._()
+    : super(
+        retry: null,
+        name: r'favoriteEntryCoverUrlProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
+
+  FavoriteEntryCoverUrlProvider call(FavoriteEntry? entry) =>
+      FavoriteEntryCoverUrlProvider._(argument: entry, from: this);
+
+  @override
+  String toString() => r'favoriteEntryCoverUrlProvider';
+}
