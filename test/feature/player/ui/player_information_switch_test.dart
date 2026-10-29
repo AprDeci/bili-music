@@ -483,6 +483,73 @@ void main() {
     },
   );
 
+  for (final Size size in <Size>[
+    const Size(900, 420),
+    const Size(1440, 420),
+    const Size(640, 320),
+  ]) {
+    testWidgets('cover browser keeps projected gaps even at $size', (
+      WidgetTester tester,
+    ) async {
+      final List<PlayableItem> queue = List<PlayableItem>.generate(
+        9,
+        (int index) => _item.copyWith(bvid: 'cover-$index'),
+      );
+      await _pumpPlayer(
+        tester,
+        null,
+        size: size,
+        home: PlayerCoverBrowserPage(queue: queue, initialIndex: 4),
+      );
+      await tester.pumpAndSettle();
+
+      Rect artworkBounds(int index) {
+        final RenderBox artwork = tester.renderObject<RenderBox>(
+          find.descendant(
+            of: find.byKey(
+              ValueKey<String>('queue-cover-${queue[index].contentId}'),
+            ),
+            matching: find.byType(PlayerArtworkFrame),
+          ),
+        );
+        return MatrixUtils.transformRect(
+          artwork.getTransformTo(null),
+          Offset.zero & artwork.size,
+        );
+      }
+
+      void expectEvenGaps(int center) {
+        final List<Rect> covers = <Rect>[
+          for (int index = center - 2; index <= center + 2; index++)
+            artworkBounds(index),
+        ];
+        expect(covers[2].center.dx, closeTo(size.width / 2, 0.01));
+        for (int index = 1; index < covers.length; index++) {
+          expect(
+            covers[index].left - covers[index - 1].right,
+            closeTo(16, 0.01),
+          );
+        }
+        expect(
+          covers.first.left,
+          closeTo(size.width - covers.last.right, 0.01),
+        );
+      }
+
+      expectEvenGaps(4);
+      final Finder carousel = find.byKey(
+        const ValueKey<String>('player-cover-carousel'),
+      );
+      await tester.drag(carousel, Offset(-artworkBounds(4).width, 0));
+      await tester.pumpAndSettle();
+      expectEvenGaps(5);
+      await tester.tapAt(artworkBounds(4).center);
+      await tester.pumpAndSettle();
+      expectEvenGaps(4);
+      expect(tester.takeException(), isNull);
+    });
+  }
+
   testWidgets('confirming the current cover preserves playback position', (
     WidgetTester tester,
   ) async {

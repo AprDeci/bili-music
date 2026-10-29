@@ -69,6 +69,7 @@ class _PlayerCoverBrowserPageState
                             key: ValueKey<Size>(constraints.biggest),
                             queue: widget.queue,
                             initialIndex: _previewIndex,
+                            coverExtent: extent,
                             viewportFraction: extent / constraints.maxWidth,
                             onPageChanged: (int index) {
                               setState(() => _previewIndex = index);
@@ -132,6 +133,7 @@ class _CoverCarousel extends ConsumerStatefulWidget {
     super.key,
     required this.queue,
     required this.initialIndex,
+    required this.coverExtent,
     required this.viewportFraction,
     required this.onPageChanged,
     required this.onConfirm,
@@ -139,6 +141,7 @@ class _CoverCarousel extends ConsumerStatefulWidget {
 
   final List<PlayableItem> queue;
   final int initialIndex;
+  final double coverExtent;
   final double viewportFraction;
   final ValueChanged<int> onPageChanged;
   final ValueChanged<PlayableItem> onConfirm;
@@ -148,9 +151,21 @@ class _CoverCarousel extends ConsumerStatefulWidget {
 }
 
 class _CoverCarouselState extends ConsumerState<_CoverCarousel> {
+  static const double _gap = 16;
+  static const double _sideScale = 0.8;
+  static const double _sideAngle = 0.65;
+  static const double _perspective = 0.0015;
+
+  late final double _halfExtent = (widget.coverExtent - _gap) / 2;
+  late final double _projectedHalf =
+      _halfExtent * _sideScale * math.cos(_sideAngle);
+  late final double _depth = _halfExtent * _sideScale * math.sin(_sideAngle);
+  late final double _innerExtent = _projectedHalf / (1 - _perspective * _depth);
+  late final double _outerExtent = _projectedHalf / (1 + _perspective * _depth);
+  late final double _sideStep = _innerExtent + _outerExtent + _gap;
   late final PageController _controller = PageController(
     initialPage: widget.initialIndex,
-    viewportFraction: widget.viewportFraction,
+    viewportFraction: widget.viewportFraction * _sideStep / widget.coverExtent,
   );
 
   @override
@@ -163,6 +178,7 @@ class _CoverCarouselState extends ConsumerState<_CoverCarousel> {
   Widget build(BuildContext context) {
     return PageView.builder(
       key: const ValueKey<String>('player-cover-carousel'),
+      allowImplicitScrolling: true,
       controller: _controller,
       onPageChanged: widget.onPageChanged,
       itemCount: widget.queue.length,
@@ -207,16 +223,22 @@ class _CoverCarouselState extends ConsumerState<_CoverCarousel> {
                 ? _controller.page ?? widget.initialIndex.toDouble()
                 : widget.initialIndex.toDouble();
             final double distance = (index - page).clamp(-1.0, 1.0);
-            return FractionalTranslation(
-              translation: Offset(-(index - page) * 0.18, 0),
-              child: Transform(
-                alignment: Alignment.center,
-                transform: Matrix4.identity()
-                  ..setEntry(3, 2, 0.0015)
-                  ..rotateY(-distance * 0.65),
-                child: Transform.scale(
-                  scale: 1 - distance.abs() * 0.2,
-                  child: child,
+            return OverflowBox(
+              minWidth: widget.coverExtent,
+              maxWidth: widget.coverExtent,
+              minHeight: widget.coverExtent,
+              maxHeight: widget.coverExtent,
+              child: Transform.translate(
+                offset: Offset(distance * (_halfExtent - _outerExtent), 0),
+                child: Transform(
+                  alignment: Alignment.center,
+                  transform: Matrix4.identity()
+                    ..setEntry(3, 2, _perspective)
+                    ..rotateY(-distance * _sideAngle),
+                  child: Transform.scale(
+                    scale: 1 - distance.abs() * (1 - _sideScale),
+                    child: child,
+                  ),
                 ),
               ),
             );
