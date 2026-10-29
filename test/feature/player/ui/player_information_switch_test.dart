@@ -320,7 +320,7 @@ void main() {
       expect(artwork.right, lessThanOrEqualTo(lyricPanel.left));
       expect(artwork.width, closeTo(artwork.height, 0.01));
       expect(artwork.top, closeTo(lyricPanel.top, 0.01));
-      expect(artwork.bottom, closeTo(controls.bottom, 0.01));
+      expect(artwork.bottom + 8, closeTo(controls.bottom, 0.01));
       expect(
         tester
             .widget<ClipRRect>(
@@ -342,7 +342,7 @@ void main() {
       expect(artwork.center.dy, closeTo(centerY - 8, 0.01));
       expect(
         (lyricPanel.top + controls.bottom) / 2,
-        closeTo(centerY - 8, 0.01),
+        closeTo(centerY - 4, 0.01),
       );
       expect(find.byTooltip('返回'), findsNothing);
       expect(find.byIcon(Icons.keyboard_arrow_down_rounded), findsNothing);
@@ -652,11 +652,8 @@ void main() {
       closeTo(tester.getRect(find.byType(PlayerLyricPage)).top, 0.01),
     );
     expect(
-      artwork.bottom,
-      closeTo(
-        tester.getRect(find.byType(PlayerLandscapeControls)).bottom,
-        0.01,
-      ),
+      tester.getRect(find.byType(PlayerLandscapeControls)).bottom,
+      closeTo(artwork.bottom + 8, 0.01),
     );
     final Rect safeRect = Rect.fromLTRB(
       padding.left,

@@ -95,31 +95,34 @@ class PlayerLandscapePage extends ConsumerWidget {
                         ),
                         if (state.statusHint != null)
                           PlayerPlaybackStatusChip(state: state),
-                        Padding(
-                          padding: EdgeInsets.symmetric(
-                            horizontal: contentPadding,
-                          ),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: <Widget>[
-                              PlayerProgressHost(
-                                state: state,
-                                onChanged: onSeek,
-                              ),
-                              PlayerLandscapeControls(
-                                state: state,
-                                isFavorite: isFavorite,
-                                onFavoriteToggle: onFavoriteToggle,
-                                onBackward: controller.skipToPrevious,
-                                onTogglePlayback: controller.togglePlayback,
-                                onForward: controller.skipToNext,
-                                onOpenQueue: () => showPlayerQueueSheet(
-                                  context: context,
+                        Transform.translate(
+                          offset: const Offset(0, 8),
+                          child: Padding(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: contentPadding,
+                            ),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: <Widget>[
+                                PlayerProgressHost(
                                   state: state,
+                                  onChanged: onSeek,
                                 ),
-                              ),
-                            ],
+                                PlayerLandscapeControls(
+                                  state: state,
+                                  isFavorite: isFavorite,
+                                  onFavoriteToggle: onFavoriteToggle,
+                                  onBackward: controller.skipToPrevious,
+                                  onTogglePlayback: controller.togglePlayback,
+                                  onForward: controller.skipToNext,
+                                  onOpenQueue: () => showPlayerQueueSheet(
+                                    context: context,
+                                    state: state,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                       ],
