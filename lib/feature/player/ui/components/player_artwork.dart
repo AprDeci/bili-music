@@ -5,7 +5,7 @@ class PlayerArtworkFrame extends StatelessWidget {
   const PlayerArtworkFrame({
     super.key,
     required this.coverUrl,
-    this.borderRadius = 34,
+    this.borderRadius = 8,
   });
 
   final String coverUrl;

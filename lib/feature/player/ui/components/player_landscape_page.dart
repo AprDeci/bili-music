@@ -73,7 +73,6 @@ class PlayerLandscapePage extends ConsumerWidget {
                       tag: 'artwork',
                       child: PlayerArtworkFrame(
                         coverUrl: display.coverUrl ?? '',
-                        borderRadius: 8,
                       ),
                     ),
                   ),
