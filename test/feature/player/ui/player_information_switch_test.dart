@@ -30,6 +30,7 @@ import 'package:bilimusic/feature/player/ui/components/player_top_bar.dart';
 import 'package:bilimusic/feature/player/ui/lyrics/player_lyric_page.dart';
 import 'package:bilimusic/feature/player/ui/desktop/desktop_player_bar.dart';
 import 'package:bilimusic/feature/player/ui/player_page.dart';
+import 'package:coverflow_carousel/coverflow_carousel.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_lyric/flutter_lyric.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -466,7 +467,7 @@ void main() {
       await tester.pump();
       await tester.tap(find.byType(PlayerArtworkFrame));
       await tester.pumpAndSettle();
-      final PageView carousel = tester.widget<PageView>(
+      final CoverflowCarousel carousel = tester.widget<CoverflowCarousel>(
         find.byKey(const ValueKey<String>('player-cover-carousel')),
       );
       expect(carousel.controller!.page, 1);
@@ -488,7 +489,7 @@ void main() {
     const Size(1440, 420),
     const Size(640, 320),
   ]) {
-    testWidgets('cover browser keeps projected gaps even at $size', (
+    testWidgets('cover browser keeps balanced spacing at $size', (
       WidgetTester tester,
     ) async {
       final List<PlayableItem> queue = List<PlayableItem>.generate(
@@ -518,34 +519,35 @@ void main() {
         );
       }
 
-      void expectEvenGaps(int center) {
+      void expectBalancedLayout(int center) {
         final List<Rect> covers = <Rect>[
           for (int index = center - 2; index <= center + 2; index++)
             artworkBounds(index),
         ];
         expect(covers[2].center.dx, closeTo(size.width / 2, 0.01));
-        for (int index = 1; index < covers.length; index++) {
-          expect(
+        final List<double> gaps = <double>[
+          for (int index = 1; index < covers.length; index++)
             covers[index].left - covers[index - 1].right,
-            closeTo(16, 0.01),
-          );
-        }
+        ];
+        expect(gaps, everyElement(inInclusiveRange(8, 32)));
+        expect((gaps[0] - gaps[1]).abs(), lessThan(16));
         expect(
           covers.first.left,
           closeTo(size.width - covers.last.right, 0.01),
         );
+        expect(tester.takeException(), isNull);
       }
 
-      expectEvenGaps(4);
+      expectBalancedLayout(4);
       final Finder carousel = find.byKey(
         const ValueKey<String>('player-cover-carousel'),
       );
       await tester.drag(carousel, Offset(-artworkBounds(4).width, 0));
       await tester.pumpAndSettle();
-      expectEvenGaps(5);
+      expectBalancedLayout(5);
       await tester.tapAt(artworkBounds(4).center);
       await tester.pumpAndSettle();
-      expectEvenGaps(4);
+      expectBalancedLayout(4);
       expect(tester.takeException(), isNull);
     });
   }

@@ -7,6 +7,7 @@ import 'package:bilimusic/feature/player/logic/display/player_display_metadata.d
 import 'package:bilimusic/feature/player/logic/display/player_display_provider.dart';
 import 'package:bilimusic/feature/player/ui/components/player_artwork.dart';
 import 'package:bilimusic/feature/player/ui/components/player_dynamic_backdrop.dart';
+import 'package:coverflow_carousel/coverflow_carousel.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -151,22 +152,7 @@ class _CoverCarousel extends ConsumerStatefulWidget {
 }
 
 class _CoverCarouselState extends ConsumerState<_CoverCarousel> {
-  static const double _gap = 16;
-  static const double _sideScale = 0.8;
-  static const double _sideAngle = 0.65;
-  static const double _perspective = 0.0015;
-
-  late final double _halfExtent = (widget.coverExtent - _gap) / 2;
-  late final double _projectedHalf =
-      _halfExtent * _sideScale * math.cos(_sideAngle);
-  late final double _depth = _halfExtent * _sideScale * math.sin(_sideAngle);
-  late final double _innerExtent = _projectedHalf / (1 - _perspective * _depth);
-  late final double _outerExtent = _projectedHalf / (1 + _perspective * _depth);
-  late final double _sideStep = _innerExtent + _outerExtent + _gap;
-  late final PageController _controller = PageController(
-    initialPage: widget.initialIndex,
-    viewportFraction: widget.viewportFraction * _sideStep / widget.coverExtent,
-  );
+  final CoverflowCarouselController _controller = CoverflowCarouselController();
 
   @override
   void dispose() {
@@ -176,69 +162,46 @@ class _CoverCarouselState extends ConsumerState<_CoverCarousel> {
 
   @override
   Widget build(BuildContext context) {
-    return PageView.builder(
+    return CoverflowCarousel.builder(
       key: const ValueKey<String>('player-cover-carousel'),
-      allowImplicitScrolling: true,
       controller: _controller,
-      onPageChanged: widget.onPageChanged,
+      initialPage: widget.initialIndex,
       itemCount: widget.queue.length,
+      itemWidth: widget.coverExtent - 16,
+      itemHeight: widget.coverExtent - 16,
+      height: widget.coverExtent,
+      scrollDirection: Axis.horizontal,
+      visibleItems: 2,
+      nearCardSpacing: widget.coverExtent * 0.88,
+      farCardSpacing: widget.coverExtent * 0.68,
+      viewportFraction: widget.viewportFraction * 0.7,
+      skewAngle: -0.45,
+      perspective: 0.001,
+      enableHoverTilt: false,
+      cardBorderRadius: BorderRadius.circular(8),
+      onPageChanged: widget.onPageChanged,
       itemBuilder: (BuildContext context, int index) {
         final PlayableItem item = widget.queue[index];
-        final PlayerDisplayInfo? display = ref
-            .watch(playerQueueDisplayProvider(item))
-            .asData
-            ?.value;
-        return AnimatedBuilder(
-          animation: _controller,
-          child: Semantics(
-            button: true,
-            label: '播放 ${display?.title ?? item.title}',
-            child: GestureDetector(
-              key: ValueKey<String>('queue-cover-${item.contentId}'),
-              onTap: () {
-                final double page =
-                    _controller.page ?? widget.initialIndex.toDouble();
-                if ((page - index).abs() > 0.01) {
-                  _controller.animateToPage(
-                    index,
-                    duration: const Duration(milliseconds: 300),
-                    curve: Curves.easeOutCubic,
-                  );
-                  return;
-                }
-                widget.onConfirm(item);
-              },
-              child: Padding(
-                padding: const EdgeInsets.all(8),
+        return Consumer(
+          builder: (BuildContext context, WidgetRef ref, Widget? child) {
+            final PlayerDisplayInfo? display = ref
+                .watch(playerQueueDisplayProvider(item))
+                .asData
+                ?.value;
+            return Semantics(
+              button: true,
+              label: '播放 ${display?.title ?? item.title}',
+              child: GestureDetector(
+                key: ValueKey<String>('queue-cover-${item.contentId}'),
+                onTap: () {
+                  if ((_controller.page - index).abs() > 0.01) {
+                    _controller.animateTo(index);
+                    return;
+                  }
+                  widget.onConfirm(item);
+                },
                 child: PlayerArtworkFrame(
                   coverUrl: display?.coverUrl ?? item.coverUrl,
-                ),
-              ),
-            ),
-          ),
-          builder: (BuildContext context, Widget? child) {
-            final double page =
-                _controller.hasClients &&
-                    _controller.position.hasContentDimensions
-                ? _controller.page ?? widget.initialIndex.toDouble()
-                : widget.initialIndex.toDouble();
-            final double distance = (index - page).clamp(-1.0, 1.0);
-            return OverflowBox(
-              minWidth: widget.coverExtent,
-              maxWidth: widget.coverExtent,
-              minHeight: widget.coverExtent,
-              maxHeight: widget.coverExtent,
-              child: Transform.translate(
-                offset: Offset(distance * (_halfExtent - _outerExtent), 0),
-                child: Transform(
-                  alignment: Alignment.center,
-                  transform: Matrix4.identity()
-                    ..setEntry(3, 2, _perspective)
-                    ..rotateY(-distance * _sideAngle),
-                  child: Transform.scale(
-                    scale: 1 - distance.abs() * (1 - _sideScale),
-                    child: child,
-                  ),
                 ),
               ),
             );
