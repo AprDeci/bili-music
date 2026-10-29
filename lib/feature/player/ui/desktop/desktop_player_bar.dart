@@ -168,7 +168,6 @@ class _TrackSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
-    final String? displayArtist = display.artist;
 
     return Row(
       children: <Widget>[
@@ -179,6 +178,7 @@ class _TrackSection extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
+              const SizedBox(height: 6),
               Semantics(
                 child: ExcludeSemantics(
                   child: PingPongMarqueePlus(
@@ -191,15 +191,6 @@ class _TrackSection extends StatelessWidget {
                   ),
                 ),
               ),
-              if (displayArtist != null)
-                Text(
-                  displayArtist,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
-                ),
               Row(
                 children: <Widget>[
                   BarIconButton(
@@ -212,7 +203,6 @@ class _TrackSection extends StatelessWidget {
                   ),
                   const SizedBox(width: 10),
                   BadgedIconButton(
-                    size: 30,
                     noBadgeIcon: HugeIcon(
                       icon: HugeIcons.strokeRoundedComment01,
                       size: 20,
@@ -351,6 +341,7 @@ class _PlaybackSection extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.center,
       crossAxisAlignment: CrossAxisAlignment.center,
       children: <Widget>[
+        const SizedBox(height: 2),
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[

@@ -251,7 +251,7 @@ void main() {
   );
 
   testWidgets(
-    'desktop bar fits title artist and actions in its existing height',
+    'desktop bar keeps original two-row layout when display source changes',
     (WidgetTester tester) async {
       final ProviderContainer container = await _pumpPlayer(
         tester,
@@ -268,13 +268,10 @@ void main() {
       final Finder bar = find.byType(DesktopPlayerBar);
       expect(tester.getSize(bar).height, 76);
       expect(find.text('Song title'), findsOneWidget);
-      expect(find.text('Song artist'), findsOneWidget);
+      expect(find.text('Song artist'), findsNothing);
+      expect(tester.getSize(find.byTooltip('评论')), const Size(40, 40));
       expect(
         tester.getRect(find.text('Song title')).bottom,
-        lessThanOrEqualTo(tester.getRect(find.text('Song artist')).top),
-      );
-      expect(
-        tester.getRect(find.text('Song artist')).bottom,
         lessThanOrEqualTo(tester.getRect(find.byTooltip('评论')).top),
       );
       expect(tester.takeException(), isNull);
@@ -283,7 +280,7 @@ void main() {
       await tester.pump();
 
       expect(find.text(_item.title), findsOneWidget);
-      expect(find.text(_item.author), findsOneWidget);
+      expect(find.text(_item.author), findsNothing);
       expect(find.text('Song artist'), findsNothing);
       expect(tester.getSize(bar).height, 76);
       expect(tester.takeException(), isNull);
