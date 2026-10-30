@@ -2,6 +2,7 @@ import 'package:bilimusic/common/components/desktop/desktop_side_panel.dart';
 import 'package:bilimusic/feature/player/domain/playable_item.dart';
 import 'package:bilimusic/feature/player/domain/player_state.dart';
 import 'package:bilimusic/feature/player/logic/player_controller.dart';
+import 'package:bilimusic/feature/player/ui/components/player_playback_waveform.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_smart_dialog/flutter_smart_dialog.dart';
@@ -77,7 +78,7 @@ class _PlayerQueueContent extends ConsumerStatefulWidget {
 }
 
 class _PlayerQueueContentState extends ConsumerState<_PlayerQueueContent> {
-  static const double _estimatedQueueItemExtent = 66;
+  static const double _estimatedQueueItemExtent = 56;
 
   late final AutoScrollController _scrollController;
   bool _didFocusInitialItem = false;
@@ -164,7 +165,7 @@ class _PlayerQueueContentState extends ConsumerState<_PlayerQueueContent> {
         Expanded(
           child: ListView.builder(
             controller: _scrollController,
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+            padding: const EdgeInsets.only(bottom: 24),
             itemCount: liveState.queue.length,
             itemBuilder: (BuildContext context, int index) {
               final PlayableItem queuedItem = liveState.queue[index];
@@ -182,75 +183,59 @@ class _PlayerQueueContentState extends ConsumerState<_PlayerQueueContent> {
                 key: ValueKey<String>('queue-${queuedItem.stableId}'),
                 controller: _scrollController,
                 index: index,
-                child: Padding(
-                  padding: EdgeInsets.only(
-                    bottom: index == liveState.queue.length - 1 ? 0 : 6,
-                  ),
+                child: Semantics(
+                  selected: isCurrent,
                   child: Material(
-                    color: isCurrent
-                        ? colorScheme.primary.withValues(alpha: 0.1)
-                        : colorScheme.surfaceContainerHighest.withValues(
-                            alpha: 0.45,
-                          ),
-                    borderRadius: BorderRadius.circular(8.0),
+                    color: Colors.transparent,
                     child: InkWell(
-                      borderRadius: BorderRadius.circular(8.0),
                       onTap: () async {
                         await _close(context);
                         await liveController.skipToQueueIndex(index);
                       },
                       child: Padding(
-                        padding: const EdgeInsets.fromLTRB(10, 6, 0, 6),
+                        padding: const EdgeInsets.fromLTRB(20, 4, 8, 4),
                         child: Row(
                           children: <Widget>[
-                            SizedBox(
-                              width: 28,
-                              child: CircleAvatar(
-                                radius: 14,
-                                backgroundColor: isCurrent
-                                    ? colorScheme.primary
-                                    : Colors.transparent,
-                                foregroundColor: isCurrent
-                                    ? colorScheme.onPrimary
-                                    : colorScheme.onSurfaceVariant,
-                                child: Text(
-                                  '${index + 1}',
-                                  style: theme.textTheme.labelMedium?.copyWith(
-                                    color: isCurrent
-                                        ? colorScheme.onPrimary
-                                        : colorScheme.onSurfaceVariant,
-                                  ),
+                            Expanded(
+                              child: Text.rich(
+                                TextSpan(
+                                  text: title,
+                                  children: <InlineSpan>[
+                                    if (subtitle.isNotEmpty)
+                                      TextSpan(
+                                        text: ' - $subtitle',
+                                        style: theme.textTheme.bodyMedium
+                                            ?.copyWith(
+                                              color: isCurrent
+                                                  ? colorScheme.primary
+                                                  : colorScheme
+                                                        .onSurfaceVariant,
+                                              fontWeight: FontWeight.normal,
+                                            ),
+                                      ),
+                                  ],
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: theme.textTheme.titleSmall?.copyWith(
+                                  color: isCurrent
+                                      ? colorScheme.primary
+                                      : colorScheme.onSurface,
+                                  fontWeight: isCurrent
+                                      ? FontWeight.w600
+                                      : FontWeight.normal,
                                 ),
                               ),
                             ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: <Widget>[
-                                  Text(
-                                    title,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: theme.textTheme.titleSmall?.copyWith(
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                  if (subtitle.isNotEmpty) ...<Widget>[
-                                    const SizedBox(height: 2),
-                                    Text(
-                                      subtitle,
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: theme.textTheme.bodySmall
-                                          ?.copyWith(
-                                            color: colorScheme.onSurfaceVariant,
-                                          ),
-                                    ),
-                                  ],
-                                ],
+                            if (isCurrent) ...<Widget>[
+                              const SizedBox(width: 8),
+                              PlayerPlaybackWaveform(
+                                isPlaying:
+                                    liveState.isPlaying &&
+                                    !liveState.isBuffering &&
+                                    !liveState.isLoading,
                               ),
-                            ),
+                            ],
                             IconButton(
                               constraints: const BoxConstraints.tightFor(
                                 width: 48,
@@ -271,7 +256,8 @@ class _PlayerQueueContentState extends ConsumerState<_PlayerQueueContent> {
                               },
                               icon: HugeIcon(
                                 icon: HugeIcons.strokeRoundedCancel01,
-                                size: 16,
+                                color: colorScheme.onSurfaceVariant,
+                                size: 18,
                               ),
                             ),
                           ],
