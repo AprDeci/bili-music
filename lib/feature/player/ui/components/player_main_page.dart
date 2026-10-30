@@ -132,9 +132,9 @@ class PlayerMainPage extends ConsumerWidget {
                     ],
                   ),
                   SizedBox(
-                    height: isCompact
-                        ? 8
-                        : (mediaQuery.padding.bottom > 0 ? 8 : 18),
+                    height: isCompact || mediaQuery.padding.bottom > 0
+                        ? 40
+                        : 50,
                   ),
                 ],
               ),

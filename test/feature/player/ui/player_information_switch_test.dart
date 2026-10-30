@@ -354,6 +354,33 @@ void main() {
     },
   );
 
+  for (final Size size in <Size>[const Size(320, 568), const Size(420, 900)]) {
+    testWidgets('portrait controls clear the bottom safe area at $size', (
+      WidgetTester tester,
+    ) async {
+      const EdgeInsets padding = EdgeInsets.only(top: 24, bottom: 34);
+      await _pumpPlayer(
+        tester,
+        _metadata,
+        size: size,
+        padding: padding,
+        home: const PlayerPage(initialItem: _item),
+      );
+      final Rect controls = tester.getRect(
+        find.byType(PlayerTransportControls),
+      );
+      expect(
+        controls.bottom,
+        lessThanOrEqualTo(size.height - padding.bottom - 32),
+      );
+      expect(
+        controls.top,
+        greaterThan(tester.getRect(find.byType(PlayerTrackHeader)).bottom),
+      );
+      expect(tester.takeException(), isNull);
+    });
+  }
+
   for (final (Size portrait, double expectedSize) in <(Size, double)>[
     (const Size(320, 568), 153.36),
     (const Size(320, 640), 198.4),
