@@ -3,6 +3,7 @@ import 'package:bilimusic/common/util/toast_util.dart';
 import 'package:bilimusic/feature/player/domain/playable_item.dart';
 import 'package:bilimusic/feature/player/domain/player_state.dart';
 import 'package:bilimusic/feature/player/logic/player_controller.dart';
+import 'package:bilimusic/feature/player/ui/components/player_playback_waveform.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_smart_dialog/flutter_smart_dialog.dart';
 import 'package:scroll_to_index/scroll_to_index.dart';
@@ -105,7 +106,7 @@ class _PlayerPartSelectorContent extends StatefulWidget {
 
 class _PlayerPartSelectorContentState
     extends State<_PlayerPartSelectorContent> {
-  static const double _estimatedPartItemExtent = 66;
+  static const double _estimatedPartItemExtent = 56;
 
   late final AutoScrollController _scrollController;
   bool _didFocusInitialItem = false;
@@ -146,47 +147,34 @@ class _PlayerPartSelectorContentState
         .toList();
     _focusInitialItem();
 
-    return ListView.separated(
-      controller: _scrollController,
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-      itemCount: widget.parts.length + 1,
-      itemBuilder: (BuildContext context, int index) {
-        if (index == 0) {
-          return AutoScrollTag(
-            key: const ValueKey<String>('part-selector-add-all'),
-            controller: _scrollController,
-            index: index,
-            child: Material(
-              color: Colors.transparent,
-              child: ListTile(
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 14,
-                  vertical: 4,
+    return Column(
+      children: <Widget>[
+        Padding(
+          padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
+          child: Row(
+            children: <Widget>[
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Text(
+                      '分P列表',
+                      style: theme.textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '${widget.parts.length} 项',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: colorScheme.onSurface.withValues(alpha: 0.65),
+                      ),
+                    ),
+                  ],
                 ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                leading: CircleAvatar(
-                  backgroundColor: colorScheme.primary,
-                  foregroundColor: colorScheme.onPrimary,
-                  child: const Icon(Icons.queue_music_rounded),
-                ),
-                title: Text(
-                  '全部加入队列',
-                  style: theme.textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                subtitle: Text(
-                  partsToEnqueue.isEmpty
-                      ? '其余分P已全部在队列中'
-                      : '将 ${partsToEnqueue.length} 个其余分P追加到当前队列',
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: colorScheme.onSurface.withValues(alpha: 0.68),
-                  ),
-                ),
-                trailing: const Icon(Icons.add_rounded),
-                onTap: partsToEnqueue.isEmpty
+              ),
+              TextButton(
+                onPressed: partsToEnqueue.isEmpty
                     ? null
                     : () async {
                         await _close(context);
@@ -196,64 +184,83 @@ class _PlayerPartSelectorContentState
                         }
                         ToastUtil.show('已将 ${partsToEnqueue.length} 个分P加入队列');
                       },
+                child: const Text('全部加入队列'),
               ),
-            ),
-          );
-        }
-
-        final PlayableItem part = widget.parts[index - 1];
-        final bool isSelected = part == widget.currentItem;
-        final String title = part.pageTitle?.trim() ?? '';
-        final int page = part.page ?? index;
-        final String label = title.isEmpty ? 'P$page' : 'P$page · $title';
-
-        return AutoScrollTag(
-          key: ValueKey<String>('part-selector-${part.stableId}'),
-          controller: _scrollController,
-          index: index,
-          child: Material(
-            color: Colors.transparent,
-            borderRadius: BorderRadius.circular(8),
-            clipBehavior: Clip.antiAlias,
-            child: ListTile(
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 14,
-                vertical: 4,
-              ),
-              tileColor: isSelected
-                  ? colorScheme.primary.withValues(alpha: 0.1)
-                  : colorScheme.surfaceContainerHighest.withValues(alpha: 0.35),
-              leading: CircleAvatar(
-                backgroundColor: isSelected
-                    ? colorScheme.primary
-                    : colorScheme.primary.withValues(alpha: 0.12),
-                foregroundColor: isSelected
-                    ? colorScheme.onPrimary
-                    : colorScheme.primary,
-                child: Text('P$page'),
-              ),
-              title: Text(
-                label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: theme.textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-              trailing: isSelected
-                  ? Icon(Icons.check_rounded, color: colorScheme.primary)
-                  : const Icon(Icons.play_arrow_rounded),
-              onTap: () async {
-                await _close(context);
-                if (part != widget.currentItem) {
-                  widget.controller.replaceCurrentQueueItem(part);
-                }
-              },
-            ),
+            ],
           ),
-        );
-      },
-      separatorBuilder: (_, _) => const SizedBox(height: 10),
+        ),
+        Expanded(
+          child: ListView.builder(
+            controller: _scrollController,
+            padding: const EdgeInsets.only(bottom: 24),
+            itemCount: widget.parts.length,
+            itemBuilder: (BuildContext context, int index) {
+              final PlayableItem part = widget.parts[index];
+              final bool isSelected = part == widget.currentItem;
+              final String title = part.pageTitle?.trim() ?? '';
+              final int page = part.page ?? index + 1;
+              final String label = title.isEmpty ? 'P$page' : 'P$page · $title';
+
+              return AutoScrollTag(
+                key: ValueKey<String>('part-selector-${part.stableId}'),
+                controller: _scrollController,
+                index: index,
+                child: Semantics(
+                  selected: isSelected,
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: () async {
+                        await _close(context);
+                        if (!isSelected) {
+                          widget.controller.replaceCurrentQueueItem(part);
+                        }
+                      },
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(minHeight: 56),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 20,
+                            vertical: 4,
+                          ),
+                          child: Row(
+                            children: <Widget>[
+                              Expanded(
+                                child: Text(
+                                  label,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: theme.textTheme.titleSmall?.copyWith(
+                                    color: isSelected
+                                        ? colorScheme.primary
+                                        : colorScheme.onSurface,
+                                    fontWeight: isSelected
+                                        ? FontWeight.w600
+                                        : FontWeight.normal,
+                                  ),
+                                ),
+                              ),
+                              if (isSelected) ...<Widget>[
+                                const SizedBox(width: 8),
+                                PlayerPlaybackWaveform(
+                                  isPlaying:
+                                      widget.state.isPlaying &&
+                                      !widget.state.isBuffering &&
+                                      !widget.state.isLoading,
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      ],
     );
   }
 
@@ -276,7 +283,7 @@ class _PlayerPartSelectorContentState
       }
 
       await _scrollController.scrollToIndex(
-        selectedIndex + 1,
+        selectedIndex,
         preferPosition: AutoScrollPosition.middle,
       );
     });
