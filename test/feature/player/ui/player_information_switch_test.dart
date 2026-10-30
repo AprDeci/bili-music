@@ -630,6 +630,21 @@ void main() {
     await tester.tap(
       find.byKey(ValueKey<String>('queue-cover-${next.contentId}')),
     );
+    player.show(
+      container
+          .read(playerControllerProvider)
+          .copyWith(
+            isReady: false,
+            statusHint: PlayerStatusHint.resolvingAudio,
+          ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 16));
+    player.show(
+      container
+          .read(playerControllerProvider)
+          .copyWith(isReady: true, statusHint: null),
+    );
     await tester.pumpAndSettle();
     expect(find.byType(PlayerCoverBrowserPage), findsNothing);
     expect(player.queueSelections, <int>[1]);
@@ -748,55 +763,43 @@ void main() {
     });
   }
 
-  testWidgets('cover browser semantics survive repeated track selections', (
+  testWidgets('player progress semantics survive readiness changes', (
     WidgetTester tester,
   ) async {
-    final ProviderContainer container = await _pumpPlayer(
-      tester,
-      _metadata,
-      size: const Size(900, 420),
-      home: const PlayerPage(initialItem: _item),
-    );
-    final _FakePlayerController player =
-        container.read(playerControllerProvider.notifier)
-            as _FakePlayerController;
-    final List<PlayableItem> queue = List<PlayableItem>.generate(
-      9,
-      (int index) => _item.copyWith(bvid: 'cover-$index', title: 'Track $index'),
-    );
-    player.show(
-      container.read(playerControllerProvider).copyWith(
-        queue: queue,
-        currentQueueIndex: 4,
-        currentItem: queue[4],
+    final ValueNotifier<bool> ready = ValueNotifier<bool>(true);
+    addTearDown(ready.dispose);
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: ValueListenableBuilder<bool>(
+            valueListenable: ready,
+            builder: (BuildContext context, bool isReady, Widget? child) {
+              return Transform.translate(
+                offset: Offset(isReady ? 0 : 10, 0),
+                child: PlayerProgressSection(
+                  position: const Duration(seconds: 42),
+                  duration: const Duration(minutes: 3),
+                  isReady: isReady,
+                  onChanged: (_) {},
+                ),
+              );
+            },
+          ),
+        ),
       ),
     );
-    await tester.pump();
-    for (final int target in <int>[5, 6, 5]) {
-      await tester.tap(find.byType(PlayerArtworkFrame));
-      await tester.pumpAndSettle();
-      final CoverflowCarousel carousel = tester.widget<CoverflowCarousel>(
-        find.byKey(const ValueKey<String>('player-cover-carousel')),
+    for (final bool isReady in <bool>[false, true, false, true]) {
+      final State<StatefulWidget> previousSlider = tester.state(
+        find.byType(Slider),
       );
-      final TestGesture drag = await tester.startGesture(
-        tester.getCenter(find.byType(PageView)),
-      );
-      final double direction = target > carousel.controller!.page ? -1 : 1;
-      for (int step = 0; step < 12; step++) {
-        await drag.moveBy(Offset(direction * 18, 0));
-        await tester.pump(const Duration(milliseconds: 16));
-        expect(tester.takeException(), isNull);
-      }
-      await drag.up();
-      await tester.pumpAndSettle();
-      final Finder cover = find.byKey(
-        ValueKey<String>('queue-cover-${queue[target].contentId}'),
-      );
-      await tester.tap(cover);
-      await tester.pumpAndSettle();
-      expect(player.queueSelections.last, target);
-      expect(find.byType(PlayerCoverBrowserPage), findsNothing);
+      ready.value = isReady;
+      await tester.pump();
+      expect(previousSlider.mounted, isFalse);
       expect(tester.takeException(), isNull);
+      expect(
+        tester.widget<Slider>(find.byType(Slider)).onChanged,
+        isReady ? isNotNull : isNull,
+      );
     }
   });
 

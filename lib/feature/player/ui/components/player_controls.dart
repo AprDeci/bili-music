@@ -109,6 +109,7 @@ class _PlayerProgressSectionState extends State<PlayerProgressSection> {
               overlayColor: neutralColor.withValues(alpha: 0.14),
             ),
             child: Slider(
+              key: ValueKey<bool>(widget.isReady),
               padding: EdgeInsets.zero,
               value: visualProgress,
               onChangeStart: widget.isReady
