@@ -47,6 +47,9 @@ Before running any `flutter` or `dart` command, first ensure the command is exec
 - Run a single named test: `flutter test --plain-name "Counter increments smoke test" test/widget_test.dart`
 - Run tests with machine output: `flutter test --machine`
 
+### Small-Screen Testing
+- iPhone SE 1st gen: `adb shell wm size 640x1136 && adb shell wm density 320`
+
 ### Code Generation
 - One-off codegen: `dart run build_runner build --delete-conflicting-outputs`
 - Watch mode: `dart run build_runner watch --delete-conflicting-outputs`
