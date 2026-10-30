@@ -89,79 +89,86 @@ class PlayerLandscapePage extends ConsumerWidget {
           ),
         );
 
+        final double upwardOffset =
+            ((constraints.maxHeight - 32 - artworkSize) / 2).clamp(0.0, 12.0);
+
         return Padding(
           padding: EdgeInsets.fromLTRB(sidePadding, 8, sidePadding, 24),
           child: Center(
-            child: Row(
-              children: <Widget>[
-                SizedBox.square(
-                  dimension: artworkSize,
-                  child: Semantics(
-                    button: state.hasQueue,
-                    label: '浏览播放队列封面',
-                    child: GestureDetector(
-                      onTap: state.hasQueue
-                          ? () => _browseCovers(context, ref)
-                          : null,
-                      child: Hero(
-                        tag: 'artwork',
-                        child: PlayerArtworkFrame(
-                          coverUrl: display.coverUrl ?? '',
+            child: Transform.translate(
+              offset: Offset(0, -upwardOffset),
+              child: Row(
+                children: <Widget>[
+                  SizedBox.square(
+                    dimension: artworkSize,
+                    child: Semantics(
+                      button: state.hasQueue,
+                      label: '浏览播放队列封面',
+                      child: GestureDetector(
+                        onTap: state.hasQueue
+                            ? () => _browseCovers(context, ref)
+                            : null,
+                        child: Hero(
+                          tag: 'artwork',
+                          child: PlayerArtworkFrame(
+                            coverUrl: display.coverUrl ?? '',
+                          ),
                         ),
                       ),
                     ),
                   ),
-                ),
-                const SizedBox(width: 24),
-                Expanded(
-                  child: SizedBox(
-                    height: artworkSize,
-                    child: Column(
-                      children: <Widget>[
-                        Expanded(
-                          child: PlayerLyricPage(
-                            state: state,
-                            item: item,
-                            isActive: true,
-                            onSeek: controller.seek,
-                            activeColor: activeColor,
-                            showToolbar: false,
-                          ),
-                        ),
-                        if (state.statusHint != null)
-                          PlayerPlaybackStatusChip(state: state),
-                        Transform.translate(
-                          offset: const Offset(0, 8),
-                          child: Padding(
-                            padding: EdgeInsets.symmetric(
-                              horizontal: contentPadding,
-                            ),
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: <Widget>[
-                                PlayerProgressHost(
-                                  state: state,
-                                  onChanged: onSeek,
-                                ),
-                                PlayerLandscapeControls(
-                                  state: state,
-                                  isFavorite: isFavorite,
-                                  onFavoriteToggle: onFavoriteToggle,
-                                  onBackward: controller.skipToPrevious,
-                                  onTogglePlayback: controller.togglePlayback,
-                                  onForward: controller.skipToNext,
-                                  onToggleQueueMode: controller.toggleQueueMode,
-                                ),
-                              ],
+                  const SizedBox(width: 24),
+                  Expanded(
+                    child: SizedBox(
+                      height: artworkSize,
+                      child: Column(
+                        children: <Widget>[
+                          Expanded(
+                            child: PlayerLyricPage(
+                              state: state,
+                              item: item,
+                              isActive: true,
+                              onSeek: controller.seek,
+                              activeColor: activeColor,
+                              showToolbar: false,
                             ),
                           ),
-                        ),
-                      ],
+                          if (state.statusHint != null)
+                            PlayerPlaybackStatusChip(state: state),
+                          Transform.translate(
+                            offset: const Offset(0, 8),
+                            child: Padding(
+                              padding: EdgeInsets.symmetric(
+                                horizontal: contentPadding,
+                              ),
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: <Widget>[
+                                  PlayerProgressHost(
+                                    state: state,
+                                    onChanged: onSeek,
+                                  ),
+                                  PlayerLandscapeControls(
+                                    state: state,
+                                    isFavorite: isFavorite,
+                                    onFavoriteToggle: onFavoriteToggle,
+                                    onBackward: controller.skipToPrevious,
+                                    onTogglePlayback: controller.togglePlayback,
+                                    onForward: controller.skipToNext,
+                                    onToggleQueueMode:
+                                        controller.toggleQueueMode,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         );

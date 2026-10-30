@@ -401,6 +401,7 @@ void main() {
       tester.getSize(find.byType(PlayerArtworkFrame)),
       const Size(208, 208),
     );
+    expect(tester.getTopLeft(find.byType(PlayerArtworkFrame)).dy, 8);
     expect(tester.takeException(), isNull);
   });
 
@@ -536,10 +537,10 @@ void main() {
           .getRect(find.byType(PlayerLandscapePage))
           .center
           .dy;
-      expect(artwork.center.dy, closeTo(centerY - 8, 0.01));
+      expect(artwork.center.dy, closeTo(centerY - 20, 0.01));
       expect(
         (lyricPanel.top + controls.bottom) / 2,
-        closeTo(centerY - 4, 0.01),
+        closeTo(centerY - 16, 0.01),
       );
       expect(find.byTooltip('返回'), findsNothing);
       expect(find.byIcon(Icons.keyboard_arrow_down_rounded), findsNothing);
@@ -746,6 +747,58 @@ void main() {
       expect(tester.takeException(), isNull);
     });
   }
+
+  testWidgets('cover browser semantics survive repeated track selections', (
+    WidgetTester tester,
+  ) async {
+    final ProviderContainer container = await _pumpPlayer(
+      tester,
+      _metadata,
+      size: const Size(900, 420),
+      home: const PlayerPage(initialItem: _item),
+    );
+    final _FakePlayerController player =
+        container.read(playerControllerProvider.notifier)
+            as _FakePlayerController;
+    final List<PlayableItem> queue = List<PlayableItem>.generate(
+      9,
+      (int index) => _item.copyWith(bvid: 'cover-$index', title: 'Track $index'),
+    );
+    player.show(
+      container.read(playerControllerProvider).copyWith(
+        queue: queue,
+        currentQueueIndex: 4,
+        currentItem: queue[4],
+      ),
+    );
+    await tester.pump();
+    for (final int target in <int>[5, 6, 5]) {
+      await tester.tap(find.byType(PlayerArtworkFrame));
+      await tester.pumpAndSettle();
+      final CoverflowCarousel carousel = tester.widget<CoverflowCarousel>(
+        find.byKey(const ValueKey<String>('player-cover-carousel')),
+      );
+      final TestGesture drag = await tester.startGesture(
+        tester.getCenter(find.byType(PageView)),
+      );
+      final double direction = target > carousel.controller!.page ? -1 : 1;
+      for (int step = 0; step < 12; step++) {
+        await drag.moveBy(Offset(direction * 18, 0));
+        await tester.pump(const Duration(milliseconds: 16));
+        expect(tester.takeException(), isNull);
+      }
+      await drag.up();
+      await tester.pumpAndSettle();
+      final Finder cover = find.byKey(
+        ValueKey<String>('queue-cover-${queue[target].contentId}'),
+      );
+      await tester.tap(cover);
+      await tester.pumpAndSettle();
+      expect(player.queueSelections.last, target);
+      expect(find.byType(PlayerCoverBrowserPage), findsNothing);
+      expect(tester.takeException(), isNull);
+    }
+  });
 
   testWidgets('confirming the current cover preserves playback position', (
     WidgetTester tester,
