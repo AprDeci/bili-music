@@ -227,7 +227,7 @@ class _PlayerLyricToolbar extends StatelessWidget {
                 if (onSubtitles != null) ...<Widget>[
                   const SizedBox(width: 20),
                   IconButton(
-                    tooltip: 'AI字幕',
+                    tooltip: '字幕',
                     onPressed: onSubtitles,
                     color: iconColor,
                     icon: const Icon(Icons.subtitles_outlined),

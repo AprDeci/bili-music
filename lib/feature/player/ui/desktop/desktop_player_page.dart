@@ -535,7 +535,7 @@ class _DesktopLyricToolRail extends StatelessWidget {
               if (onSubtitles != null)
                 BarIconButton(
                   icon: Icons.subtitles_outlined,
-                  tooltip: 'AI字幕',
+                  tooltip: '字幕',
                   onPressed: onSubtitles,
                   isActive: usesSubtitles,
                 ),

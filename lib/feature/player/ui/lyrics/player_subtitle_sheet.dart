@@ -61,7 +61,7 @@ class _PlayerSubtitleSheet extends ConsumerWidget {
             Padding(
               padding: const EdgeInsets.fromLTRB(24, 0, 24, 12),
               child: Text(
-                'AI字幕',
+                '字幕',
                 style: Theme.of(context).textTheme.titleLarge,
               ),
             ),
