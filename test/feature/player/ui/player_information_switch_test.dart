@@ -19,6 +19,7 @@ import 'package:bilimusic/feature/player/logic/lyrics/player_lyric_settings_logi
 import 'package:bilimusic/feature/player/logic/player_online_audience_controller.dart';
 import 'package:bilimusic/feature/player/ui/mini/mini_player_bar.dart';
 import 'package:bilimusic/feature/player/ui/mini/mini_player_content.dart';
+import 'package:bilimusic/feature/player/ui/mini/mini_player_glass_bar.dart';
 import 'package:bilimusic/feature/player/ui/components/player_artwork.dart';
 import 'package:bilimusic/feature/player/ui/components/player_cover_browser_page.dart';
 import 'package:bilimusic/feature/player/ui/components/player_controls.dart';
@@ -36,6 +37,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_lyric/flutter_lyric.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 
 const PlayableItem _item = PlayableItem(
   aid: 1,
@@ -89,6 +91,71 @@ void main() {
         expect(toggleCalls, 1);
         expect(openCalls, 0);
         await tester.tap(find.byType(MiniPlayerArtwork));
+        expect(openCalls, 1);
+        expect(tester.takeException(), isNull);
+      },
+    );
+  }
+
+  for (final double textScale in <double>[1, 2]) {
+    testWidgets(
+      'glass minibar inflates, resets and keeps actions at scale $textScale',
+      (WidgetTester tester) async {
+        int openCalls = 0;
+        int toggleCalls = 0;
+        await _pumpPlayer(
+          tester,
+          _metadata,
+          textScaler: TextScaler.linear(textScale),
+          home: GlassTheme(
+            data: GlassThemeData.simple(quality: GlassQuality.minimal),
+            child: Scaffold(
+              body: Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: MiniPlayerGlassBar(
+                    state: const PlayerState(currentItem: _item),
+                    onTap: () => openCalls++,
+                    onTogglePlayback: () => toggleCalls++,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final Finder artwork = find.byType(MiniPlayerArtwork);
+        final double restingWidth = tester.getRect(artwork).width;
+        final double restingHeight = tester
+            .getSize(find.byType(MiniPlayerGlassBar))
+            .height;
+        expect(restingHeight, textScale == 1 ? 52 : greaterThan(52));
+
+        final TestGesture press = await tester.startGesture(
+          tester.getCenter(artwork),
+        );
+        await tester.pumpAndSettle();
+        expect(tester.getRect(artwork).width, greaterThan(restingWidth));
+        expect(openCalls, 0);
+        await press.up();
+        await tester.pumpAndSettle();
+        expect(tester.getRect(artwork).width, closeTo(restingWidth, 0.01));
+        expect(openCalls, 1);
+
+        final TestGesture cancelledPress = await tester.startGesture(
+          tester.getCenter(artwork),
+        );
+        await tester.pumpAndSettle();
+        expect(tester.getRect(artwork).width, greaterThan(restingWidth));
+        await cancelledPress.cancel();
+        await tester.pumpAndSettle();
+        expect(tester.getRect(artwork).width, closeTo(restingWidth, 0.01));
+        expect(openCalls, 1);
+
+        await tester.tap(find.byType(IconButton));
+        await tester.pumpAndSettle();
+        expect(toggleCalls, 1);
         expect(openCalls, 1);
         expect(tester.takeException(), isNull);
       },

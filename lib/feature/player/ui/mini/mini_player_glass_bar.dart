@@ -17,16 +17,16 @@ class MiniPlayerGlassBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
+    return GlassButton.custom(
       onTap: onTap,
-      child: GlassContainer(
-        shape: const LiquidRoundedSuperellipse(borderRadius: 24),
-        child: MiniPlayerContent(
-          state: state,
-          onTogglePlayback: onTogglePlayback,
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-        ),
+      shape: const LiquidRoundedSuperellipse(borderRadius: 24),
+      interactionScale: 1.04,
+      stretch: 0.2,
+      useOwnLayer: true,
+      child: MiniPlayerContent(
+        state: state,
+        onTogglePlayback: onTogglePlayback,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       ),
     );
   }
