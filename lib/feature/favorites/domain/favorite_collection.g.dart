@@ -16,6 +16,9 @@ _FavoriteCollection _$FavoriteCollectionFromJson(Map<String, dynamic> json) =>
             json['source'],
           ) ??
           FavoriteCollectionSource.local,
+      kind:
+          $enumDecodeNullable(_$CollectionKindEnumMap, json['kind']) ??
+          CollectionKind.music,
       isSystem: json['isSystem'] as bool? ?? false,
       remoteId: json['remoteId'] as String?,
       coverUrl: json['coverUrl'] as String?,
@@ -33,6 +36,7 @@ Map<String, dynamic> _$FavoriteCollectionToJson(_FavoriteCollection instance) =>
       'id': instance.id,
       'name': instance.name,
       'source': _$FavoriteCollectionSourceEnumMap[instance.source]!,
+      'kind': _$CollectionKindEnumMap[instance.kind]!,
       'isSystem': instance.isSystem,
       'remoteId': instance.remoteId,
       'coverUrl': instance.coverUrl,
@@ -46,4 +50,9 @@ Map<String, dynamic> _$FavoriteCollectionToJson(_FavoriteCollection instance) =>
 const _$FavoriteCollectionSourceEnumMap = {
   FavoriteCollectionSource.local: 'local',
   FavoriteCollectionSource.remote: 'remote',
+};
+
+const _$CollectionKindEnumMap = {
+  CollectionKind.music: 'music',
+  CollectionKind.spoken: 'spoken',
 };

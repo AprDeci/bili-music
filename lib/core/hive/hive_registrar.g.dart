@@ -7,6 +7,7 @@ import 'package:bilimusic/core/hive/hive_adapters.dart';
 
 extension HiveRegistrar on HiveInterface {
   void registerAdapters() {
+    registerAdapter(CollectionKindAdapter());
     registerAdapter(FavoriteCollectionAdapter());
     registerAdapter(FavoriteCollectionSourceAdapter());
     registerAdapter(FavoriteEntryAdapter());
@@ -24,6 +25,7 @@ extension HiveRegistrar on HiveInterface {
 
 extension IsolatedHiveRegistrar on IsolatedHiveInterface {
   void registerAdapters() {
+    registerAdapter(CollectionKindAdapter());
     registerAdapter(FavoriteCollectionAdapter());
     registerAdapter(FavoriteCollectionSourceAdapter());
     registerAdapter(FavoriteEntryAdapter());

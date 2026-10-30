@@ -1,3 +1,4 @@
+import 'package:bilimusic/common/domain/collection_kind.dart';
 import 'package:bilimusic/feature/player/domain/playable_item.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 
@@ -13,6 +14,9 @@ abstract class RecentPlaybackEntry with _$RecentPlaybackEntry {
     required String title,
     required String author,
     required String coverUrl,
+    @Default(CollectionKind.music) CollectionKind kind,
+    String? collectionId,
+    int? page,
     int? cid,
     String? pageTitle,
     required int playedAtEpochMs,
@@ -28,6 +32,9 @@ abstract class RecentPlaybackEntry with _$RecentPlaybackEntry {
       title: item.title,
       author: item.author,
       coverUrl: item.coverUrl,
+      kind: item.kind,
+      collectionId: item.collectionId,
+      page: item.page,
       cid: item.cid,
       pageTitle: item.pageTitle,
       playedAtEpochMs: playedAtEpochMs,
@@ -55,6 +62,9 @@ abstract class RecentPlaybackEntry with _$RecentPlaybackEntry {
       title: title,
       author: author,
       coverUrl: coverUrl,
+      kind: kind,
+      collectionId: collectionId,
+      page: page,
       cid: cid,
       pageTitle: pageTitle,
     );

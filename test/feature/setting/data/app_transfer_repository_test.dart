@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:bilimusic/common/domain/collection_kind.dart';
 import 'package:bilimusic/core/hive/hive_adapters.dart';
 import 'package:bilimusic/core/hive/hive_keys.dart';
 import 'package:bilimusic/core/settings/app_settings_store.dart';
@@ -27,6 +28,10 @@ void main() {
   setUp(() async {
     tempDirectory = await Directory.systemTemp.createTemp('app-transfer-test-');
     Hive.init(tempDirectory.path);
+    final CollectionKindAdapter kindAdapter = CollectionKindAdapter();
+    if (!Hive.isAdapterRegistered(kindAdapter.typeId)) {
+      Hive.registerAdapter(kindAdapter);
+    }
     if (!Hive.isAdapterRegistered(1)) {
       Hive.registerAdapter(FavoriteCollectionAdapter());
     }
@@ -71,6 +76,56 @@ void main() {
     await Hive.deleteBoxFromDisk(HiveBoxNames.prefs);
     await Hive.close();
     await tempDirectory.delete(recursive: true);
+  });
+
+  test('spoken kind round-trips for liked and custom collections', () async {
+    final DateTime now = DateTime(2026);
+    final FavoriteCollection spoken = FavoriteCollection(
+      id: 'spoken',
+      name: '听书',
+      kind: CollectionKind.spoken,
+      createdAt: now,
+      updatedAt: now,
+    );
+    await favoritesRepository.saveAll(
+      collections: <FavoriteCollection>[
+        FavoriteCollection.liked(
+          now: now,
+        ).copyWith(kind: CollectionKind.spoken),
+        spoken,
+      ],
+      entries: const <FavoriteEntry>[],
+      memberships: const <FavoriteMembership>[],
+    );
+    final String exported = await transferRepository.buildExportJson();
+    final AppTransferBundle bundle = AppTransferBundle.fromJson(
+      jsonDecode(exported) as Map<String, dynamic>,
+    );
+    expect(
+      bundle.favorites.collections.every(
+        (collection) => collection.kind == CollectionKind.spoken,
+      ),
+      isTrue,
+    );
+    await favoritesRepository.replaceAll(
+      FavoritesState(
+        collections: <FavoriteCollection>[FavoriteCollection.liked(now: now)],
+      ),
+    );
+    await transferRepository.importBytes(
+      bytes: utf8.encode(exported),
+      importLikedCollection: true,
+      selectedCollectionIds: <String>{spoken.id},
+      importSettings: false,
+    );
+    final FavoritesState imported = favoritesRepository.loadState();
+    expect(imported.likedCollection.kind, CollectionKind.spoken);
+    expect(
+      imported.collections
+          .singleWhere((collection) => !collection.isLikedCollection)
+          .kind,
+      CollectionKind.spoken,
+    );
   });
 
   test('buildExportJson exports only referenced entries', () async {

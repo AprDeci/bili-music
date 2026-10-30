@@ -41,6 +41,9 @@ void main() {
     if (!Hive.isAdapterRegistered(9)) {
       Hive.registerAdapter(MetadataAdapter());
     }
+    if (!Hive.isAdapterRegistered(CollectionKindAdapter().typeId)) {
+      Hive.registerAdapter(CollectionKindAdapter());
+    }
     await Hive.openBox<FavoriteCollection>(favoriteCollectionsBoxName);
     await Hive.openBox<FavoriteEntry>(favoriteEntriesBoxName);
     await Hive.openBox<FavoriteMembership>(favoriteMembershipsBoxName);

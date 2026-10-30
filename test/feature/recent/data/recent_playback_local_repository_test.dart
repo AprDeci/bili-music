@@ -1,6 +1,8 @@
 import 'dart:io';
 
+import 'package:bilimusic/common/domain/collection_kind.dart';
 import 'package:bilimusic/core/hive/hive_adapters.dart';
+import 'package:bilimusic/feature/player/domain/playable_item.dart';
 import 'package:bilimusic/feature/recent/data/recent_playback_local_repository.dart';
 import 'package:bilimusic/feature/recent/domain/recent_playback_entry.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -19,14 +21,21 @@ void main() {
     if (!Hive.isAdapterRegistered(7)) {
       Hive.registerAdapter(RecentPlaybackEntryAdapter());
     }
+    if (!Hive.isAdapterRegistered(CollectionKindAdapter().typeId)) {
+      Hive.registerAdapter(CollectionKindAdapter());
+    }
     box = await Hive.openBox<RecentPlaybackEntry>(recentPlaybackBoxName);
     repository = RecentPlaybackLocalRepository(box);
   });
 
   tearDown(() async {
-    await box.close();
-    await Hive.deleteBoxFromDisk(recentPlaybackBoxName);
     await Hive.close();
+    final String resolvedPath = await tempDirectory.resolveSymbolicLinks();
+    final String tempRoot = await Directory.systemTemp.resolveSymbolicLinks();
+    expect(
+      resolvedPath,
+      startsWith('$tempRoot${Platform.pathSeparator}recent-playback-test-'),
+    );
     await tempDirectory.delete(recursive: true);
   });
 
@@ -46,6 +55,46 @@ void main() {
     expect(result.first.title, 'first updated');
     expect(result.first.stableId, 'aid:1:cid:101');
     expect(result.last.stableId, 'aid:2:cid:201');
+  });
+
+  test('playable context and defaults survive Hive reopen', () async {
+    const PlayableItem spoken = PlayableItem(
+      aid: 2,
+      bvid: 'BVSPOKEN',
+      title: 'book',
+      author: 'reader',
+      coverUrl: '',
+      kind: CollectionKind.spoken,
+      collectionId: 'spoken-collection',
+      cid: 202,
+      page: 3,
+      pageTitle: 'chapter three',
+    );
+    const RecentPlaybackEntry legacy = RecentPlaybackEntry(
+      aid: 1,
+      bvid: '',
+      title: 'old item',
+      author: 'tester',
+      coverUrl: '',
+      playedAtEpochMs: 1,
+    );
+    await repository.saveEntry(legacy);
+    final RecentPlaybackEntry entry = RecentPlaybackEntry.fromPlayableItem(
+      spoken,
+      playedAtEpochMs: 2,
+    );
+    await repository.saveEntry(entry);
+    await box.close();
+    box = await Hive.openBox<RecentPlaybackEntry>(recentPlaybackBoxName);
+    repository = RecentPlaybackLocalRepository(box);
+
+    final List<RecentPlaybackEntry> restored = repository.load();
+    expect(restored, <RecentPlaybackEntry>[entry, legacy]);
+    expect(restored.first.toPlayableItem(), spoken);
+    final PlayableItem oldItem = restored.last.toPlayableItem();
+    expect(oldItem.kind, CollectionKind.music);
+    expect(oldItem.collectionId, isNull);
+    expect(oldItem.page, isNull);
   });
 
   test('saveEntry truncates to maxEntries items', () async {

@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:bilimusic/common/domain/collection_kind.dart';
 import 'package:bilimusic/common/logger.dart';
 import 'package:bilimusic/feature/favorites/domain/favorite_collection.dart';
 import 'package:bilimusic/feature/favorites/domain/favorite_entry.dart';
@@ -99,11 +100,25 @@ class FavoritesRemoteCacheRepository {
       collection.id,
       collection.copyWith(
         source: FavoriteCollectionSource.remote,
+        kind: existing?.kind ?? collection.kind,
         isManagedByApp: true,
         createdAt: existing?.createdAt ?? collection.createdAt,
         lastSyncedAt: collection.lastSyncedAt,
       ),
     );
+  }
+
+  Future<void> setCollectionKind({
+    required String collectionId,
+    required CollectionKind kind,
+  }) async {
+    final FavoriteCollection? collection = collectionsBox.get(collectionId);
+    if (collection != null) {
+      await collectionsBox.put(
+        collectionId,
+        collection.copyWith(kind: kind, updatedAt: DateTime.now()),
+      );
+    }
   }
 
   Future<void> upsertCollection(FavoriteCollection collection) async {
@@ -112,6 +127,7 @@ class FavoritesRemoteCacheRepository {
       collection.id,
       collection.copyWith(
         source: FavoriteCollectionSource.remote,
+        kind: existing?.kind ?? collection.kind,
         isManagedByApp: existing?.isManagedByApp ?? collection.isManagedByApp,
         createdAt: existing?.createdAt ?? collection.createdAt,
         lastSyncedAt: existing?.lastSyncedAt,
@@ -133,6 +149,7 @@ class FavoritesRemoteCacheRepository {
       collection.id,
       collection.copyWith(
         source: FavoriteCollectionSource.remote,
+        kind: existing?.kind ?? collection.kind,
         isManagedByApp: existing?.isManagedByApp ?? collection.isManagedByApp,
         createdAt: existing?.createdAt ?? collection.createdAt,
         itemCount: collection.itemCount,

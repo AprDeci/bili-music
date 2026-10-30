@@ -1,3 +1,4 @@
+import 'package:bilimusic/common/domain/collection_kind.dart';
 import 'package:bilimusic/feature/player/domain/playable_item.dart';
 import 'package:bilimusic/feature/player/domain/player_state.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
@@ -44,6 +45,8 @@ abstract class PersistedPlayableItem with _$PersistedPlayableItem {
     required String title,
     required String author,
     required String coverUrl,
+    @Default(CollectionKind.music) CollectionKind kind,
+    String? collectionId,
     int? ownerMid,
     int? cid,
     int? page,
@@ -68,6 +71,8 @@ abstract class PersistedPlayableItem with _$PersistedPlayableItem {
       title: item.title,
       author: item.author,
       coverUrl: item.coverUrl,
+      kind: item.kind,
+      collectionId: item.collectionId,
       ownerMid: item.ownerMid,
       cid: item.cid,
       page: item.page,
@@ -93,6 +98,8 @@ abstract class PersistedPlayableItem with _$PersistedPlayableItem {
       title: title,
       author: author,
       coverUrl: coverUrl,
+      kind: kind,
+      collectionId: collectionId,
       ownerMid: ownerMid,
       cid: cid,
       page: page,

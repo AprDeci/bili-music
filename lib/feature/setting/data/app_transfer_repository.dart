@@ -267,6 +267,7 @@ class AppTransferRepository {
               id: FavoriteCollection.likedCollectionId,
               name: '我喜欢',
               isSystem: true,
+              kind: collection.kind,
               createdAt: collection.createdAt,
               updatedAt: collection.updatedAt,
             );
@@ -404,7 +405,7 @@ class AppTransferRepository {
 
     final FavoriteCollection currentLiked = currentState.likedCollection;
     mutable.collections[FavoriteCollection.likedCollectionId] = currentLiked
-        .copyWith(updatedAt: now);
+        .copyWith(kind: importedState.likedCollection.kind, updatedAt: now);
   }
 
   void _createImportedCollection({

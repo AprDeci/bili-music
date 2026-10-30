@@ -1,3 +1,4 @@
+import 'package:bilimusic/common/domain/collection_kind.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 
 part 'favorite_collection.freezed.dart';
@@ -13,6 +14,7 @@ abstract class FavoriteCollection with _$FavoriteCollection {
     required String id,
     required String name,
     @Default(FavoriteCollectionSource.local) FavoriteCollectionSource source,
+    @Default(CollectionKind.music) CollectionKind kind,
     @Default(false) bool isSystem,
     String? remoteId,
     String? coverUrl,

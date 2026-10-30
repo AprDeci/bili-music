@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$FavoriteCollection {
 
- String get id; String get name; FavoriteCollectionSource get source; bool get isSystem; String? get remoteId; String? get coverUrl; int get itemCount; bool get isManagedByApp; DateTime? get lastSyncedAt; DateTime get createdAt; DateTime get updatedAt;
+ String get id; String get name; FavoriteCollectionSource get source; CollectionKind get kind; bool get isSystem; String? get remoteId; String? get coverUrl; int get itemCount; bool get isManagedByApp; DateTime? get lastSyncedAt; DateTime get createdAt; DateTime get updatedAt;
 /// Create a copy of FavoriteCollection
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -28,16 +28,16 @@ $FavoriteCollectionCopyWith<FavoriteCollection> get copyWith => _$FavoriteCollec
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is FavoriteCollection&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.source, source) || other.source == source)&&(identical(other.isSystem, isSystem) || other.isSystem == isSystem)&&(identical(other.remoteId, remoteId) || other.remoteId == remoteId)&&(identical(other.coverUrl, coverUrl) || other.coverUrl == coverUrl)&&(identical(other.itemCount, itemCount) || other.itemCount == itemCount)&&(identical(other.isManagedByApp, isManagedByApp) || other.isManagedByApp == isManagedByApp)&&(identical(other.lastSyncedAt, lastSyncedAt) || other.lastSyncedAt == lastSyncedAt)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is FavoriteCollection&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.source, source) || other.source == source)&&(identical(other.kind, kind) || other.kind == kind)&&(identical(other.isSystem, isSystem) || other.isSystem == isSystem)&&(identical(other.remoteId, remoteId) || other.remoteId == remoteId)&&(identical(other.coverUrl, coverUrl) || other.coverUrl == coverUrl)&&(identical(other.itemCount, itemCount) || other.itemCount == itemCount)&&(identical(other.isManagedByApp, isManagedByApp) || other.isManagedByApp == isManagedByApp)&&(identical(other.lastSyncedAt, lastSyncedAt) || other.lastSyncedAt == lastSyncedAt)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name,source,isSystem,remoteId,coverUrl,itemCount,isManagedByApp,lastSyncedAt,createdAt,updatedAt);
+int get hashCode => Object.hash(runtimeType,id,name,source,kind,isSystem,remoteId,coverUrl,itemCount,isManagedByApp,lastSyncedAt,createdAt,updatedAt);
 
 @override
 String toString() {
-  return 'FavoriteCollection(id: $id, name: $name, source: $source, isSystem: $isSystem, remoteId: $remoteId, coverUrl: $coverUrl, itemCount: $itemCount, isManagedByApp: $isManagedByApp, lastSyncedAt: $lastSyncedAt, createdAt: $createdAt, updatedAt: $updatedAt)';
+  return 'FavoriteCollection(id: $id, name: $name, source: $source, kind: $kind, isSystem: $isSystem, remoteId: $remoteId, coverUrl: $coverUrl, itemCount: $itemCount, isManagedByApp: $isManagedByApp, lastSyncedAt: $lastSyncedAt, createdAt: $createdAt, updatedAt: $updatedAt)';
 }
 
 
@@ -48,7 +48,7 @@ abstract mixin class $FavoriteCollectionCopyWith<$Res>  {
   factory $FavoriteCollectionCopyWith(FavoriteCollection value, $Res Function(FavoriteCollection) _then) = _$FavoriteCollectionCopyWithImpl;
 @useResult
 $Res call({
- String id, String name, FavoriteCollectionSource source, bool isSystem, String? remoteId, String? coverUrl, int itemCount, bool isManagedByApp, DateTime? lastSyncedAt, DateTime createdAt, DateTime updatedAt
+ String id, String name, FavoriteCollectionSource source, CollectionKind kind, bool isSystem, String? remoteId, String? coverUrl, int itemCount, bool isManagedByApp, DateTime? lastSyncedAt, DateTime createdAt, DateTime updatedAt
 });
 
 
@@ -65,12 +65,13 @@ class _$FavoriteCollectionCopyWithImpl<$Res>
 
 /// Create a copy of FavoriteCollection
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? source = null,Object? isSystem = null,Object? remoteId = freezed,Object? coverUrl = freezed,Object? itemCount = null,Object? isManagedByApp = null,Object? lastSyncedAt = freezed,Object? createdAt = null,Object? updatedAt = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? source = null,Object? kind = null,Object? isSystem = null,Object? remoteId = freezed,Object? coverUrl = freezed,Object? itemCount = null,Object? isManagedByApp = null,Object? lastSyncedAt = freezed,Object? createdAt = null,Object? updatedAt = null,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,source: null == source ? _self.source : source // ignore: cast_nullable_to_non_nullable
-as FavoriteCollectionSource,isSystem: null == isSystem ? _self.isSystem : isSystem // ignore: cast_nullable_to_non_nullable
+as FavoriteCollectionSource,kind: null == kind ? _self.kind : kind // ignore: cast_nullable_to_non_nullable
+as CollectionKind,isSystem: null == isSystem ? _self.isSystem : isSystem // ignore: cast_nullable_to_non_nullable
 as bool,remoteId: freezed == remoteId ? _self.remoteId : remoteId // ignore: cast_nullable_to_non_nullable
 as String?,coverUrl: freezed == coverUrl ? _self.coverUrl : coverUrl // ignore: cast_nullable_to_non_nullable
 as String?,itemCount: null == itemCount ? _self.itemCount : itemCount // ignore: cast_nullable_to_non_nullable
@@ -163,10 +164,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String name,  FavoriteCollectionSource source,  bool isSystem,  String? remoteId,  String? coverUrl,  int itemCount,  bool isManagedByApp,  DateTime? lastSyncedAt,  DateTime createdAt,  DateTime updatedAt)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String name,  FavoriteCollectionSource source,  CollectionKind kind,  bool isSystem,  String? remoteId,  String? coverUrl,  int itemCount,  bool isManagedByApp,  DateTime? lastSyncedAt,  DateTime createdAt,  DateTime updatedAt)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _FavoriteCollection() when $default != null:
-return $default(_that.id,_that.name,_that.source,_that.isSystem,_that.remoteId,_that.coverUrl,_that.itemCount,_that.isManagedByApp,_that.lastSyncedAt,_that.createdAt,_that.updatedAt);case _:
+return $default(_that.id,_that.name,_that.source,_that.kind,_that.isSystem,_that.remoteId,_that.coverUrl,_that.itemCount,_that.isManagedByApp,_that.lastSyncedAt,_that.createdAt,_that.updatedAt);case _:
   return orElse();
 
 }
@@ -184,10 +185,10 @@ return $default(_that.id,_that.name,_that.source,_that.isSystem,_that.remoteId,_
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String name,  FavoriteCollectionSource source,  bool isSystem,  String? remoteId,  String? coverUrl,  int itemCount,  bool isManagedByApp,  DateTime? lastSyncedAt,  DateTime createdAt,  DateTime updatedAt)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String name,  FavoriteCollectionSource source,  CollectionKind kind,  bool isSystem,  String? remoteId,  String? coverUrl,  int itemCount,  bool isManagedByApp,  DateTime? lastSyncedAt,  DateTime createdAt,  DateTime updatedAt)  $default,) {final _that = this;
 switch (_that) {
 case _FavoriteCollection():
-return $default(_that.id,_that.name,_that.source,_that.isSystem,_that.remoteId,_that.coverUrl,_that.itemCount,_that.isManagedByApp,_that.lastSyncedAt,_that.createdAt,_that.updatedAt);case _:
+return $default(_that.id,_that.name,_that.source,_that.kind,_that.isSystem,_that.remoteId,_that.coverUrl,_that.itemCount,_that.isManagedByApp,_that.lastSyncedAt,_that.createdAt,_that.updatedAt);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -204,10 +205,10 @@ return $default(_that.id,_that.name,_that.source,_that.isSystem,_that.remoteId,_
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String name,  FavoriteCollectionSource source,  bool isSystem,  String? remoteId,  String? coverUrl,  int itemCount,  bool isManagedByApp,  DateTime? lastSyncedAt,  DateTime createdAt,  DateTime updatedAt)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String name,  FavoriteCollectionSource source,  CollectionKind kind,  bool isSystem,  String? remoteId,  String? coverUrl,  int itemCount,  bool isManagedByApp,  DateTime? lastSyncedAt,  DateTime createdAt,  DateTime updatedAt)?  $default,) {final _that = this;
 switch (_that) {
 case _FavoriteCollection() when $default != null:
-return $default(_that.id,_that.name,_that.source,_that.isSystem,_that.remoteId,_that.coverUrl,_that.itemCount,_that.isManagedByApp,_that.lastSyncedAt,_that.createdAt,_that.updatedAt);case _:
+return $default(_that.id,_that.name,_that.source,_that.kind,_that.isSystem,_that.remoteId,_that.coverUrl,_that.itemCount,_that.isManagedByApp,_that.lastSyncedAt,_that.createdAt,_that.updatedAt);case _:
   return null;
 
 }
@@ -219,12 +220,13 @@ return $default(_that.id,_that.name,_that.source,_that.isSystem,_that.remoteId,_
 @JsonSerializable()
 
 class _FavoriteCollection extends FavoriteCollection {
-  const _FavoriteCollection({required this.id, required this.name, this.source = FavoriteCollectionSource.local, this.isSystem = false, this.remoteId, this.coverUrl, this.itemCount = 0, this.isManagedByApp = false, this.lastSyncedAt, required this.createdAt, required this.updatedAt}): super._();
+  const _FavoriteCollection({required this.id, required this.name, this.source = FavoriteCollectionSource.local, this.kind = CollectionKind.music, this.isSystem = false, this.remoteId, this.coverUrl, this.itemCount = 0, this.isManagedByApp = false, this.lastSyncedAt, required this.createdAt, required this.updatedAt}): super._();
   factory _FavoriteCollection.fromJson(Map<String, dynamic> json) => _$FavoriteCollectionFromJson(json);
 
 @override final  String id;
 @override final  String name;
 @override@JsonKey() final  FavoriteCollectionSource source;
+@override@JsonKey() final  CollectionKind kind;
 @override@JsonKey() final  bool isSystem;
 @override final  String? remoteId;
 @override final  String? coverUrl;
@@ -247,16 +249,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _FavoriteCollection&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.source, source) || other.source == source)&&(identical(other.isSystem, isSystem) || other.isSystem == isSystem)&&(identical(other.remoteId, remoteId) || other.remoteId == remoteId)&&(identical(other.coverUrl, coverUrl) || other.coverUrl == coverUrl)&&(identical(other.itemCount, itemCount) || other.itemCount == itemCount)&&(identical(other.isManagedByApp, isManagedByApp) || other.isManagedByApp == isManagedByApp)&&(identical(other.lastSyncedAt, lastSyncedAt) || other.lastSyncedAt == lastSyncedAt)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _FavoriteCollection&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.source, source) || other.source == source)&&(identical(other.kind, kind) || other.kind == kind)&&(identical(other.isSystem, isSystem) || other.isSystem == isSystem)&&(identical(other.remoteId, remoteId) || other.remoteId == remoteId)&&(identical(other.coverUrl, coverUrl) || other.coverUrl == coverUrl)&&(identical(other.itemCount, itemCount) || other.itemCount == itemCount)&&(identical(other.isManagedByApp, isManagedByApp) || other.isManagedByApp == isManagedByApp)&&(identical(other.lastSyncedAt, lastSyncedAt) || other.lastSyncedAt == lastSyncedAt)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name,source,isSystem,remoteId,coverUrl,itemCount,isManagedByApp,lastSyncedAt,createdAt,updatedAt);
+int get hashCode => Object.hash(runtimeType,id,name,source,kind,isSystem,remoteId,coverUrl,itemCount,isManagedByApp,lastSyncedAt,createdAt,updatedAt);
 
 @override
 String toString() {
-  return 'FavoriteCollection(id: $id, name: $name, source: $source, isSystem: $isSystem, remoteId: $remoteId, coverUrl: $coverUrl, itemCount: $itemCount, isManagedByApp: $isManagedByApp, lastSyncedAt: $lastSyncedAt, createdAt: $createdAt, updatedAt: $updatedAt)';
+  return 'FavoriteCollection(id: $id, name: $name, source: $source, kind: $kind, isSystem: $isSystem, remoteId: $remoteId, coverUrl: $coverUrl, itemCount: $itemCount, isManagedByApp: $isManagedByApp, lastSyncedAt: $lastSyncedAt, createdAt: $createdAt, updatedAt: $updatedAt)';
 }
 
 
@@ -267,7 +269,7 @@ abstract mixin class _$FavoriteCollectionCopyWith<$Res> implements $FavoriteColl
   factory _$FavoriteCollectionCopyWith(_FavoriteCollection value, $Res Function(_FavoriteCollection) _then) = __$FavoriteCollectionCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String name, FavoriteCollectionSource source, bool isSystem, String? remoteId, String? coverUrl, int itemCount, bool isManagedByApp, DateTime? lastSyncedAt, DateTime createdAt, DateTime updatedAt
+ String id, String name, FavoriteCollectionSource source, CollectionKind kind, bool isSystem, String? remoteId, String? coverUrl, int itemCount, bool isManagedByApp, DateTime? lastSyncedAt, DateTime createdAt, DateTime updatedAt
 });
 
 
@@ -284,12 +286,13 @@ class __$FavoriteCollectionCopyWithImpl<$Res>
 
 /// Create a copy of FavoriteCollection
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? source = null,Object? isSystem = null,Object? remoteId = freezed,Object? coverUrl = freezed,Object? itemCount = null,Object? isManagedByApp = null,Object? lastSyncedAt = freezed,Object? createdAt = null,Object? updatedAt = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? source = null,Object? kind = null,Object? isSystem = null,Object? remoteId = freezed,Object? coverUrl = freezed,Object? itemCount = null,Object? isManagedByApp = null,Object? lastSyncedAt = freezed,Object? createdAt = null,Object? updatedAt = null,}) {
   return _then(_FavoriteCollection(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,source: null == source ? _self.source : source // ignore: cast_nullable_to_non_nullable
-as FavoriteCollectionSource,isSystem: null == isSystem ? _self.isSystem : isSystem // ignore: cast_nullable_to_non_nullable
+as FavoriteCollectionSource,kind: null == kind ? _self.kind : kind // ignore: cast_nullable_to_non_nullable
+as CollectionKind,isSystem: null == isSystem ? _self.isSystem : isSystem // ignore: cast_nullable_to_non_nullable
 as bool,remoteId: freezed == remoteId ? _self.remoteId : remoteId // ignore: cast_nullable_to_non_nullable
 as String?,coverUrl: freezed == coverUrl ? _self.coverUrl : coverUrl // ignore: cast_nullable_to_non_nullable
 as String?,itemCount: null == itemCount ? _self.itemCount : itemCount // ignore: cast_nullable_to_non_nullable

@@ -1,4 +1,5 @@
 import 'package:bilimusic/common/domain/meta_lyrics.dart';
+import 'package:bilimusic/common/domain/collection_kind.dart';
 import 'package:bilimusic/feature/favorites/domain/favorite_collection.dart';
 import 'package:bilimusic/feature/favorites/domain/favorite_entry.dart';
 import 'package:bilimusic/feature/favorites/domain/favorite_membership.dart';
@@ -23,5 +24,6 @@ import 'package:hive_ce/hive.dart';
   AdapterSpec<FavoritedSeason>(),
   AdapterSpec<MetaLyrics>(),
   AdapterSpec<Metadata>(),
+  AdapterSpec<CollectionKind>(),
 ])
 part 'hive_adapters.g.dart';
