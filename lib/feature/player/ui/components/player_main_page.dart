@@ -331,7 +331,7 @@ class _PlayerToolBar extends StatelessWidget {
           onTap: onPartTap,
         ),
         _PlayerToolButton(
-          icon: HugeIcon(icon: HugeIcons.strokeRoundedFolder01),
+          icon: HugeIcon(icon: HugeIcons.strokeRoundedFolderAdd),
           isEnabled: hasItem,
           onTap: onOpenCollectionSheet,
         ),
