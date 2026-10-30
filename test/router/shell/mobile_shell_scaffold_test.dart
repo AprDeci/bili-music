@@ -120,6 +120,31 @@ void main() {
     });
   }
 
+  testWidgets('tabs animate out and back while the mini player moves', (
+    WidgetTester tester,
+  ) async {
+    final GoRouter router = await _pumpShell(tester, glass: true);
+    final Finder mini = find.byType(MiniPlayerGlassBar);
+    final double start = tester.getRect(mini).top;
+    router.go('/search');
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 110));
+    expect(find.byType(GlassTabBar), findsOneWidget);
+    final double middle = tester.getRect(mini).top;
+    expect(middle, greaterThan(start));
+    await tester.pumpAndSettle();
+    expect(find.byType(GlassTabBar), findsNothing);
+    expect(tester.getRect(mini).top, greaterThan(middle));
+    router.go('/home');
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 110));
+    expect(tester.getRect(mini).top, greaterThan(start));
+    await tester.pumpAndSettle();
+    expect(tester.getRect(mini).top, closeTo(start, 0.01));
+    expect(tester.takeException(), isNull);
+    await _disposeShell(tester);
+  });
+
   testWidgets(
     'chrome and spacing follow routes, playback and player visibility',
     (WidgetTester tester) async {

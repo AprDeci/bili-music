@@ -86,44 +86,79 @@ class _MobileShellScaffoldState extends ConsumerState<MobileShellScaffold> {
       child: Scaffold(
         extendBody: true,
         body: widget.navigationShell,
-        bottomNavigationBar: !showTabs && !showMiniPlayer
-            ? null
-            : SafeArea(
-                top: false,
-                minimum: EdgeInsets.only(bottom: showTabs ? 10 : 20),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: <Widget>[
-                    if (showMiniPlayer)
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 20),
+        bottomNavigationBar: _animateChrome(
+          visible: showTabs || showMiniPlayer,
+          child: () => SafeArea(
+            top: false,
+            minimum: EdgeInsets.only(bottom: showTabs ? 10 : 20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                if (showMiniPlayer)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: useGlassBar
+                        ? MiniPlayerGlassBar(
+                            state: playerState,
+                            onTap: _openMiniPlayer,
+                            onTogglePlayback: _togglePlayback,
+                          )
+                        : MiniPlayerBar(
+                            state: playerState,
+                            onTap: _openMiniPlayer,
+                            onTogglePlayback: _togglePlayback,
+                          ),
+                  ),
+                _animateChrome(
+                  visible: showTabs,
+                  child: () => Padding(
+                    padding: EdgeInsets.only(top: showMiniPlayer ? 10 : 0),
+                    child: FractionallySizedBox(
+                      widthFactor: 0.92,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 64),
                         child: useGlassBar
-                            ? MiniPlayerGlassBar(
-                                state: playerState,
-                                onTap: _openMiniPlayer,
-                                onTogglePlayback: _togglePlayback,
-                              )
-                            : MiniPlayerBar(
-                                state: playerState,
-                                onTap: _openMiniPlayer,
-                                onTogglePlayback: _togglePlayback,
-                              ),
+                            ? _buildGlassTabBar(context)
+                            : _buildFallbackTabBar(context),
                       ),
-                    if (showMiniPlayer && showTabs) const SizedBox(height: 10),
-                    if (showTabs)
-                      FractionallySizedBox(
-                        widthFactor: 0.92,
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 64),
-                          child: useGlassBar
-                              ? _buildGlassTabBar(context)
-                              : _buildFallbackTabBar(context),
-                        ),
-                      ),
-                  ],
+                    ),
+                  ),
                 ),
-              ),
+              ],
+            ),
+          ),
+        ),
       ),
+    );
+  }
+
+  Widget _animateChrome({
+    required bool visible,
+    required Widget Function() child,
+  }) {
+    return AnimatedSwitcher(
+      duration: MediaQuery.disableAnimationsOf(context)
+          ? Duration.zero
+          : const Duration(milliseconds: 220),
+      switchInCurve: _animationCurve,
+      switchOutCurve: _animationCurve,
+      transitionBuilder: (Widget child, Animation<double> animation) {
+        return SizeTransition(
+          sizeFactor: animation,
+          alignment: Alignment.bottomCenter,
+          child: FadeTransition(
+            opacity: animation,
+            child: SlideTransition(
+              position: Tween<Offset>(
+                begin: const Offset(0, 0.2),
+                end: Offset.zero,
+              ).animate(animation),
+              child: child,
+            ),
+          ),
+        );
+      },
+      child: visible ? child() : const SizedBox.shrink(),
     );
   }
 
