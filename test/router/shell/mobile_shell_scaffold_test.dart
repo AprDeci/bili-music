@@ -64,6 +64,18 @@ void main() {
           final Rect tabsRect = tester.getRect(tabs);
           expect(tabsRect.top - miniRect.bottom, closeTo(10, 0.01));
           expect(tabsRect.height, 52);
+          expect(tabsRect.width, closeTo(420 * 0.75 - 128, 0.01));
+          if (scale == 1) {
+            expect(miniRect.height, glass ? 44 : 46);
+            expect(
+              tester.getSize(find.byType(MiniPlayerArtwork)),
+              const Size(36, 36),
+            );
+            expect(
+              tester.getSize(find.byType(MiniPlayerPlaybackButton)),
+              const Size(44, 44),
+            );
+          }
           expect(tabsRect.bottom, 900 - (inset == 0 ? 10 : inset));
           expect(tester.getRect(find.byKey(_viewportKey)).bottom, 900);
           expect(_spacerHeight(tester), closeTo(900 - miniRect.top + 16, 0.01));
@@ -163,7 +175,7 @@ void main() {
       appearance.setGlass(true);
       await tester.pumpAndSettle();
       expect(find.byType(MiniPlayerGlassBar), findsOneWidget);
-      expect(_spacerHeight(tester), normalSpacing);
+      expect(_spacerHeight(tester), normalSpacing - 2);
       appearance.setGlass(false);
       await tester.pumpAndSettle();
       controller.clear();
@@ -177,7 +189,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.byIcon(Icons.home_outlined), findsNothing);
       expect(tester.getRect(find.byType(MiniPlayerBar)).bottom, 880);
-      expect(_spacerHeight(tester), 88);
+      expect(_spacerHeight(tester), 82);
       expect(tester.getRect(find.byKey(_viewportKey)).bottom, 900);
 
       markPlayerPageVisible();

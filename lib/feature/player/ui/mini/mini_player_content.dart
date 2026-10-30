@@ -53,7 +53,7 @@ class MiniPlayerContent extends ConsumerWidget {
                     fontWeight: FontWeight.w700,
                   ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 2),
                 Text(
                   subtitle,
                   maxLines: 1,
@@ -104,8 +104,8 @@ double buildMiniPlayerProgress(PlayerState state) {
 class MiniPlayerArtwork extends StatelessWidget {
   const MiniPlayerArtwork({super.key, required this.coverUrl});
 
-  static const double _outerSize = 44;
-  static const double _imageSize = 40;
+  static const double _outerSize = 36;
+  static const double _imageSize = 32;
 
   final String? coverUrl;
 
@@ -156,7 +156,7 @@ class MiniPlayerPlaybackButton extends StatelessWidget {
   final VoidCallback onPressed;
 
   static const double _size = 44;
-  static const double _iconSize = 22;
+  static const double _iconSize = 18;
 
   @override
   Widget build(BuildContext context) {
@@ -170,7 +170,7 @@ class MiniPlayerPlaybackButton extends StatelessWidget {
         alignment: Alignment.center,
         children: <Widget>[
           CustomPaint(
-            size: const Size(_size - 8, _size - 8),
+            size: const Size(28, 28),
             painter: MiniPlayerPlaybackProgressPainter(
               progress: progress,
               trackColor: colorScheme.primary.withValues(alpha: 0.14),

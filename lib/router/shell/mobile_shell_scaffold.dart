@@ -114,7 +114,7 @@ class _MobileShellScaffoldState extends ConsumerState<MobileShellScaffold> {
                   child: () => Padding(
                     padding: EdgeInsets.only(top: showMiniPlayer ? 10 : 0),
                     child: FractionallySizedBox(
-                      widthFactor: 0.92,
+                      widthFactor: 0.80,
                       child: Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 64),
                         child: useGlassBar
