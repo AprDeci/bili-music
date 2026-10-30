@@ -162,9 +162,7 @@ class _PlayerLyricPanelState extends ConsumerState<PlayerLyricPanel> {
             controller: _lyricController,
             preset: _buildLyricPreset(context, useSubtitles: useSubtitles),
             onLineTap: (LyricLineDetails details) {
-              if (_loadedStableId != widget.item?.stableId) {
-                return;
-              }
+              if (_loadedStableId != widget.item?.stableId) return;
               widget.onSeek(details.seekPosition);
             },
           ),

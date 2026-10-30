@@ -15,6 +15,7 @@ import 'package:bilimusic/feature/player/logic/lyrics/player_subtitle_controller
 import 'package:bilimusic/feature/player/logic/player_controller.dart';
 import 'package:bilimusic/feature/player/ui/lyrics/player_lyric_page.dart';
 import 'package:bilimusic/feature/player/ui/lyrics/player_lyric_panel.dart';
+import 'package:bilimusic/feature/player/ui/lyrics/player_subtitle_document.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_lyric/flutter_lyric.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -53,6 +54,105 @@ const _lines = <BiliSubtitleLine>[
 ];
 
 void main() {
+  test('subtitle gaps retain the previous line until the next starts', () {
+    final controller = LyricController();
+    addTearDown(controller.dispose);
+    controller.loadDocument(buildSubtitleDocument(_lines));
+    final active = <int?>[];
+    controller.activeLineIndexListenable.addListener(
+      () => active.add(controller.activeLineIndexListenable.value),
+    );
+    for (final (time, index) in <(int, int?)>[
+      (1249, null),
+      (1250, 0),
+      (2574, 0),
+      (2575, 0),
+      (3999, 0),
+      (4000, 1),
+      (6123, 1),
+      (60000, 1),
+      (1500, 0),
+      (0, null),
+    ]) {
+      controller.setPosition(Duration(milliseconds: time));
+      expect(controller.activeLineIndex, index, reason: '$time ms');
+    }
+    expect(active, [0, 1, 0, null]);
+    controller.setPosition(const Duration(milliseconds: 1500));
+    expect(controller.document!.lines, hasLength(_lines.length));
+    controller.timeOffset = const Duration(milliseconds: 1075);
+    expect(controller.activeLineIndex, 0);
+    expect(controller.activeLine?.text, _lines.first.text);
+    expect(
+      controller.document!.lines.first.end,
+      const Duration(milliseconds: 2575),
+    );
+    controller.load('[00:01.250]Meting第一行\n[00:04.000]Meting第二行');
+    expect(controller.activeLineIndex, 0);
+  });
+
+  testWidgets(
+    'subtitle gap keeps scroll position instead of returning to top',
+    (tester) async {
+      final controller = LyricController();
+      final lines = List.generate(
+        30,
+        (index) => BiliSubtitleLine(
+          startMs: index * 3000,
+          endMs: index * 3000 + 1000,
+          text: '字幕第 $index 行',
+        ),
+      );
+      controller.loadDocument(buildSubtitleDocument(lines));
+      controller.setPosition(const Duration(milliseconds: 30500));
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: LyricView(
+              controller: controller,
+              preset: LyricPresets.appleMusic.copyWith(
+                countdown: const LyricCountdown.none(),
+                wordEffects: const LyricWordEffects(),
+                scrollAnimation: const LyricScrollAnimation.none(),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      final scroll = tester.state<ScrollableState>(find.byType(Scrollable));
+      final before = scroll.position.pixels;
+      expect(before, greaterThan(scroll.position.minScrollExtent + 100));
+      controller.setPosition(const Duration(milliseconds: 31500));
+      await tester.pumpAndSettle();
+      expect(controller.activeLineIndex, 10);
+      expect(scroll.position.pixels, closeTo(before, 0.01));
+      controller.setPosition(const Duration(milliseconds: 33000));
+      await tester.pumpAndSettle();
+      expect(controller.activeLineIndex, 11);
+      expect(scroll.position.pixels, greaterThan(before));
+      await tester.pumpWidget(const SizedBox.shrink());
+      controller.dispose();
+    },
+  );
+
+  testWidgets(
+    'subtitle panel retains highlighting through gaps and after the last line',
+    (tester) async {
+      final fixture = await _pumpPage(tester, selectedTrackId: 'zh');
+      LyricView view() => tester.widget<LyricView>(find.byType(LyricView));
+      final controller = view().controller;
+      final activeStyle = view().preset!.activeTextStyle;
+      for (final (time, index) in [(3000, 0), (4000, 1), (14000, 1)]) {
+        fixture.player.setPosition(Duration(milliseconds: time));
+        await tester.pump();
+        expect(controller.activeLineIndex, index);
+        expect(view().preset!.activeTextStyle, activeStyle);
+      }
+      expect(tester.takeException(), isNull);
+    },
+  );
+
   testWidgets(
     'subtitle button is hidden without tracks and shown after discovery',
     (tester) async {
@@ -245,12 +345,8 @@ void main() {
         expect(actualLines[index].translation, isNull);
       }
       expect(document.lines.every((line) => line.words == null), isTrue);
-      expect(
-        document.lines
-            .where((line) => line.text.isEmpty)
-            .map((line) => line.start),
-        contains(const Duration(milliseconds: 2575)),
-      );
+      expect(document.lines, hasLength(_lines.length));
+      expect(document.lines.every((line) => line.text.isNotEmpty), isTrue);
       expect(view.controller.timeOffset, const Duration(milliseconds: 175));
       expect(view.preset!.wordEffects.simulateTiming, isFalse);
       expect(view.preset!.highlight.enabled, isFalse);
@@ -458,6 +554,8 @@ class _PlayerController extends PlayerController {
     duration: Duration(seconds: 15),
   );
   void setItem(PlayableItem item) => state = state.copyWith(currentItem: item);
+  void setPosition(Duration position) =>
+      state = state.copyWith(position: position);
 }
 
 class _MetadataController extends MetadataController {
