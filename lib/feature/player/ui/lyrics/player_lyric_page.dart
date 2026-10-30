@@ -93,7 +93,6 @@ class PlayerLyricPage extends ConsumerWidget {
           onSubtitles: canSelectSubtitles
               ? () => showPlayerSubtitleSheet(context)
               : null,
-          usesSubtitles: usesSubtitles,
           onOffset: () => showLyricOffsetSheet(context),
           onAppearance: () =>
               showPlayerLyricSettings(context, activeColor: activeColor),
@@ -175,7 +174,6 @@ class _PlayerLyricToolbar extends StatelessWidget {
     this.onSearch,
     this.toggleTranslation,
     this.onSubtitles,
-    required this.usesSubtitles,
     required this.showTranslation,
   });
 
@@ -185,7 +183,6 @@ class _PlayerLyricToolbar extends StatelessWidget {
   final VoidCallback? onAppearance;
   final VoidCallback? toggleTranslation;
   final VoidCallback? onSubtitles;
-  final bool usesSubtitles;
   final bool showTranslation;
 
   @override
@@ -232,9 +229,7 @@ class _PlayerLyricToolbar extends StatelessWidget {
                   IconButton(
                     tooltip: 'AI字幕',
                     onPressed: onSubtitles,
-                    color: iconColor.withValues(
-                      alpha: usesSubtitles ? 1 : 0.45,
-                    ),
+                    color: iconColor,
                     icon: const Icon(Icons.subtitles_outlined),
                   ),
                 ],

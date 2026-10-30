@@ -101,6 +101,16 @@ void main() {
                 ),
               )
               .toList();
+          if (tracks.isNotEmpty) {
+            final subtitleButton = tester.widget<IconButton>(
+              find.widgetWithIcon(IconButton, Icons.subtitles_outlined),
+            );
+            final searchButton = tester.widget<IconButton>(
+              find.widgetWithIcon(IconButton, Icons.search_rounded),
+            );
+            expect(subtitleButton.onPressed, isNotNull);
+            expect(subtitleButton.color, searchButton.color);
+          }
           expect(rects.first.left, 12);
           for (int index = 1; index < rects.length; index++) {
             expect(rects[index].left - rects[index - 1].right, 20);
