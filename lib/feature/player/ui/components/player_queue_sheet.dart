@@ -162,17 +162,14 @@ class _PlayerQueueContentState extends ConsumerState<_PlayerQueueContent> {
           ),
         ),
         Expanded(
-          child: ReorderableListView.builder(
-            scrollController: _scrollController,
+          child: ListView.builder(
+            controller: _scrollController,
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
             itemCount: liveState.queue.length,
-            buildDefaultDragHandles: false,
-            onReorderItem: liveController.reorderQueueItem,
             itemBuilder: (BuildContext context, int index) {
               final PlayableItem queuedItem = liveState.queue[index];
               final bool isCurrent = liveState.currentQueueIndex == index;
               final String partTitle = queuedItem.pageTitle?.trim() ?? '';
-              final int page = queuedItem.page ?? 1;
               final String title = partTitle.isEmpty
                   ? queuedItem.title
                   : partTitle;
@@ -275,22 +272,6 @@ class _PlayerQueueContentState extends ConsumerState<_PlayerQueueContent> {
                               icon: HugeIcon(
                                 icon: HugeIcons.strokeRoundedCancel01,
                                 size: 16,
-                              ),
-                            ),
-                            ReorderableDragStartListener(
-                              index: index,
-                              child: const Tooltip(
-                                message: '拖动排序',
-                                child: SizedBox(
-                                  width: 48,
-                                  height: 48,
-                                  child: Center(
-                                    child: HugeIcon(
-                                      icon: HugeIcons.strokeRoundedMenu09,
-                                      size: 16,
-                                    ),
-                                  ),
-                                ),
                               ),
                             ),
                           ],
