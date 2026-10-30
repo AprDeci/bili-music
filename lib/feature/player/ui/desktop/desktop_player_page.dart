@@ -17,6 +17,8 @@ import 'package:bilimusic/feature/metadata/ui/components/lyric_search_sheet.dart
 import 'package:bilimusic/feature/player/domain/audio_stream_info.dart';
 import 'package:bilimusic/feature/player/domain/playable_item.dart';
 import 'package:bilimusic/feature/player/domain/player_state.dart';
+import 'package:bilimusic/feature/player/domain/player_subtitle_state.dart';
+import 'package:bilimusic/feature/player/logic/lyrics/player_subtitle_controller.dart';
 import 'package:bilimusic/feature/player/logic/lyrics/desktop_lyrics_controller.dart';
 import 'package:bilimusic/feature/player/logic/lyrics/player_lyric_settings_logic.dart';
 import 'package:bilimusic/feature/player/logic/player_controller.dart';
@@ -32,6 +34,7 @@ import 'package:bilimusic/feature/player/logic/display/player_display_metadata.d
 import 'package:bilimusic/feature/player/ui/components/player_dynamic_backdrop.dart';
 import 'package:bilimusic/feature/player/ui/lyrics/player_lyric_panel.dart';
 import 'package:bilimusic/feature/player/ui/lyrics/player_lyric_settings_sheet.dart';
+import 'package:bilimusic/feature/player/ui/lyrics/player_subtitle_sheet.dart';
 import 'package:bilimusic/feature/player/ui/components/player_part_selector.dart';
 import 'package:bilimusic/feature/player/ui/components/player_queue_sheet.dart';
 import 'package:bilimusic/feature/player/logic/utils/player_ui_helpers.dart';
@@ -103,7 +106,17 @@ class _DesktopPlayerPageState extends ConsumerState<DesktopPlayerPage> {
     );
     final PlayableItem? item = state.currentItem ?? widget.initialItem;
     final MetadataState metadataState = ref.watch(metadataControllerProvider);
+    final PlayerSubtitleState subtitleState = ref.watch(
+      playerSubtitleControllerProvider,
+    );
+    final bool usesSubtitles =
+        subtitleState.stableId == item?.stableId && subtitleState.usesSubtitles;
+    final bool canSelectSubtitles =
+        item != null &&
+        subtitleState.stableId == item.stableId &&
+        subtitleState.hasTracks;
     final bool canToggleTranslation =
+        !usesSubtitles &&
         item != null &&
         metadataState.stableId == item.stableId &&
         resolveDisplayTranslationLyrics(
@@ -138,6 +151,9 @@ class _DesktopPlayerPageState extends ConsumerState<DesktopPlayerPage> {
                 onSearch: item == null
                     ? null
                     : () {
+                        ref
+                            .read(playerSubtitleControllerProvider.notifier)
+                            .useMeting();
                         showManualLyricSearchSheet(
                           context: context,
                           initialKeyword: resolveLyricSearchKeyword(
@@ -167,6 +183,10 @@ class _DesktopPlayerPageState extends ConsumerState<DesktopPlayerPage> {
                       }
                     : null,
                 showTranslation: showTranslation,
+                onSubtitles: canSelectSubtitles
+                    ? () => showPlayerSubtitleSheet(context)
+                    : null,
+                usesSubtitles: usesSubtitles,
               ),
             ),
             Column(
@@ -181,7 +201,7 @@ class _DesktopPlayerPageState extends ConsumerState<DesktopPlayerPage> {
                     display: display,
                     onSeek: controller.seek,
                     activeColor: coverColor,
-                    showTranslation: showTranslation,
+                    showTranslation: showTranslation && !usesSubtitles,
                     onToggleSource: () {
                       ref
                           .read(playerDisplaySourceLogicProvider.notifier)
@@ -318,7 +338,12 @@ class _DesktopPlayerTopBarState extends State<_DesktopPlayerTopBar>
           behavior: HitTestBehavior.opaque,
           onDoubleTap: _toggleMaximize,
           child: Padding(
-            padding: EdgeInsets.fromLTRB(22, PlatformUtil.isMacOS ? 24 : 0, 22, 0),
+            padding: EdgeInsets.fromLTRB(
+              22,
+              PlatformUtil.isMacOS ? 24 : 0,
+              22,
+              0,
+            ),
             child: Row(
               children: <Widget>[
                 Tooltip(
@@ -483,6 +508,8 @@ class _DesktopLyricToolRail extends StatelessWidget {
     required this.onOffset,
     required this.onAppearance,
     this.toggleTranslation,
+    this.onSubtitles,
+    required this.usesSubtitles,
     required this.showTranslation,
   });
 
@@ -490,6 +517,8 @@ class _DesktopLyricToolRail extends StatelessWidget {
   final VoidCallback? onOffset;
   final VoidCallback onAppearance;
   final VoidCallback? toggleTranslation;
+  final VoidCallback? onSubtitles;
+  final bool usesSubtitles;
   final bool showTranslation;
 
   @override
@@ -503,6 +532,13 @@ class _DesktopLyricToolRail extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: <Widget>[
+              if (onSubtitles != null)
+                BarIconButton(
+                  icon: Icons.subtitles_outlined,
+                  tooltip: 'AI字幕',
+                  onPressed: onSubtitles,
+                  isActive: usesSubtitles,
+                ),
               if (toggleTranslation != null) ...<Widget>[
                 BarIconButton(
                   iconSize: 28,

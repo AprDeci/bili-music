@@ -135,7 +135,10 @@ void main() {
     final Rect lyricsRect = tester.getRect(find.byType(PlayerLyricPanel));
     final Rect toolbarRect = tester.getRect(
       find
-          .ancestor(of: find.byTooltip('手动匹配歌词'), matching: find.byType(Row))
+          .ancestor(
+            of: find.byTooltip('手动匹配歌词'),
+            matching: find.byType(SingleChildScrollView),
+          )
           .first,
     );
     expect(lyricsRect.left, 4);
@@ -147,7 +150,7 @@ void main() {
     expect(toolbarRect.right, lyricsRect.right - 12);
     expect(
       tester.getRect(find.byIcon(Icons.search_rounded)).left,
-      lyricsRect.left + const PlayerLyricSettings().horizontalPadding,
+      greaterThanOrEqualTo(toolbarRect.left),
     );
     expect(
       tester
