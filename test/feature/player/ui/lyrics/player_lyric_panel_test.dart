@@ -1,3 +1,4 @@
+import 'package:bilimusic/common/domain/collection_kind.dart';
 import 'package:bilimusic/common/domain/meta_lyrics.dart';
 import 'package:bilimusic/feature/metadata/domain/metadata.dart';
 import 'package:bilimusic/feature/metadata/domain/metadata_state.dart';
@@ -32,6 +33,41 @@ const String _lyrics =
     '[00:07.000]第三行\n[00:10.000]第四行';
 
 void main() {
+  testWidgets(
+    'same content switching to spoken clears music but keeps subtitles',
+    (tester) async {
+      await _pumpPanel(tester);
+      final controller = tester
+          .widget<LyricView>(find.byType(LyricView))
+          .controller;
+      await _pumpPanel(
+        tester,
+        item: _item.copyWith(kind: CollectionKind.spoken),
+      );
+      expect(find.byType(LyricView), findsNothing);
+      expect(find.text('听书模式'), findsOneWidget);
+      expect(controller.document, isNull);
+      final ProviderContainer container = ProviderScope.containerOf(
+        tester.element(find.byType(PlayerLyricPanel)),
+      );
+      final _NoSubtitles subtitles =
+          container.read(playerSubtitleControllerProvider.notifier)
+              as _NoSubtitles;
+      subtitles.setSubtitles(_AiSubtitles().build());
+      await tester.pump();
+      expect(find.byType(LyricView), findsOneWidget);
+      expect(
+        tester
+            .widget<LyricView>(find.byType(LyricView))
+            .controller
+            .document!
+            .lines
+            .any((line) => line.text == 'AI字幕第一行'),
+        isTrue,
+      );
+    },
+  );
+
   testWidgets(
     'visible playback advances every frame without rebuilding lyrics',
     (tester) async {
@@ -597,6 +633,7 @@ void main() {
 Future<void> _pumpPanel(
   WidgetTester tester, {
   PlayerLyricPanelVariant variant = PlayerLyricPanelVariant.mobile,
+  PlayableItem item = _item,
   Duration position = const Duration(seconds: 2),
   bool showTranslation = true,
   bool useAiSubtitles = false,
@@ -643,7 +680,7 @@ Future<void> _pumpPanel(
                       isBuffering: isBuffering,
                       speed: speed,
                     ),
-                    item: _item,
+                    item: item,
                     isActive: isActive,
                     variant: variant,
                     activeColor: activeColor,
@@ -679,6 +716,8 @@ class _AiSubtitles extends PlayerSubtitleController {
 class _NoSubtitles extends PlayerSubtitleController {
   @override
   PlayerSubtitleState build() => const PlayerSubtitleState();
+
+  void setSubtitles(PlayerSubtitleState value) => state = value;
 }
 
 class _PlayerController extends PlayerController {

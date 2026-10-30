@@ -1,8 +1,10 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:bilimusic/feature/metadata/data/metadata_resolver.dart';
 import 'package:bilimusic/feature/metadata/logic/metadata_lookup_service.dart';
 import 'package:bilimusic/feature/meting/data/meting_repository.dart';
+import 'package:bilimusic/feature/meting/domain/meting_search_item.dart';
 import 'package:bilimusic/feature/meting/domain/meting_server.dart';
 import 'package:bilimusic/feature/player/domain/playable_item.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -75,6 +77,80 @@ void main() {
       );
 
       expect(result.metadata.hasContent, isFalse);
+    });
+
+    test('inactive search does not start lyrics or picture fetches', () async {
+      final pending = Completer<Object?>();
+      int lyricCalls = 0;
+      final service = _service(
+        searchRequest:
+            ({
+              required MetingServer server,
+              required String keyword,
+              required Map<String, dynamic> option,
+            }) => pending.future,
+        lyricRequest:
+            ({required MetingServer server, required String id}) async {
+              lyricCalls++;
+              return jsonEncode({'lyric': '[00:00]Music'});
+            },
+      );
+      bool active = true;
+      final result = service.lookup(
+        item: _item(),
+        title: 'title',
+        isActive: () => active,
+      );
+      final assertion = expectLater(result, throwsStateError);
+      await Future<void>.delayed(Duration.zero);
+      active = false;
+      pending.complete(
+        jsonEncode([
+          {
+            'id': 'song',
+            'name': 'Music',
+            'artist': ['Artist'],
+            'lyric_id': 'song',
+          },
+        ]),
+      );
+      await assertion;
+      expect(lyricCalls, 0);
+    });
+
+    test('inactive manual lyrics cannot start an artwork fetch', () async {
+      final pending = Completer<Object?>();
+      int pictureCalls = 0;
+      final service = _service(
+        searchRequest: _unusedSearchRequest,
+        lyricRequest: ({required MetingServer server, required String id}) =>
+            pending.future,
+        pictureRequest:
+            ({
+              required MetingServer server,
+              required String id,
+              required int size,
+            }) async {
+              pictureCalls++;
+              return null;
+            },
+      );
+      bool active = true;
+      final result = service.buildMetadataFromSearchItem(
+        item: _item(),
+        searchItem: const MetingSearchItem(
+          id: 'song',
+          title: 'Music',
+          author: 'Artist',
+          server: MetingServer.netease,
+        ),
+        isActive: () => active,
+      );
+      final assertion = expectLater(result, throwsStateError);
+      active = false;
+      pending.complete(jsonEncode({'lyric': '[00:00]Music'}));
+      await assertion;
+      expect(pictureCalls, 0);
     });
 
     test('extracts bracketed keyword before falling back', () async {

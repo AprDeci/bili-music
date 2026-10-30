@@ -86,7 +86,9 @@ class _PlayerLyricPanelState extends ConsumerState<PlayerLyricPanel> {
 
   @override
   Widget build(BuildContext context) {
-    final MetadataState metadataState = ref.watch(metadataControllerProvider);
+    final MetadataState metadataState = widget.item?.isSpoken == true
+        ? const MetadataState()
+        : ref.watch(metadataControllerProvider);
     final PlayerSubtitleState subtitles = ref.watch(
       playerSubtitleControllerProvider,
     );
@@ -128,6 +130,16 @@ class _PlayerLyricPanelState extends ConsumerState<PlayerLyricPanel> {
     }
 
     final String itemKey = item.stableId;
+
+    if (item.isSpoken && !useSubtitles) {
+      return _PlayerLyricPanelStatus(
+        key: ValueKey<String>('spoken-$itemKey'),
+        variant: widget.variant,
+        title: '听书模式',
+        message: '不匹配音乐歌词，可选择可用字幕。',
+        icon: Icons.subtitles_outlined,
+      );
+    }
 
     if (!useSubtitles && metadataState.stableId != item.stableId) {
       return _PlayerLyricPanelStatus(

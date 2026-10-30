@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math';
 
+import 'package:bilimusic/common/domain/collection_kind.dart';
 import 'package:bilimusic/common/logger.dart';
 import 'package:bilimusic/core/bili/session/bili_auth_required_exception.dart';
 import 'package:bilimusic/core/bili/session/bili_session.dart';
@@ -417,7 +418,10 @@ class FavoritesController extends _$FavoritesController {
     }
 
     await _upsertEntry(item: item, now: now);
-    _scheduleMetadataBackfill(item);
+    _scheduleMetadataBackfill(
+      item,
+      collectionId: FavoriteCollection.likedCollectionId,
+    );
     await _repository.saveMembership(
       FavoriteMembership.create(
         collectionId: FavoriteCollection.likedCollectionId,
@@ -449,7 +453,7 @@ class FavoritesController extends _$FavoritesController {
     final DateTime now = DateTime.now();
 
     await _upsertEntry(item: item, now: now);
-    _scheduleMetadataBackfill(item);
+    _scheduleMetadataBackfill(item, collectionId: collectionId);
 
     if (!state.isItemInCollection(collectionId: collectionId, itemId: itemId)) {
       await _repository.saveMembership(
@@ -594,7 +598,7 @@ class FavoritesController extends _$FavoritesController {
     for (final PlayableItem item in uniqueItems.values) {
       final String itemId = item.stableId;
       await _upsertEntry(item: item, now: now);
-      _scheduleMetadataBackfill(item);
+      _scheduleMetadataBackfill(item, collectionId: collectionId);
       if (!state.isItemInCollection(
         collectionId: collectionId,
         itemId: itemId,
@@ -644,6 +648,31 @@ class FavoritesController extends _$FavoritesController {
       }
     }
     return addedCount;
+  }
+
+  Future<bool> setCollectionKind({
+    required String collectionId,
+    required CollectionKind kind,
+  }) async {
+    final FavoriteCollection? collection = _collectionById(collectionId);
+    if (collection == null) {
+      return false;
+    }
+    if (collection.kind == kind) {
+      return true;
+    }
+    if (collection.isRemote) {
+      await _remoteCache.setCollectionKind(
+        collectionId: collectionId,
+        kind: kind,
+      );
+    } else {
+      await _repository.saveCollection(
+        collection.copyWith(kind: kind, updatedAt: DateTime.now()),
+      );
+    }
+    state = _loadState();
+    return true;
   }
 
   Future<bool> renameCollection({
@@ -724,8 +753,22 @@ class FavoritesController extends _$FavoritesController {
     return true;
   }
 
-  void _scheduleMetadataBackfill(PlayableItem item) {
-    ref.read(metadataBackfillControllerProvider.notifier).enqueue(item);
+  void _scheduleMetadataBackfill(
+    PlayableItem item, {
+    required String collectionId,
+  }) {
+    final FavoriteCollection? collection = _collectionById(collectionId);
+    if (collection?.kind == CollectionKind.spoken) {
+      return;
+    }
+    ref
+        .read(metadataBackfillControllerProvider.notifier)
+        .enqueue(
+          item.copyWith(
+            kind: collection?.kind ?? CollectionKind.music,
+            collectionId: collectionId,
+          ),
+        );
   }
 
   Future<void> _upsertEntry({
@@ -783,7 +826,7 @@ class FavoritesController extends _$FavoritesController {
         entry: FavoriteEntry.fromPlayableItem(item, now: now),
         addedAt: now,
       );
-      _scheduleMetadataBackfill(item);
+      _scheduleMetadataBackfill(item, collectionId: collection.id);
       state = _loadState();
       return true;
     } finally {

@@ -40,22 +40,33 @@ class MetadataController extends _$MetadataController {
           : _metadataTitleFromState(previous);
       final String? nextTitle = _metadataTitleFromState(next);
       if (previous?.currentItem?.stableId == next.currentItem?.stableId &&
+          previous?.currentItem?.kind == next.currentItem?.kind &&
+          previous?.currentItem?.collectionId ==
+              next.currentItem?.collectionId &&
           previousTitle == nextTitle) {
         return;
       }
       unawaited(_loadCurrentItemMetadata());
-    }, fireImmediately: true);
-
-    return const MetadataState();
+    });
+    final PlayableItem? item = ref.read(playerControllerProvider).currentItem;
+    if (item != null && !item.isSpoken) {
+      final int generation = _generation;
+      unawaited(
+        Future<void>.microtask(() async {
+          if (ref.mounted && generation == _generation) {
+            await _loadCurrentItemMetadata();
+          }
+        }),
+      );
+    }
+    return MetadataState(
+      stableId: item?.stableId,
+      isLoading: item != null && !item.isSpoken,
+    );
   }
 
   Future<void> retryCurrent() async {
     final PlayableItem? item = ref.read(playerControllerProvider).currentItem;
-    if (item == null) {
-      state = const MetadataState();
-      return;
-    }
-
     await _loadForItem(item, ignoreCache: true);
   }
 
@@ -63,7 +74,7 @@ class MetadataController extends _$MetadataController {
     final PlayableItem? item = ref.read(playerControllerProvider).currentItem;
     final String? stableId = item?.stableId;
     final Metadata? metadata = state.metadata;
-    if (item == null || stableId == null || state.stableId != stableId) {
+    if (item == null || item.isSpoken || state.stableId != stableId) {
       return;
     }
     if (metadata == null || metadata.stableId != stableId) {
@@ -82,7 +93,7 @@ class MetadataController extends _$MetadataController {
     final PlayableItem? item = ref.read(playerControllerProvider).currentItem;
     final String? stableId = item?.stableId;
     final Metadata? metadata = state.metadata;
-    if (item == null || stableId == null || state.stableId != stableId) {
+    if (item == null || item.isSpoken || state.stableId != stableId) {
       return;
     }
     if (metadata == null || metadata.stableId != stableId) {
@@ -100,10 +111,11 @@ class MetadataController extends _$MetadataController {
   Future<void> searchManual(String keyword, {MetingServer? server}) async {
     final PlayableItem? item = ref.read(playerControllerProvider).currentItem;
     final String? stableId = item?.stableId;
-    if (item == null || stableId == null || state.stableId != stableId) {
+    if (item == null || item.isSpoken || state.stableId != stableId) {
       return;
     }
 
+    final int requestGeneration = _generation;
     final String trimmedKeyword = keyword.trim();
     state = state.copyWith(
       searchKeyword: trimmedKeyword,
@@ -116,7 +128,7 @@ class MetadataController extends _$MetadataController {
         keyword: trimmedKeyword,
         server: server,
       );
-      if (state.stableId != stableId) {
+      if (!_isActiveRequest(requestGeneration, item)) {
         return;
       }
       state = state.copyWith(
@@ -126,7 +138,7 @@ class MetadataController extends _$MetadataController {
         isSearching: false,
       );
     } on MetingException catch (error) {
-      if (state.stableId != stableId) {
+      if (!_isActiveRequest(requestGeneration, item)) {
         return;
       }
       state = state.copyWith(
@@ -136,7 +148,7 @@ class MetadataController extends _$MetadataController {
         isSearching: false,
       );
     } on Object catch (error) {
-      if (state.stableId != stableId) {
+      if (!_isActiveRequest(requestGeneration, item)) {
         return;
       }
       _logger.e('manual metadata search failed', error);
@@ -154,16 +166,27 @@ class MetadataController extends _$MetadataController {
         .read(playerControllerProvider)
         .currentItem;
     final String? stableId = currentItem?.stableId;
-    if (currentItem == null || stableId == null || state.stableId != stableId) {
+    if (currentItem == null ||
+        currentItem.isSpoken ||
+        state.stableId != stableId) {
       return;
     }
 
-    state = state.copyWith(manualSearchError: null, isSearching: true);
+    final int requestGeneration = ++_generation;
+    state = state.copyWith(
+      manualSearchError: null,
+      isSearching: true,
+      isLoading: false,
+    );
 
     try {
       final Metadata metadata = await _lookupService
-          .buildMetadataFromSearchItem(item: currentItem, searchItem: item);
-      if (state.stableId != stableId) {
+          .buildMetadataFromSearchItem(
+            item: currentItem,
+            searchItem: item,
+            isActive: () => _isActiveRequest(requestGeneration, currentItem),
+          );
+      if (!_isActiveRequest(requestGeneration, currentItem)) {
         return;
       }
       state = state.copyWith(
@@ -175,7 +198,7 @@ class MetadataController extends _$MetadataController {
       );
       await _saveCacheIfEligible(item: currentItem, metadata: metadata);
     } on MetingException catch (error) {
-      if (state.stableId != stableId) {
+      if (!_isActiveRequest(requestGeneration, currentItem)) {
         return;
       }
       state = state.copyWith(
@@ -183,7 +206,7 @@ class MetadataController extends _$MetadataController {
         isSearching: false,
       );
     } on Object catch (error) {
-      if (state.stableId != stableId) {
+      if (!_isActiveRequest(requestGeneration, currentItem)) {
         return;
       }
       _logger.e('apply manual metadata result failed', error);
@@ -204,8 +227,8 @@ class MetadataController extends _$MetadataController {
     bool ignoreCache = false,
   }) async {
     final int requestGeneration = ++_generation;
-    if (item == null) {
-      state = const MetadataState();
+    if (item == null || item.isSpoken) {
+      state = MetadataState(stableId: item?.stableId);
       return;
     }
 
@@ -216,7 +239,7 @@ class MetadataController extends _$MetadataController {
       final Metadata? cached = await ref
           .read(metadataCacheRepositoryProvider)
           .getCachedMetadata(item: item);
-      if (!_isActiveRequest(requestGeneration, stableId)) {
+      if (!_isActiveRequest(requestGeneration, item)) {
         return;
       }
       if (cached != null) {
@@ -230,8 +253,11 @@ class MetadataController extends _$MetadataController {
     }
 
     try {
-      final MetadataLookupResult lookupResult = await _resolve(item);
-      if (!_isActiveRequest(requestGeneration, stableId)) {
+      final MetadataLookupResult lookupResult = await _resolve(
+        item,
+        requestGeneration,
+      );
+      if (!_isActiveRequest(requestGeneration, item)) {
         return;
       }
 
@@ -244,7 +270,7 @@ class MetadataController extends _$MetadataController {
       );
       await _saveCacheIfEligible(item: item, metadata: lookupResult.metadata);
     } on MetingException catch (error) {
-      if (!_isActiveRequest(requestGeneration, stableId)) {
+      if (!_isActiveRequest(requestGeneration, item)) {
         return;
       }
       state = MetadataState(
@@ -254,7 +280,7 @@ class MetadataController extends _$MetadataController {
         hasSearched: true,
       );
     } on Object catch (error) {
-      if (!_isActiveRequest(requestGeneration, stableId)) {
+      if (!_isActiveRequest(requestGeneration, item)) {
         return;
       }
       _logger.e('load metadata failed', error);
@@ -267,8 +293,19 @@ class MetadataController extends _$MetadataController {
     }
   }
 
-  bool _isActiveRequest(int requestGeneration, String stableId) {
-    return requestGeneration == _generation && state.stableId == stableId;
+  bool _isActiveRequest(int requestGeneration, PlayableItem item) {
+    if (!ref.mounted || requestGeneration != _generation) {
+      return false;
+    }
+    final PlayableItem? currentItem = ref
+        .read(playerControllerProvider)
+        .currentItem;
+    return currentItem != null &&
+        !currentItem.isSpoken &&
+        currentItem.stableId == item.stableId &&
+        currentItem.kind == item.kind &&
+        currentItem.collectionId == item.collectionId &&
+        state.stableId == item.stableId;
   }
 
   Future<void> _saveCacheIfEligible({
@@ -285,6 +322,9 @@ class MetadataController extends _$MetadataController {
   }
 
   bool _shouldCacheMetadata(PlayableItem item) {
+    if (item.isSpoken) {
+      return false;
+    }
     return ref
         .read(favoritesControllerProvider)
         .collectionsForItem(item)
@@ -308,10 +348,14 @@ class MetadataController extends _$MetadataController {
     );
   }
 
-  Future<MetadataLookupResult> _resolve(PlayableItem item) {
+  Future<MetadataLookupResult> _resolve(
+    PlayableItem item,
+    int requestGeneration,
+  ) {
     return _lookupService.lookup(
       item: item,
       title: _preferredMetadataTitle(item),
+      isActive: () => _isActiveRequest(requestGeneration, item),
     );
   }
 

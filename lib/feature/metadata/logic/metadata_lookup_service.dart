@@ -40,24 +40,37 @@ class MetadataLookupService {
   Future<MetadataLookupResult> lookup({
     required PlayableItem item,
     required String title,
+    bool Function()? isActive,
   }) async {
+    void checkActive() {
+      if (item.isSpoken || isActive?.call() == false) {
+        throw StateError('Metadata lookup is no longer active');
+      }
+    }
+
+    checkActive();
     final String keyword = (await resolveSearchKeyword(title)).trim();
+    checkActive();
     final String? fallbackKeyword = keyword.isNotEmpty ? keyword : null;
 
     final List<MetingSearchItem> results = await metingRepository.search(
       keyword: keyword,
       server: resolveServer(item.lyricSearchTitles.join(' ')),
     );
+    checkActive();
     for (final MetingSearchItem result in results) {
+      checkActive();
       final MetaLyrics? metaLyrics = normalizeMetaLyrics(
         await _fetchLyricsOrNull(result),
       );
+      checkActive();
       if (metaLyrics != null && metaLyrics.hasRenderableMainLyric) {
         return MetadataLookupResult(
           metadata: await buildMetadata(
             item: item,
             searchItem: result,
             metaLyrics: metaLyrics,
+            isActive: isActive,
           ),
           searchKeyword: fallbackKeyword,
           searchResults: results,
@@ -75,11 +88,16 @@ class MetadataLookupService {
   Future<Metadata> buildMetadataFromSearchItem({
     required PlayableItem item,
     required MetingSearchItem searchItem,
+    bool Function()? isActive,
   }) async {
+    if (item.isSpoken || isActive?.call() == false) {
+      throw StateError('Metadata lookup is no longer active');
+    }
     return buildMetadata(
       item: item,
       searchItem: searchItem,
       metaLyrics: normalizeMetaLyrics(await _fetchLyricsOrNull(searchItem)),
+      isActive: isActive,
     );
   }
 
@@ -87,7 +105,11 @@ class MetadataLookupService {
     required PlayableItem item,
     required MetingSearchItem searchItem,
     required MetaLyrics? metaLyrics,
+    bool Function()? isActive,
   }) async {
+    if (item.isSpoken || isActive?.call() == false) {
+      throw StateError('Metadata lookup is no longer active');
+    }
     String? albumArtUrl;
     try {
       albumArtUrl = _normalizeText(

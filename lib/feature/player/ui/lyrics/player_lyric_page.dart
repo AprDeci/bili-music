@@ -45,8 +45,11 @@ class PlayerLyricPage extends ConsumerWidget {
         (settings) => settings.showTranslation,
       ),
     );
-    final MetadataState metadataState = ref.watch(metadataControllerProvider);
     final PlayableItem? item = this.item;
+    final bool isSpoken = item?.isSpoken ?? false;
+    final MetadataState metadataState = isSpoken
+        ? const MetadataState()
+        : ref.watch(metadataControllerProvider);
     final PlayerSubtitleState subtitleState = ref.watch(
       playerSubtitleControllerProvider,
     );
@@ -80,20 +83,26 @@ class PlayerLyricPage extends ConsumerWidget {
           activeColor: ColorUtil.getAllShades(
             activeColor ?? Theme.of(context).colorScheme.primary,
           )[600]!,
-          onSearch: () {
-            ref.read(playerSubtitleControllerProvider.notifier).useMeting();
-            showManualLyricSearchSheet(
-              context: context,
-              initialKeyword: resolveLyricSearchKeyword(
-                metadataState: metadataState,
-                item: item,
-              ),
-            );
-          },
+          onSearch: isSpoken
+              ? null
+              : () {
+                  ref
+                      .read(playerSubtitleControllerProvider.notifier)
+                      .useMeting();
+                  showManualLyricSearchSheet(
+                    context: context,
+                    initialKeyword: resolveLyricSearchKeyword(
+                      metadataState: metadataState,
+                      item: item,
+                    ),
+                  );
+                },
           onSubtitles: canSelectSubtitles
               ? () => showPlayerSubtitleSheet(context)
               : null,
-          onOffset: () => showLyricOffsetSheet(context),
+          onOffset: isSpoken && !usesSubtitles
+              ? null
+              : () => showLyricOffsetSheet(context),
           onAppearance: () =>
               showPlayerLyricSettings(context, activeColor: activeColor),
           showTranslation: showTranslation,
@@ -200,19 +209,21 @@ class _PlayerLyricToolbar extends StatelessWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.start,
               children: <Widget>[
-                IconButton(
-                  tooltip: '手动匹配歌词',
-                  onPressed: onSearch,
-                  color: iconColor,
-                  icon: const Icon(Icons.search_rounded),
-                ),
+                if (onSearch != null)
+                  IconButton(
+                    tooltip: '手动匹配歌词',
+                    onPressed: onSearch,
+                    color: iconColor,
+                    icon: const Icon(Icons.search_rounded),
+                  ),
                 const SizedBox(width: 20),
-                IconButton(
-                  tooltip: '歌词偏移',
-                  onPressed: onOffset,
-                  color: iconColor,
-                  icon: const Icon(Icons.hourglass_empty_rounded),
-                ),
+                if (onOffset != null)
+                  IconButton(
+                    tooltip: '歌词偏移',
+                    onPressed: onOffset,
+                    color: iconColor,
+                    icon: const Icon(Icons.hourglass_empty_rounded),
+                  ),
                 if (toggleTranslation != null) ...<Widget>[
                   const SizedBox(width: 20),
                   IconButton(
@@ -227,7 +238,7 @@ class _PlayerLyricToolbar extends StatelessWidget {
                 if (onSubtitles != null) ...<Widget>[
                   const SizedBox(width: 20),
                   IconButton(
-                    tooltip: '字幕',
+                    tooltip: 'AI字幕',
                     onPressed: onSubtitles,
                     color: iconColor,
                     icon: const Icon(Icons.subtitles_outlined),

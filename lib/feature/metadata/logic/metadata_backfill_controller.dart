@@ -30,7 +30,9 @@ class MetadataBackfillController extends _$MetadataBackfillController {
 
   // 加入收藏后入队；命中缓存的行会在 _drain 里被跳过。
   void enqueue(PlayableItem item) {
-    if (!item.hasIdentity || !_pendingContentIds.add(item.contentId)) {
+    if (item.isSpoken ||
+        !item.hasIdentity ||
+        !_pendingContentIds.add(item.contentId)) {
       return;
     }
     _pending.add(item);
@@ -49,17 +51,16 @@ class MetadataBackfillController extends _$MetadataBackfillController {
       _cancelRequested = false;
     }
 
-    final MetadataCacheRepository repository = ref.read(
-      metadataCacheRepositoryProvider,
-    );
     int queued = 0;
     for (final PlayableItem item in items) {
-      if (!item.hasIdentity || _pendingContentIds.contains(item.contentId)) {
+      if (item.isSpoken ||
+          !item.hasIdentity ||
+          _pendingContentIds.contains(item.contentId)) {
         continue;
       }
-      final Metadata? cached = await repository.getCachedMetadataByContentId(
-        item.contentId,
-      );
+      final Metadata? cached = await ref
+          .read(metadataCacheRepositoryProvider)
+          .getCachedMetadataByContentId(item.contentId);
       if (cached?.hasContent ?? false) {
         continue;
       }
@@ -81,7 +82,7 @@ class MetadataBackfillController extends _$MetadataBackfillController {
   }
 
   Future<void> _drain() async {
-    if (_isDraining) {
+    if (_isDraining || _pending.isEmpty) {
       return;
     }
     _isDraining = true;
@@ -89,16 +90,22 @@ class MetadataBackfillController extends _$MetadataBackfillController {
     _publish();
 
     try {
-      final MetadataLookupService lookup = ref.read(
-        metadataLookupServiceProvider,
-      );
-      final MetadataCacheRepository repository = ref.read(
-        metadataCacheRepositoryProvider,
-      );
       while (_pending.isNotEmpty && !_cancelRequested) {
         final PlayableItem item = _pending.removeAt(0);
+        if (item.isSpoken) {
+          _pendingContentIds.remove(item.contentId);
+          _processed++;
+          _publish();
+          continue;
+        }
 
         try {
+          final MetadataLookupService lookup = ref.read(
+            metadataLookupServiceProvider,
+          );
+          final MetadataCacheRepository repository = ref.read(
+            metadataCacheRepositoryProvider,
+          );
           final Metadata? cached = await repository
               .getCachedMetadataByContentId(item.contentId);
           if (!(cached?.hasContent ?? false)) {

@@ -105,7 +105,10 @@ class _DesktopPlayerPageState extends ConsumerState<DesktopPlayerPage> {
       playerControllerProvider.notifier,
     );
     final PlayableItem? item = state.currentItem ?? widget.initialItem;
-    final MetadataState metadataState = ref.watch(metadataControllerProvider);
+    final bool isSpoken = item?.isSpoken ?? false;
+    final MetadataState metadataState = isSpoken
+        ? const MetadataState()
+        : ref.watch(metadataControllerProvider);
     final PlayerSubtitleState subtitleState = ref.watch(
       playerSubtitleControllerProvider,
     );
@@ -148,7 +151,7 @@ class _DesktopPlayerPageState extends ConsumerState<DesktopPlayerPage> {
               bottom: 80,
               right: 20,
               child: _DesktopLyricToolRail(
-                onSearch: item == null
+                onSearch: item == null || isSpoken
                     ? null
                     : () {
                         ref
@@ -162,7 +165,7 @@ class _DesktopPlayerPageState extends ConsumerState<DesktopPlayerPage> {
                           ),
                         );
                       },
-                onOffset: item == null
+                onOffset: item == null || (isSpoken && !usesSubtitles)
                     ? null
                     : () => showLyricOffsetSheet(context),
                 onAppearance: () =>
@@ -549,17 +552,19 @@ class _DesktopLyricToolRail extends StatelessWidget {
                 ),
               ],
               const SizedBox(height: 6),
-              BarIconButton(
-                icon: Icons.search_rounded,
-                tooltip: '手动匹配歌词',
-                onPressed: onSearch,
-              ),
+              if (onSearch != null)
+                BarIconButton(
+                  icon: Icons.search_rounded,
+                  tooltip: '手动匹配歌词',
+                  onPressed: onSearch,
+                ),
               const SizedBox(height: 4),
-              BarIconButton(
-                icon: Icons.hourglass_empty_rounded,
-                tooltip: '歌词偏移',
-                onPressed: onOffset,
-              ),
+              if (onOffset != null)
+                BarIconButton(
+                  icon: Icons.hourglass_empty_rounded,
+                  tooltip: '歌词偏移',
+                  onPressed: onOffset,
+                ),
               const SizedBox(height: 4),
               BarIconButton(
                 icon: const HugeIcon(

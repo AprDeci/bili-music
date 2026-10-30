@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:bilimusic/common/domain/collection_kind.dart';
 import 'package:bilimusic/core/bili/session/bili_session.dart';
 import 'package:bilimusic/core/bili/session/bili_session_controller.dart';
 import 'package:bilimusic/feature/favorites/data/bili_favorites_remote_repository.dart';
@@ -35,30 +36,34 @@ void main() {
     cid: 10,
     page: 1,
   );
+  late _MemoryLocalRepository local;
   late _FakeRemoteRepository remote;
   late _MemoryRemoteCache cache;
   late ProviderContainer container;
   late FavoritesController controller;
 
   setUp(() {
+    local = _MemoryLocalRepository(
+      FavoritesState(
+        collections: <FavoriteCollection>[
+          FavoriteCollection.liked(now: now),
+          FavoriteCollection(
+            id: 'local',
+            name: 'local',
+            createdAt: now,
+            updatedAt: now,
+          ),
+        ],
+      ),
+    );
     remote = _FakeRemoteRepository();
     cache = _MemoryRemoteCache(FavoritesState(collections: [collection]));
     container = ProviderContainer(
       overrides: [
-        favoritesLocalRepositoryProvider.overrideWithValue(
-          _EmptyLocalRepository(),
-        ),
+        favoritesLocalRepositoryProvider.overrideWithValue(local),
         favoritesRemoteCacheRepositoryProvider.overrideWithValue(cache),
         biliFavoritesRemoteRepositoryProvider.overrideWithValue(remote),
-        biliSessionControllerProvider.overrideWithValue(
-          const BiliSession(
-            sessData: 'test',
-            biliJct: 'test',
-            dedeUserId: '1',
-            refreshToken: '',
-            cookie: '',
-          ),
-        ),
+        biliSessionControllerProvider.overrideWith(_Session.new),
         metadataBackfillControllerProvider.overrideWith(
           _NoopMetadataBackfill.new,
         ),
@@ -68,6 +73,95 @@ void main() {
   });
 
   tearDown(() => container.dispose());
+
+  test(
+    'sets local, liked, and remote kind without requiring a session',
+    () async {
+      (container.read(biliSessionControllerProvider.notifier) as _Session)
+          .signOut();
+      for (final String id in <String>['local', 'liked', collection.id]) {
+        expect(
+          await controller.setCollectionKind(
+            collectionId: id,
+            kind: CollectionKind.spoken,
+          ),
+          isTrue,
+        );
+        await controller.reload();
+        expect(
+          container
+              .read(favoritesControllerProvider)
+              .collections
+              .firstWhere((value) => value.id == id)
+              .kind,
+          CollectionKind.spoken,
+        );
+      }
+      expect(local.state.likedCollection.kind, CollectionKind.spoken);
+      expect(cache.state.collections.single.kind, CollectionKind.spoken);
+      expect(
+        await controller.setCollectionKind(
+          collectionId: 'missing',
+          kind: CollectionKind.spoken,
+        ),
+        isFalse,
+      );
+    },
+  );
+
+  test(
+    'spoken targets skip metadata on liked, single, batch, and remote adds',
+    () async {
+      for (final String id in <String>['local', 'liked', collection.id]) {
+        await controller.setCollectionKind(
+          collectionId: id,
+          kind: CollectionKind.spoken,
+        );
+      }
+      expect(await controller.toggleLiked(item), isTrue);
+      expect(
+        await controller.addToCollection(collectionId: 'local', item: item),
+        isTrue,
+      );
+      expect(
+        await controller.addItemsToCollection(
+          collectionId: 'local',
+          items: [item.copyWith(aid: 2, bvid: 'BV2', cid: 2)],
+        ),
+        1,
+      );
+      expect(
+        await controller.addToCollection(
+          collectionId: collection.id,
+          item: item,
+        ),
+        isTrue,
+      );
+      final _NoopMetadataBackfill metadata =
+          container.read(metadataBackfillControllerProvider.notifier)
+              as _NoopMetadataBackfill;
+      expect(metadata.enqueued, isEmpty);
+    },
+  );
+
+  test(
+    'metadata backfill follows target kind rather than source kind',
+    () async {
+      final PlayableItem spokenSource = item.copyWith(
+        kind: CollectionKind.spoken,
+        collectionId: 'source',
+      );
+      await controller.addToCollection(
+        collectionId: 'local',
+        item: spokenSource,
+      );
+      final _NoopMetadataBackfill metadata =
+          container.read(metadataBackfillControllerProvider.notifier)
+              as _NoopMetadataBackfill;
+      expect(metadata.enqueued.single.kind, CollectionKind.music);
+      expect(metadata.enqueued.single.collectionId, 'local');
+    },
+  );
 
   test(
     'single and batch adds skip a synced video with a different cid',
@@ -158,9 +252,56 @@ void main() {
   });
 }
 
-class _EmptyLocalRepository implements FavoritesLocalRepository {
+class _Session extends BiliSessionController {
   @override
-  FavoritesState loadState() => const FavoritesState();
+  BiliSession? build() => const BiliSession(
+    sessData: 'test',
+    biliJct: 'test',
+    dedeUserId: '1',
+    refreshToken: '',
+    cookie: '',
+  );
+
+  void signOut() => state = null;
+}
+
+class _MemoryLocalRepository implements FavoritesLocalRepository {
+  _MemoryLocalRepository(this.state);
+
+  FavoritesState state;
+
+  @override
+  FavoritesState loadState() => state;
+
+  @override
+  Future<void> saveCollection(FavoriteCollection collection) async {
+    state = state.copyWith(
+      collections: <FavoriteCollection>[
+        for (final FavoriteCollection existing in state.collections)
+          if (existing.id == collection.id) collection else existing,
+      ],
+    );
+  }
+
+  @override
+  Future<void> saveEntry(FavoriteEntry entry) async {
+    state = state.copyWith(
+      entries: <FavoriteEntry>[
+        ...state.entries.where((value) => value.itemId != entry.itemId),
+        entry,
+      ],
+    );
+  }
+
+  @override
+  Future<void> saveMembership(FavoriteMembership membership) async {
+    state = state.copyWith(
+      memberships: <FavoriteMembership>[
+        ...state.memberships.where((value) => value.id != membership.id),
+        membership,
+      ],
+    );
+  }
 
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
@@ -174,6 +315,22 @@ class _MemoryRemoteCache implements FavoritesRemoteCacheRepository {
 
   @override
   FavoritesState loadState() => state;
+
+  @override
+  Future<void> setCollectionKind({
+    required String collectionId,
+    required CollectionKind kind,
+  }) async {
+    state = state.copyWith(
+      collections: <FavoriteCollection>[
+        for (final FavoriteCollection collection in state.collections)
+          if (collection.id == collectionId)
+            collection.copyWith(kind: kind)
+          else
+            collection,
+      ],
+    );
+  }
 
   @override
   Future<void> saveEntryToCollection({
@@ -222,6 +379,8 @@ class _FakeRemoteRepository implements BiliFavoritesRemoteRepository {
 }
 
 class _NoopMetadataBackfill extends MetadataBackfillController {
+  final List<PlayableItem> enqueued = <PlayableItem>[];
+
   @override
-  void enqueue(PlayableItem item) {}
+  void enqueue(PlayableItem item) => enqueued.add(item);
 }

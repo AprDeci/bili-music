@@ -30,29 +30,40 @@ class PlayerLyricsController extends _$PlayerLyricsController {
       PlayerState? previous,
       PlayerState next,
     ) {
-      if (previous?.currentItem?.stableId == next.currentItem?.stableId) {
+      if (previous?.currentItem?.stableId == next.currentItem?.stableId &&
+          previous?.currentItem?.kind == next.currentItem?.kind &&
+          previous?.currentItem?.collectionId ==
+              next.currentItem?.collectionId) {
         return;
       }
       unawaited(_loadCurrentItemLyrics());
-    }, fireImmediately: true);
-
-    return const PlayerLyricsState();
+    });
+    final PlayableItem? item = ref.read(playerControllerProvider).currentItem;
+    if (item != null && !item.isSpoken) {
+      final int generation = _generation;
+      unawaited(
+        Future<void>.microtask(() async {
+          if (ref.mounted && generation == _generation) {
+            await _loadCurrentItemLyrics();
+          }
+        }),
+      );
+    }
+    return PlayerLyricsState(
+      stableId: item?.stableId,
+      isLoading: item != null && !item.isSpoken,
+    );
   }
 
   Future<void> retryCurrent() async {
     final PlayableItem? item = ref.read(playerControllerProvider).currentItem;
-    if (item == null) {
-      state = const PlayerLyricsState();
-      return;
-    }
-
     await _loadForItem(item, ignoreCache: true);
   }
 
   Future<void> adjustOffset(int deltaMs) async {
     final PlayableItem? item = ref.read(playerControllerProvider).currentItem;
     final String? stableId = item?.stableId;
-    if (stableId == null || state.stableId != stableId) {
+    if (item == null || item.isSpoken || state.stableId != stableId) {
       return;
     }
 
@@ -60,28 +71,29 @@ class PlayerLyricsController extends _$PlayerLyricsController {
       lyricOffsetMs: state.lyricOffsetMs + deltaMs,
     );
     state = nextState;
-    await _saveCacheIfEligible(item: item!, nextState: nextState);
+    await _saveCacheIfEligible(item: item, nextState: nextState);
   }
 
   Future<void> resetOffset() async {
     final PlayableItem? item = ref.read(playerControllerProvider).currentItem;
     final String? stableId = item?.stableId;
-    if (stableId == null || state.stableId != stableId) {
+    if (item == null || item.isSpoken || state.stableId != stableId) {
       return;
     }
 
     final PlayerLyricsState nextState = state.copyWith(lyricOffsetMs: 0);
     state = nextState;
-    await _saveCacheIfEligible(item: item!, nextState: nextState);
+    await _saveCacheIfEligible(item: item, nextState: nextState);
   }
 
   Future<void> searchManual(String keyword, {MetingServer? server}) async {
     final PlayableItem? item = ref.read(playerControllerProvider).currentItem;
     final String? stableId = item?.stableId;
-    if (item == null || stableId == null || state.stableId != stableId) {
+    if (item == null || item.isSpoken || state.stableId != stableId) {
       return;
     }
 
+    final int requestGeneration = _generation;
     final String trimmedKeyword = keyword.trim();
     final PlayerLyricsState searchingState = state.copyWith(
       searchKeyword: trimmedKeyword,
@@ -100,7 +112,7 @@ class PlayerLyricsController extends _$PlayerLyricsController {
                 .read(metingSourcePreferenceLogicProvider)
                 .resolve(trimmedKeyword),
       );
-      if (state.stableId != stableId) {
+      if (!_isActiveRequest(requestGeneration, item)) {
         return;
       }
       final PlayerLyricsState nextState = state.copyWith(
@@ -111,7 +123,7 @@ class PlayerLyricsController extends _$PlayerLyricsController {
       );
       state = nextState;
     } on MetingException catch (error) {
-      if (state.stableId != stableId) {
+      if (!_isActiveRequest(requestGeneration, item)) {
         return;
       }
       final PlayerLyricsState nextState = state.copyWith(
@@ -122,7 +134,7 @@ class PlayerLyricsController extends _$PlayerLyricsController {
       );
       state = nextState;
     } on Object catch (error) {
-      if (state.stableId != stableId) {
+      if (!_isActiveRequest(requestGeneration, item)) {
         return;
       }
       _logger.e('manual lyrics search failed', error);
@@ -141,13 +153,17 @@ class PlayerLyricsController extends _$PlayerLyricsController {
         .read(playerControllerProvider)
         .currentItem;
     final String? stableId = currentItem?.stableId;
-    if (currentItem == null || stableId == null || state.stableId != stableId) {
+    if (currentItem == null ||
+        currentItem.isSpoken ||
+        state.stableId != stableId) {
       return;
     }
 
+    final int requestGeneration = ++_generation;
     final PlayerLyricsState applyingState = state.copyWith(
       manualSearchError: null,
       isSearching: true,
+      isLoading: false,
     );
     state = applyingState;
 
@@ -155,7 +171,7 @@ class PlayerLyricsController extends _$PlayerLyricsController {
       final String? rawLyrics =
           (await ref.read(metingLogicProvider).fetchLyrics(item))
               .preferredMainLyric;
-      if (state.stableId != stableId) {
+      if (!_isActiveRequest(requestGeneration, currentItem)) {
         return;
       }
       final PlayerLyricsState nextState = state.copyWith(
@@ -168,7 +184,7 @@ class PlayerLyricsController extends _$PlayerLyricsController {
       state = nextState;
       await _saveCacheIfEligible(item: currentItem, nextState: nextState);
     } on MetingException catch (error) {
-      if (state.stableId != stableId) {
+      if (!_isActiveRequest(requestGeneration, currentItem)) {
         return;
       }
       final PlayerLyricsState nextState = state.copyWith(
@@ -177,7 +193,7 @@ class PlayerLyricsController extends _$PlayerLyricsController {
       );
       state = nextState;
     } on Object catch (error) {
-      if (state.stableId != stableId) {
+      if (!_isActiveRequest(requestGeneration, currentItem)) {
         return;
       }
       _logger.e('apply manual lyrics result failed', error);
@@ -199,8 +215,8 @@ class PlayerLyricsController extends _$PlayerLyricsController {
     bool ignoreCache = false,
   }) async {
     final int requestGeneration = ++_generation;
-    if (item == null) {
-      state = const PlayerLyricsState();
+    if (item == null || item.isSpoken) {
+      state = PlayerLyricsState(stableId: item?.stableId);
       return;
     }
 
@@ -211,7 +227,7 @@ class PlayerLyricsController extends _$PlayerLyricsController {
       final PlayerLyricsCacheEntry? cached = await ref
           .read(playerLyricsCacheRepositoryProvider)
           .getCachedEntry(item: item);
-      if (!_isActiveRequest(requestGeneration, stableId)) {
+      if (!_isActiveRequest(requestGeneration, item)) {
         return;
       }
       if (cached != null) {
@@ -226,8 +242,8 @@ class PlayerLyricsController extends _$PlayerLyricsController {
     }
 
     try {
-      final lookupResult = await _findLyricsForItem(item);
-      if (!_isActiveRequest(requestGeneration, stableId)) {
+      final lookupResult = await _findLyricsForItem(item, requestGeneration);
+      if (!_isActiveRequest(requestGeneration, item)) {
         return;
       }
 
@@ -242,7 +258,7 @@ class PlayerLyricsController extends _$PlayerLyricsController {
       state = nextState;
       await _saveCacheIfEligible(item: item, nextState: nextState);
     } on MetingException catch (error) {
-      if (!_isActiveRequest(requestGeneration, stableId)) {
+      if (!_isActiveRequest(requestGeneration, item)) {
         return;
       }
       state = PlayerLyricsState(
@@ -252,7 +268,7 @@ class PlayerLyricsController extends _$PlayerLyricsController {
         hasSearched: true,
       );
     } on Object catch (error) {
-      if (!_isActiveRequest(requestGeneration, stableId)) {
+      if (!_isActiveRequest(requestGeneration, item)) {
         return;
       }
       _logger.e('load lyrics failed', error);
@@ -272,7 +288,14 @@ class PlayerLyricsController extends _$PlayerLyricsController {
       List<MetingSearchItem> searchResults,
     })
   >
-  _findLyricsForItem(PlayableItem item) async {
+  _findLyricsForItem(PlayableItem item, int requestGeneration) async {
+    void checkActive() {
+      if (!_isActiveRequest(requestGeneration, item)) {
+        throw StateError('Lyrics lookup is no longer active');
+      }
+    }
+
+    checkActive();
     String? fallbackKeyword;
     final MetingLogic metingLogic = ref.read(metingLogicProvider);
     final MetingServer server = ref
@@ -282,6 +305,7 @@ class PlayerLyricsController extends _$PlayerLyricsController {
       final String keyword = (await metingLogic.resolveSearchKeyword(
         title,
       )).trim();
+      checkActive();
       if (fallbackKeyword == null && keyword.isNotEmpty) {
         fallbackKeyword = keyword;
       }
@@ -289,10 +313,13 @@ class PlayerLyricsController extends _$PlayerLyricsController {
         keyword: keyword,
         server: server,
       );
+      checkActive();
       for (final MetingSearchItem result in response.results) {
+        checkActive();
         final String? normalizedLyrics = _normalizeLyrics(
           (await metingLogic.fetchLyrics(result)).preferredMainLyric,
         );
+        checkActive();
         if (normalizedLyrics != null) {
           return (
             rawLyrics: normalizedLyrics,
@@ -310,8 +337,19 @@ class PlayerLyricsController extends _$PlayerLyricsController {
     );
   }
 
-  bool _isActiveRequest(int requestGeneration, String stableId) {
-    return requestGeneration == _generation && state.stableId == stableId;
+  bool _isActiveRequest(int requestGeneration, PlayableItem item) {
+    if (!ref.mounted || requestGeneration != _generation) {
+      return false;
+    }
+    final PlayableItem? currentItem = ref
+        .read(playerControllerProvider)
+        .currentItem;
+    return currentItem != null &&
+        !currentItem.isSpoken &&
+        currentItem.stableId == item.stableId &&
+        currentItem.kind == item.kind &&
+        currentItem.collectionId == item.collectionId &&
+        state.stableId == item.stableId;
   }
 
   String? _normalizeLyrics(String? value) {
@@ -351,6 +389,9 @@ class PlayerLyricsController extends _$PlayerLyricsController {
   }
 
   bool _shouldCacheLyrics(PlayableItem item) {
+    if (item.isSpoken) {
+      return false;
+    }
     return ref
         .read(favoritesControllerProvider)
         .collectionsForItem(item)

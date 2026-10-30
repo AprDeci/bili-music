@@ -1,3 +1,4 @@
+import 'package:bilimusic/common/domain/collection_kind.dart';
 import 'package:bilimusic/feature/metadata/domain/metadata.dart';
 import 'package:bilimusic/feature/player/domain/playable_item.dart';
 import 'package:bilimusic/feature/player/domain/player_display_info.dart';
@@ -111,6 +112,17 @@ void main() {
       expect(result.canToggleSource, isFalse);
       expect(result.artistUpMid, next.ownerMid);
     }
+  });
+
+  test('spoken always displays Bilibili even with matching music metadata', () {
+    final spoken = item.copyWith(kind: CollectionKind.spoken);
+    final result = display(metadata, currentItem: spoken);
+    expect(result.title, item.title);
+    expect(result.artist, item.author);
+    expect(result.coverUrl, item.coverUrl);
+    expect(result.source, PlayerDisplaySource.bilibili);
+    expect(result.canToggleSource, isFalse);
+    expect(result.artistUpMid, item.ownerMid);
   });
 
   test('empty item clears display and blank artwork is absent', () {

@@ -142,7 +142,7 @@ final class FavoriteEntryCoverUrlProvider
 }
 
 String _$favoriteEntryCoverUrlHash() =>
-    r'e9b3d7f9b8ed23951587a5092da465ffaa064028';
+    r'ca85c212e58c5b0f3a5ea4b177fcd485da81f749';
 
 final class FavoriteEntryCoverUrlFamily extends $Family
     with $FunctionalFamilyOverride<String?, (String, FavoriteEntry?)> {

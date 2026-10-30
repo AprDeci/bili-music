@@ -87,7 +87,9 @@ class DesktopLyricsController extends _$DesktopLyricsController {
     if (_renderedStableId != null && _renderedStableId != stableId) {
       await _clearAndDisable(lyrics);
     }
-    final String? rawLyrics = metadataState.stableId == stableId
+    final String? rawLyrics =
+        playerState.currentItem?.isSpoken == false &&
+            metadataState.stableId == stableId
         ? resolveDisplayLyrics(metadataState.metadata)
         : null;
     final PlayerSubtitleState subtitles = ref.read(
@@ -112,6 +114,16 @@ class DesktopLyricsController extends _$DesktopLyricsController {
     }
 
     await _setPluginEnabled(lyrics, true);
+    if (!ref.mounted) {
+      return;
+    }
+    final currentItem = ref.read(playerControllerProvider).currentItem;
+    if (currentItem?.stableId != playerState.currentItem?.stableId ||
+        currentItem?.kind != playerState.currentItem?.kind ||
+        currentItem?.collectionId != playerState.currentItem?.collectionId) {
+      await _clearAndDisable(lyrics);
+      return;
+    }
     if (_renderedLine == frame.line && _renderedProgress == frame.progress) {
       return;
     }

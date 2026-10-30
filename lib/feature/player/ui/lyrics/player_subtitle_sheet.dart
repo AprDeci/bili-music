@@ -42,10 +42,11 @@ class _PlayerSubtitleSheet extends ConsumerWidget {
     final PlayerSubtitleState state = ref.watch(
       playerSubtitleControllerProvider,
     );
-    final String? currentId = ref.watch(
-      playerControllerProvider.select((value) => value.currentItem?.stableId),
+    final currentItem = ref.watch(
+      playerControllerProvider.select((value) => value.currentItem),
     );
-    final bool isCurrent = currentId == stableId && state.stableId == stableId;
+    final bool isCurrent =
+        currentItem?.stableId == stableId && state.stableId == stableId;
     final ColorScheme colorScheme = Theme.of(context).colorScheme;
 
     return SafeArea(
@@ -60,10 +61,7 @@ class _PlayerSubtitleSheet extends ConsumerWidget {
           children: <Widget>[
             Padding(
               padding: const EdgeInsets.fromLTRB(24, 0, 24, 12),
-              child: Text(
-                '字幕',
-                style: Theme.of(context).textTheme.titleLarge,
-              ),
+              child: Text('字幕', style: Theme.of(context).textTheme.titleLarge),
             ),
             if (!isCurrent)
               const Padding(
@@ -71,7 +69,7 @@ class _PlayerSubtitleSheet extends ConsumerWidget {
                 child: Text('当前歌曲已变更，请重新打开字幕选择'),
               ),
             ListTile(
-              title: const Text('Meting歌词'),
+              title: Text(currentItem?.isSpoken == true ? '关闭字幕' : 'Meting歌词'),
               selected: isCurrent && !state.usesSubtitles,
               trailing: isCurrent && !state.usesSubtitles
                   ? Icon(Icons.check_rounded, color: colorScheme.primary)

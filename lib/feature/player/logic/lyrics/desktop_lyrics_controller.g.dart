@@ -42,7 +42,7 @@ final class DesktopLyricsControllerProvider
 }
 
 String _$desktopLyricsControllerHash() =>
-    r'edc237889e7186910e5f367dc5de490354dc2f22';
+    r'6aa5ae0d0448744286b03c889982e984ef630d2e';
 
 abstract class _$DesktopLyricsController extends $Notifier<bool> {
   bool build();

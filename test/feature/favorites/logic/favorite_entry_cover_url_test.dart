@@ -1,6 +1,10 @@
 import 'dart:async';
 
+import 'package:bilimusic/common/domain/collection_kind.dart';
+import 'package:bilimusic/feature/favorites/domain/favorite_collection.dart';
 import 'package:bilimusic/feature/favorites/domain/favorite_entry.dart';
+import 'package:bilimusic/feature/favorites/domain/favorites_state.dart';
+import 'package:bilimusic/feature/favorites/logic/favorites_controller.dart';
 import 'package:bilimusic/feature/favorites/logic/favorite_entry_metadata.dart';
 import 'package:bilimusic/feature/favorites/logic/favorites_view_mode_logic.dart';
 import 'package:bilimusic/feature/metadata/domain/metadata.dart';
@@ -30,6 +34,7 @@ void main() {
     container = ProviderContainer(
       retry: (_, _) => null,
       overrides: [
+        favoritesControllerProvider.overrideWith(_Favorites.new),
         favoritesViewModeLogicProvider(
           'collection-a',
         ).overrideWith(_ViewMode.new),
@@ -151,6 +156,59 @@ void main() {
     expect(container.read(second), _entry.coverUrl);
   });
 
+  test(
+    'spoken ignores cached album art and keeps stored view preference',
+    () async {
+      await container
+          .read(favoritesViewModeLogicProvider('collection-a').notifier)
+          .setViewMode(FavoriteListViewMode.metadata);
+      container.read(favoriteEntryCoverUrlProvider('collection-a', _entry));
+      metadata.complete(
+        Metadata(
+          stableId: _entry.itemId,
+          albumArtUrl: 'https://example.com/album.jpg',
+        ),
+      );
+      await container.read(
+        favoriteEntryMetadataProvider(_entry.contentId).future,
+      );
+      await container.pump();
+      expect(
+        container.read(favoriteEntryCoverUrlProvider('collection-a', _entry)),
+        'https://example.com/album.jpg',
+      );
+      final _Favorites favorites =
+          container.read(favoritesControllerProvider.notifier) as _Favorites;
+      favorites.setKind(CollectionKind.spoken);
+      expect(
+        container.read(favoriteEntryCoverUrlProvider('collection-a', _entry)),
+        _entry.coverUrl,
+      );
+      expect(
+        container.read(favoritesViewModeLogicProvider('collection-a')),
+        FavoriteListViewMode.metadata,
+      );
+      favorites.setKind(CollectionKind.music);
+      expect(
+        container.read(favoriteEntryCoverUrlProvider('collection-a', _entry)),
+        'https://example.com/album.jpg',
+      );
+    },
+  );
+
+  test('spoken does not request metadata even in metadata view', () async {
+    (container.read(favoritesControllerProvider.notifier) as _Favorites)
+        .setKind(CollectionKind.spoken);
+    await container
+        .read(favoritesViewModeLogicProvider('collection-a').notifier)
+        .setViewMode(FavoriteListViewMode.metadata);
+    expect(
+      container.read(favoriteEntryCoverUrlProvider('collection-a', _entry)),
+      _entry.coverUrl,
+    );
+    expect(requestedMetadata, isFalse);
+  });
+
   test('empty collection keeps its placeholder without reading metadata', () {
     expect(
       container.read(favoriteEntryCoverUrlProvider('collection-a', null)),
@@ -158,6 +216,38 @@ void main() {
     );
     expect(requestedMetadata, isFalse);
   });
+}
+
+class _Favorites extends FavoritesController {
+  @override
+  FavoritesState build() => FavoritesState(
+    collections: <FavoriteCollection>[
+      FavoriteCollection(
+        id: 'collection-a',
+        name: 'a',
+        createdAt: DateTime(2026),
+        updatedAt: DateTime(2026),
+      ),
+      FavoriteCollection(
+        id: 'collection-b',
+        name: 'b',
+        createdAt: DateTime(2026),
+        updatedAt: DateTime(2026),
+      ),
+    ],
+  );
+
+  void setKind(CollectionKind kind) {
+    state = state.copyWith(
+      collections: <FavoriteCollection>[
+        for (final FavoriteCollection collection in state.collections)
+          if (collection.id == 'collection-a')
+            collection.copyWith(kind: kind)
+          else
+            collection,
+      ],
+    );
+  }
 }
 
 class _ViewMode extends FavoritesViewModeLogic {
