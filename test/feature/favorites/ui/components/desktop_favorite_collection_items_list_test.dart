@@ -80,9 +80,9 @@ void main() {
               ],
             ),
           ),
-          favoritesViewModeLogicProvider.overrideWithValue(
-            FavoriteListViewMode.video,
-          ),
+          favoritesViewModeLogicProvider(
+            collection.id,
+          ).overrideWithValue(FavoriteListViewMode.video),
           metadataBackfillControllerProvider.overrideWithValue(
             const MetadataBackfillState(),
           ),

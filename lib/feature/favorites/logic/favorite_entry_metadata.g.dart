@@ -92,7 +92,7 @@ final class FavoriteEntryCoverUrlProvider
     with $Provider<String?> {
   FavoriteEntryCoverUrlProvider._({
     required FavoriteEntryCoverUrlFamily super.from,
-    required FavoriteEntry? super.argument,
+    required (String, FavoriteEntry?) super.argument,
   }) : super(
          retry: null,
          name: r'favoriteEntryCoverUrlProvider',
@@ -108,7 +108,7 @@ final class FavoriteEntryCoverUrlProvider
   String toString() {
     return r'favoriteEntryCoverUrlProvider'
         ''
-        '($argument)';
+        '$argument';
   }
 
   @$internal
@@ -118,8 +118,8 @@ final class FavoriteEntryCoverUrlProvider
 
   @override
   String? create(Ref ref) {
-    final argument = this.argument as FavoriteEntry?;
-    return favoriteEntryCoverUrl(ref, argument);
+    final argument = this.argument as (String, FavoriteEntry?);
+    return favoriteEntryCoverUrl(ref, argument.$1, argument.$2);
   }
 
   /// {@macro riverpod.override_with_value}
@@ -142,10 +142,10 @@ final class FavoriteEntryCoverUrlProvider
 }
 
 String _$favoriteEntryCoverUrlHash() =>
-    r'a0c81c975753b02551cbded6955e2f1050a471b4';
+    r'e9b3d7f9b8ed23951587a5092da465ffaa064028';
 
 final class FavoriteEntryCoverUrlFamily extends $Family
-    with $FunctionalFamilyOverride<String?, FavoriteEntry?> {
+    with $FunctionalFamilyOverride<String?, (String, FavoriteEntry?)> {
   FavoriteEntryCoverUrlFamily._()
     : super(
         retry: null,
@@ -155,8 +155,13 @@ final class FavoriteEntryCoverUrlFamily extends $Family
         isAutoDispose: true,
       );
 
-  FavoriteEntryCoverUrlProvider call(FavoriteEntry? entry) =>
-      FavoriteEntryCoverUrlProvider._(argument: entry, from: this);
+  FavoriteEntryCoverUrlProvider call(
+    String collectionId,
+    FavoriteEntry? entry,
+  ) => FavoriteEntryCoverUrlProvider._(
+    argument: (collectionId, entry),
+    from: this,
+  );
 
   @override
   String toString() => r'favoriteEntryCoverUrlProvider';

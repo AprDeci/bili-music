@@ -497,7 +497,7 @@ class _FavoriteCollectionPageState
     }
 
     final FavoriteListViewMode viewMode = ref.watch(
-      favoritesViewModeLogicProvider,
+      favoritesViewModeLogicProvider(collection.id),
     );
 
     return Padding(
@@ -515,8 +515,9 @@ class _FavoriteCollectionPageState
           const SizedBox(width: 6),
           MetadataViewModeButton(
             viewMode: viewMode,
-            onPressed: () =>
-                ref.read(favoritesViewModeLogicProvider.notifier).toggle(),
+            onPressed: () => ref
+                .read(favoritesViewModeLogicProvider(collection.id).notifier)
+                .toggle(),
           ),
           const SizedBox(width: 2),
           MetadataBackfillButton(entries: visibleItems),
@@ -538,7 +539,7 @@ class _FavoriteCollectionPageState
       selectionMode: _selectionMode,
       onSelectionModeChanged: _setSelectionMode,
       onSelectionChanged: _setSelectedItemIds,
-      viewMode: ref.watch(favoritesViewModeLogicProvider),
+      viewMode: ref.watch(favoritesViewModeLogicProvider(collection.id)),
       onRefresh: collection.isRemote
           ? _refreshRemoteCollectionItemsForce
           : null,

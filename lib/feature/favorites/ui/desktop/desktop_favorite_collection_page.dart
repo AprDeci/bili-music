@@ -410,11 +410,15 @@ class _DesktopFavoriteCollectionPageState
                                 const SizedBox(width: 8),
                                 MetadataViewModeButton(
                                   viewMode: ref.watch(
-                                    favoritesViewModeLogicProvider,
+                                    favoritesViewModeLogicProvider(
+                                      resolvedCollection.id,
+                                    ),
                                   ),
                                   onPressed: () => ref
                                       .read(
-                                        favoritesViewModeLogicProvider.notifier,
+                                        favoritesViewModeLogicProvider(
+                                          resolvedCollection.id,
+                                        ).notifier,
                                       )
                                       .toggle(),
                                 ),
@@ -482,7 +486,9 @@ class _DesktopFavoriteCollectionPageState
                               onSelectionModeChanged: _setSelectionMode,
                               onSelectionChanged: _setSelectedItemIds,
                               viewMode: ref.watch(
-                                favoritesViewModeLogicProvider,
+                                favoritesViewModeLogicProvider(
+                                  resolvedCollection.id,
+                                ),
                               ),
                               onTapItem:
                                   (int itemIndex, FavoriteEntry item) async {

@@ -10,23 +10,30 @@ part of 'favorites_view_mode_logic.dart';
 // ignore_for_file: type=lint, type=warning
 
 @ProviderFor(FavoritesViewModeLogic)
-final favoritesViewModeLogicProvider = FavoritesViewModeLogicProvider._();
+final favoritesViewModeLogicProvider = FavoritesViewModeLogicFamily._();
 
 final class FavoritesViewModeLogicProvider
     extends $NotifierProvider<FavoritesViewModeLogic, FavoriteListViewMode> {
-  FavoritesViewModeLogicProvider._()
-    : super(
-        from: null,
-        argument: null,
-        retry: null,
-        name: r'favoritesViewModeLogicProvider',
-        isAutoDispose: true,
-        dependencies: null,
-        $allTransitiveDependencies: null,
-      );
+  FavoritesViewModeLogicProvider._({
+    required FavoritesViewModeLogicFamily super.from,
+    required String super.argument,
+  }) : super(
+         retry: null,
+         name: r'favoritesViewModeLogicProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
 
   @override
   String debugGetCreateSourceHash() => _$favoritesViewModeLogicHash();
+
+  @override
+  String toString() {
+    return r'favoritesViewModeLogicProvider'
+        ''
+        '($argument)';
+  }
 
   @$internal
   @override
@@ -39,14 +46,53 @@ final class FavoritesViewModeLogicProvider
       providerOverride: $SyncValueProvider<FavoriteListViewMode>(value),
     );
   }
+
+  @override
+  bool operator ==(Object other) {
+    return other is FavoritesViewModeLogicProvider &&
+        other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
 }
 
 String _$favoritesViewModeLogicHash() =>
-    r'413a2a83d3dfe57aacf36a9d486510f6c99280e0';
+    r'8bd9de819d750e7de5e075f3b8961283686af83f';
+
+final class FavoritesViewModeLogicFamily extends $Family
+    with
+        $ClassFamilyOverride<
+          FavoritesViewModeLogic,
+          FavoriteListViewMode,
+          FavoriteListViewMode,
+          FavoriteListViewMode,
+          String
+        > {
+  FavoritesViewModeLogicFamily._()
+    : super(
+        retry: null,
+        name: r'favoritesViewModeLogicProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
+
+  FavoritesViewModeLogicProvider call(String collectionId) =>
+      FavoritesViewModeLogicProvider._(argument: collectionId, from: this);
+
+  @override
+  String toString() => r'favoritesViewModeLogicProvider';
+}
 
 abstract class _$FavoritesViewModeLogic
     extends $Notifier<FavoriteListViewMode> {
-  FavoriteListViewMode build();
+  late final _$args = ref.$arg as String;
+  String get collectionId => _$args;
+
+  FavoriteListViewMode build(String collectionId);
   @$mustCallSuper
   @override
   void runBuild() {
@@ -59,6 +105,6 @@ abstract class _$FavoritesViewModeLogic
               Object?,
               Object?
             >;
-    element.handleCreate(ref, build);
+    element.handleCreate(ref, () => build(_$args));
   }
 }

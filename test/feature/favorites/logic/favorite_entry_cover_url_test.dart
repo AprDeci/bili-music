@@ -30,14 +30,22 @@ void main() {
     container = ProviderContainer(
       retry: (_, _) => null,
       overrides: [
-        favoritesViewModeLogicProvider.overrideWith(_ViewMode.new),
+        favoritesViewModeLogicProvider(
+          'collection-a',
+        ).overrideWith(_ViewMode.new),
+        favoritesViewModeLogicProvider(
+          'collection-b',
+        ).overrideWith(_ViewMode.new),
         favoriteEntryMetadataProvider(_entry.contentId).overrideWith((ref) {
           requestedMetadata = true;
           return metadata.future;
         }),
       ],
     );
-    container.listen(favoriteEntryCoverUrlProvider(_entry), (_, _) {});
+    container.listen(
+      favoriteEntryCoverUrlProvider('collection-a', _entry),
+      (_, _) {},
+    );
   });
 
   tearDown(() => container.dispose());
@@ -45,12 +53,15 @@ void main() {
   test(
     'cover follows view mode and late metadata without fetching in video mode',
     () async {
-      final provider = favoriteEntryCoverUrlProvider(_entry);
+      final provider = favoriteEntryCoverUrlProvider('collection-a', _entry);
       expect(container.read(provider), _entry.coverUrl);
       expect(requestedMetadata, isFalse);
 
       final _ViewMode mode =
-          container.read(favoritesViewModeLogicProvider.notifier) as _ViewMode;
+          container.read(
+                favoritesViewModeLogicProvider('collection-a').notifier,
+              )
+              as _ViewMode;
       await mode.setViewMode(FavoriteListViewMode.metadata);
       expect(container.read(provider), _entry.coverUrl);
       expect(requestedMetadata, isTrue);
@@ -75,9 +86,9 @@ void main() {
   for (final String? cover in <String?>[null, '', '   ']) {
     test('missing album cover ($cover) falls back to video', () async {
       await container
-          .read(favoritesViewModeLogicProvider.notifier)
+          .read(favoritesViewModeLogicProvider('collection-a').notifier)
           .setViewMode(FavoriteListViewMode.metadata);
-      container.read(favoriteEntryCoverUrlProvider(_entry));
+      container.read(favoriteEntryCoverUrlProvider('collection-a', _entry));
       metadata.complete(
         cover == null
             ? null
@@ -92,7 +103,7 @@ void main() {
       );
       await container.pump();
       expect(
-        container.read(favoriteEntryCoverUrlProvider(_entry)),
+        container.read(favoriteEntryCoverUrlProvider('collection-a', _entry)),
         _entry.coverUrl,
       );
     });
@@ -100,9 +111,9 @@ void main() {
 
   test('cache failure keeps the video cover', () async {
     await container
-        .read(favoritesViewModeLogicProvider.notifier)
+        .read(favoritesViewModeLogicProvider('collection-a').notifier)
         .setViewMode(FavoriteListViewMode.metadata);
-    container.read(favoriteEntryCoverUrlProvider(_entry));
+    container.read(favoriteEntryCoverUrlProvider('collection-a', _entry));
     final Future<Metadata?> result = container.read(
       favoriteEntryMetadataProvider(_entry.contentId).future,
     );
@@ -110,20 +121,48 @@ void main() {
     await expectLater(result, throwsStateError);
     await container.pump();
     expect(
-      container.read(favoriteEntryCoverUrlProvider(_entry)),
+      container.read(favoriteEntryCoverUrlProvider('collection-a', _entry)),
       _entry.coverUrl,
     );
   });
 
+  test('the same entry follows each collection view independently', () async {
+    final first = favoriteEntryCoverUrlProvider('collection-a', _entry);
+    final second = favoriteEntryCoverUrlProvider('collection-b', _entry);
+    container.listen(second, (_, _) {});
+    expect(container.read(first), _entry.coverUrl);
+    expect(container.read(second), _entry.coverUrl);
+
+    await container
+        .read(favoritesViewModeLogicProvider('collection-a').notifier)
+        .setViewMode(FavoriteListViewMode.metadata);
+    metadata.complete(
+      Metadata(
+        stableId: _entry.itemId,
+        albumArtUrl: 'https://example.com/album.jpg',
+      ),
+    );
+    await container.read(
+      favoriteEntryMetadataProvider(_entry.contentId).future,
+    );
+    await container.pump();
+
+    expect(container.read(first), 'https://example.com/album.jpg');
+    expect(container.read(second), _entry.coverUrl);
+  });
+
   test('empty collection keeps its placeholder without reading metadata', () {
-    expect(container.read(favoriteEntryCoverUrlProvider(null)), isNull);
+    expect(
+      container.read(favoriteEntryCoverUrlProvider('collection-a', null)),
+      isNull,
+    );
     expect(requestedMetadata, isFalse);
   });
 }
 
 class _ViewMode extends FavoritesViewModeLogic {
   @override
-  FavoriteListViewMode build() => FavoriteListViewMode.video;
+  FavoriteListViewMode build(String collectionId) => FavoriteListViewMode.video;
 
   @override
   Future<void> setViewMode(FavoriteListViewMode mode) async {

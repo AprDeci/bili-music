@@ -14,11 +14,16 @@ Future<Metadata?> favoriteEntryMetadata(Ref ref, String contentId) {
 }
 
 @riverpod
-String? favoriteEntryCoverUrl(Ref ref, FavoriteEntry? entry) {
+String? favoriteEntryCoverUrl(
+  Ref ref,
+  String collectionId,
+  FavoriteEntry? entry,
+) {
   if (entry == null) {
     return null;
   }
-  if (ref.watch(favoritesViewModeLogicProvider) == FavoriteListViewMode.video) {
+  if (ref.watch(favoritesViewModeLogicProvider(collectionId)) ==
+      FavoriteListViewMode.video) {
     return entry.coverUrl;
   }
   final String coverUrl =

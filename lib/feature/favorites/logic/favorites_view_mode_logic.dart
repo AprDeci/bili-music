@@ -19,14 +19,16 @@ enum FavoriteListViewMode {
 @riverpod
 class FavoritesViewModeLogic extends _$FavoritesViewModeLogic {
   @override
-  FavoriteListViewMode build() {
+  FavoriteListViewMode build(String collectionId) {
+    final AppSettingsStore settings = ref.read(appSettingsStoreProvider);
     return FavoriteListViewMode.fromStorage(
-      ref
-          .read(appSettingsStoreProvider)
-          .readString(
-            HiveKeys.favoritesListViewMode,
-            defaultValue: FavoriteListViewMode.video.name,
-          ),
+      settings.readString(
+        '${HiveKeys.favoritesListViewMode}.$collectionId',
+        defaultValue: settings.readString(
+          HiveKeys.favoritesListViewMode,
+          defaultValue: FavoriteListViewMode.video.name,
+        ),
+      ),
     );
   }
 
@@ -37,7 +39,10 @@ class FavoritesViewModeLogic extends _$FavoritesViewModeLogic {
     state = mode;
     await ref
         .read(appSettingsStoreProvider)
-        .writeString(HiveKeys.favoritesListViewMode, mode.name);
+        .writeString(
+          '${HiveKeys.favoritesListViewMode}.$collectionId',
+          mode.name,
+        );
   }
 
   Future<void> toggle() {

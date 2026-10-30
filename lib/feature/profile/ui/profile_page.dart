@@ -128,7 +128,9 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
               child: _PlaylistTile(
                 title: collection.name,
                 count: favoritesState.itemCountForCollection(collection.id),
-                coverUrl: ref.watch(favoriteEntryCoverUrlProvider(latestItem)),
+                coverUrl: ref.watch(
+                  favoriteEntryCoverUrlProvider(collection.id, latestItem),
+                ),
                 onTap: () =>
                     context.push('/profile/favorites/${collection.id}'),
                 onLongPressStart: (LongPressStartDetails details) {

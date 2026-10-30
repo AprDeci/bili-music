@@ -195,7 +195,10 @@ class _DesktopProfileSidebarState extends ConsumerState<DesktopProfileSidebar> {
                       return _SidebarListItem(
                         leading: _SidebarPlaylistCover(
                           coverUrl: ref.watch(
-                            favoriteEntryCoverUrlProvider(latestItem),
+                            favoriteEntryCoverUrlProvider(
+                              collection.id,
+                              latestItem,
+                            ),
                           ),
                         ),
                         title: collection.name,
