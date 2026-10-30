@@ -132,6 +132,19 @@ class _MobileShellScaffoldState extends ConsumerState<MobileShellScaffold> {
     final ColorScheme colorScheme = theme.colorScheme;
 
     return GlassTabBar.bottom(
+      settings: LiquidGlassSettings(
+        thickness: 14,
+        refractiveIndex: 1.15,
+        lightIntensity: 0.35,
+        fresnelStrength: 0.4,
+        chromaticAberration: 0.05,
+        blur: 3,
+        saturation: 0.7,
+        ambientStrength: 1,
+        glassColor:
+            GlassThemeData.of(context).settingsFor(context)?.glassColor ??
+            const LiquidGlassSettings().glassColor,
+      ),
       spacing: 4,
       verticalPadding: 0,
       barHeight: _bottomBarHeight,

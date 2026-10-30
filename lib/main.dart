@@ -62,7 +62,7 @@ void main() async {
   runApp(
     LiquidGlassWidgets.wrap(
       brightnessResolver: Theme.maybeBrightnessOf,
-      adaptiveQuality: true,
+      theme: GlassThemeData.simple(quality: GlassQuality.premium),
       child: UncontrolledProviderScope(
         container: container,
         child: _AppBootstrap(

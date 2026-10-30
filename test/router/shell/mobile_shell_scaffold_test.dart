@@ -100,6 +100,26 @@ void main() {
     }
   }
 
+  for (final Brightness brightness in Brightness.values) {
+    testWidgets('glass tint follows the $brightness theme', (tester) async {
+      await _pumpShell(tester, glass: true, brightness: brightness);
+      final BuildContext miniContext = tester.element(
+        find.byType(MiniPlayerGlassBar),
+      );
+      final LiquidGlassSettings miniSettings = InheritedLiquidGlass.ofOrDefault(
+        miniContext,
+      );
+      final LiquidGlassSettings tabSettings = tester
+          .widget<GlassTabBar>(find.byType(GlassTabBar))
+          .settings!;
+      expect(miniSettings.glassColor.a, greaterThan(0));
+      expect(tabSettings.glassColor, miniSettings.glassColor);
+      expect(tabSettings.thickness, 14);
+      expect(tabSettings.refractiveIndex, 1.15);
+      await _disposeShell(tester);
+    });
+  }
+
   testWidgets(
     'chrome and spacing follow routes, playback and player visibility',
     (WidgetTester tester) async {
@@ -182,6 +202,7 @@ double _spacerHeight(WidgetTester tester) =>
 Future<GoRouter> _pumpShell(
   WidgetTester tester, {
   bool glass = false,
+  Brightness brightness = Brightness.light,
   double inset = 0,
   double scale = 1,
 }) async {
@@ -232,6 +253,7 @@ Future<GoRouter> _pumpShell(
         ),
       ],
       child: MaterialApp.router(
+        theme: ThemeData(brightness: brightness),
         routerConfig: router,
         builder: (context, child) => MediaQuery(
           data: MediaQuery.of(
