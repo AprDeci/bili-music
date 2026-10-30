@@ -8,6 +8,7 @@ import 'package:bilimusic/feature/player/data/bili_player_repository.dart';
 import 'package:bilimusic/feature/player/domain/audio_stream_info.dart';
 import 'package:bilimusic/feature/player/domain/player_audio_quality_preference.dart';
 import 'package:bilimusic/feature/player/domain/playable_item.dart';
+import 'package:bilimusic/feature/player/domain/player_state.dart';
 import 'package:bilimusic/feature/player/logic/playback/player_playback_loader.dart';
 import 'package:bilimusic/feature/player/logic/playback/player_audio_engine.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -500,6 +501,190 @@ void main() {
     },
   );
 
+  for (final bool cacheHit in <bool>[true, false]) {
+    test(
+      'superseded cache ${cacheHit ? 'hit' : 'miss'} cannot open a source',
+      () async {
+        final _BlockingCache cache = _BlockingCache();
+        final _RecordingAudioEngine engine = _RecordingAudioEngine();
+        final List<PlayerStatusHint> hints = <PlayerStatusHint>[];
+        bool current = true;
+        final Future<Duration?> opening =
+            _loader(
+              repository: _RecordingRepository(_loadResult()),
+              cache: cache,
+              audioEngine: engine,
+              isOffline: () async => false,
+            ).setSourceForEntry(
+              entry: _sourceEntry(),
+              initialPosition: const Duration(seconds: 10),
+              onStatusHint: hints.add,
+              isCurrent: () => current,
+            );
+        await cache.lookupStarted.future;
+        current = false;
+        cache.lookup.complete(cacheHit ? File('old.audio') : null);
+
+        expect(await opening, isNull);
+        expect(hints, isEmpty);
+        expect(engine.filePaths, isEmpty);
+        expect(engine.remoteUris, isEmpty);
+        expect(engine.seekPositions, isEmpty);
+      },
+    );
+  }
+
+  test('cancelled failed file open cannot remove cache or fall back', () async {
+    final _BlockingCache cache = _BlockingCache();
+    final _RecordingAudioEngine engine = _RecordingAudioEngine()
+      ..fileOpen = Completer<Duration?>();
+    final List<PlayerStatusHint> hints = <PlayerStatusHint>[];
+    bool current = true;
+    final Future<Duration?> opening =
+        _loader(
+          repository: _RecordingRepository(_loadResult()),
+          cache: cache,
+          audioEngine: engine,
+          isOffline: () async => false,
+        ).setSourceForEntry(
+          entry: _sourceEntry(cachedFile: File('old.audio')),
+          initialPosition: const Duration(seconds: 10),
+          onStatusHint: hints.add,
+          isCurrent: () => current,
+        );
+    await engine.openStarted.future;
+    current = false;
+    engine.fileOpen!.completeError(StateError('superseded open'));
+
+    expect(await opening, isNull);
+    expect(hints, <PlayerStatusHint>[PlayerStatusHint.loadingCache]);
+    expect(cache.removeCalls, 0);
+    expect(engine.remoteUris, isEmpty);
+    expect(engine.seekPositions, isEmpty);
+  });
+
+  test('cancelled cache removal cannot open a fallback stream', () async {
+    final _BlockingCache cache = _BlockingCache()..removal = Completer<void>();
+    final _RecordingAudioEngine engine = _RecordingAudioEngine()
+      ..fileError = StateError('bad cache');
+    final List<PlayerStatusHint> hints = <PlayerStatusHint>[];
+    bool current = true;
+    final Future<Duration?> opening =
+        _loader(
+          repository: _RecordingRepository(_loadResult()),
+          cache: cache,
+          audioEngine: engine,
+          isOffline: () async => false,
+        ).setSourceForEntry(
+          entry: _sourceEntry(cachedFile: File('old.audio')),
+          initialPosition: Duration.zero,
+          onStatusHint: hints.add,
+          isCurrent: () => current,
+        );
+    await cache.removalStarted.future;
+    current = false;
+    cache.removal!.complete();
+
+    expect(await opening, isNull);
+    expect(hints, <PlayerStatusHint>[PlayerStatusHint.loadingCache]);
+    expect(engine.remoteUris, isEmpty);
+  });
+
+  for (final bool cached in <bool>[true, false]) {
+    test(
+      'superseded ${cached ? 'file' : 'remote'} open cannot seek newer source',
+      () async {
+        final _BlockingCache cache = _BlockingCache()..lookup.complete(null);
+        final _RecordingAudioEngine engine = _RecordingAudioEngine();
+        final Completer<Duration?> oldOpen = Completer<Duration?>();
+        if (cached) {
+          engine.fileOpen = oldOpen;
+        } else {
+          engine.remoteOpen = oldOpen;
+        }
+        final PlayerPlaybackLoader loader = _loader(
+          repository: _RecordingRepository(_loadResult()),
+          cache: cache,
+          audioEngine: engine,
+          isOffline: () async => false,
+        );
+        bool current = true;
+        final Future<Duration?> opening = loader.setSourceForEntry(
+          entry: _sourceEntry(cachedFile: cached ? File('old.audio') : null),
+          initialPosition: const Duration(seconds: 10),
+          onStatusHint: (_) {},
+          isCurrent: () => current,
+        );
+        await engine.openStarted.future;
+        expect(engine.initialPosition, isNull);
+        current = false;
+        engine.fileOpen = null;
+        engine.remoteOpen = null;
+        await loader.setSourceForEntry(
+          entry: _sourceEntry(cachedFile: File('new.audio')),
+          initialPosition: Duration.zero,
+          onStatusHint: (_) {},
+        );
+        oldOpen.complete(const Duration(seconds: 30));
+
+        expect(await opening, isNull);
+        expect(engine.filePaths.last, 'new.audio');
+        expect(engine.seekPositions, isEmpty);
+        expect(cache.cacheCalls, 0);
+      },
+    );
+  }
+
+  test('current guarded source seeks after open', () async {
+    final _RecordingAudioEngine engine = _RecordingAudioEngine();
+    final Duration? duration =
+        await _loader(
+          repository: _RecordingRepository(_loadResult()),
+          cache: _BlockingCache(),
+          audioEngine: engine,
+          isOffline: () async => false,
+        ).setSourceForEntry(
+          entry: _sourceEntry(cachedFile: File('current.audio')),
+          initialPosition: const Duration(seconds: 10),
+          onStatusHint: (_) {},
+          isCurrent: () => true,
+        );
+
+    expect(duration, const Duration(seconds: 1));
+    expect(engine.initialPosition, isNull);
+    expect(engine.seekPositions, <Duration>[const Duration(seconds: 10)]);
+  });
+
+  test('superseded duration wait cannot seek a newer source', () async {
+    final Completer<void> durationSubscribed = Completer<void>();
+    final StreamController<Duration?> durations = StreamController<Duration?>(
+      onListen: durationSubscribed.complete,
+    );
+    addTearDown(durations.close);
+    final _RecordingAudioEngine engine = _RecordingAudioEngine()
+      ..sourceDuration = null
+      ..durations = durations.stream;
+    bool current = true;
+    final Future<Duration?> opening =
+        _loader(
+          repository: _RecordingRepository(_loadResult()),
+          cache: _BlockingCache(),
+          audioEngine: engine,
+          isOffline: () async => false,
+        ).setSourceForEntry(
+          entry: _sourceEntry(cachedFile: File('old.audio')),
+          initialPosition: const Duration(seconds: 10),
+          onStatusHint: (_) {},
+          isCurrent: () => current,
+        );
+    await durationSubscribed.future;
+    current = false;
+    durations.add(const Duration(seconds: 30));
+
+    expect(await opening, isNull);
+    expect(engine.seekPositions, isEmpty);
+  });
+
   test('network failure without cache preserves the original error', () async {
     const SocketException error = SocketException('offline');
     final PlayerPlaybackLoader loader = _loader(
@@ -510,6 +695,13 @@ void main() {
     await expectLater(loader.resolveQueueEntry(_item()), throwsA(same(error)));
   });
 }
+
+ResolvedQueueEntry _sourceEntry({File? cachedFile}) => ResolvedQueueEntry(
+  item: _item(),
+  availableParts: const <PlayableItem>[],
+  audioStream: _stream(qualityId: 30232, bandwidth: 132000),
+  cachedFile: cachedFile,
+);
 
 PlayerPlaybackLoader _loader({
   required BiliPlayerRepository repository,
@@ -649,6 +841,20 @@ class _RecordingAudioEngine implements PlayerAudioEngine {
   final List<Uri> remoteUris = <Uri>[];
   Duration? initialPosition;
   Object? fileError;
+  Duration? sourceDuration = const Duration(seconds: 1);
+  Completer<Duration?>? fileOpen;
+  Completer<Duration?>? remoteOpen;
+  final Completer<void> openStarted = Completer<void>();
+  final List<Duration> seekPositions = <Duration>[];
+  Stream<Duration?> durations = const Stream<Duration?>.empty();
+
+  @override
+  Stream<Duration?> get durationStream => durations;
+
+  @override
+  Future<void> seek(Duration position) async {
+    seekPositions.add(position);
+  }
 
   @override
   Future<Duration?> setFileSource({
@@ -657,8 +863,9 @@ class _RecordingAudioEngine implements PlayerAudioEngine {
   }) async {
     filePaths.add(filePath);
     this.initialPosition = initialPosition;
+    if (!openStarted.isCompleted) openStarted.complete();
     if (fileError != null) throw fileError!;
-    return const Duration(seconds: 1);
+    return fileOpen?.future ?? sourceDuration;
   }
 
   @override
@@ -668,7 +875,49 @@ class _RecordingAudioEngine implements PlayerAudioEngine {
     Duration? initialPosition,
   }) async {
     remoteUris.add(uri);
-    return const Duration(seconds: 1);
+    this.initialPosition = initialPosition;
+    if (!openStarted.isCompleted) openStarted.complete();
+    return remoteOpen?.future ?? sourceDuration;
+  }
+
+  @override
+  noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+class _BlockingCache implements PlayerAudioCacheRepository {
+  final Completer<File?> lookup = Completer<File?>();
+  final Completer<void> lookupStarted = Completer<void>();
+  final Completer<void> removalStarted = Completer<void>();
+  Completer<void>? removal;
+  int removeCalls = 0;
+  int cacheCalls = 0;
+
+  @override
+  Future<File?> getCachedFile({
+    required PlayableItem item,
+    required AudioStreamInfo audioStream,
+  }) {
+    if (!lookupStarted.isCompleted) lookupStarted.complete();
+    return lookup.future;
+  }
+
+  @override
+  Future<void> removeCachedFile({
+    required PlayableItem item,
+    required AudioStreamInfo audioStream,
+  }) {
+    removeCalls++;
+    if (!removalStarted.isCompleted) removalStarted.complete();
+    return removal?.future ?? Future<void>.value();
+  }
+
+  @override
+  Future<File> cacheAudio({
+    required PlayableItem item,
+    required AudioStreamInfo audioStream,
+  }) async {
+    cacheCalls++;
+    return File('cached.audio');
   }
 
   @override

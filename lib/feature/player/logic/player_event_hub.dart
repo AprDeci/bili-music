@@ -14,7 +14,7 @@ PlayerEventHub playerEventHub(Ref ref) {
 
 class PlayerEventHub {
   final StreamController<PlayerEvent> _controller =
-      StreamController<PlayerEvent>.broadcast();
+      StreamController<PlayerEvent>.broadcast(sync: true);
 
   Stream<PlayerEvent> get events => _controller.stream;
 

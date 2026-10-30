@@ -7,6 +7,7 @@ import 'package:bilimusic/core/bili/session/bili_session_controller.dart';
 import 'package:bilimusic/core/hive/hive_keys.dart';
 import 'package:bilimusic/core/settings/app_settings_store.dart';
 import 'package:bilimusic/core/window/windows_taskbar_thumbnail_toolbar.dart';
+import 'package:bilimusic/feature/listening/logic/listening_progress_controller.dart';
 import 'package:bilimusic/feature/player/data/audio_cache_repository.dart';
 import 'package:bilimusic/feature/player/data/bili_player_repository.dart';
 import 'package:bilimusic/feature/player/data/player_queue_local_repository.dart';
@@ -77,6 +78,12 @@ class PlayerController extends Notifier<PlayerState>
   _EnginePlaybackSnapshot _enginePlaybackSnapshot =
       const _EnginePlaybackSnapshot();
 
+  ListeningProgressController? _listening;
+
+  void _suspendListening() {
+    unawaited(_listening?.suspend());
+  }
+
   bool _isBound = false;
   bool _isDisposed = false;
   bool _isAdvancingQueue = false;
@@ -143,6 +150,8 @@ class PlayerController extends Notifier<PlayerState>
       return;
     }
     _nextGeneration();
+    await _listening?.suspend();
+    await _listening?.flush();
     try {
       await _persistQueueSnapshot();
       await _audioEngine.stop();
@@ -187,6 +196,7 @@ class PlayerController extends Notifier<PlayerState>
 
   @override
   Future<void> pause() async {
+    _nextGeneration();
     _retryGeneration += 1;
     await _audioEngine.pause();
     if (state.isLoading) {
@@ -350,6 +360,7 @@ class PlayerController extends Notifier<PlayerState>
   @override
   Future<void> stop() async {
     final int generation = _nextGeneration();
+    _suspendListening();
     await _audioEngine.stop();
     if (!_isCurrentGeneration(generation)) {
       return;
@@ -378,6 +389,7 @@ class PlayerController extends Notifier<PlayerState>
     }
 
     final int generation = _nextGeneration();
+    _suspendListening();
     final PlayableItem startItem = items[startIndex.clamp(0, items.length - 1)];
     final List<PlayableItem> uniqueItems = _dedupeQueueItems(items);
     final int resolvedIndex = uniqueItems.indexWhere(
@@ -434,6 +446,7 @@ class PlayerController extends Notifier<PlayerState>
 
     final int currentIndex = state.currentQueueIndex!;
     final int generation = _nextGeneration();
+    _suspendListening();
     final List<PlayableItem> nextQueue = List<PlayableItem>.of(state.queue);
     final PlayableItem previousItem = nextQueue[currentIndex];
     _qualityOverrides.remove(previousItem.stableId);
@@ -577,6 +590,7 @@ class PlayerController extends Notifier<PlayerState>
     final int generation = _nextGeneration();
     final int? previousCurrentIndex = state.currentQueueIndex;
     final bool wasPlaying = state.isPlaying;
+    if (removal.removedCurrentItem) _suspendListening();
     final int? nextCurrentIndex = removal.nextCurrentIndex;
     state = state.copyWith(
       queue: List<PlayableItem>.unmodifiable(nextQueue),
@@ -621,6 +635,7 @@ class PlayerController extends Notifier<PlayerState>
 
   Future<void> clearQueue() async {
     _nextGeneration();
+    _suspendListening();
     _queueManager.resetForQueue(currentIndex: null);
     _qualityOverrides.clear();
     await _audioEngine.stop();
@@ -781,7 +796,9 @@ class PlayerController extends Notifier<PlayerState>
     state = state.copyWith(
       isPlaying: false,
       isBuffering: false,
-      position: Duration(milliseconds: snapshot.resumePositionMs),
+      position: restoredQueue[restoredIndex].isSpoken
+          ? state.position
+          : Duration(milliseconds: snapshot.resumePositionMs),
     );
     _publishPlaybackState();
     await _persistQueueSnapshot();
@@ -819,6 +836,7 @@ class PlayerController extends Notifier<PlayerState>
       },
     );
 
+    _suspendListening();
     _resetEnginePlaybackSnapshot(
       processingState: PlayerEngineProcessingState.loading,
     );
@@ -846,6 +864,9 @@ class PlayerController extends Notifier<PlayerState>
       }
 
       await _activateAudioSessionForPlayback();
+      if (!_isCurrentGeneration(effectiveGeneration)) {
+        return false;
+      }
       final ResolvedQueueEntry entry = await _playbackLoader.resolveQueueEntry(
         targetItem,
         preferredQualityId: _qualityOverrides[targetItem.stableId],
@@ -854,9 +875,25 @@ class PlayerController extends Notifier<PlayerState>
         return false;
       }
 
+      Duration startPosition = initialPosition;
+      if (entry.item.isSpoken) {
+        _listening ??= ref.read(listeningProgressControllerProvider.notifier);
+        startPosition = await _listening!.resumePosition(
+          entry.item,
+          fallback: initialPosition,
+          isCurrent: () => _isCurrentGeneration(effectiveGeneration),
+        );
+        if (!_isCurrentGeneration(effectiveGeneration)) return false;
+        final Duration? duration = entry.audioStream.duration;
+        if (startPosition < Duration.zero ||
+            (duration != null && startPosition >= duration)) {
+          startPosition = Duration.zero;
+        }
+      }
       final Duration? loadedDuration = await _playbackLoader.setSourceForEntry(
         entry: entry,
-        initialPosition: initialPosition,
+        initialPosition: startPosition,
+        isCurrent: () => _isCurrentGeneration(effectiveGeneration),
         onStatusHint: (PlayerStatusHint hint) {
           state = state.copyWith(statusHint: hint);
         },
@@ -870,6 +907,8 @@ class PlayerController extends Notifier<PlayerState>
         entry: entry,
         durationOverride: loadedDuration,
       );
+      state = state.copyWith(position: startPosition);
+      _listening?.begin(entry.item, startPosition, state.duration);
       if (entry.cachedFile != null) {
         unawaited(
           _completeCachedEntryParts(
@@ -1388,19 +1427,22 @@ class PlayerController extends Notifier<PlayerState>
     required _EnginePlaybackSnapshot next,
   }) {
     final PlayerEngineProcessingState processingState = next.processingState;
-    final bool isBuffering = processingState.isBuffering;
-    final bool isReady = processingState.isReady;
+    final bool hasAcceptedSource = current.audioStream != null;
+    final bool isBuffering =
+        processingState.isBuffering && (current.isLoading || hasAcceptedSource);
+    final bool isReady = processingState.isReady && hasAcceptedSource;
     final bool completed =
         processingState == PlayerEngineProcessingState.completed;
     final bool enteredCompleted =
         completed &&
         previous.processingState != PlayerEngineProcessingState.completed;
     // 只处理进入 completed 的瞬间，忽略停留在 completed 的旧快照。
-    final bool shouldHandleCompleted = enteredCompleted && !current.isLoading;
+    final bool shouldHandleCompleted =
+        enteredCompleted && !current.isLoading && hasAcceptedSource;
 
     return _EnginePlaybackReduction(
       nextState: current.copyWith(
-        isPlaying: next.playing,
+        isPlaying: next.playing && hasAcceptedSource,
         isBuffering: isBuffering,
         isReady: current.isLoading ? current.isReady : isReady,
         statusHint: current.hasError
@@ -1478,7 +1520,11 @@ class PlayerController extends Notifier<PlayerState>
 
   // 播放当前源。
   Future<void> _playCurrentSource() async {
+    final int generation = _operationGeneration;
     await _activateAudioSessionForPlayback();
+    if (!_isCurrentGeneration(generation)) {
+      return;
+    }
     await _audioEngine.play();
   }
 

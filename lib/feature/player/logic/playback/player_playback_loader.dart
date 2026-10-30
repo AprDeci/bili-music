@@ -69,7 +69,7 @@ class PlayerPlaybackLoader {
     final String partKey = item.cid == null || item.cid! <= 0
         ? ':page:${item.page ?? 1}'
         : '';
-    return '${item.stableId}$partKey:${preference.storageValue}:$overrideKey';
+    return '${item.stableId}$partKey:${preference.storageValue}:$overrideKey:${item.kind.name}:${item.collectionId ?? ''}';
   }
 
   Future<ResolvedQueueEntry> resolveQueueEntry(
@@ -302,8 +302,11 @@ class PlayerPlaybackLoader {
     required ResolvedQueueEntry entry,
     required Duration initialPosition,
     required void Function(PlayerStatusHint hint) onStatusHint,
+    bool Function()? isCurrent,
   }) async {
-    final Duration? effectiveInitialPosition = initialPosition > Duration.zero
+    if (!(isCurrent?.call() ?? true)) return null;
+    final Duration? effectiveInitialPosition =
+        isCurrent == null && initialPosition > Duration.zero
         ? initialPosition
         : null;
     File? cachedFile = entry.cachedFile;
@@ -311,6 +314,7 @@ class PlayerPlaybackLoader {
       item: entry.item,
       audioStream: entry.audioStream,
     );
+    if (!(isCurrent?.call() ?? true)) return null;
 
     if (cachedFile != null) {
       try {
@@ -322,11 +326,14 @@ class PlayerPlaybackLoader {
             'path': cachedFile.path,
           },
         );
-        return await _audioEngine.setFileSource(
+        if (!(isCurrent?.call() ?? true)) return null;
+        final Duration? duration = await _audioEngine.setFileSource(
           filePath: cachedFile.path,
           initialPosition: effectiveInitialPosition,
         );
+        return await _seekInitialPosition(duration, initialPosition, isCurrent);
       } on Object catch (error, stackTrace) {
+        if (!(isCurrent?.call() ?? true)) return null;
         _logEvent(
           'loadQueueIndex:cache-fallback',
           details: <String, Object?>{
@@ -338,17 +345,20 @@ class PlayerPlaybackLoader {
           item: entry.item,
           audioStream: entry.audioStream,
         );
+        if (!(isCurrent?.call() ?? true)) return null;
         if (entry.audioStream.streamUrl.isEmpty) {
           Error.throwWithStackTrace(error, stackTrace);
         }
       }
     }
 
+    if (!(isCurrent?.call() ?? true)) return null;
     onStatusHint(PlayerStatusHint.connectingStream);
     _logEvent(
       'loadQueueIndex:remote-source',
       details: <String, Object?>{'stableId': entry.item.stableId},
     );
+    if (!(isCurrent?.call() ?? true)) return null;
     final Duration? duration = await _audioEngine.setRemoteSource(
       uri: Uri.parse(entry.audioStream.streamUrl),
       headers: entry.audioStream.headers.isEmpty
@@ -356,7 +366,27 @@ class PlayerPlaybackLoader {
           : entry.audioStream.headers,
       initialPosition: effectiveInitialPosition,
     );
+    if (!(isCurrent?.call() ?? true)) return null;
     unawaited(_cacheEntry(entry));
+    return _seekInitialPosition(duration, initialPosition, isCurrent);
+  }
+
+  Future<Duration?> _seekInitialPosition(
+    Duration? duration,
+    Duration position,
+    bool Function()? isCurrent,
+  ) async {
+    if (!(isCurrent?.call() ?? true)) return null;
+    if (isCurrent == null || position <= Duration.zero) return duration;
+    if (duration == null || duration <= Duration.zero) {
+      duration = await _audioEngine.durationStream
+          .firstWhere(
+            (Duration? value) => value != null && value > Duration.zero,
+          )
+          .timeout(const Duration(seconds: 5), onTimeout: () => null);
+    }
+    if (!isCurrent()) return null;
+    await _audioEngine.seek(position);
     return duration;
   }
 
