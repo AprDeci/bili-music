@@ -1,3 +1,4 @@
+import 'package:bilimusic/common/components/cached_image.dart';
 import 'package:bilimusic/common/util/toast_util.dart';
 import 'package:bilimusic/common/components/status_view.dart';
 import 'package:bilimusic/feature/favorites/domain/favorite_collection.dart';
@@ -59,20 +60,29 @@ class _PlayerCollectionSheetState
     final List<FavoriteCollection> collections = _collectionsForSelectedTab(
       favoritesState,
     );
+    final ThemeData theme = Theme.of(context);
 
     return DraggableScrollableSheet(
       expand: false,
-      initialChildSize: 0.68,
-      minChildSize: 0.34,
+      initialChildSize: 0.5,
+      minChildSize: 0.28,
       maxChildSize: 0.9,
       builder: (BuildContext context, ScrollController scrollController) {
         return Column(
           children: <Widget>[
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 4),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
+                  Text(
+                    '添加 ${widget.items.length} 首到歌单',
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
                   Row(
                     children: <Widget>[
                       _CollectionTabButton(
@@ -101,9 +111,9 @@ class _PlayerCollectionSheetState
                     )
                   : ListView.separated(
                       controller: scrollController,
-                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+                      padding: const EdgeInsets.only(bottom: 24),
+                      separatorBuilder: (_, _) => const SizedBox(height: 8),
                       itemCount: collections.length,
-                      separatorBuilder: (_, _) => const SizedBox(height: 10),
                       itemBuilder: (BuildContext context, int index) {
                         final FavoriteCollection collection =
                             collections[index];
@@ -120,9 +130,22 @@ class _PlayerCollectionSheetState
                           collection.id,
                         );
 
+                        final String coverUrl =
+                            collection.coverUrl?.trim() ?? '';
                         return _CollectionTile(
                           collection: collection,
-                          count: count,
+                          coverUrl: coverUrl.isNotEmpty
+                              ? coverUrl
+                              : favoritesState
+                                    .itemsForCollection(collection.id)
+                                    .map((entry) => entry.coverUrl.trim())
+                                    .firstWhere(
+                                      (String url) => url.isNotEmpty,
+                                      orElse: () => '',
+                                    ),
+                          count: collection.isRemote
+                              ? collection.itemCount
+                              : count,
                           addedItemCount: addedItemCount,
                           totalItemCount: widget.items.length,
                           onTap: () => _handleCollectionTap(
@@ -169,8 +192,6 @@ class _PlayerCollectionSheetState
     required BuildContext context,
     required FavoriteCollection collection,
   }) async {
-    Navigator.of(context).pop(true);
-
     final FavoritesState favoritesState = ref.read(favoritesControllerProvider);
     final List<PlayableItem> itemsToAdd = widget.items
         .where(
@@ -180,6 +201,12 @@ class _PlayerCollectionSheetState
           ),
         )
         .toList(growable: false);
+    if (itemsToAdd.isEmpty) {
+      ToastUtil.showCenter('已经添加过了', icon: Icons.error_outline_rounded);
+      return;
+    }
+    Navigator.of(context).pop(true);
+
     int addedCount = 0;
     for (final PlayableItem item in itemsToAdd) {
       final bool added = await ref
@@ -215,18 +242,23 @@ class _CollectionTabButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8),
-        child: Text(
-          label,
-          style: theme.textTheme.titleMedium?.copyWith(
-            color: selected
-                ? Colors.black
-                : Colors.black.withValues(alpha: 0.45),
-            fontWeight: selected ? FontWeight.w900 : FontWeight.w600,
+    return Semantics(
+      selected: selected,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(4),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: 48),
+          child: Center(
+            child: Text(
+              label,
+              style: theme.textTheme.titleSmall?.copyWith(
+                color: selected
+                    ? theme.colorScheme.primary
+                    : theme.colorScheme.onSurfaceVariant,
+                fontWeight: selected ? FontWeight.w600 : FontWeight.normal,
+              ),
+            ),
           ),
         ),
       ),
@@ -237,6 +269,7 @@ class _CollectionTabButton extends StatelessWidget {
 class _CollectionTile extends StatelessWidget {
   const _CollectionTile({
     required this.collection,
+    required this.coverUrl,
     required this.count,
     required this.addedItemCount,
     required this.totalItemCount,
@@ -244,6 +277,7 @@ class _CollectionTile extends StatelessWidget {
   });
 
   final FavoriteCollection collection;
+  final String coverUrl;
   final int count;
   final int addedItemCount;
   final int totalItemCount;
@@ -255,63 +289,55 @@ class _CollectionTile extends StatelessWidget {
     final ColorScheme colorScheme = theme.colorScheme;
     final bool allAdded = addedItemCount == totalItemCount;
     return Material(
-      color: allAdded
-          ? colorScheme.primary.withValues(alpha: 0.1)
-          : colorScheme.surfaceContainerHighest.withValues(alpha: 0.45),
-      borderRadius: BorderRadius.circular(8),
+      color: Colors.transparent,
       child: InkWell(
-        borderRadius: BorderRadius.circular(8),
-        onTap: allAdded ? null : onTap,
+        onTap: onTap,
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-          child: Row(
-            children: <Widget>[
-              CircleAvatar(
-                radius: 22,
-                backgroundColor: allAdded
-                    ? colorScheme.primary
-                    : colorScheme.primary.withValues(alpha: 0.12),
-                foregroundColor: allAdded
-                    ? colorScheme.onPrimary
-                    : colorScheme.primary,
-                child: Icon(
-                  collection.isRemote
-                      ? Icons.cloud_outlined
-                      : Icons.folder_open_rounded,
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+          child: ColorFiltered(
+            colorFilter: ColorFilter.mode(
+              Colors.grey.withValues(alpha: allAdded ? 0.5 : 0),
+              BlendMode.srcATop,
+            ),
+            child: Row(
+              children: <Widget>[
+                CommonCachedImage(
+                  imageUrl: coverUrl,
+                  width: 48,
+                  height: 48,
+                  borderRadius: BorderRadius.circular(4),
+                  backgroundColor: colorScheme.surfaceContainerHighest,
+                  iconColor: colorScheme.onSurfaceVariant.withValues(
+                    alpha: 0.45,
+                  ),
+                  fallbackIcon: Icons.library_music_outlined,
+                  iconSize: 24,
                 ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    Text(
-                      collection.name,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w800,
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Text(
+                        collection.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      '$count 首 · 已添加 $addedItemCount / $totalItemCount 项',
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: colorScheme.onSurface.withValues(alpha: 0.64),
+                      const SizedBox(height: 2),
+                      Text(
+                        '$count 首',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-              Icon(
-                allAdded
-                    ? Icons.check_circle_rounded
-                    : Icons.add_circle_outline_rounded,
-                color: allAdded
-                    ? colorScheme.primary
-                    : colorScheme.onSurface.withValues(alpha: 0.7),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
