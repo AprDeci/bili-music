@@ -173,9 +173,13 @@ class _PlayerQueueContentState extends ConsumerState<_PlayerQueueContent> {
               final bool isCurrent = liveState.currentQueueIndex == index;
               final String partTitle = queuedItem.pageTitle?.trim() ?? '';
               final int page = queuedItem.page ?? 1;
-              final String subtitle = partTitle.isEmpty
-                  ? queuedItem.author
-                  : 'P$page · $partTitle';
+              final String title = partTitle.isEmpty
+                  ? queuedItem.title
+                  : partTitle;
+              final String subtitle =
+                  partTitle.isEmpty || partTitle == queuedItem.title.trim()
+                  ? queuedItem.author.trim()
+                  : queuedItem.title.trim();
 
               return AutoScrollTag(
                 key: ValueKey<String>('queue-${queuedItem.stableId}'),
@@ -183,7 +187,7 @@ class _PlayerQueueContentState extends ConsumerState<_PlayerQueueContent> {
                 index: index,
                 child: Padding(
                   padding: EdgeInsets.only(
-                    bottom: index == liveState.queue.length - 1 ? 0 : 10,
+                    bottom: index == liveState.queue.length - 1 ? 0 : 6,
                   ),
                   child: Material(
                     color: isCurrent
@@ -199,50 +203,62 @@ class _PlayerQueueContentState extends ConsumerState<_PlayerQueueContent> {
                         await liveController.skipToQueueIndex(index);
                       },
                       child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 14,
-                          vertical: 10,
-                        ),
+                        padding: const EdgeInsets.fromLTRB(10, 6, 0, 6),
                         child: Row(
                           children: <Widget>[
-                            CircleAvatar(
-                              radius: 18,
-                              backgroundColor: isCurrent
-                                  ? colorScheme.primary
-                                  : colorScheme.primary.withValues(alpha: 0.12),
-                              foregroundColor: isCurrent
-                                  ? colorScheme.onPrimary
-                                  : colorScheme.primary,
-                              child: Text('${index + 1}'),
+                            SizedBox(
+                              width: 28,
+                              child: CircleAvatar(
+                                radius: 14,
+                                backgroundColor: isCurrent
+                                    ? colorScheme.primary
+                                    : Colors.transparent,
+                                foregroundColor: isCurrent
+                                    ? colorScheme.onPrimary
+                                    : colorScheme.onSurfaceVariant,
+                                child: Text(
+                                  '${index + 1}',
+                                  style: theme.textTheme.labelMedium?.copyWith(
+                                    color: isCurrent
+                                        ? colorScheme.onPrimary
+                                        : colorScheme.onSurfaceVariant,
+                                  ),
+                                ),
+                              ),
                             ),
-                            const SizedBox(width: 12),
+                            const SizedBox(width: 8),
                             Expanded(
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: <Widget>[
                                   Text(
-                                    queuedItem.title,
+                                    title,
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                     style: theme.textTheme.titleSmall?.copyWith(
-                                      fontWeight: FontWeight.w800,
+                                      fontWeight: FontWeight.w600,
                                     ),
                                   ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    subtitle,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: theme.textTheme.bodySmall?.copyWith(
-                                      color: colorScheme.onSurface.withValues(
-                                        alpha: 0.64,
-                                      ),
+                                  if (subtitle.isNotEmpty) ...<Widget>[
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      subtitle,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: theme.textTheme.bodySmall
+                                          ?.copyWith(
+                                            color: colorScheme.onSurfaceVariant,
+                                          ),
                                     ),
-                                  ),
+                                  ],
                                 ],
                               ),
                             ),
                             IconButton(
+                              constraints: const BoxConstraints.tightFor(
+                                width: 48,
+                                height: 48,
+                              ),
                               tooltip: '移出队列',
                               onPressed: () async {
                                 await liveController.removeQueueItemAt(index);
@@ -263,11 +279,17 @@ class _PlayerQueueContentState extends ConsumerState<_PlayerQueueContent> {
                             ),
                             ReorderableDragStartListener(
                               index: index,
-                              child: const Padding(
-                                padding: EdgeInsets.all(8),
-                                child: HugeIcon(
-                                  icon: HugeIcons.strokeRoundedMenu09,
-                                  size: 16,
+                              child: const Tooltip(
+                                message: '拖动排序',
+                                child: SizedBox(
+                                  width: 48,
+                                  height: 48,
+                                  child: Center(
+                                    child: HugeIcon(
+                                      icon: HugeIcons.strokeRoundedMenu09,
+                                      size: 16,
+                                    ),
+                                  ),
                                 ),
                               ),
                             ),
