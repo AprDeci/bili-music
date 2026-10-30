@@ -3,6 +3,7 @@ import 'package:bilimusic/common/components/bottom_page_spacer.dart';
 import 'package:bilimusic/common/components/cached_image.dart';
 import 'package:bilimusic/common/components/login_required.dart';
 import 'package:bilimusic/common/components/search_bar.dart';
+import 'package:bilimusic/common/domain/collection_kind.dart';
 import 'package:bilimusic/common/util/toast_util.dart';
 import 'package:bilimusic/core/bili/session/bili_auth_required_exception.dart';
 import 'package:bilimusic/core/bili/session/bili_session.dart';
@@ -105,6 +106,11 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
             onLikedTap: () => context.push(
               '/profile/favorites/${FavoriteCollection.likedCollectionId}',
             ),
+            onLikedLongPressStart: (LongPressStartDetails details) =>
+                _showCollectionActionMenu(
+                  details: details,
+                  collection: favoritesState.likedCollection,
+                ),
             onFavoriteUpTap: () => context.push('/profile/favorite-ups'),
           ),
           const SizedBox(height: 16),
@@ -394,14 +400,24 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
       context: context,
       position: position,
       items: <PopupMenuEntry<_CollectionAction>>[
-        PopupMenuItem<_CollectionAction>(
-          value: _CollectionAction.rename,
-          child: ListTile(
-            leading: Icon(Icons.drive_file_rename_outline_rounded),
-            title: Text('重命名'),
-            contentPadding: EdgeInsets.zero,
+        for (final CollectionKind kind in CollectionKind.values)
+          CheckedPopupMenuItem<_CollectionAction>(
+            value: kind == CollectionKind.music
+                ? _CollectionAction.music
+                : _CollectionAction.spoken,
+            checked: collection.kind == kind,
+            child: Text(kind.label),
           ),
-        ),
+        if (!collection.isSystem) const PopupMenuDivider(),
+        if (!collection.isSystem)
+          PopupMenuItem<_CollectionAction>(
+            value: _CollectionAction.rename,
+            child: ListTile(
+              leading: Icon(Icons.drive_file_rename_outline_rounded),
+              title: Text('重命名'),
+              contentPadding: EdgeInsets.zero,
+            ),
+          ),
         if (collection.isRemote)
           PopupMenuItem<_CollectionAction>(
             value: _CollectionAction.remove,
@@ -411,14 +427,15 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
               contentPadding: EdgeInsets.zero,
             ),
           ),
-        PopupMenuItem<_CollectionAction>(
-          value: _CollectionAction.delete,
-          child: ListTile(
-            leading: Icon(Icons.delete_outline_rounded),
-            title: Text('删除'),
-            contentPadding: EdgeInsets.zero,
+        if (!collection.isSystem)
+          PopupMenuItem<_CollectionAction>(
+            value: _CollectionAction.delete,
+            child: ListTile(
+              leading: Icon(Icons.delete_outline_rounded),
+              title: Text('删除'),
+              contentPadding: EdgeInsets.zero,
+            ),
           ),
-        ),
       ],
     );
 
@@ -427,6 +444,20 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
     }
 
     switch (action) {
+      case _CollectionAction.music:
+      case _CollectionAction.spoken:
+        try {
+          await ref
+              .read(favoritesControllerProvider.notifier)
+              .setCollectionKind(
+                collectionId: collection.id,
+                kind: action == _CollectionAction.music
+                    ? CollectionKind.music
+                    : CollectionKind.spoken,
+              );
+        } on Object {
+          _showMessage('类型保存失败，请重试');
+        }
       case _CollectionAction.rename:
         await _showRenameCollectionDialog(collection);
       case _CollectionAction.delete:
@@ -604,7 +635,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
   }
 }
 
-enum _CollectionAction { rename, delete, remove }
+enum _CollectionAction { music, spoken, rename, delete, remove }
 
 enum _FavoriteListTab { remote, local }
 
@@ -674,12 +705,14 @@ class _ProfileQuickActions extends StatelessWidget {
     required this.likedCount,
     required this.favoriteUpCount,
     required this.onLikedTap,
+    required this.onLikedLongPressStart,
     required this.onFavoriteUpTap,
   });
 
   final int likedCount;
   final int favoriteUpCount;
   final VoidCallback onLikedTap;
+  final GestureLongPressStartCallback onLikedLongPressStart;
   final VoidCallback onFavoriteUpTap;
 
   @override
@@ -692,6 +725,7 @@ class _ProfileQuickActions extends StatelessWidget {
             title: '收藏',
             count: likedCount,
             onTap: onLikedTap,
+            onLongPressStart: onLikedLongPressStart,
           ),
         ),
         const SizedBox(width: 12),
@@ -724,6 +758,7 @@ class _ProfileQuickActionCard extends StatelessWidget {
     required this.count,
     this.enabled = true,
     this.onTap,
+    this.onLongPressStart,
   });
 
   final IconData icon;
@@ -731,6 +766,7 @@ class _ProfileQuickActionCard extends StatelessWidget {
   final int count;
   final bool enabled;
   final VoidCallback? onTap;
+  final GestureLongPressStartCallback? onLongPressStart;
 
   @override
   Widget build(BuildContext context) {
@@ -740,35 +776,38 @@ class _ProfileQuickActionCard extends StatelessWidget {
         ? colorScheme.primary
         : colorScheme.outline.withValues(alpha: 0.7);
 
-    return InkWell(
-      borderRadius: BorderRadius.circular(16),
-      onTap: enabled ? onTap : null,
-      hoverColor: Colors.transparent,
-      splashFactory: NoSplash.splashFactory,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8),
-        child: Column(
-          children: <Widget>[
-            Icon(icon, color: accentColor, size: 26),
-            const SizedBox(height: 4),
-            Text(
-              title,
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w700,
-                color: enabled ? colorScheme.onSurface : colorScheme.outline,
+    return GestureDetector(
+      onLongPressStart: enabled ? onLongPressStart : null,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: enabled ? onTap : null,
+        hoverColor: Colors.transparent,
+        splashFactory: NoSplash.splashFactory,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          child: Column(
+            children: <Widget>[
+              Icon(icon, color: accentColor, size: 26),
+              const SizedBox(height: 4),
+              Text(
+                title,
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: enabled ? colorScheme.onSurface : colorScheme.outline,
+                ),
               ),
-            ),
-            const SizedBox(height: 2),
-            Text(
-              '$count',
-              style: theme.textTheme.bodyLarge?.copyWith(
-                color: enabled
-                    ? colorScheme.onSurfaceVariant
-                    : colorScheme.outline,
-                fontWeight: FontWeight.w500,
+              const SizedBox(height: 2),
+              Text(
+                '$count',
+                style: theme.textTheme.bodyLarge?.copyWith(
+                  color: enabled
+                      ? colorScheme.onSurfaceVariant
+                      : colorScheme.outline,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

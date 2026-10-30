@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:bilimusic/common/components/bottom_page_spacer.dart';
 import 'package:bilimusic/common/components/cached_image.dart';
 import 'package:bilimusic/common/components/status_view.dart';
+import 'package:bilimusic/common/domain/collection_kind.dart';
 import 'package:bilimusic/common/logger.dart';
 import 'package:bilimusic/common/util/player_util.dart';
 import 'package:bilimusic/common/util/toast_util.dart';
@@ -13,11 +14,14 @@ import 'package:bilimusic/feature/favorites/logic/favorite_entry_search.dart';
 import 'package:bilimusic/feature/favorites/logic/favorites_controller.dart';
 import 'package:bilimusic/feature/favorites/logic/favorites_view_mode_logic.dart';
 import 'package:bilimusic/feature/favorites/ui/components/favorite_collection_items_list.dart';
+import 'package:bilimusic/feature/favorites/ui/components/favorite_collection_kind_selector.dart';
+import 'package:bilimusic/feature/favorites/ui/components/favorite_collection_playable_item.dart';
 import 'package:bilimusic/feature/favorites/ui/components/favorite_collection_search_field.dart';
 import 'package:bilimusic/feature/favorites/ui/components/favorite_entry_subtitle.dart';
 import 'package:bilimusic/feature/favorites/ui/components/favorited_seasons_list.dart';
 import 'package:bilimusic/feature/favorites/ui/components/favorites_metadata_toolbar_buttons.dart';
 import 'package:bilimusic/feature/favorites/ui/components/remote_collection_sync_status_bar.dart';
+import 'package:bilimusic/feature/listening/ui/listening_continue_button.dart';
 import 'package:bilimusic/feature/player/domain/playable_item.dart';
 import 'package:bilimusic/feature/player/logic/player_controller.dart';
 import 'package:bilimusic/feature/player/ui/components/player_collection_sheet.dart';
@@ -264,9 +268,15 @@ class _FavoriteCollectionPageState
         .toList(growable: false);
   }
 
-  Future<void> _addSelectedItems(List<FavoriteEntry> items) async {
+  Future<void> _addSelectedItems(
+    FavoriteCollection collection,
+    List<FavoriteEntry> items,
+  ) async {
     final List<PlayableItem> selectedItems = _selectedItems(items)
-        .map((FavoriteEntry item) => item.toPlayableItem())
+        .map(
+          (FavoriteEntry item) =>
+              favoriteCollectionPlayableItem(item, collection),
+        )
         .toList(growable: false);
     if (selectedItems.isEmpty) {
       return;
@@ -356,7 +366,10 @@ class _FavoriteCollectionPageState
       _searchQuery,
     );
     final List<PlayableItem> queueItems = visibleItems
-        .map((FavoriteEntry item) => item.toPlayableItem())
+        .map(
+          (FavoriteEntry item) =>
+              favoriteCollectionPlayableItem(item, resolvedCollection),
+        )
         .toList(growable: false);
     return _buildPage(
       collection: resolvedCollection,
@@ -396,10 +409,10 @@ class _FavoriteCollectionPageState
         appBar: AppBar(
           title: Text(collection.name),
           bottom: showLikedTabs
-              ? const TabBar(
+              ? TabBar(
                   tabs: <Widget>[
-                    Tab(text: '歌曲'),
-                    Tab(text: '合集'),
+                    Tab(text: collection.kind.label),
+                    const Tab(text: '合集'),
                   ],
                 )
               : null,
@@ -425,6 +438,7 @@ class _FavoriteCollectionPageState
     return Column(
       children: <Widget>[
         RemoteCollectionSyncStatusBar(status: _remoteSyncStatus),
+        _buildItemsToolbar(collection, visibleItems, queueItems),
         Expanded(
           child: _buildCollectionItemsContent(
             collection,
@@ -459,36 +473,22 @@ class _FavoriteCollectionPageState
         Theme.of(context).colorScheme.primary,
       );
     }
-    return _buildItemsContent(collection, visibleItems, queueItems);
-  }
-
-  Widget _buildItemsContent(
-    FavoriteCollection collection,
-    List<FavoriteEntry> visibleItems,
-    List<PlayableItem> queueItems,
-  ) {
-    return Column(
-      children: <Widget>[
-        _buildItemsToolbar(collection, visibleItems),
-        Expanded(
-          child: visibleItems.isEmpty
-              ? _buildSearchEmptyState(context, collection.isRemote)
-              : _buildItemsList(collection, visibleItems, queueItems),
-        ),
-      ],
-    );
+    return visibleItems.isEmpty
+        ? _buildSearchEmptyState(context, collection.isRemote)
+        : _buildItemsList(collection, visibleItems, queueItems);
   }
 
   Widget _buildItemsToolbar(
     FavoriteCollection collection,
     List<FavoriteEntry> visibleItems,
+    List<PlayableItem> queueItems,
   ) {
     if (_selectionMode) {
       return Padding(
         padding: const EdgeInsets.fromLTRB(14, 10, 14, 8),
         child: _FavoriteBatchActionBar(
           selectedCount: _selectedItemIds.length,
-          onAdd: () => _addSelectedItems(visibleItems),
+          onAdd: () => _addSelectedItems(collection, visibleItems),
           onDelete: () =>
               _deleteSelectedItems(collection: collection, items: visibleItems),
           onExit: () => _setSelectionMode(false),
@@ -496,31 +496,50 @@ class _FavoriteCollectionPageState
       );
     }
 
-    final FavoriteListViewMode viewMode = ref.watch(
-      favoritesViewModeLogicProvider(collection.id),
-    );
-
+    final bool isSpoken = collection.kind == CollectionKind.spoken;
     return Padding(
       padding: const EdgeInsets.fromLTRB(14, 10, 14, 8),
-      child: Row(
+      child: Column(
         children: <Widget>[
-          Expanded(
-            child: FavoriteCollectionSearchField(
-              controller: _searchController,
-              query: _searchQuery,
-              onChanged: _updateSearchQuery,
-              onClear: _clearSearchQuery,
-            ),
+          FavoriteCollectionSearchField(
+            controller: _searchController,
+            query: _searchQuery,
+            onChanged: _updateSearchQuery,
+            onClear: _clearSearchQuery,
           ),
-          const SizedBox(width: 6),
-          MetadataViewModeButton(
-            viewMode: viewMode,
-            onPressed: () => ref
-                .read(favoritesViewModeLogicProvider(collection.id).notifier)
-                .toggle(),
+          const SizedBox(height: 4),
+          Row(
+            children: <Widget>[
+              FavoriteCollectionKindSelector(collection: collection),
+              const Spacer(),
+              if (isSpoken)
+                ListeningContinueButton(
+                  items: queueItems,
+                  onPlay: (List<PlayableItem> items, int startIndex) =>
+                      PlayerUtil.playQueueAndOpenPlayer(
+                        context,
+                        ref,
+                        items: items,
+                        startIndex: startIndex,
+                        sourceLabel: collection.name,
+                      ),
+                )
+              else if (visibleItems.isNotEmpty) ...<Widget>[
+                MetadataViewModeButton(
+                  viewMode: ref.watch(
+                    favoritesViewModeLogicProvider(collection.id),
+                  ),
+                  onPressed: () => ref
+                      .read(
+                        favoritesViewModeLogicProvider(collection.id).notifier,
+                      )
+                      .toggle(),
+                ),
+                const SizedBox(width: 2),
+                MetadataBackfillButton(entries: visibleItems),
+              ],
+            ],
           ),
-          const SizedBox(width: 2),
-          MetadataBackfillButton(entries: visibleItems),
         ],
       ),
     );
@@ -539,7 +558,9 @@ class _FavoriteCollectionPageState
       selectionMode: _selectionMode,
       onSelectionModeChanged: _setSelectionMode,
       onSelectionChanged: _setSelectedItemIds,
-      viewMode: ref.watch(favoritesViewModeLogicProvider(collection.id)),
+      viewMode: collection.kind == CollectionKind.spoken
+          ? FavoriteListViewMode.video
+          : ref.watch(favoritesViewModeLogicProvider(collection.id)),
       onRefresh: collection.isRemote
           ? _refreshRemoteCollectionItemsForce
           : null,
@@ -547,7 +568,7 @@ class _FavoriteCollectionPageState
         await _playCollectionItem(
           context,
           ref,
-          collectionName: collection.name,
+          collection: collection,
           queueItems: queueItems,
           item: item,
           index: itemIndex,
@@ -557,7 +578,7 @@ class _FavoriteCollectionPageState
         await _playCollectionItem(
           context,
           ref,
-          collectionName: collection.name,
+          collection: collection,
           queueItems: queueItems,
           item: item,
           index: itemIndex,
@@ -632,12 +653,15 @@ class _FavoriteCollectionPageState
   Future<void> _playCollectionItem(
     BuildContext context,
     WidgetRef ref, {
-    required String collectionName,
+    required FavoriteCollection collection,
     required List<PlayableItem> queueItems,
     required FavoriteEntry item,
     required int index,
   }) async {
-    final PlayableItem playableItem = item.toPlayableItem();
+    final PlayableItem playableItem = favoriteCollectionPlayableItem(
+      item,
+      collection,
+    );
     final int stableIndex = queueItems.indexWhere(
       (PlayableItem candidate) =>
           candidate.stableId == playableItem.stableId ||
@@ -650,7 +674,7 @@ class _FavoriteCollectionPageState
       return;
     }
     FavoriteCollectionPage._logger.d(
-      '[FavoriteDebug] tapPlay | collection=$collectionName, '
+      '[FavoriteDebug] tapPlay | collection=${collection.name}, '
       'index=$index, queueLength=${queueItems.length}, '
       'itemStableId=${queueItems[index].stableId}, '
       'itemTitle=${queueItems[index].title}',
@@ -663,7 +687,7 @@ class _FavoriteCollectionPageState
       ref,
       items: queueItems,
       startIndex: index,
-      sourceLabel: collectionName,
+      sourceLabel: collection.name,
     );
   }
 
@@ -675,7 +699,10 @@ class _FavoriteCollectionPageState
   }) async {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
-    final PlayableItem playableItem = item.toPlayableItem();
+    final PlayableItem playableItem = favoriteCollectionPlayableItem(
+      item,
+      collection,
+    );
 
     await showModalBottomSheet<void>(
       useRootNavigator: true,

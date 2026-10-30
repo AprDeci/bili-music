@@ -4,6 +4,7 @@ import 'package:bilimusic/common/components/cached_avatar.dart';
 import 'package:bilimusic/common/components/cached_image.dart';
 import 'package:bilimusic/common/components/common_attach_menu.dart';
 import 'package:bilimusic/common/components/login_required.dart';
+import 'package:bilimusic/common/domain/collection_kind.dart';
 import 'package:bilimusic/common/util/toast_util.dart';
 import 'package:bilimusic/core/bili/session/bili_auth_required_exception.dart';
 import 'package:bilimusic/core/bili/session/bili_session.dart';
@@ -138,6 +139,13 @@ class _DesktopProfileSidebarState extends ConsumerState<DesktopProfileSidebar> {
             onTap: () => context.go(
               '/profile/favorites/${FavoriteCollection.likedCollectionId}',
             ),
+            onSecondaryTapDown: (TapDownDetails details) =>
+                _showCollectionContextMenu(
+                  context: context,
+                  ref: ref,
+                  collection: favoritesState.likedCollection,
+                  globalPosition: details.globalPosition,
+                ),
           ),
           const SizedBox(height: 8),
           _SidebarListItem(
@@ -490,11 +498,23 @@ class _DesktopProfileSidebarState extends ConsumerState<DesktopProfileSidebar> {
               child: CommonAttachMenu<_CollectionAction>(
                 itemHeight: 40,
                 items: <CommonAttachMenuItem<_CollectionAction>>[
-                  const CommonAttachMenuItem<_CollectionAction>(
-                    value: _CollectionAction.rename,
-                    label: '重命名',
-                    icon: SizedBox.shrink(),
-                  ),
+                  for (final CollectionKind kind in CollectionKind.values)
+                    CommonAttachMenuItem<_CollectionAction>(
+                      value: kind == CollectionKind.music
+                          ? _CollectionAction.music
+                          : _CollectionAction.spoken,
+                      label: kind.label,
+                      icon: kind == CollectionKind.music
+                          ? Icons.music_note_rounded
+                          : Icons.headphones_rounded,
+                      selected: collection.kind == kind,
+                    ),
+                  if (!collection.isSystem)
+                    const CommonAttachMenuItem<_CollectionAction>(
+                      value: _CollectionAction.rename,
+                      label: '重命名',
+                      icon: SizedBox.shrink(),
+                    ),
                   if (collection.isRemote)
                     const CommonAttachMenuItem<_CollectionAction>(
                       value: _CollectionAction.sync,
@@ -507,14 +527,29 @@ class _DesktopProfileSidebarState extends ConsumerState<DesktopProfileSidebar> {
                       label: '移除',
                       icon: Icons.remove_circle_outline_rounded,
                     ),
-                  const CommonAttachMenuItem<_CollectionAction>(
-                    value: _CollectionAction.delete,
-                    label: '删除',
-                    icon: Icons.delete_outline_rounded,
-                  ),
+                  if (!collection.isSystem)
+                    const CommonAttachMenuItem<_CollectionAction>(
+                      value: _CollectionAction.delete,
+                      label: '删除',
+                      icon: Icons.delete_outline_rounded,
+                    ),
                 ],
                 onSelected: (_CollectionAction action) async {
                   switch (action) {
+                    case _CollectionAction.music:
+                    case _CollectionAction.spoken:
+                      try {
+                        await ref
+                            .read(favoritesControllerProvider.notifier)
+                            .setCollectionKind(
+                              collectionId: collection.id,
+                              kind: action == _CollectionAction.music
+                                  ? CollectionKind.music
+                                  : CollectionKind.spoken,
+                            );
+                      } on Object {
+                        ToastUtil.show('类型保存失败，请重试');
+                      }
                     case _CollectionAction.rename:
                       await _showRenameCollectionDialog(
                         sidebarContext,
@@ -717,7 +752,7 @@ class _DesktopProfileSidebarState extends ConsumerState<DesktopProfileSidebar> {
   }
 }
 
-enum _CollectionAction { rename, delete, remove, sync }
+enum _CollectionAction { music, spoken, rename, delete, remove, sync }
 
 enum _FavoriteListTab { remote, local }
 

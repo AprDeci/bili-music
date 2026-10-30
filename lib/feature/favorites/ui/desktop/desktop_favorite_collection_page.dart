@@ -4,6 +4,7 @@ import 'package:bilimusic/common/components/bottom_page_spacer.dart';
 import 'package:bilimusic/common/components/cached_image.dart';
 import 'package:bilimusic/common/components/desktop/desktop_tab_switcher.dart';
 import 'package:bilimusic/common/components/status_view.dart';
+import 'package:bilimusic/common/domain/collection_kind.dart';
 import 'package:bilimusic/common/logger.dart';
 import 'package:bilimusic/common/util/player_util.dart';
 import 'package:bilimusic/common/util/toast_util.dart';
@@ -13,12 +14,15 @@ import 'package:bilimusic/feature/favorites/domain/favorites_state.dart';
 import 'package:bilimusic/feature/favorites/logic/favorite_entry_search.dart';
 import 'package:bilimusic/feature/favorites/logic/favorites_controller.dart';
 import 'package:bilimusic/feature/favorites/logic/favorites_view_mode_logic.dart';
+import 'package:bilimusic/feature/favorites/ui/components/favorite_collection_kind_selector.dart';
+import 'package:bilimusic/feature/favorites/ui/components/favorite_collection_playable_item.dart';
 import 'package:bilimusic/feature/favorites/ui/components/favorite_collection_search_field.dart';
 import 'package:bilimusic/feature/favorites/ui/components/desktop/desktop_favorite_collection_items_list.dart';
 import 'package:bilimusic/feature/favorites/ui/components/favorite_entry_subtitle.dart';
 import 'package:bilimusic/feature/favorites/ui/components/favorited_seasons_list.dart';
 import 'package:bilimusic/feature/favorites/ui/components/favorites_metadata_toolbar_buttons.dart';
 import 'package:bilimusic/feature/favorites/ui/components/remote_collection_sync_status_bar.dart';
+import 'package:bilimusic/feature/listening/ui/listening_continue_button.dart';
 import 'package:bilimusic/feature/player/domain/playable_item.dart';
 import 'package:bilimusic/feature/player/logic/player_controller.dart';
 import 'package:bilimusic/feature/player/ui/components/player_collection_sheet.dart';
@@ -253,9 +257,15 @@ class _DesktopFavoriteCollectionPageState
         .toList(growable: false);
   }
 
-  Future<void> _addSelectedItems(List<FavoriteEntry> items) async {
+  Future<void> _addSelectedItems(
+    FavoriteCollection collection,
+    List<FavoriteEntry> items,
+  ) async {
     final List<PlayableItem> selectedItems = _selectedItems(items)
-        .map((FavoriteEntry item) => item.toPlayableItem())
+        .map(
+          (FavoriteEntry item) =>
+              favoriteCollectionPlayableItem(item, collection),
+        )
         .toList(growable: false);
     if (selectedItems.isEmpty) {
       return;
@@ -359,11 +369,16 @@ class _DesktopFavoriteCollectionPageState
       _searchQuery,
     );
     final List<PlayableItem> queueItems = visibleItems
-        .map((FavoriteEntry item) => item.toPlayableItem())
+        .map(
+          (FavoriteEntry item) =>
+              favoriteCollectionPlayableItem(item, resolvedCollection),
+        )
         .toList(growable: false);
+    final bool isSpoken = resolvedCollection.kind == CollectionKind.spoken;
     final Widget songsBody = Column(
       children: <Widget>[
         RemoteCollectionSyncStatusBar(status: _remoteSyncStatus),
+        _buildItemsToolbar(resolvedCollection, visibleItems, queueItems),
         Expanded(
           child: items.isEmpty && _remoteRefreshFailed
               ? StatusView(
@@ -383,147 +398,64 @@ class _DesktopFavoriteCollectionPageState
                   title: '这个歌单还是空的',
                   description: '先去搜索页或者播放器点亮爱心，喜欢的内容会出现在这里。',
                 )
-              : Column(
-                  children: <Widget>[
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(14, 10, 14, 8),
-                      child: _selectionMode
-                          ? _DesktopFavoriteBatchActionBar(
-                              selectedCount: _selectedItemIds.length,
-                              onAdd: () => _addSelectedItems(visibleItems),
-                              onDelete: () => _deleteSelectedItems(
-                                collection: resolvedCollection,
-                                items: visibleItems,
-                              ),
-                              onExit: () => _setSelectionMode(false),
-                            )
-                          : Row(
-                              children: <Widget>[
-                                Expanded(
-                                  child: FavoriteCollectionSearchField(
-                                    controller: _searchController,
-                                    query: _searchQuery,
-                                    onChanged: _updateSearchQuery,
-                                    onClear: _clearSearchQuery,
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                MetadataViewModeButton(
-                                  viewMode: ref.watch(
-                                    favoritesViewModeLogicProvider(
-                                      resolvedCollection.id,
-                                    ),
-                                  ),
-                                  onPressed: () => ref
-                                      .read(
-                                        favoritesViewModeLogicProvider(
-                                          resolvedCollection.id,
-                                        ).notifier,
-                                      )
-                                      .toggle(),
-                                ),
-                                const SizedBox(width: 8),
-                                MetadataBackfillButton(entries: visibleItems),
-                                if (resolvedCollection.isRemote) ...<Widget>[
-                                  const SizedBox(width: 8),
-                                  Tooltip(
-                                    message: '同步网络歌单',
-                                    child: IconButton(
-                                      onPressed: _isSyncingRemoteCollection
-                                          ? null
-                                          : _refreshRemoteCollectionItemsForce,
-                                      padding: EdgeInsets.zero,
-                                      visualDensity: VisualDensity.compact,
-                                      constraints:
-                                          const BoxConstraints.tightFor(
-                                            width: 32,
-                                            height: 32,
-                                          ),
-                                      icon: _isSyncingRemoteCollection
-                                          ? const SizedBox(
-                                              width: 16,
-                                              height: 16,
-                                              child: CircularProgressIndicator(
-                                                strokeWidth: 2,
-                                              ),
-                                            )
-                                          : HugeIcon(
-                                              icon: HugeIcons
-                                                  .strokeRoundedRefresh03,
-                                              size: 22,
-                                              strokeWidth: 1.8,
-                                            ),
-                                    ),
-                                  ),
-                                ],
-                              ],
-                            ),
-                    ),
-                    Expanded(
-                      child: visibleItems.isEmpty
-                          ? CustomScrollView(
-                              slivers: <Widget>[
-                                SliverStatusView(
-                                  child: StatusView(
-                                    icon: Icons.search_off_rounded,
-                                    title: '没有结果？前往在线搜索试试',
-                                    actions: <Widget>[
-                                      TextButton.icon(
-                                        onPressed: () => context.go('/search'),
-                                        label: const Text('搜索'),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            )
-                          : DesktopFavoriteCollectionItemsList(
-                              items: visibleItems,
-                              footer: const BottomPageSpacer(),
-                              onNotification: (_) => false,
-                              selectedItemIds: _selectedItemIds,
-                              selectionMode: _selectionMode,
-                              onSelectionModeChanged: _setSelectionMode,
-                              onSelectionChanged: _setSelectedItemIds,
-                              viewMode: ref.watch(
-                                favoritesViewModeLogicProvider(
-                                  resolvedCollection.id,
-                                ),
-                              ),
-                              onTapItem:
-                                  (int itemIndex, FavoriteEntry item) async {
-                                    await _playCollectionItem(
-                                      context,
-                                      ref,
-                                      collectionName: resolvedCollection.name,
-                                      queueItems: queueItems,
-                                      item: item,
-                                      index: itemIndex,
-                                    );
-                                  },
-                              onPlayItem:
-                                  (int itemIndex, FavoriteEntry item) async {
-                                    await _playCollectionItem(
-                                      context,
-                                      ref,
-                                      collectionName: resolvedCollection.name,
-                                      queueItems: queueItems,
-                                      item: item,
-                                      index: itemIndex,
-                                    );
-                                  },
-                              onMoreItem:
-                                  (int itemIndex, FavoriteEntry item) async {
-                                    await _showItemActionSheet(
-                                      context,
-                                      ref,
-                                      collection: resolvedCollection,
-                                      item: item,
-                                    );
-                                  },
-                            ),
+              : visibleItems.isEmpty
+              ? CustomScrollView(
+                  slivers: <Widget>[
+                    SliverStatusView(
+                      child: StatusView(
+                        icon: Icons.search_off_rounded,
+                        title: '没有结果？前往在线搜索试试',
+                        actions: <Widget>[
+                          TextButton.icon(
+                            onPressed: () => context.go('/search'),
+                            label: const Text('搜索'),
+                          ),
+                        ],
+                      ),
                     ),
                   ],
+                )
+              : DesktopFavoriteCollectionItemsList(
+                  items: visibleItems,
+                  footer: const BottomPageSpacer(),
+                  onNotification: (_) => false,
+                  selectedItemIds: _selectedItemIds,
+                  selectionMode: _selectionMode,
+                  onSelectionModeChanged: _setSelectionMode,
+                  onSelectionChanged: _setSelectedItemIds,
+                  viewMode: isSpoken
+                      ? FavoriteListViewMode.video
+                      : ref.watch(
+                          favoritesViewModeLogicProvider(resolvedCollection.id),
+                        ),
+                  onTapItem: (int itemIndex, FavoriteEntry item) async {
+                    await _playCollectionItem(
+                      context,
+                      ref,
+                      collection: resolvedCollection,
+                      queueItems: queueItems,
+                      item: item,
+                      index: itemIndex,
+                    );
+                  },
+                  onPlayItem: (int itemIndex, FavoriteEntry item) async {
+                    await _playCollectionItem(
+                      context,
+                      ref,
+                      collection: resolvedCollection,
+                      queueItems: queueItems,
+                      item: item,
+                      index: itemIndex,
+                    );
+                  },
+                  onMoreItem: (int itemIndex, FavoriteEntry item) async {
+                    await _showItemActionSheet(
+                      context,
+                      ref,
+                      collection: resolvedCollection,
+                      item: item,
+                    );
+                  },
                 ),
         ),
       ],
@@ -537,7 +469,7 @@ class _DesktopFavoriteCollectionPageState
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
           DesktopTabSwitcher(
-            labels: const <String>['歌曲', '合集'],
+            labels: <String>[resolvedCollection.kind.label, '合集'],
             selectedIndex: _showFavoritedSeasons ? 1 : 0,
             onChanged: (int index) {
               setState(() {
@@ -555,15 +487,110 @@ class _DesktopFavoriteCollectionPageState
     );
   }
 
+  Widget _buildItemsToolbar(
+    FavoriteCollection collection,
+    List<FavoriteEntry> visibleItems,
+    List<PlayableItem> queueItems,
+  ) {
+    final bool isSpoken = collection.kind == CollectionKind.spoken;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(14, 10, 14, 8),
+      child: _selectionMode
+          ? _DesktopFavoriteBatchActionBar(
+              selectedCount: _selectedItemIds.length,
+              onAdd: () => _addSelectedItems(collection, visibleItems),
+              onDelete: () => _deleteSelectedItems(
+                collection: collection,
+                items: visibleItems,
+              ),
+              onExit: () => _setSelectionMode(false),
+            )
+          : Row(
+              children: <Widget>[
+                Expanded(
+                  child: FavoriteCollectionSearchField(
+                    controller: _searchController,
+                    query: _searchQuery,
+                    onChanged: _updateSearchQuery,
+                    onClear: _clearSearchQuery,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                FavoriteCollectionKindSelector(collection: collection),
+                const SizedBox(width: 8),
+                if (isSpoken)
+                  ListeningContinueButton(
+                    items: queueItems,
+                    onPlay: (List<PlayableItem> items, int startIndex) =>
+                        PlayerUtil.playQueueAndOpenPlayer(
+                          context,
+                          ref,
+                          items: items,
+                          startIndex: startIndex,
+                          sourceLabel: collection.name,
+                        ),
+                  )
+                else if (visibleItems.isNotEmpty) ...<Widget>[
+                  MetadataViewModeButton(
+                    viewMode: ref.watch(
+                      favoritesViewModeLogicProvider(collection.id),
+                    ),
+                    onPressed: () => ref
+                        .read(
+                          favoritesViewModeLogicProvider(
+                            collection.id,
+                          ).notifier,
+                        )
+                        .toggle(),
+                  ),
+                  const SizedBox(width: 8),
+                  MetadataBackfillButton(entries: visibleItems),
+                ],
+                if (collection.isRemote) ...<Widget>[
+                  const SizedBox(width: 8),
+                  Tooltip(
+                    message: '同步网络歌单',
+                    child: IconButton(
+                      onPressed: _isSyncingRemoteCollection
+                          ? null
+                          : _refreshRemoteCollectionItemsForce,
+                      padding: EdgeInsets.zero,
+                      visualDensity: VisualDensity.compact,
+                      constraints: const BoxConstraints.tightFor(
+                        width: 32,
+                        height: 32,
+                      ),
+                      icon: _isSyncingRemoteCollection
+                          ? const SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : HugeIcon(
+                              icon: HugeIcons.strokeRoundedRefresh03,
+                              size: 22,
+                              strokeWidth: 1.8,
+                            ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+    );
+  }
+
   Future<void> _playCollectionItem(
     BuildContext context,
     WidgetRef ref, {
-    required String collectionName,
+    required FavoriteCollection collection,
     required List<PlayableItem> queueItems,
     required FavoriteEntry item,
     required int index,
   }) async {
-    final PlayableItem playableItem = item.toPlayableItem();
+    final PlayableItem playableItem = favoriteCollectionPlayableItem(
+      item,
+      collection,
+    );
     final int stableIndex = queueItems.indexWhere(
       (PlayableItem candidate) =>
           candidate.stableId == playableItem.stableId ||
@@ -576,7 +603,7 @@ class _DesktopFavoriteCollectionPageState
       return;
     }
     DesktopFavoriteCollectionPage._logger.d(
-      '[FavoriteDebug] tapPlay | collection=$collectionName, '
+      '[FavoriteDebug] tapPlay | collection=${collection.name}, '
       'index=$index, queueLength=${queueItems.length}, '
       'itemStableId=${queueItems[index].stableId}, '
       'itemTitle=${queueItems[index].title}',
@@ -589,7 +616,7 @@ class _DesktopFavoriteCollectionPageState
       ref,
       items: queueItems,
       startIndex: index,
-      sourceLabel: collectionName,
+      sourceLabel: collection.name,
     );
   }
 
@@ -601,7 +628,10 @@ class _DesktopFavoriteCollectionPageState
   }) async {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
-    final PlayableItem playableItem = item.toPlayableItem();
+    final PlayableItem playableItem = favoriteCollectionPlayableItem(
+      item,
+      collection,
+    );
 
     await showModalBottomSheet<void>(
       useRootNavigator: true,

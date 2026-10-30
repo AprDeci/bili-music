@@ -44,7 +44,7 @@ void main() {
       ),
     );
 
-    expect(find.text('歌曲'), findsOneWidget);
+    expect(find.widgetWithText(Tab, '歌曲'), findsOneWidget);
     expect(find.text('合集'), findsOneWidget);
 
     await tester.tap(find.text('合集'));
