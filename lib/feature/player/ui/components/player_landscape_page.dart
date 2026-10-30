@@ -74,21 +74,24 @@ class PlayerLandscapePage extends ConsumerWidget {
         (settings) => settings.horizontalPadding,
       ),
     );
-    final double sidePadding = MediaQuery.sizeOf(context).width < 700 ? 24 : 64;
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) {
+        final double sidePadding = (constraints.maxWidth * 0.04).clamp(24, 40);
+        final double contentWidth = math.max(
+          0,
+          constraints.maxWidth - sidePadding * 2,
+        );
+        final double artworkSize = math.min(
+          playerArtworkSize(MediaQuery.sizeOf(context)),
+          math.min(
+            math.max(0, constraints.maxHeight - 32),
+            math.max(0, contentWidth - 324),
+          ),
+        );
 
-    return Padding(
-      padding: EdgeInsets.fromLTRB(sidePadding, 8, sidePadding, 24),
-      child: LayoutBuilder(
-        builder: (BuildContext context, BoxConstraints constraints) {
-          final double artworkSize = math.min(
-            playerArtworkSize(MediaQuery.sizeOf(context)),
-            math.min(
-              constraints.maxHeight,
-              math.max(0, constraints.maxWidth - 324),
-            ),
-          );
-
-          return Center(
+        return Padding(
+          padding: EdgeInsets.fromLTRB(sidePadding, 8, sidePadding, 24),
+          child: Center(
             child: Row(
               children: <Widget>[
                 SizedBox.square(
@@ -160,9 +163,9 @@ class PlayerLandscapePage extends ConsumerWidget {
                 ),
               ],
             ),
-          );
-        },
-      ),
+          ),
+        );
+      },
     );
   }
 }

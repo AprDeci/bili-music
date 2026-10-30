@@ -78,10 +78,10 @@ void main() {
         );
 
         final double height = tester.getSize(find.byType(MiniPlayerBar)).height;
-        expect(height, textScale == 1 ? 52 : greaterThan(52));
+        expect(height, textScale == 1 ? 46 : greaterThan(46));
         expect(
           tester.getSize(find.byType(MiniPlayerArtwork)),
-          const Size(44, 44),
+          const Size(36, 36),
         );
         expect(
           tester.getSize(find.byType(MiniPlayerPlaybackButton)),
@@ -130,7 +130,7 @@ void main() {
         final double restingHeight = tester
             .getSize(find.byType(MiniPlayerGlassBar))
             .height;
-        expect(restingHeight, textScale == 1 ? 52 : greaterThan(52));
+        expect(restingHeight, textScale == 1 ? 44 : greaterThan(44));
 
         final TestGesture press = await tester.startGesture(
           tester.getCenter(artwork),
@@ -404,6 +404,44 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('landscape margins scale smoothly within the safe area', (
+    WidgetTester tester,
+  ) async {
+    for (final (Size size, EdgeInsets safePadding, double margin)
+        in <(Size, EdgeInsets, double)>[
+          (const Size(640, 320), const EdgeInsets.fromLTRB(44, 8, 20, 16), 24),
+          (const Size(699, 360), EdgeInsets.zero, 27.96),
+          (const Size(700, 360), EdgeInsets.zero, 28),
+          (
+            const Size(900, 420),
+            const EdgeInsets.fromLTRB(44, 8, 20, 16),
+            33.44,
+          ),
+          (const Size(1200, 600), const EdgeInsets.fromLTRB(44, 8, 20, 16), 40),
+        ]) {
+      await _pumpPlayer(
+        tester,
+        _metadata,
+        size: size,
+        padding: safePadding,
+        home: const PlayerPage(initialItem: _item),
+      );
+      final Rect artwork = tester.getRect(find.byType(PlayerArtworkFrame));
+      final Rect lyrics = tester.getRect(find.byType(PlayerLyricPage));
+      expect(artwork.left - safePadding.left, closeTo(margin, 0.01));
+      expect(
+        size.width - safePadding.right - lyrics.right,
+        closeTo(margin, 0.01),
+      );
+      expect(artwork.top, greaterThanOrEqualTo(safePadding.top + 8));
+      expect(
+        tester.getRect(find.byType(PlayerLandscapeControls)).bottom,
+        lessThanOrEqualTo(size.height - safePadding.bottom - 16),
+      );
+      expect(tester.takeException(), isNull);
+    }
+  });
+
   testWidgets(
     'landscape places artwork beside active lyrics above shared controls',
     (WidgetTester tester) async {
@@ -491,9 +529,9 @@ void main() {
             .borderRadius,
         BorderRadius.circular(8),
       );
-      expect(artwork.width, lessThan(320));
-      expect(artwork.top, greaterThan(32));
-      expect(artwork.bottom, lessThan(388));
+      expect(artwork.width, closeTo(279, 0.01));
+      expect(artwork.top, greaterThanOrEqualTo(8));
+      expect(artwork.bottom, lessThanOrEqualTo(396));
       final double centerY = tester
           .getRect(find.byType(PlayerLandscapePage))
           .center
