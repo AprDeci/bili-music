@@ -80,15 +80,13 @@ class PlayerLandscapePage extends ConsumerWidget {
       padding: EdgeInsets.fromLTRB(sidePadding, 8, sidePadding, 24),
       child: LayoutBuilder(
         builder: (BuildContext context, BoxConstraints constraints) {
-          final double artworkSize =
-              math.min(
-                constraints.maxHeight,
-                math.min(
-                  constraints.maxWidth * 0.4,
-                  math.max(0, constraints.maxWidth - 324),
-                ),
-              ) *
-              0.85;
+          final double artworkSize = math.min(
+            playerArtworkSize(MediaQuery.sizeOf(context)),
+            math.min(
+              constraints.maxHeight,
+              math.max(0, constraints.maxWidth - 324),
+            ),
+          );
 
           return Center(
             child: Row(

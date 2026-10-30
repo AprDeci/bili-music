@@ -63,9 +63,7 @@ class PlayerMainPage extends ConsumerWidget {
     final Size screenSize = mediaQuery.size;
     final bool canOpenPartSelector = item != null && availableParts.length > 1;
     final bool isCompact = screenSize.height < 600;
-    final double artworkSize = isCompact
-        ? (screenSize.height * 0.27).clamp(150.0, 190.0)
-        : (screenSize.height * 0.31).clamp(190.0, 320.0);
+    final double artworkSize = playerArtworkSize(screenSize);
     final AsyncValue<PlayerOnlineAudience?> onlineAudienceAsync = ref.watch(
       playerOnlineAudienceControllerProvider,
     );

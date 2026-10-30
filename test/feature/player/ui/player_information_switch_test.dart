@@ -287,6 +287,56 @@ void main() {
     },
   );
 
+  for (final (Size portrait, double expectedSize) in <(Size, double)>[
+    (const Size(320, 568), 153.36),
+    (const Size(320, 640), 198.4),
+    (const Size(393, 852), 264.12),
+    (const Size(420, 900), 279),
+    (const Size(768, 1200), 320),
+  ]) {
+    testWidgets('rotation keeps artwork size at $portrait', (
+      WidgetTester tester,
+    ) async {
+      await _pumpPlayer(
+        tester,
+        _metadata,
+        size: portrait,
+        padding: const EdgeInsets.only(top: 24, bottom: 16),
+        home: const PlayerPage(initialItem: _item),
+      );
+      final Finder artwork = find.byType(PlayerArtworkFrame);
+      final Size portraitArtwork = tester.getSize(artwork);
+      expect(portraitArtwork.width, closeTo(expectedSize, 0.01));
+      expect(portraitArtwork.height, closeTo(expectedSize, 0.01));
+
+      tester.view.physicalSize = Size(portrait.height, portrait.width);
+      await tester.pumpAndSettle();
+      expect(find.byType(PlayerLandscapePage), findsOneWidget);
+      expect(tester.getSize(artwork), portraitArtwork);
+
+      tester.view.physicalSize = portrait;
+      await tester.pumpAndSettle();
+      expect(tester.getSize(artwork), portraitArtwork);
+      expect(tester.takeException(), isNull);
+    });
+  }
+
+  testWidgets('landscape shrinks artwork when height is limited', (
+    WidgetTester tester,
+  ) async {
+    await _pumpPlayer(
+      tester,
+      _metadata,
+      size: const Size(900, 240),
+      home: const PlayerPage(initialItem: _item),
+    );
+    expect(
+      tester.getSize(find.byType(PlayerArtworkFrame)),
+      const Size(208, 208),
+    );
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets(
     'landscape places artwork beside active lyrics above shared controls',
     (WidgetTester tester) async {

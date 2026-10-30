@@ -1,6 +1,13 @@
 import 'package:bilimusic/common/components/cached_image.dart';
 import 'package:flutter/material.dart';
 
+double playerArtworkSize(Size screenSize) {
+  final double height = screenSize.longestSide;
+  return height < 600
+      ? (height * 0.27).clamp(150.0, 190.0)
+      : (height * 0.31).clamp(190.0, 320.0);
+}
+
 class PlayerArtworkFrame extends StatelessWidget {
   const PlayerArtworkFrame({
     super.key,
