@@ -2,10 +2,13 @@ import 'package:bilimusic/common/domain/meta_lyrics.dart';
 import 'package:bilimusic/feature/metadata/domain/metadata.dart';
 import 'package:bilimusic/feature/metadata/domain/metadata_state.dart';
 import 'package:bilimusic/feature/metadata/logic/metadata_controller.dart';
+import 'package:bilimusic/feature/player/domain/bili_subtitle.dart';
 import 'package:bilimusic/feature/player/domain/playable_item.dart';
 import 'package:bilimusic/feature/player/domain/player_lyric_settings.dart';
 import 'package:bilimusic/feature/player/domain/player_state.dart';
+import 'package:bilimusic/feature/player/domain/player_subtitle_state.dart';
 import 'package:bilimusic/feature/player/logic/lyrics/player_lyric_settings_logic.dart';
+import 'package:bilimusic/feature/player/logic/lyrics/player_subtitle_controller.dart';
 import 'package:bilimusic/feature/player/logic/player_controller.dart';
 import 'package:bilimusic/feature/player/logic/player_progress_provider.dart';
 import 'package:bilimusic/feature/player/ui/components/player_dynamic_backdrop.dart';
@@ -42,6 +45,61 @@ void main() {
         expect(controller.position, start + Duration(milliseconds: 16 * frame));
         expect(tester.widget<LyricView>(find.byType(LyricView)), same(view));
       }
+    },
+  );
+
+  testWidgets(
+    'AI subtitle progress and offset rebuilds preserve the document',
+    (tester) async {
+      await _pumpPanel(tester, useAiSubtitles: true);
+      final LyricController controller = tester
+          .widget<LyricView>(find.byType(LyricView))
+          .controller;
+      final LyricDocument document = controller.document!;
+      final ProviderContainer container = ProviderScope.containerOf(
+        tester.element(find.byType(PlayerLyricPanel)),
+      );
+      final _AiSubtitles subtitles =
+          container.read(playerSubtitleControllerProvider.notifier)
+              as _AiSubtitles;
+      final PlayerSubtitleState initial = container.read(
+        playerSubtitleControllerProvider,
+      );
+      final List<LyricLine> lines = document.lines
+          .where((line) => line.text.isNotEmpty)
+          .toList();
+      expect(lines, hasLength(initial.lines.length));
+      for (int index = 0; index < lines.length; index++) {
+        expect(
+          lines[index].start,
+          Duration(milliseconds: initial.lines[index].startMs),
+        );
+        expect(
+          lines[index].end,
+          Duration(milliseconds: initial.lines[index].endMs),
+        );
+        expect(lines[index].text, initial.lines[index].text);
+      }
+      expect(document.lines.every((line) => line.words == null), isTrue);
+      for (final int positionMs in <int>[2016, 2032, 2048]) {
+        await _pumpPanel(
+          tester,
+          useAiSubtitles: true,
+          position: Duration(milliseconds: positionMs),
+          settleDuration: Duration.zero,
+        );
+        expect(
+          tester.widget<LyricView>(find.byType(LyricView)).controller,
+          same(controller),
+        );
+        expect(controller.document, same(document));
+        expect(controller.position, Duration(milliseconds: positionMs));
+      }
+      subtitles.setOffset(175);
+      await tester.pump();
+      expect(controller.document, same(document));
+      expect(controller.timeOffset, const Duration(milliseconds: 175));
+      expect(tester.takeException(), isNull);
     },
   );
 
@@ -162,6 +220,7 @@ void main() {
       ProviderScope(
         overrides: [
           metadataControllerProvider.overrideWith(_MetadataController.new),
+          playerSubtitleControllerProvider.overrideWith(_NoSubtitles.new),
           playerLyricSettingsLogicProvider.overrideWith(
             _LyricSettingsLogic.new,
           ),
@@ -540,6 +599,7 @@ Future<void> _pumpPanel(
   PlayerLyricPanelVariant variant = PlayerLyricPanelVariant.mobile,
   Duration position = const Duration(seconds: 2),
   bool showTranslation = true,
+  bool useAiSubtitles = false,
   bool isActive = true,
   bool isPlaying = false,
   bool isBuffering = false,
@@ -553,6 +613,9 @@ Future<void> _pumpPanel(
     ProviderScope(
       overrides: [
         metadataControllerProvider.overrideWith(_MetadataController.new),
+        playerSubtitleControllerProvider.overrideWith(
+          useAiSubtitles ? _AiSubtitles.new : _NoSubtitles.new,
+        ),
         playerLyricSettingsLogicProvider.overrideWith(_LyricSettingsLogic.new),
       ],
       child: MaterialApp(
@@ -597,6 +660,25 @@ Future<void> _pumpPanel(
   );
   // Apple Music 持续浮动，不会进入 pumpAndSettle 等待的静止状态。
   await tester.pump(settleDuration);
+}
+
+class _AiSubtitles extends PlayerSubtitleController {
+  @override
+  PlayerSubtitleState build() => PlayerSubtitleState(
+    stableId: _item.stableId,
+    selectedTrackId: 'ai-zh',
+    lines: const <BiliSubtitleLine>[
+      BiliSubtitleLine(startMs: 1250, endMs: 2575, text: 'AI字幕第一行'),
+      BiliSubtitleLine(startMs: 4000, endMs: 6123, text: 'AI字幕第二行'),
+    ],
+  );
+
+  void setOffset(int offsetMs) => state = state.copyWith(offsetMs: offsetMs);
+}
+
+class _NoSubtitles extends PlayerSubtitleController {
+  @override
+  PlayerSubtitleState build() => const PlayerSubtitleState();
 }
 
 class _PlayerController extends PlayerController {

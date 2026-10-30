@@ -1,6 +1,9 @@
 import 'package:bilimusic/feature/metadata/domain/metadata_state.dart';
 import 'package:bilimusic/feature/metadata/logic/metadata_controller.dart';
+import 'package:bilimusic/feature/player/domain/player_subtitle_state.dart';
 import 'package:bilimusic/feature/player/logic/display/player_display_metadata.dart';
+import 'package:bilimusic/feature/player/logic/lyrics/player_subtitle_controller.dart';
+import 'package:bilimusic/feature/player/logic/player_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -27,6 +30,27 @@ class _LyricOffsetSheet extends ConsumerWidget {
     final MetadataController controller = ref.read(
       metadataControllerProvider.notifier,
     );
+    final PlayerSubtitleState subtitleState = ref.watch(
+      playerSubtitleControllerProvider,
+    );
+    final String? stableId = ref.watch(
+      playerControllerProvider.select((value) => value.currentItem?.stableId),
+    );
+    final bool usesSubtitles =
+        subtitleState.stableId == stableId && subtitleState.usesSubtitles;
+    final int offsetMs = usesSubtitles
+        ? subtitleState.offsetMs
+        : resolveDisplayLyricOffsetMs(metadataState.metadata);
+    void adjustOffset(int deltaMs) {
+      if (usesSubtitles) {
+        ref
+            .read(playerSubtitleControllerProvider.notifier)
+            .adjustOffset(deltaMs);
+      } else {
+        controller.adjustOffset(deltaMs);
+      }
+    }
+
     final ThemeData theme = Theme.of(context);
 
     return Column(
@@ -39,16 +63,14 @@ class _LyricOffsetSheet extends ConsumerWidget {
             children: <Widget>[
               IconButton(
                 tooltip: '歌词延后 0.5 秒',
-                onPressed: () => controller.adjustOffset(-_stepMs),
+                onPressed: () => adjustOffset(-_stepMs),
                 icon: const Icon(Icons.remove_rounded),
               ),
               SizedBox(
                 width: 96,
                 child: Center(
                   child: Text(
-                    _formatOffset(
-                      resolveDisplayLyricOffsetMs(metadataState.metadata),
-                    ),
+                    _formatOffset(offsetMs),
                     style: theme.textTheme.titleMedium?.copyWith(
                       color: theme.colorScheme.onSurface,
                       fontWeight: FontWeight.w800,
@@ -58,7 +80,7 @@ class _LyricOffsetSheet extends ConsumerWidget {
               ),
               IconButton(
                 tooltip: '歌词提前 0.5 秒',
-                onPressed: () => controller.adjustOffset(_stepMs),
+                onPressed: () => adjustOffset(_stepMs),
                 icon: const Icon(Icons.add_rounded),
               ),
             ],

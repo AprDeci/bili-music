@@ -1,7 +1,32 @@
+import 'package:bilimusic/feature/player/domain/bili_subtitle.dart';
 import 'package:bilimusic/feature/player/logic/lyrics/desktop_lyrics_controller.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  test('AI subtitles use whole lines and clear at original end times', () {
+    const lines = [
+      BiliSubtitleLine(startMs: 1000, endMs: 2000, text: 'one'),
+      BiliSubtitleLine(startMs: 3000, endMs: 4000, text: 'two'),
+    ];
+    final frame = resolveDesktopSubtitleFrame(
+      lines,
+      position: const Duration(milliseconds: 1250),
+      offsetMs: 250,
+    );
+    expect(frame?.line, 'one');
+    expect(frame?.progress, 1);
+    for (final int time in [0, 2000, 2500, 4000]) {
+      expect(
+        resolveDesktopSubtitleFrame(
+          lines,
+          position: Duration(milliseconds: time),
+          offsetMs: 0,
+        ),
+        isNull,
+      );
+    }
+  });
+
   test('resolves LRC lines with offset and progress boundaries', () {
     const String lyrics = '[00:01.00]one\n[00:03.00]two';
 

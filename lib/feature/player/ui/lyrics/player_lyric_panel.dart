@@ -3,11 +3,16 @@ import 'dart:async';
 import 'package:bilimusic/common/util/player_util.dart';
 import 'package:bilimusic/feature/metadata/domain/metadata_state.dart';
 import 'package:bilimusic/feature/metadata/logic/metadata_controller.dart';
+import 'package:bilimusic/feature/player/domain/bili_subtitle.dart';
+import 'package:bilimusic/feature/player/domain/player_subtitle_state.dart';
+import 'package:bilimusic/feature/player/logic/lyrics/player_subtitle_controller.dart';
+import 'package:bilimusic/feature/player/ui/lyrics/player_subtitle_document.dart';
 import 'package:bilimusic/feature/player/domain/playable_item.dart';
 import 'package:bilimusic/feature/player/domain/player_state.dart';
 import 'package:bilimusic/feature/player/logic/lyrics/player_lyric_settings_logic.dart';
 import 'package:bilimusic/feature/player/logic/display/player_display_metadata.dart';
 import 'package:bilimusic/feature/player/ui/lyrics/player_lyric_style.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter_lyric/flutter_lyric.dart';
@@ -47,6 +52,7 @@ class _PlayerLyricPanelState extends ConsumerState<PlayerLyricPanel> {
   String? _loadedStableId;
   String? _loadedRenderableLyrics;
   String? _loadedTranslationLyrics;
+  List<BiliSubtitleLine>? _loadedSubtitleLines;
 
   bool get _isDesktop => widget.variant == PlayerLyricPanelVariant.desktop;
 
@@ -81,9 +87,18 @@ class _PlayerLyricPanelState extends ConsumerState<PlayerLyricPanel> {
   @override
   Widget build(BuildContext context) {
     final MetadataState metadataState = ref.watch(metadataControllerProvider);
-    _syncLyrics(metadataState);
+    final PlayerSubtitleState subtitles = ref.watch(
+      playerSubtitleControllerProvider,
+    );
+    final bool useSubtitles =
+        subtitles.stableId == widget.item?.stableId && subtitles.usesSubtitles;
+    if (useSubtitles) {
+      _syncSubtitles(subtitles);
+    } else {
+      _syncLyrics(metadataState);
+    }
 
-    final Widget content = _buildContent(context, metadataState);
+    final Widget content = _buildContent(context, metadataState, useSubtitles);
     if (!_isDesktop) {
       return content;
     }
@@ -94,7 +109,11 @@ class _PlayerLyricPanelState extends ConsumerState<PlayerLyricPanel> {
     );
   }
 
-  Widget _buildContent(BuildContext context, MetadataState metadataState) {
+  Widget _buildContent(
+    BuildContext context,
+    MetadataState metadataState,
+    bool useSubtitles,
+  ) {
     final PlayableItem? item = widget.item;
     if (item == null) {
       return _PlayerLyricPanelStatus(
@@ -110,7 +129,7 @@ class _PlayerLyricPanelState extends ConsumerState<PlayerLyricPanel> {
 
     final String itemKey = item.stableId;
 
-    if (metadataState.stableId != item.stableId) {
+    if (!useSubtitles && metadataState.stableId != item.stableId) {
       return _PlayerLyricPanelStatus(
         key: ValueKey<String>('preparing-$itemKey'),
         variant: widget.variant,
@@ -120,7 +139,7 @@ class _PlayerLyricPanelState extends ConsumerState<PlayerLyricPanel> {
       );
     }
 
-    if (metadataState.isLoading) {
+    if (!useSubtitles && metadataState.isLoading) {
       return _PlayerLyricPanelStatus(
         key: ValueKey<String>('loading-$itemKey'),
         variant: widget.variant,
@@ -131,7 +150,7 @@ class _PlayerLyricPanelState extends ConsumerState<PlayerLyricPanel> {
       );
     }
 
-    if (metadataState.hasLyrics) {
+    if (useSubtitles || metadataState.hasLyrics) {
       return Padding(
         key: ValueKey<String>('lyrics-$itemKey'),
         padding: _isDesktop
@@ -141,7 +160,7 @@ class _PlayerLyricPanelState extends ConsumerState<PlayerLyricPanel> {
           enabled: widget.isActive,
           child: LyricView(
             controller: _lyricController,
-            preset: _buildLyricPreset(context),
+            preset: _buildLyricPreset(context, useSubtitles: useSubtitles),
             onLineTap: (LyricLineDetails details) {
               if (_loadedStableId != widget.item?.stableId) {
                 return;
@@ -175,7 +194,25 @@ class _PlayerLyricPanelState extends ConsumerState<PlayerLyricPanel> {
     );
   }
 
+  void _syncSubtitles(PlayerSubtitleState subtitles) {
+    _lyricController.timeOffset = Duration(milliseconds: subtitles.offsetMs);
+    if (_loadedStableId == subtitles.stableId &&
+        listEquals(_loadedSubtitleLines, subtitles.lines)) {
+      return;
+    }
+    _loadedStableId = subtitles.stableId;
+    _loadedSubtitleLines = subtitles.lines;
+    _loadedRenderableLyrics = null;
+    _loadedTranslationLyrics = null;
+    _lyricController.loadDocument(buildSubtitleDocument(subtitles.lines));
+  }
+
   void _syncLyrics(MetadataState metadataState) {
+    if (_loadedSubtitleLines != null) {
+      _loadedSubtitleLines = null;
+      _loadedStableId = null;
+      _lyricController.clear();
+    }
     _lyricController.timeOffset = Duration(
       milliseconds: resolveDisplayLyricOffsetMs(metadataState.metadata),
     );
@@ -216,13 +253,25 @@ class _PlayerLyricPanelState extends ConsumerState<PlayerLyricPanel> {
     _lyricController.load(renderableLyrics, translation: translationLyrics);
   }
 
-  LyricPreset _buildLyricPreset(BuildContext context) {
-    return buildPlayerLyricPreset(
+  LyricPreset _buildLyricPreset(
+    BuildContext context, {
+    required bool useSubtitles,
+  }) {
+    final LyricPreset preset = buildPlayerLyricPreset(
       theme: Theme.of(context),
       settings: ref.watch(playerLyricSettingsLogicProvider),
       activeColor: widget.activeColor,
       reduceMotion: MediaQuery.disableAnimationsOf(context),
     ).copyWith(selectionForegroundBuilder: _buildSelectionForeground);
+    if (!useSubtitles) return preset;
+    return preset.copyWith(
+      activeTextStyle: preset.activeTextStyle.copyWith(
+        color: preset.highlight.color,
+      ),
+      highlight: const LyricHighlight.none(),
+      wordEffects: const LyricWordEffects(),
+      countdown: const LyricCountdown.none(),
+    );
   }
 
   Widget _buildSelectionForeground(

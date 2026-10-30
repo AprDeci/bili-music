@@ -6,6 +6,9 @@ import 'package:bilimusic/core/settings/app_settings_store.dart';
 import 'package:bilimusic/feature/metadata/domain/metadata_state.dart';
 import 'package:bilimusic/feature/metadata/logic/metadata_controller.dart';
 import 'package:bilimusic/feature/player/domain/player_state.dart';
+import 'package:bilimusic/feature/player/domain/bili_subtitle.dart';
+import 'package:bilimusic/feature/player/domain/player_subtitle_state.dart';
+import 'package:bilimusic/feature/player/logic/lyrics/player_subtitle_controller.dart';
 import 'package:bilimusic/feature/player/logic/player_controller.dart';
 import 'package:bilimusic/feature/player/logic/display/player_display_metadata.dart';
 import 'package:desktop_lyrics/desktop_lyrics.dart';
@@ -40,6 +43,11 @@ class DesktopLyricsController extends _$DesktopLyricsController {
     );
     ref.listen<MetadataState>(
       metadataControllerProvider,
+      (_, _) => _scheduleSync(),
+      fireImmediately: true,
+    );
+    ref.listen<PlayerSubtitleState>(
+      playerSubtitleControllerProvider,
       (_, _) => _scheduleSync(),
       fireImmediately: true,
     );
@@ -82,11 +90,22 @@ class DesktopLyricsController extends _$DesktopLyricsController {
     final String? rawLyrics = metadataState.stableId == stableId
         ? resolveDisplayLyrics(metadataState.metadata)
         : null;
-    final DesktopLyricFrame? frame = resolveDesktopLyricFrame(
-      rawLyrics,
-      position: playerState.position,
-      offsetMs: resolveDisplayLyricOffsetMs(metadataState.metadata),
+    final PlayerSubtitleState subtitles = ref.read(
+      playerSubtitleControllerProvider,
     );
+    final bool useSubtitles =
+        subtitles.stableId == stableId && subtitles.usesSubtitles;
+    final DesktopLyricFrame? frame = useSubtitles
+        ? resolveDesktopSubtitleFrame(
+            subtitles.lines,
+            position: playerState.position,
+            offsetMs: subtitles.offsetMs,
+          )
+        : resolveDesktopLyricFrame(
+            rawLyrics,
+            position: playerState.position,
+            offsetMs: resolveDisplayLyricOffsetMs(metadataState.metadata),
+          );
     if (frame == null) {
       await _clearAndDisable(lyrics);
       return;
@@ -144,6 +163,22 @@ class DesktopLyricFrame {
 
   final String line;
   final double progress;
+}
+
+DesktopLyricFrame? resolveDesktopSubtitleFrame(
+  List<BiliSubtitleLine> lines, {
+  required Duration position,
+  required int offsetMs,
+}) {
+  final int time = position.inMilliseconds + offsetMs;
+  BiliSubtitleLine? current;
+  for (final BiliSubtitleLine line in lines) {
+    if (line.startMs > time) break;
+    current = line;
+  }
+  return current != null && time < current.endMs
+      ? DesktopLyricFrame(line: current.text, progress: 1)
+      : null;
 }
 
 class _DesktopLyricLine {
