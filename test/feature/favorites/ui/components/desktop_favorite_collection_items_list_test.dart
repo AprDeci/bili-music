@@ -5,7 +5,6 @@ import 'package:bilimusic/feature/favorites/domain/favorite_entry.dart';
 import 'package:bilimusic/feature/favorites/domain/favorite_membership.dart';
 import 'package:bilimusic/feature/favorites/domain/favorites_state.dart';
 import 'package:bilimusic/feature/favorites/logic/favorites_controller.dart';
-import 'package:bilimusic/feature/favorites/ui/components/favorite_collection_kind_selector.dart';
 import 'package:bilimusic/feature/favorites/ui/components/favorite_collection_search_field.dart';
 import 'package:bilimusic/feature/favorites/ui/components/favorites_metadata_toolbar_buttons.dart';
 import 'package:bilimusic/feature/favorites/ui/desktop/desktop_favorite_collection_page.dart';
@@ -98,14 +97,10 @@ void main() {
     final Rect search = tester.getRect(
       find.byType(FavoriteCollectionSearchField),
     );
-    final Rect kind = tester.getRect(
-      find.byType(FavoriteCollectionKindSelector),
-    );
     final Rect view = tester.getRect(find.byType(MetadataViewModeButton));
     final Rect backfill = tester.getRect(find.byType(MetadataBackfillButton));
     final Rect sync = tester.getRect(find.byTooltip('同步网络歌单'));
-    expect(kind.left - search.right, 8);
-    expect(view.left - kind.right, 8);
+    expect(view.left - search.right, 8);
     expect(backfill.left - view.right, 8);
     expect(sync.left - backfill.right, 8);
     expect(view.size, backfill.size);

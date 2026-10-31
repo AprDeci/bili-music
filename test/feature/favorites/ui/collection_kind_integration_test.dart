@@ -11,11 +11,10 @@ import 'package:bilimusic/feature/favorites/logic/favorited_season_controller.da
 import 'package:bilimusic/feature/favorites/ui/components/desktop/desktop_favorite_collection_items_list.dart';
 import 'package:bilimusic/feature/favorites/ui/components/favorite_collection_items_list.dart';
 import 'package:bilimusic/feature/favorites/ui/components/favorite_collection_kind_selector.dart';
+import 'package:bilimusic/feature/favorites/ui/components/favorite_collection_search_field.dart';
 import 'package:bilimusic/feature/favorites/ui/components/favorites_metadata_toolbar_buttons.dart';
 import 'package:bilimusic/feature/favorites/ui/desktop/desktop_favorite_collection_page.dart';
 import 'package:bilimusic/feature/favorites/ui/favorite_collection_page.dart';
-import 'package:bilimusic/feature/listening/domain/listening_state.dart';
-import 'package:bilimusic/feature/listening/logic/listening_progress_controller.dart';
 import 'package:bilimusic/feature/listening/ui/listening_continue_button.dart';
 import 'package:bilimusic/feature/metadata/domain/metadata_backfill_state.dart';
 import 'package:bilimusic/feature/metadata/logic/metadata_backfill_controller.dart';
@@ -37,7 +36,7 @@ void main() {
     ]) {
       for (final bool empty in <bool>[false, true]) {
         testWidgets(
-          '$desktop $id empty=$empty switches type without losing view preference',
+          '$desktop $id empty=$empty preserves the original header across type changes',
           (tester) async {
             if (!desktop) {
               tester.view.physicalSize = const Size(320, 568);
@@ -97,9 +96,6 @@ void main() {
                 metadataBackfillControllerProvider.overrideWithValue(
                   const MetadataBackfillState(),
                 ),
-                listeningProgressControllerProvider.overrideWithValue(
-                  const ListeningState(),
-                ),
                 favoritedSeasonControllerProvider.overrideWithValue(
                   const <FavoritedSeason>[],
                 ),
@@ -119,10 +115,18 @@ void main() {
               ),
             );
             await tester.pumpAndSettle();
-            expect(find.byType(FavoriteCollectionKindSelector), findsOneWidget);
-            expect(find.byType(ListeningContinueButton), findsOneWidget);
+            expect(find.byType(FavoriteCollectionKindSelector), findsNothing);
+            expect(find.byType(ListeningContinueButton), findsNothing);
+            expect(
+              find.byType(FavoriteCollectionSearchField),
+              empty ? findsNothing : findsOneWidget,
+            );
             expect(find.byType(MetadataViewModeButton), findsNothing);
             expect(find.byType(MetadataBackfillButton), findsNothing);
+            if (id == FavoriteCollection.likedCollectionId) {
+              expect(find.text('歌曲'), findsOneWidget);
+              expect(find.text('听声'), findsNothing);
+            }
             if (!empty) {
               final FavoriteListViewMode mode = desktop
                   ? tester
@@ -136,30 +140,27 @@ void main() {
                         )
                         .viewMode;
               expect(mode, FavoriteListViewMode.video);
-              final ListeningContinueButton button = tester.widget(
-                find.byType(ListeningContinueButton),
-              );
-              expect(button.items.single.kind, CollectionKind.spoken);
-              expect(button.items.single.collectionId, id);
               if (desktop) {
-                final List<PlayableItem> modified = <PlayableItem>[
-                  button.items.single.copyWith(cid: 99, page: 3),
-                  button.items.single.copyWith(aid: 2, bvid: 'BV2', cid: 100),
-                ];
-                await button.onPlay(modified, 1);
+                final list = tester.widget<DesktopFavoriteCollectionItemsList>(
+                  find.byType(DesktopFavoriteCollectionItemsList),
+                );
+                list.onPlayItem(0, entry);
+                await tester.pumpAndSettle();
                 final _Player player =
                     container.read(playerControllerProvider.notifier)
                         as _Player;
-                expect(player.played, modified);
-                expect(player.startIndex, 1);
+                expect(player.played!.single.kind, CollectionKind.spoken);
+                expect(player.played!.single.collectionId, id);
+                expect(player.startIndex, 0);
                 expect(player.sourceLabel, collection.name);
               }
             }
-            await tester.tap(find.byType(FavoriteCollectionKindSelector));
-            await tester.pumpAndSettle();
-            await tester.tap(
-              find.widgetWithText(CheckedPopupMenuItem<CollectionKind>, '歌曲'),
-            );
+            await container
+                .read(favoritesControllerProvider.notifier)
+                .setCollectionKind(
+                  collectionId: id,
+                  kind: CollectionKind.music,
+                );
             await tester.pumpAndSettle();
             expect(
               container
@@ -173,11 +174,35 @@ void main() {
               container.read(favoritesViewModeLogicProvider(id)),
               FavoriteListViewMode.metadata,
             );
+            expect(find.byType(FavoriteCollectionKindSelector), findsNothing);
             expect(find.byType(ListeningContinueButton), findsNothing);
             expect(
               find.byType(MetadataViewModeButton),
               empty ? findsNothing : findsOneWidget,
             );
+            expect(
+              find.byType(MetadataBackfillButton),
+              empty ? findsNothing : findsOneWidget,
+            );
+            if (!empty) {
+              final Rect search = tester.getRect(
+                find.byType(FavoriteCollectionSearchField),
+              );
+              final Rect view = tester.getRect(
+                find.byType(MetadataViewModeButton),
+              );
+              final Rect backfill = tester.getRect(
+                find.byType(MetadataBackfillButton),
+              );
+              expect(search.center.dy, view.center.dy);
+              expect(view.center.dy, backfill.center.dy);
+              expect(view.left - search.right, desktop ? 8 : 6);
+              expect(backfill.left - view.right, desktop ? 8 : 2);
+              await tester.enterText(find.byType(TextField), 'no match');
+              await tester.pumpAndSettle();
+              expect(find.byType(MetadataViewModeButton), findsOneWidget);
+              expect(find.byType(MetadataBackfillButton), findsOneWidget);
+            }
             expect(tester.takeException(), isNull);
             await tester.pumpWidget(const SizedBox.shrink());
           },

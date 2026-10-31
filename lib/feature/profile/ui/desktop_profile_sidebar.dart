@@ -498,17 +498,6 @@ class _DesktopProfileSidebarState extends ConsumerState<DesktopProfileSidebar> {
               child: CommonAttachMenu<_CollectionAction>(
                 itemHeight: 40,
                 items: <CommonAttachMenuItem<_CollectionAction>>[
-                  for (final CollectionKind kind in CollectionKind.values)
-                    CommonAttachMenuItem<_CollectionAction>(
-                      value: kind == CollectionKind.music
-                          ? _CollectionAction.music
-                          : _CollectionAction.spoken,
-                      label: kind.label,
-                      icon: kind == CollectionKind.music
-                          ? Icons.music_note_rounded
-                          : Icons.headphones_rounded,
-                      selected: collection.kind == kind,
-                    ),
                   if (!collection.isSystem)
                     const CommonAttachMenuItem<_CollectionAction>(
                       value: _CollectionAction.rename,
@@ -532,6 +521,17 @@ class _DesktopProfileSidebarState extends ConsumerState<DesktopProfileSidebar> {
                       value: _CollectionAction.delete,
                       label: '删除',
                       icon: Icons.delete_outline_rounded,
+                    ),
+                  for (final CollectionKind kind in CollectionKind.values)
+                    CommonAttachMenuItem<_CollectionAction>(
+                      value: kind == CollectionKind.music
+                          ? _CollectionAction.music
+                          : _CollectionAction.spoken,
+                      label: kind.label,
+                      icon: kind == CollectionKind.music
+                          ? Icons.music_note_rounded
+                          : Icons.headphones_rounded,
+                      selected: collection.kind == kind,
                     ),
                 ],
                 onSelected: (_CollectionAction action) async {

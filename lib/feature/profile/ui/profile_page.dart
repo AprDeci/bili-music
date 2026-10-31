@@ -400,15 +400,6 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
       context: context,
       position: position,
       items: <PopupMenuEntry<_CollectionAction>>[
-        for (final CollectionKind kind in CollectionKind.values)
-          CheckedPopupMenuItem<_CollectionAction>(
-            value: kind == CollectionKind.music
-                ? _CollectionAction.music
-                : _CollectionAction.spoken,
-            checked: collection.kind == kind,
-            child: Text(kind.label),
-          ),
-        if (!collection.isSystem) const PopupMenuDivider(),
         if (!collection.isSystem)
           PopupMenuItem<_CollectionAction>(
             value: _CollectionAction.rename,
@@ -435,6 +426,16 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
               title: Text('删除'),
               contentPadding: EdgeInsets.zero,
             ),
+          ),
+        if (!collection.isSystem || collection.isRemote)
+          const PopupMenuDivider(),
+        for (final CollectionKind kind in CollectionKind.values)
+          CheckedPopupMenuItem<_CollectionAction>(
+            value: kind == CollectionKind.music
+                ? _CollectionAction.music
+                : _CollectionAction.spoken,
+            checked: collection.kind == kind,
+            child: Text(kind.label),
           ),
       ],
     );

@@ -14,7 +14,6 @@ import 'package:bilimusic/feature/favorites/domain/favorites_state.dart';
 import 'package:bilimusic/feature/favorites/logic/favorite_entry_search.dart';
 import 'package:bilimusic/feature/favorites/logic/favorites_controller.dart';
 import 'package:bilimusic/feature/favorites/logic/favorites_view_mode_logic.dart';
-import 'package:bilimusic/feature/favorites/ui/components/favorite_collection_kind_selector.dart';
 import 'package:bilimusic/feature/favorites/ui/components/favorite_collection_playable_item.dart';
 import 'package:bilimusic/feature/favorites/ui/components/favorite_collection_search_field.dart';
 import 'package:bilimusic/feature/favorites/ui/components/desktop/desktop_favorite_collection_items_list.dart';
@@ -22,7 +21,6 @@ import 'package:bilimusic/feature/favorites/ui/components/favorite_entry_subtitl
 import 'package:bilimusic/feature/favorites/ui/components/favorited_seasons_list.dart';
 import 'package:bilimusic/feature/favorites/ui/components/favorites_metadata_toolbar_buttons.dart';
 import 'package:bilimusic/feature/favorites/ui/components/remote_collection_sync_status_bar.dart';
-import 'package:bilimusic/feature/listening/ui/listening_continue_button.dart';
 import 'package:bilimusic/feature/player/domain/playable_item.dart';
 import 'package:bilimusic/feature/player/logic/player_controller.dart';
 import 'package:bilimusic/feature/player/ui/components/player_collection_sheet.dart';
@@ -378,7 +376,6 @@ class _DesktopFavoriteCollectionPageState
     final Widget songsBody = Column(
       children: <Widget>[
         RemoteCollectionSyncStatusBar(status: _remoteSyncStatus),
-        _buildItemsToolbar(resolvedCollection, visibleItems, queueItems),
         Expanded(
           child: items.isEmpty && _remoteRefreshFailed
               ? StatusView(
@@ -398,64 +395,76 @@ class _DesktopFavoriteCollectionPageState
                   title: '这个歌单还是空的',
                   description: '先去搜索页或者播放器点亮爱心，喜欢的内容会出现在这里。',
                 )
-              : visibleItems.isEmpty
-              ? CustomScrollView(
-                  slivers: <Widget>[
-                    SliverStatusView(
-                      child: StatusView(
-                        icon: Icons.search_off_rounded,
-                        title: '没有结果？前往在线搜索试试',
-                        actions: <Widget>[
-                          TextButton.icon(
-                            onPressed: () => context.go('/search'),
-                            label: const Text('搜索'),
-                          ),
-                        ],
-                      ),
+              : Column(
+                  children: <Widget>[
+                    _buildItemsToolbar(resolvedCollection, visibleItems),
+                    Expanded(
+                      child: visibleItems.isEmpty
+                          ? CustomScrollView(
+                              slivers: <Widget>[
+                                SliverStatusView(
+                                  child: StatusView(
+                                    icon: Icons.search_off_rounded,
+                                    title: '没有结果？前往在线搜索试试',
+                                    actions: <Widget>[
+                                      TextButton.icon(
+                                        onPressed: () => context.go('/search'),
+                                        label: const Text('搜索'),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            )
+                          : DesktopFavoriteCollectionItemsList(
+                              items: visibleItems,
+                              footer: const BottomPageSpacer(),
+                              onNotification: (_) => false,
+                              selectedItemIds: _selectedItemIds,
+                              selectionMode: _selectionMode,
+                              onSelectionModeChanged: _setSelectionMode,
+                              onSelectionChanged: _setSelectedItemIds,
+                              viewMode: isSpoken
+                                  ? FavoriteListViewMode.video
+                                  : ref.watch(
+                                      favoritesViewModeLogicProvider(
+                                        resolvedCollection.id,
+                                      ),
+                                    ),
+                              onTapItem:
+                                  (int itemIndex, FavoriteEntry item) async {
+                                    await _playCollectionItem(
+                                      context,
+                                      ref,
+                                      collection: resolvedCollection,
+                                      queueItems: queueItems,
+                                      item: item,
+                                      index: itemIndex,
+                                    );
+                                  },
+                              onPlayItem:
+                                  (int itemIndex, FavoriteEntry item) async {
+                                    await _playCollectionItem(
+                                      context,
+                                      ref,
+                                      collection: resolvedCollection,
+                                      queueItems: queueItems,
+                                      item: item,
+                                      index: itemIndex,
+                                    );
+                                  },
+                              onMoreItem:
+                                  (int itemIndex, FavoriteEntry item) async {
+                                    await _showItemActionSheet(
+                                      context,
+                                      ref,
+                                      collection: resolvedCollection,
+                                      item: item,
+                                    );
+                                  },
+                            ),
                     ),
                   ],
-                )
-              : DesktopFavoriteCollectionItemsList(
-                  items: visibleItems,
-                  footer: const BottomPageSpacer(),
-                  onNotification: (_) => false,
-                  selectedItemIds: _selectedItemIds,
-                  selectionMode: _selectionMode,
-                  onSelectionModeChanged: _setSelectionMode,
-                  onSelectionChanged: _setSelectedItemIds,
-                  viewMode: isSpoken
-                      ? FavoriteListViewMode.video
-                      : ref.watch(
-                          favoritesViewModeLogicProvider(resolvedCollection.id),
-                        ),
-                  onTapItem: (int itemIndex, FavoriteEntry item) async {
-                    await _playCollectionItem(
-                      context,
-                      ref,
-                      collection: resolvedCollection,
-                      queueItems: queueItems,
-                      item: item,
-                      index: itemIndex,
-                    );
-                  },
-                  onPlayItem: (int itemIndex, FavoriteEntry item) async {
-                    await _playCollectionItem(
-                      context,
-                      ref,
-                      collection: resolvedCollection,
-                      queueItems: queueItems,
-                      item: item,
-                      index: itemIndex,
-                    );
-                  },
-                  onMoreItem: (int itemIndex, FavoriteEntry item) async {
-                    await _showItemActionSheet(
-                      context,
-                      ref,
-                      collection: resolvedCollection,
-                      item: item,
-                    );
-                  },
                 ),
         ),
       ],
@@ -469,7 +478,7 @@ class _DesktopFavoriteCollectionPageState
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
           DesktopTabSwitcher(
-            labels: <String>[resolvedCollection.kind.label, '合集'],
+            labels: const <String>['歌曲', '合集'],
             selectedIndex: _showFavoritedSeasons ? 1 : 0,
             onChanged: (int index) {
               setState(() {
@@ -490,7 +499,6 @@ class _DesktopFavoriteCollectionPageState
   Widget _buildItemsToolbar(
     FavoriteCollection collection,
     List<FavoriteEntry> visibleItems,
-    List<PlayableItem> queueItems,
   ) {
     final bool isSpoken = collection.kind == CollectionKind.spoken;
     return Padding(
@@ -515,22 +523,8 @@ class _DesktopFavoriteCollectionPageState
                     onClear: _clearSearchQuery,
                   ),
                 ),
-                const SizedBox(width: 8),
-                FavoriteCollectionKindSelector(collection: collection),
-                const SizedBox(width: 8),
-                if (isSpoken)
-                  ListeningContinueButton(
-                    items: queueItems,
-                    onPlay: (List<PlayableItem> items, int startIndex) =>
-                        PlayerUtil.playQueueAndOpenPlayer(
-                          context,
-                          ref,
-                          items: items,
-                          startIndex: startIndex,
-                          sourceLabel: collection.name,
-                        ),
-                  )
-                else if (visibleItems.isNotEmpty) ...<Widget>[
+                if (!isSpoken) ...<Widget>[
+                  const SizedBox(width: 8),
                   MetadataViewModeButton(
                     viewMode: ref.watch(
                       favoritesViewModeLogicProvider(collection.id),

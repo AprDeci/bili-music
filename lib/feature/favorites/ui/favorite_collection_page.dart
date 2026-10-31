@@ -14,14 +14,12 @@ import 'package:bilimusic/feature/favorites/logic/favorite_entry_search.dart';
 import 'package:bilimusic/feature/favorites/logic/favorites_controller.dart';
 import 'package:bilimusic/feature/favorites/logic/favorites_view_mode_logic.dart';
 import 'package:bilimusic/feature/favorites/ui/components/favorite_collection_items_list.dart';
-import 'package:bilimusic/feature/favorites/ui/components/favorite_collection_kind_selector.dart';
 import 'package:bilimusic/feature/favorites/ui/components/favorite_collection_playable_item.dart';
 import 'package:bilimusic/feature/favorites/ui/components/favorite_collection_search_field.dart';
 import 'package:bilimusic/feature/favorites/ui/components/favorite_entry_subtitle.dart';
 import 'package:bilimusic/feature/favorites/ui/components/favorited_seasons_list.dart';
 import 'package:bilimusic/feature/favorites/ui/components/favorites_metadata_toolbar_buttons.dart';
 import 'package:bilimusic/feature/favorites/ui/components/remote_collection_sync_status_bar.dart';
-import 'package:bilimusic/feature/listening/ui/listening_continue_button.dart';
 import 'package:bilimusic/feature/player/domain/playable_item.dart';
 import 'package:bilimusic/feature/player/logic/player_controller.dart';
 import 'package:bilimusic/feature/player/ui/components/player_collection_sheet.dart';
@@ -409,10 +407,10 @@ class _FavoriteCollectionPageState
         appBar: AppBar(
           title: Text(collection.name),
           bottom: showLikedTabs
-              ? TabBar(
+              ? const TabBar(
                   tabs: <Widget>[
-                    Tab(text: collection.kind.label),
-                    const Tab(text: '合集'),
+                    Tab(text: '歌曲'),
+                    Tab(text: '合集'),
                   ],
                 )
               : null,
@@ -438,7 +436,6 @@ class _FavoriteCollectionPageState
     return Column(
       children: <Widget>[
         RemoteCollectionSyncStatusBar(status: _remoteSyncStatus),
-        _buildItemsToolbar(collection, visibleItems, queueItems),
         Expanded(
           child: _buildCollectionItemsContent(
             collection,
@@ -473,15 +470,21 @@ class _FavoriteCollectionPageState
         Theme.of(context).colorScheme.primary,
       );
     }
-    return visibleItems.isEmpty
-        ? _buildSearchEmptyState(context, collection.isRemote)
-        : _buildItemsList(collection, visibleItems, queueItems);
+    return Column(
+      children: <Widget>[
+        _buildItemsToolbar(collection, visibleItems),
+        Expanded(
+          child: visibleItems.isEmpty
+              ? _buildSearchEmptyState(context, collection.isRemote)
+              : _buildItemsList(collection, visibleItems, queueItems),
+        ),
+      ],
+    );
   }
 
   Widget _buildItemsToolbar(
     FavoriteCollection collection,
     List<FavoriteEntry> visibleItems,
-    List<PlayableItem> queueItems,
   ) {
     if (_selectionMode) {
       return Padding(
@@ -499,47 +502,29 @@ class _FavoriteCollectionPageState
     final bool isSpoken = collection.kind == CollectionKind.spoken;
     return Padding(
       padding: const EdgeInsets.fromLTRB(14, 10, 14, 8),
-      child: Column(
+      child: Row(
         children: <Widget>[
-          FavoriteCollectionSearchField(
-            controller: _searchController,
-            query: _searchQuery,
-            onChanged: _updateSearchQuery,
-            onClear: _clearSearchQuery,
+          Expanded(
+            child: FavoriteCollectionSearchField(
+              controller: _searchController,
+              query: _searchQuery,
+              onChanged: _updateSearchQuery,
+              onClear: _clearSearchQuery,
+            ),
           ),
-          const SizedBox(height: 4),
-          Row(
-            children: <Widget>[
-              FavoriteCollectionKindSelector(collection: collection),
-              const Spacer(),
-              if (isSpoken)
-                ListeningContinueButton(
-                  items: queueItems,
-                  onPlay: (List<PlayableItem> items, int startIndex) =>
-                      PlayerUtil.playQueueAndOpenPlayer(
-                        context,
-                        ref,
-                        items: items,
-                        startIndex: startIndex,
-                        sourceLabel: collection.name,
-                      ),
-                )
-              else if (visibleItems.isNotEmpty) ...<Widget>[
-                MetadataViewModeButton(
-                  viewMode: ref.watch(
-                    favoritesViewModeLogicProvider(collection.id),
-                  ),
-                  onPressed: () => ref
-                      .read(
-                        favoritesViewModeLogicProvider(collection.id).notifier,
-                      )
-                      .toggle(),
-                ),
-                const SizedBox(width: 2),
-                MetadataBackfillButton(entries: visibleItems),
-              ],
-            ],
-          ),
+          if (!isSpoken) ...<Widget>[
+            const SizedBox(width: 6),
+            MetadataViewModeButton(
+              viewMode: ref.watch(
+                favoritesViewModeLogicProvider(collection.id),
+              ),
+              onPressed: () => ref
+                  .read(favoritesViewModeLogicProvider(collection.id).notifier)
+                  .toggle(),
+            ),
+            const SizedBox(width: 2),
+            MetadataBackfillButton(entries: visibleItems),
+          ],
         ],
       ),
     );
