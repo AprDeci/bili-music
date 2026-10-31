@@ -7,6 +7,7 @@ import 'package:bilimusic/feature/player/domain/bili_subtitle.dart';
 import 'package:bilimusic/feature/player/domain/player_subtitle_state.dart';
 import 'package:bilimusic/feature/player/logic/lyrics/player_subtitle_controller.dart';
 import 'package:bilimusic/feature/player/ui/lyrics/player_subtitle_document.dart';
+import 'package:bilimusic/feature/player/ui/lyrics/player_subtitle_sheet.dart';
 import 'package:bilimusic/feature/player/domain/playable_item.dart';
 import 'package:bilimusic/feature/player/domain/player_state.dart';
 import 'package:bilimusic/feature/player/logic/lyrics/player_lyric_settings_logic.dart';
@@ -100,7 +101,12 @@ class _PlayerLyricPanelState extends ConsumerState<PlayerLyricPanel> {
       _syncLyrics(metadataState);
     }
 
-    final Widget content = _buildContent(context, metadataState, useSubtitles);
+    final Widget content = _buildContent(
+      context,
+      metadataState,
+      subtitles,
+      useSubtitles,
+    );
     if (!_isDesktop) {
       return content;
     }
@@ -114,6 +120,7 @@ class _PlayerLyricPanelState extends ConsumerState<PlayerLyricPanel> {
   Widget _buildContent(
     BuildContext context,
     MetadataState metadataState,
+    PlayerSubtitleState subtitles,
     bool useSubtitles,
   ) {
     final PlayableItem? item = widget.item;
@@ -130,18 +137,40 @@ class _PlayerLyricPanelState extends ConsumerState<PlayerLyricPanel> {
     }
 
     final String itemKey = item.stableId;
+    final bool subtitleLoading =
+        subtitles.stableId == itemKey &&
+        (subtitles.isDiscovering || subtitles.pendingTrackId != null);
+    final String? subtitleError = subtitles.stableId == itemKey
+        ? subtitles.errorMessage
+        : null;
 
     if (item.isSpoken && !useSubtitles) {
-      return _PlayerLyricPanelStatus(
-        key: ValueKey<String>('spoken-$itemKey'),
-        variant: widget.variant,
-        title: '听书模式',
-        message: '不匹配音乐歌词，可选择可用字幕。',
-        icon: Icons.subtitles_outlined,
-      );
+      if (subtitleLoading) {
+        return _PlayerLyricPanelStatus(
+          key: ValueKey<String>('subtitle-loading-$itemKey'),
+          variant: widget.variant,
+          title: '正在加载字幕',
+          message: '正在获取当前视频的字幕。',
+          icon: Icons.subtitles_outlined,
+          isLoading: true,
+        );
+      }
+      if (subtitleError != null) {
+        return _PlayerLyricPanelStatus(
+          key: ValueKey<String>('subtitle-error-$itemKey'),
+          variant: widget.variant,
+          title: '字幕加载失败',
+          message: subtitleError,
+          icon: Icons.error_outline_rounded,
+          actionLabel: subtitles.hasTracks ? '选择字幕' : '重试',
+          onAction: () => _retrySubtitles(context, itemKey),
+        );
+      }
     }
 
-    if (!useSubtitles && metadataState.stableId != item.stableId) {
+    if (!item.isSpoken &&
+        !useSubtitles &&
+        metadataState.stableId != item.stableId) {
       return _PlayerLyricPanelStatus(
         key: ValueKey<String>('preparing-$itemKey'),
         variant: widget.variant,
@@ -151,7 +180,7 @@ class _PlayerLyricPanelState extends ConsumerState<PlayerLyricPanel> {
       );
     }
 
-    if (!useSubtitles && metadataState.isLoading) {
+    if (!item.isSpoken && !useSubtitles && metadataState.isLoading) {
       return _PlayerLyricPanelStatus(
         key: ValueKey<String>('loading-$itemKey'),
         variant: widget.variant,
@@ -163,7 +192,7 @@ class _PlayerLyricPanelState extends ConsumerState<PlayerLyricPanel> {
     }
 
     if (useSubtitles || metadataState.hasLyrics) {
-      return Padding(
+      final Widget lyrics = Padding(
         key: ValueKey<String>('lyrics-$itemKey'),
         padding: _isDesktop
             ? const EdgeInsets.symmetric(horizontal: 30)
@@ -179,6 +208,35 @@ class _PlayerLyricPanelState extends ConsumerState<PlayerLyricPanel> {
             },
           ),
         ),
+      );
+      if (!useSubtitles) return lyrics;
+      return Column(
+        key: ValueKey<String>('subtitle-status-$itemKey'),
+        children: <Widget>[
+          Expanded(child: lyrics),
+          if (subtitleLoading)
+            const Padding(
+              padding: EdgeInsets.all(12),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: <Widget>[
+                  SizedBox.square(
+                    dimension: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                  SizedBox(width: 12),
+                  Text('正在加载字幕'),
+                ],
+              ),
+            ),
+          if (subtitleError != null)
+            TextButton(
+              onPressed: () => _retrySubtitles(context, itemKey),
+              child: Text(
+                '$subtitleError（${subtitles.hasTracks ? '选择字幕' : '重试'}）',
+              ),
+            ),
+        ],
       );
     }
 
@@ -198,10 +256,24 @@ class _PlayerLyricPanelState extends ConsumerState<PlayerLyricPanel> {
     return _PlayerLyricPanelStatus(
       key: ValueKey<String>('no-lyrics-$itemKey'),
       variant: widget.variant,
-      title: '暂无歌词',
-      message: _isDesktop ? '没有匹配到当前歌曲的歌词。' : '没有匹配到当前分 P 的歌词。',
+      title: '当前视频没有可用歌词|字幕',
+      message: '可稍后重试或切换播放内容。',
       icon: Icons.lyrics_outlined,
     );
+  }
+
+  void _retrySubtitles(BuildContext context, String stableId) {
+    final PlayerSubtitleState subtitles = ref.read(
+      playerSubtitleControllerProvider,
+    );
+    if (widget.item?.stableId != stableId || subtitles.stableId != stableId) {
+      return;
+    }
+    if (subtitles.hasTracks) {
+      unawaited(showPlayerSubtitleSheet(context));
+    } else {
+      ref.invalidate(playerSubtitleControllerProvider);
+    }
   }
 
   void _syncSubtitles(PlayerSubtitleState subtitles) {

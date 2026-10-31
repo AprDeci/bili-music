@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:bilimusic/common/domain/collection_kind.dart';
 import 'package:bilimusic/common/domain/meta_lyrics.dart';
 import 'package:bilimusic/feature/metadata/domain/metadata.dart';
 import 'package:bilimusic/feature/metadata/domain/metadata_state.dart';
@@ -170,54 +171,76 @@ void main() {
     },
   );
 
-  for (final tracks in <List<BiliSubtitleTrack>>[const [], _tracks]) {
-    for (final selectedTrackId in <String?>[null, 'zh']) {
-      if (tracks.isEmpty && selectedTrackId != null) {
-        continue;
-      }
-      testWidgets(
-        'toolbar stays left aligned with fixed gaps and settings last '
-        '(${tracks.length} tracks, $selectedTrackId)',
-        (tester) async {
-          await _pumpPage(
-            tester,
-            tracks: tracks,
-            selectedTrackId: selectedTrackId,
-          );
-          final tooltips = <String>[
-            '手动匹配歌词',
-            '歌词偏移',
-            if (selectedTrackId == null) '隐藏译文',
-            if (tracks.isNotEmpty) 'AI字幕',
-            '歌词外观',
-          ];
-          final rects = tooltips
-              .map(
-                (tooltip) => tester.getRect(
-                  find.ancestor(
-                    of: find.byTooltip(tooltip),
-                    matching: find.byType(IconButton),
-                  ),
+  for (final spoken in [false, true]) {
+    for (final horizontalPadding in [24.0, 52.0]) {
+      for (final tracks in <List<BiliSubtitleTrack>>[const [], _tracks]) {
+        for (final selectedTrackId in <String?>[null, 'zh']) {
+          if (tracks.isEmpty && selectedTrackId != null) continue;
+          testWidgets(
+            'toolbar aligns with lyrics at $horizontalPadding with only visible gaps '
+            '(spoken=$spoken, ${tracks.length} tracks, $selectedTrackId)',
+            (tester) async {
+              await _pumpPage(
+                tester,
+                tracks: tracks,
+                selectedTrackId: selectedTrackId,
+                item: _item.copyWith(
+                  kind: spoken ? CollectionKind.spoken : CollectionKind.music,
                 ),
-              )
-              .toList();
-          if (tracks.isNotEmpty) {
-            final subtitleButton = tester.widget<IconButton>(
-              find.widgetWithIcon(IconButton, Icons.subtitles_outlined),
-            );
-            final searchButton = tester.widget<IconButton>(
-              find.widgetWithIcon(IconButton, Icons.search_rounded),
-            );
-            expect(subtitleButton.onPressed, isNotNull);
-            expect(subtitleButton.color, searchButton.color);
-          }
-          expect(rects.first.left, 12);
-          for (int index = 1; index < rects.length; index++) {
-            expect(rects[index].left - rects[index - 1].right, 20);
-          }
-          expect(tester.takeException(), isNull);
-        },
-      );
+                horizontalPadding: horizontalPadding,
+              );
+              final tooltips = <String>[
+                if (!spoken) '手动匹配歌词',
+                if (!spoken || selectedTrackId != null) '歌词偏移',
+                if (!spoken && selectedTrackId == null) '隐藏译文',
+                if (tracks.isNotEmpty) 'AI字幕',
+                '歌词外观',
+              ];
+              final buttons = tooltips
+                  .map(
+                    (tooltip) => find.ancestor(
+                      of: find.byTooltip(tooltip),
+                      matching: find.byType(IconButton),
+                    ),
+                  )
+                  .toList();
+              final rects = buttons.map(tester.getRect).toList();
+              final panel = tester.getRect(find.byType(PlayerLyricPanel));
+              final contentLeft = panel.left + horizontalPadding;
+              expect(rects.first.left, contentLeft);
+              final first = tester.widget<IconButton>(buttons.first);
+              expect(
+                tester.getRect(find.byWidget(first.icon)).left,
+                contentLeft,
+              );
+              if (!spoken || selectedTrackId != null) {
+                final preset = tester
+                    .widget<LyricView>(find.byType(LyricView))
+                    .preset!;
+                expect(
+                  preset.padding,
+                  EdgeInsets.symmetric(horizontal: horizontalPadding),
+                );
+              }
+              for (int index = 0; index < rects.length; index++) {
+                expect(
+                  rects[index].width,
+                  greaterThanOrEqualTo(kMinInteractiveDimension),
+                );
+                expect(
+                  rects[index].height,
+                  greaterThanOrEqualTo(kMinInteractiveDimension),
+                );
+                if (index > 0) {
+                  expect(rects[index].left - rects[index - 1].right, 20);
+                }
+              }
+              expect(find.byType(IconButton), findsNWidgets(tooltips.length));
+              expect(tester.takeException(), isNull);
+            },
+          );
+        }
+      }
     }
   }
 
@@ -252,7 +275,7 @@ void main() {
             ),
           )
           .left,
-      12,
+      24,
     );
     await tester.drag(toolbar, const Offset(-200, 0));
     await tester.pump(const Duration(seconds: 1));
@@ -425,6 +448,8 @@ void main() {
     expect(_tile(tester, _tracks.first.label).onTap, isNull);
     expect(_tile(tester, _tracks.last.label).onTap, isNull);
     expect(_tile(tester, 'Meting歌词').onTap, isNotNull);
+    expect(find.byType(LyricView), findsOneWidget);
+    expect(find.text('正在加载字幕'), findsNothing);
     await tester.tap(find.text('Meting歌词'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
@@ -476,8 +501,15 @@ Future<_Fixture> _pumpPage(
   WidgetTester tester, {
   List<BiliSubtitleTrack> tracks = _tracks,
   String? selectedTrackId,
+  PlayableItem item = _item,
+  double horizontalPadding = 24,
 }) async {
-  final fixture = _Fixture(tracks: tracks, selectedTrackId: selectedTrackId);
+  final fixture = _Fixture(
+    tracks: tracks,
+    selectedTrackId: selectedTrackId,
+    item: item,
+    horizontalPadding: horizontalPadding,
+  );
   await tester.pumpWidget(
     UncontrolledProviderScope(
       container: fixture.container,
@@ -510,7 +542,10 @@ class _Fixture {
   _Fixture({
     required List<BiliSubtitleTrack> tracks,
     required String? selectedTrackId,
-  }) : subtitles = _SubtitleController(
+    required PlayableItem item,
+    required double horizontalPadding,
+  }) : player = _PlayerController(item),
+       subtitles = _SubtitleController(
          PlayerSubtitleState(
            stableId: _item.stableId,
            tracks: tracks,
@@ -522,14 +557,16 @@ class _Fixture {
       overrides: [
         playerControllerProvider.overrideWith(() => player),
         metadataControllerProvider.overrideWith(_MetadataController.new),
-        playerLyricSettingsLogicProvider.overrideWith(_LyricSettings.new),
+        playerLyricSettingsLogicProvider.overrideWith(
+          () => _LyricSettings(horizontalPadding),
+        ),
         playerSubtitleControllerProvider.overrideWith(() => subtitles),
         biliSubtitleRepositoryProvider.overrideWithValue(repository),
       ],
     );
   }
 
-  final _PlayerController player = _PlayerController();
+  final _PlayerController player;
   final _SubtitleController subtitles;
   final _SubtitleRepository repository = _SubtitleRepository();
   late final ProviderContainer container;
@@ -546,9 +583,11 @@ class _SubtitleController extends PlayerSubtitleController {
 }
 
 class _PlayerController extends PlayerController {
+  _PlayerController(this.item);
+  final PlayableItem item;
   @override
-  PlayerState build() => const PlayerState(
-    currentItem: _item,
+  PlayerState build() => PlayerState(
+    currentItem: item,
     isReady: true,
     position: Duration(milliseconds: 1500),
     duration: Duration(seconds: 15),
@@ -574,8 +613,11 @@ class _MetadataController extends MetadataController {
 }
 
 class _LyricSettings extends PlayerLyricSettingsLogic {
+  _LyricSettings(this.horizontalPadding);
+  final double horizontalPadding;
   @override
-  PlayerLyricSettings build() => const PlayerLyricSettings();
+  PlayerLyricSettings build() =>
+      PlayerLyricSettings(horizontalPadding: horizontalPadding);
   @override
   Future<void> update(PlayerLyricSettings value) async => state = value;
 }

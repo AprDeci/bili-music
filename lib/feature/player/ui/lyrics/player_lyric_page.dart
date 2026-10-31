@@ -45,6 +45,11 @@ class PlayerLyricPage extends ConsumerWidget {
         (settings) => settings.showTranslation,
       ),
     );
+    final double horizontalPadding = ref.watch(
+      playerLyricSettingsLogicProvider.select(
+        (settings) => settings.horizontalPadding,
+      ),
+    );
     final PlayableItem? item = this.item;
     final bool isSpoken = item?.isSpoken ?? false;
     final MetadataState metadataState = isSpoken
@@ -80,6 +85,7 @@ class PlayerLyricPage extends ConsumerWidget {
       children: <Widget>[
         Expanded(child: content),
         _PlayerLyricToolbar(
+          horizontalPadding: horizontalPadding,
           activeColor: ColorUtil.getAllShades(
             activeColor ?? Theme.of(context).colorScheme.primary,
           )[600]!,
@@ -178,6 +184,7 @@ class _PlayerLyricPanelHost extends ConsumerWidget {
 class _PlayerLyricToolbar extends StatelessWidget {
   const _PlayerLyricToolbar({
     required this.activeColor,
+    required this.horizontalPadding,
     this.onOffset,
     this.onAppearance,
     this.onSearch,
@@ -187,6 +194,7 @@ class _PlayerLyricToolbar extends StatelessWidget {
   });
 
   final Color activeColor;
+  final double horizontalPadding;
   final VoidCallback? onSearch;
   final VoidCallback? onOffset;
   final VoidCallback? onAppearance;
@@ -201,60 +209,69 @@ class _PlayerLyricToolbar extends StatelessWidget {
     return SafeArea(
       top: false,
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(12, 0, 12, 4),
-        child: SizedBox(
-          width: double.infinity,
-          child: SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.start,
-              children: <Widget>[
-                if (onSearch != null)
-                  IconButton(
-                    tooltip: '手动匹配歌词',
-                    onPressed: onSearch,
-                    color: iconColor,
-                    icon: const Icon(Icons.search_rounded),
-                  ),
-                const SizedBox(width: 20),
-                if (onOffset != null)
-                  IconButton(
-                    tooltip: '歌词偏移',
-                    onPressed: onOffset,
-                    color: iconColor,
-                    icon: const Icon(Icons.hourglass_empty_rounded),
-                  ),
-                if (toggleTranslation != null) ...<Widget>[
-                  const SizedBox(width: 20),
-                  IconButton(
-                    tooltip: showTranslation ? '隐藏译文' : '显示译文',
-                    onPressed: toggleTranslation,
-                    color: iconColor.withValues(
-                      alpha: showTranslation ? 1 : 0.45,
+        padding: EdgeInsets.fromLTRB(
+          horizontalPadding,
+          0,
+          horizontalPadding,
+          4,
+        ),
+        child: IconButtonTheme(
+          data: IconButtonThemeData(
+            style: IconButton.styleFrom(
+              alignment: AlignmentDirectional.centerStart,
+              padding: EdgeInsets.zero,
+              minimumSize: const Size.square(kMinInteractiveDimension),
+            ),
+          ),
+          child: SizedBox(
+            width: double.infinity,
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.start,
+                spacing: 20,
+                children: <Widget>[
+                  if (onSearch != null)
+                    IconButton(
+                      tooltip: '手动匹配歌词',
+                      onPressed: onSearch,
+                      color: iconColor,
+                      icon: const Icon(Icons.search_rounded),
                     ),
-                    icon: const Icon(BmIcons.translate, size: 30),
-                  ),
-                ],
-                if (onSubtitles != null) ...<Widget>[
-                  const SizedBox(width: 20),
+                  if (onOffset != null)
+                    IconButton(
+                      tooltip: '歌词偏移',
+                      onPressed: onOffset,
+                      color: iconColor,
+                      icon: const Icon(Icons.hourglass_empty_rounded),
+                    ),
+                  if (toggleTranslation != null)
+                    IconButton(
+                      tooltip: showTranslation ? '隐藏译文' : '显示译文',
+                      onPressed: toggleTranslation,
+                      color: iconColor.withValues(
+                        alpha: showTranslation ? 1 : 0.45,
+                      ),
+                      icon: const Icon(BmIcons.translate, size: 30),
+                    ),
+                  if (onSubtitles != null)
+                    IconButton(
+                      tooltip: 'AI字幕',
+                      onPressed: onSubtitles,
+                      color: iconColor,
+                      icon: const Icon(Icons.subtitles_outlined),
+                    ),
                   IconButton(
-                    tooltip: 'AI字幕',
-                    onPressed: onSubtitles,
+                    tooltip: '歌词外观',
+                    onPressed: onAppearance,
                     color: iconColor,
-                    icon: const Icon(Icons.subtitles_outlined),
+                    icon: HugeIcon(
+                      icon: HugeIcons.strokeRoundedPreferenceHorizontal,
+                      color: iconColor,
+                    ),
                   ),
                 ],
-                const SizedBox(width: 20),
-                IconButton(
-                  tooltip: '歌词外观',
-                  onPressed: onAppearance,
-                  color: iconColor,
-                  icon: HugeIcon(
-                    icon: HugeIcons.strokeRoundedPreferenceHorizontal,
-                    color: iconColor,
-                  ),
-                ),
-              ],
+              ),
             ),
           ),
         ),

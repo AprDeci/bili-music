@@ -32,6 +32,13 @@ const String _lyrics =
     '[offset:200]\n[00:01.000]第一行\n[00:04.000]第二行\n'
     '[00:07.000]第三行\n[00:10.000]第四行';
 
+const BiliSubtitleTrack _subtitleTrack = BiliSubtitleTrack(
+  id: 'ai-zh',
+  language: 'ai-zh',
+  label: 'AI中文字幕',
+  url: 'https://example.com/subtitle.json',
+);
+
 void main() {
   testWidgets(
     'same content switching to spoken clears music but keeps subtitles',
@@ -45,7 +52,7 @@ void main() {
         item: _item.copyWith(kind: CollectionKind.spoken),
       );
       expect(find.byType(LyricView), findsNothing);
-      expect(find.text('听书模式'), findsOneWidget);
+      expect(find.text('当前视频没有可用歌词|字幕'), findsOneWidget);
       expect(controller.document, isNull);
       final ProviderContainer container = ProviderScope.containerOf(
         tester.element(find.byType(PlayerLyricPanel)),
@@ -67,6 +74,176 @@ void main() {
       );
     },
   );
+
+  for (final PlayerLyricPanelVariant variant
+      in PlayerLyricPanelVariant.values) {
+    testWidgets(
+      '${variant.name} subtitles discover download render and stop loading',
+      (tester) async {
+        await _pumpPanel(
+          tester,
+          variant: variant,
+          item: _item.copyWith(kind: CollectionKind.spoken),
+        );
+        final ProviderContainer container = ProviderScope.containerOf(
+          tester.element(find.byType(PlayerLyricPanel)),
+        );
+        final _NoSubtitles subtitles =
+            container.read(playerSubtitleControllerProvider.notifier)
+                as _NoSubtitles;
+        Future<void> show(PlayerSubtitleState state) async {
+          subtitles.setSubtitles(state);
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 300));
+        }
+
+        final PlayerSubtitleState discovering = PlayerSubtitleState(
+          stableId: _item.stableId,
+          isDiscovering: true,
+        );
+        await show(discovering);
+        expect(find.byType(CircularProgressIndicator), findsOneWidget);
+        expect(find.text('正在加载字幕'), findsOneWidget);
+        expect(find.text('当前视频没有可用歌词|字幕'), findsNothing);
+        final PlayerSubtitleState downloading = discovering.copyWith(
+          isDiscovering: false,
+          tracks: const <BiliSubtitleTrack>[_subtitleTrack],
+          pendingTrackId: _subtitleTrack.id,
+        );
+        await show(downloading);
+        expect(find.byType(CircularProgressIndicator), findsOneWidget);
+        expect(find.byType(LyricView), findsNothing);
+        final PlayerSubtitleState loaded = _AiSubtitles().build().copyWith(
+          tracks: downloading.tracks,
+        );
+        await show(loaded);
+        expect(find.byType(CircularProgressIndicator), findsNothing);
+        expect(find.byType(LyricView), findsOneWidget);
+        final LyricController controller = tester
+            .widget<LyricView>(find.byType(LyricView))
+            .controller;
+        final LyricDocument document = controller.document!;
+        expect(document.lines.first.text, 'AI字幕第一行');
+        await show(loaded.copyWith(pendingTrackId: _subtitleTrack.id));
+        expect(find.byType(CircularProgressIndicator), findsOneWidget);
+        expect(find.byType(LyricView), findsOneWidget);
+        expect(controller.document, same(document));
+        await show(downloading.copyWith(pendingTrackId: null));
+        expect(find.byType(CircularProgressIndicator), findsNothing);
+        expect(find.byType(LyricView), findsNothing);
+        expect(find.text('当前视频没有可用歌词|字幕'), findsOneWidget);
+        expect(controller.document, isNull);
+        await show(discovering);
+        expect(find.byType(CircularProgressIndicator), findsOneWidget);
+        await show(PlayerSubtitleState(stableId: _item.stableId));
+        expect(find.byType(CircularProgressIndicator), findsNothing);
+        expect(find.text('当前视频没有可用歌词|字幕'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      },
+    );
+
+    testWidgets(
+      '${variant.name} ignores stale subtitles and keeps failures actionable',
+      (tester) async {
+        await _pumpPanel(
+          tester,
+          variant: variant,
+          item: _item.copyWith(kind: CollectionKind.spoken),
+        );
+        final ProviderContainer container = ProviderScope.containerOf(
+          tester.element(find.byType(PlayerLyricPanel)),
+        );
+        _NoSubtitles subtitles =
+            container.read(playerSubtitleControllerProvider.notifier)
+                as _NoSubtitles;
+        Future<void> show(PlayerSubtitleState state) async {
+          subtitles.setSubtitles(state);
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 300));
+        }
+
+        for (final PlayerSubtitleState stale in <PlayerSubtitleState>[
+          const PlayerSubtitleState(
+            stableId: 'previous',
+            isDiscovering: true,
+            pendingTrackId: 'old-track',
+          ),
+          const PlayerSubtitleState(
+            stableId: 'previous',
+            errorMessage: '上一首字幕失败',
+          ),
+          _AiSubtitles().build().copyWith(stableId: 'previous'),
+        ]) {
+          await show(stale);
+          expect(find.byType(CircularProgressIndicator), findsNothing);
+          expect(find.byType(LyricView), findsNothing);
+          expect(find.text('上一首字幕失败'), findsNothing);
+          expect(find.text('当前视频没有可用歌词|字幕'), findsOneWidget);
+        }
+        await show(
+          PlayerSubtitleState(
+            stableId: _item.stableId,
+            errorMessage: '字幕列表获取失败',
+          ),
+        );
+        expect(find.text('字幕列表获取失败'), findsOneWidget);
+        expect(find.text('重试'), findsOneWidget);
+        expect(find.text('当前视频没有可用歌词|字幕'), findsNothing);
+        await tester.tap(find.text('重试'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+        expect(find.text('字幕列表获取失败'), findsNothing);
+        expect(find.text('当前视频没有可用歌词|字幕'), findsOneWidget);
+        subtitles =
+            container.read(playerSubtitleControllerProvider.notifier)
+                as _NoSubtitles;
+        await show(
+          PlayerSubtitleState(
+            stableId: _item.stableId,
+            tracks: const <BiliSubtitleTrack>[_subtitleTrack],
+            errorMessage: '字幕加载失败，请重试',
+          ),
+        );
+        expect(find.text('字幕加载失败，请重试'), findsOneWidget);
+        expect(find.text('选择字幕'), findsOneWidget);
+        expect(find.text('当前视频没有可用歌词|字幕'), findsNothing);
+        await show(
+          _AiSubtitles().build().copyWith(
+            tracks: const <BiliSubtitleTrack>[_subtitleTrack],
+            errorMessage: '字幕加载失败，请重试',
+          ),
+        );
+        expect(find.byType(LyricView), findsOneWidget);
+        expect(find.text('字幕加载失败，请重试（选择字幕）'), findsOneWidget);
+        expect(find.byType(CircularProgressIndicator), findsNothing);
+        expect(tester.takeException(), isNull);
+      },
+    );
+
+    testWidgets('${variant.name} music absence preserves lyric errors', (
+      tester,
+    ) async {
+      await _pumpPanel(tester, variant: variant);
+      final ProviderContainer container = ProviderScope.containerOf(
+        tester.element(find.byType(PlayerLyricPanel)),
+      );
+      final _MetadataController metadata =
+          container.read(metadataControllerProvider.notifier)
+              as _MetadataController;
+      metadata.clearLyrics();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(find.text('当前视频没有可用歌词|字幕'), findsOneWidget);
+      metadata.failLyrics();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(find.text('歌词查询失败'), findsOneWidget);
+      expect(find.text('歌词服务暂时不可用'), findsOneWidget);
+      expect(find.text('重试'), findsOneWidget);
+      expect(find.text('当前视频没有可用歌词|字幕'), findsNothing);
+      expect(tester.takeException(), isNull);
+    });
+  }
 
   testWidgets(
     'visible playback advances every frame without rebuilding lyrics',
@@ -626,7 +803,7 @@ void main() {
         .clearLyrics();
     await tester.pump(const Duration(seconds: 1));
     expect(controller.document, isNull);
-    expect(find.text('暂无歌词'), findsOneWidget);
+    expect(find.text('当前视频没有可用歌词|字幕'), findsOneWidget);
   });
 }
 
@@ -756,4 +933,9 @@ class _MetadataController extends MetadataController {
   );
 
   void clearLyrics() => state = MetadataState(stableId: _item.stableId);
+
+  void failLyrics() => state = MetadataState(
+    stableId: _item.stableId,
+    errorMessage: '歌词服务暂时不可用',
+  );
 }
