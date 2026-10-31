@@ -27,7 +27,9 @@ class PlayerSubtitleController extends _$PlayerSubtitleController {
   @override
   PlayerSubtitleState build() {
     ref.watch(
-      playerControllerProvider.select((value) => value.currentItem?.stableId),
+      playerControllerProvider.select(
+        (value) => (value.currentItem?.stableId, value.currentItem?.kind),
+      ),
     );
     final PlayableItem? item = ref.read(playerControllerProvider).currentItem;
     final String? account = item != null && (item.cid ?? 0) > 0
@@ -60,12 +62,21 @@ class PlayerSubtitleController extends _$PlayerSubtitleController {
 
   Future<void> _discover(PlayableItem item, int generation) async {
     if (!_isCurrent(generation, item.stableId)) return;
+    final int selection = _selectionGeneration;
     try {
       final List<BiliSubtitleTrack> tracks = await ref
           .read(biliSubtitleRepositoryProvider)
           .fetchTracks(item);
       if (!_isCurrent(generation, item.stableId)) return;
       state = state.copyWith(tracks: tracks, isDiscovering: false);
+      if (item.isSpoken &&
+          tracks.isNotEmpty &&
+          selection == _selectionGeneration) {
+        final BiliSubtitleTrack track =
+            tracks.where((value) => !value.isTranslated).firstOrNull ??
+            tracks.first;
+        await selectTrack(track.id);
+      }
     } on Object {
       if (!_isCurrent(generation, item.stableId)) return;
       state = state.copyWith(isDiscovering: false, errorMessage: '字幕列表获取失败');
