@@ -15,6 +15,7 @@ import 'package:bilimusic/feature/favorites/domain/favorite_entry.dart';
 import 'package:bilimusic/feature/favorites/domain/favorites_state.dart';
 import 'package:bilimusic/feature/favorites/logic/favorite_entry_metadata.dart';
 import 'package:bilimusic/feature/favorites/logic/favorites_controller.dart';
+import 'package:bilimusic/feature/favorites/ui/components/collection_kind_dialog.dart';
 import 'package:bilimusic/feature/profile/ui/components/remote_collection_import_dialog.dart';
 import 'package:bilimusic/feature/profile/ui/components/user_card.dart';
 import 'package:bilimusic/feature/up/logic/favorite_up_controller.dart';
@@ -198,11 +199,18 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
       return;
     }
 
+    if (!context.mounted) return;
+    final CollectionKind? kind = await showCollectionKindDialog(
+      context: context,
+    );
+    if (!mounted || kind == null) return;
+
     final FavoritesController controller = ref.read(
       favoritesControllerProvider.notifier,
     );
     final FavoriteCollection? collection = await controller.createCollection(
       result,
+      kind: kind,
     );
     if (!mounted) {
       return;
@@ -233,11 +241,17 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
       return;
     }
 
+    if (!mounted) return;
+    final CollectionKind? kind = await showCollectionKindDialog(
+      context: context,
+    );
+    if (!mounted || kind == null) return;
+
     final FavoriteCollection? collection;
     try {
       collection = await ref
           .read(favoritesControllerProvider.notifier)
-          .createRemoteCollection(result);
+          .createRemoteCollection(result, kind: kind);
     } on BiliAuthRequiredException {
       if (mounted) {
         LoginPrompt.show(context, reason: '网络歌单需要登录 B 站账号');
@@ -271,7 +285,13 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
       return;
     }
 
-    await controller.bindRemoteCollection(collection);
+    final CollectionKind? kind = await showCollectionKindDialog(
+      context: context,
+      initialKind: collection.kind,
+    );
+    if (!mounted || kind == null) return;
+
+    await controller.bindRemoteCollection(collection.copyWith(kind: kind));
     await controller.refreshRemoteCollectionItems(collectionId: collection.id);
     if (!mounted) {
       return;
@@ -396,12 +416,12 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
     );
 
     HapticFeedback.lightImpact();
-    final Enum? action = await showMenu<Enum>(
+    final _CollectionAction? action = await showMenu<_CollectionAction>(
       context: context,
       position: position,
-      items: <PopupMenuEntry<Enum>>[
+      items: <PopupMenuEntry<_CollectionAction>>[
         if (!collection.isSystem)
-          PopupMenuItem<Enum>(
+          PopupMenuItem<_CollectionAction>(
             value: _CollectionAction.rename,
             child: ListTile(
               leading: Icon(Icons.drive_file_rename_outline_rounded),
@@ -410,7 +430,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
             ),
           ),
         if (collection.isRemote)
-          PopupMenuItem<Enum>(
+          PopupMenuItem<_CollectionAction>(
             value: _CollectionAction.remove,
             child: ListTile(
               leading: Icon(Icons.remove_circle_outline_rounded),
@@ -419,7 +439,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
             ),
           ),
         if (!collection.isSystem)
-          PopupMenuItem<Enum>(
+          PopupMenuItem<_CollectionAction>(
             value: _CollectionAction.delete,
             child: ListTile(
               leading: Icon(Icons.delete_outline_rounded),
@@ -429,12 +449,14 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
           ),
         if (!collection.isSystem || collection.isRemote)
           const PopupMenuDivider(),
-        for (final CollectionKind kind in CollectionKind.values)
-          CheckedPopupMenuItem<Enum>(
-            value: kind,
-            checked: collection.kind == kind,
-            child: Text(kind.label),
+        const PopupMenuItem<_CollectionAction>(
+          value: _CollectionAction.changeKind,
+          child: ListTile(
+            leading: Icon(Icons.category_outlined),
+            title: Text('修改类型'),
+            contentPadding: EdgeInsets.zero,
           ),
+        ),
       ],
     );
 
@@ -443,7 +465,13 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
     }
 
     switch (action) {
-      case CollectionKind kind:
+      case _CollectionAction.changeKind:
+        final CollectionKind? kind = await showCollectionKindDialog(
+          context: context,
+          initialKind: collection.kind,
+          title: '修改类型',
+        );
+        if (!mounted || kind == null || kind == collection.kind) return;
         bool saved;
         try {
           saved = await ref
@@ -632,7 +660,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
   }
 }
 
-enum _CollectionAction { rename, delete, remove }
+enum _CollectionAction { rename, delete, remove, changeKind }
 
 enum _FavoriteListTab { remote, local }
 

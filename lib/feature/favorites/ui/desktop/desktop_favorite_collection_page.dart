@@ -13,6 +13,7 @@ import 'package:bilimusic/feature/favorites/domain/favorites_state.dart';
 import 'package:bilimusic/feature/favorites/logic/favorite_entry_search.dart';
 import 'package:bilimusic/feature/favorites/logic/favorites_controller.dart';
 import 'package:bilimusic/feature/favorites/logic/favorites_view_mode_logic.dart';
+import 'package:bilimusic/feature/favorites/ui/components/collection_kind_tag.dart';
 import 'package:bilimusic/feature/favorites/ui/components/favorite_collection_search_field.dart';
 import 'package:bilimusic/feature/favorites/ui/components/desktop/desktop_favorite_collection_items_list.dart';
 import 'package:bilimusic/feature/favorites/ui/components/favorite_entry_subtitle.dart';
@@ -371,6 +372,23 @@ class _DesktopFavoriteCollectionPageState
         .toList(growable: false);
     final Widget songsBody = Column(
       children: <Widget>[
+        Padding(
+          padding: const EdgeInsets.fromLTRB(14, 12, 14, 4),
+          child: Row(
+            children: <Widget>[
+              Flexible(
+                child: Text(
+                  resolvedCollection.name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.titleMedium,
+                ),
+              ),
+              const SizedBox(width: 8),
+              CollectionKindTag(kind: resolvedCollection.kind),
+            ],
+          ),
+        ),
         RemoteCollectionSyncStatusBar(status: _remoteSyncStatus),
         Expanded(
           child: items.isEmpty && _remoteRefreshFailed

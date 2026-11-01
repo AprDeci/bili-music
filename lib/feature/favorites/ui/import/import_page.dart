@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:bilimusic/common/components/cached_image.dart';
 import 'package:bilimusic/common/components/status_view.dart';
+import 'package:bilimusic/common/domain/collection_kind.dart';
 import 'package:bilimusic/common/util/toast_util.dart';
 import 'package:bilimusic/core/bili/session/bili_session.dart';
 import 'package:bilimusic/core/bili/session/bili_session_controller.dart';
@@ -15,6 +16,7 @@ import 'package:bilimusic/feature/favorites/domain/favorites_state.dart';
 import 'package:bilimusic/feature/favorites/logic/favorites_controller.dart';
 import 'package:bilimusic/feature/favorites/logic/import/favorites_import_controller.dart';
 import 'package:bilimusic/feature/favorites/logic/import/favorites_import_state.dart';
+import 'package:bilimusic/feature/favorites/ui/components/collection_kind_dialog.dart';
 import 'package:bilimusic/feature/favorites/ui/import/manual_match_sheet.dart';
 import 'package:bilimusic/feature/player/domain/playable_item.dart';
 import 'package:bilimusic/router/util/player_navigation.dart';
@@ -120,8 +122,17 @@ class _ImportPageState extends ConsumerState<ImportPage> {
       collections: favoritesState.collections,
       isLoggedIn: session?.isLoggedIn ?? false,
     );
-    if (destination == null) {
+    if (!mounted || destination == null) {
       return;
+    }
+
+    CollectionKind kind = CollectionKind.music;
+    if (destination.collection == null) {
+      final CollectionKind? selectedKind = await showCollectionKindDialog(
+        context: context,
+      );
+      if (!mounted || selectedKind == null) return;
+      kind = selectedKind;
     }
 
     setState(() {
@@ -135,6 +146,7 @@ class _ImportPageState extends ConsumerState<ImportPage> {
       final FavoriteCollection? collection = await _resolveImportCollection(
         controller: controller,
         destination: destination,
+        kind: kind,
       );
       if (collection == null) {
         ToastUtil.show('创建歌单失败，请检查名称是否为空或重复');
@@ -189,13 +201,16 @@ class _ImportPageState extends ConsumerState<ImportPage> {
   Future<FavoriteCollection?> _resolveImportCollection({
     required FavoritesController controller,
     required _ImportDestination destination,
+    required CollectionKind kind,
   }) async {
     return switch (destination.target) {
       FavoritesImportTarget.localNew => controller.createCollection(
         destination.name,
+        kind: kind,
       ),
       FavoritesImportTarget.remoteNew => controller.createRemoteCollection(
         destination.name,
+        kind: kind,
       ),
       FavoritesImportTarget.localExisting ||
       FavoritesImportTarget.remoteExisting => destination.collection,

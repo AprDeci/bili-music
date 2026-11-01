@@ -74,6 +74,81 @@ void main() {
 
   tearDown(() => container.dispose());
 
+  for (final CollectionKind kind in CollectionKind.values) {
+    test(
+      'creates a local ${kind.name} collection and preserves it on reload',
+      () async {
+        final FavoriteCollection? created = kind == CollectionKind.music
+            ? await controller.createCollection('  new local  ')
+            : await controller.createCollection('  new local  ', kind: kind);
+
+        expect(created, isNotNull);
+        expect(created!.name, 'new local');
+        expect(created.kind, kind);
+        expect(created.isLocal, isTrue);
+        expect(local.savedCollections.single, created);
+        expect(local.state.collections.last, created);
+        expect(
+          container
+              .read(favoritesControllerProvider)
+              .collections
+              .firstWhere((value) => value.id == created.id),
+          created,
+        );
+
+        await controller.reload();
+        expect(
+          container
+              .read(favoritesControllerProvider)
+              .collections
+              .firstWhere((value) => value.id == created.id),
+          created,
+        );
+      },
+    );
+
+    test(
+      'creates a remote ${kind.name} collection and preserves it on refresh',
+      () async {
+        remote.collections.add(collection);
+        final FavoriteCollection? created = kind == CollectionKind.music
+            ? await controller.createRemoteCollection('  new remote  ')
+            : await controller.createRemoteCollection(
+                '  new remote  ',
+                kind: kind,
+              );
+
+        expect(created, isNotNull);
+        expect(created!.name, 'new remote');
+        expect(created.kind, kind);
+        expect(created.isRemote, isTrue);
+        expect(created.isManagedByApp, isTrue);
+        expect(cache.boundCollections.single.kind, kind);
+        expect(cache.state.collections.last, created);
+        expect(remote.collections.last.kind, CollectionKind.music);
+        expect(
+          container
+              .read(favoritesControllerProvider)
+              .collections
+              .firstWhere((value) => value.id == created.id),
+          created,
+        );
+
+        await controller.refreshRemoteCollections();
+        await controller.reload();
+        expect(cache.state.collections.last.kind, kind);
+        expect(
+          container
+              .read(favoritesControllerProvider)
+              .collections
+              .firstWhere((value) => value.id == created.id)
+              .kind,
+          kind,
+        );
+      },
+    );
+  }
+
   test(
     'sets local, liked, and remote kind without requiring a session',
     () async {
@@ -269,16 +344,18 @@ class _MemoryLocalRepository implements FavoritesLocalRepository {
   _MemoryLocalRepository(this.state);
 
   FavoritesState state;
+  final List<FavoriteCollection> savedCollections = <FavoriteCollection>[];
 
   @override
   FavoritesState loadState() => state;
 
   @override
   Future<void> saveCollection(FavoriteCollection collection) async {
+    savedCollections.add(collection);
     state = state.copyWith(
       collections: <FavoriteCollection>[
-        for (final FavoriteCollection existing in state.collections)
-          if (existing.id == collection.id) collection else existing,
+        ...state.collections.where((value) => value.id != collection.id),
+        collection,
       ],
     );
   }
@@ -312,9 +389,34 @@ class _MemoryRemoteCache implements FavoritesRemoteCacheRepository {
 
   FavoritesState state;
   int saves = 0;
+  final List<FavoriteCollection> boundCollections = <FavoriteCollection>[];
 
   @override
   FavoritesState loadState() => state;
+
+  @override
+  Future<void> bindCollection(FavoriteCollection collection) async {
+    boundCollections.add(collection);
+    await upsertCollection(collection.copyWith(isManagedByApp: true));
+  }
+
+  @override
+  Future<void> upsertCollection(FavoriteCollection collection) async {
+    final FavoriteCollection? existing = state.collections
+        .where((value) => value.id == collection.id)
+        .firstOrNull;
+    state = state.copyWith(
+      collections: <FavoriteCollection>[
+        ...state.collections.where((value) => value.id != collection.id),
+        collection.copyWith(
+          kind: existing?.kind ?? collection.kind,
+          isManagedByApp: existing?.isManagedByApp ?? collection.isManagedByApp,
+          createdAt: existing?.createdAt ?? collection.createdAt,
+          lastSyncedAt: existing?.lastSyncedAt,
+        ),
+      ],
+    );
+  }
 
   @override
   Future<void> setCollectionKind({
@@ -360,6 +462,33 @@ class _FakeRemoteRepository implements BiliFavoritesRemoteRepository {
   int addCalls = 0;
   bool fail = false;
   Completer<void>? pending;
+  final List<FavoriteCollection> collections = <FavoriteCollection>[];
+
+  @override
+  Future<FavoriteCollection> createCollection({
+    required BiliSession session,
+    required String name,
+    bool private = true,
+  }) async {
+    final String remoteId = '${collections.length + 1}';
+    final DateTime now = DateTime(2026);
+    final FavoriteCollection collection = FavoriteCollection(
+      id: FavoriteCollection.remoteCollectionId(remoteId),
+      name: name,
+      source: FavoriteCollectionSource.remote,
+      remoteId: remoteId,
+      isManagedByApp: true,
+      createdAt: now,
+      updatedAt: now,
+    );
+    collections.add(collection);
+    return collection;
+  }
+
+  @override
+  Future<List<FavoriteCollection>> fetchCreatedCollections({
+    required BiliSession session,
+  }) async => collections;
 
   @override
   Future<void> addVideoToCollection({

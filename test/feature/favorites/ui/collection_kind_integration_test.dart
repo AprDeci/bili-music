@@ -8,6 +8,7 @@ import 'package:bilimusic/feature/favorites/logic/favorite_entry_metadata.dart';
 import 'package:bilimusic/feature/favorites/logic/favorites_controller.dart';
 import 'package:bilimusic/feature/favorites/logic/favorites_view_mode_logic.dart';
 import 'package:bilimusic/feature/favorites/logic/favorited_season_controller.dart';
+import 'package:bilimusic/feature/favorites/ui/components/collection_kind_tag.dart';
 import 'package:bilimusic/feature/favorites/ui/components/desktop/desktop_favorite_collection_items_list.dart';
 import 'package:bilimusic/feature/favorites/ui/components/favorite_collection_items_list.dart';
 import 'package:bilimusic/feature/favorites/ui/components/favorite_collection_kind_selector.dart';
@@ -36,7 +37,7 @@ void main() {
     ]) {
       for (final bool empty in <bool>[false, true]) {
         testWidgets(
-          '$desktop $id empty=$empty preserves the original header across type changes',
+          '$desktop $id empty=$empty updates the read-only type tag across type changes',
           (tester) async {
             if (!desktop) {
               tester.view.physicalSize = const Size(320, 568);
@@ -47,7 +48,7 @@ void main() {
             final DateTime now = DateTime(2026);
             final FavoriteCollection collection = FavoriteCollection(
               id: id,
-              name: '测试收藏',
+              name: '测试收藏：这是一个很长的歌单标题，用来确认类型标签始终可见',
               source: id.startsWith('remote:')
                   ? FavoriteCollectionSource.remote
                   : FavoriteCollectionSource.local,
@@ -117,6 +118,17 @@ void main() {
             await tester.pumpAndSettle();
             expect(find.byType(FavoriteCollectionKindSelector), findsNothing);
             expect(find.byType(ListeningContinueButton), findsNothing);
+            expect(find.byType(CollectionKindTag), findsOneWidget);
+            expect(
+              tester
+                  .widget<CollectionKindTag>(find.byType(CollectionKindTag))
+                  .kind,
+              container
+                  .read(favoritesControllerProvider)
+                  .collections
+                  .single
+                  .kind,
+            );
             expect(
               find.byType(FavoriteCollectionSearchField),
               empty ? findsNothing : findsOneWidget,
@@ -125,7 +137,7 @@ void main() {
             expect(find.byType(MetadataBackfillButton), findsNothing);
             if (id == FavoriteCollection.likedCollectionId) {
               expect(find.text('歌曲'), findsOneWidget);
-              expect(find.text('听声'), findsNothing);
+              expect(find.text('听声'), findsOneWidget);
             }
             if (!empty) {
               final FavoriteListViewMode mode = desktop
@@ -176,6 +188,17 @@ void main() {
             );
             expect(find.byType(FavoriteCollectionKindSelector), findsNothing);
             expect(find.byType(ListeningContinueButton), findsNothing);
+            expect(find.byType(CollectionKindTag), findsOneWidget);
+            expect(
+              tester
+                  .widget<CollectionKindTag>(find.byType(CollectionKindTag))
+                  .kind,
+              container
+                  .read(favoritesControllerProvider)
+                  .collections
+                  .single
+                  .kind,
+            );
             expect(
               find.byType(MetadataViewModeButton),
               empty ? findsNothing : findsOneWidget,

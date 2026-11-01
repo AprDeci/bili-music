@@ -543,7 +543,10 @@ class FavoritesController extends _$FavoritesController {
     return state.collectionsForItem(item);
   }
 
-  Future<FavoriteCollection?> createCollection(String name) async {
+  Future<FavoriteCollection?> createCollection(
+    String name, {
+    CollectionKind kind = CollectionKind.music,
+  }) async {
     final String trimmedName = name.trim();
     if (trimmedName.isEmpty || _hasDuplicateCustomCollectionName(trimmedName)) {
       return null;
@@ -553,6 +556,7 @@ class FavoritesController extends _$FavoritesController {
     final FavoriteCollection collection = FavoriteCollection(
       id: 'custom_${now.microsecondsSinceEpoch}',
       name: trimmedName,
+      kind: kind,
       isSystem: false,
       createdAt: now,
       updatedAt: now,
@@ -562,14 +566,20 @@ class FavoritesController extends _$FavoritesController {
     return collection;
   }
 
-  Future<FavoriteCollection?> createRemoteCollection(String name) async {
+  Future<FavoriteCollection?> createRemoteCollection(
+    String name, {
+    CollectionKind kind = CollectionKind.music,
+  }) async {
     final String trimmedName = name.trim();
     if (trimmedName.isEmpty) {
       return null;
     }
 
-    final FavoriteCollection collection = await _remoteRepository
-        .createCollection(session: _getSession(), name: trimmedName);
+    final FavoriteCollection collection =
+        (await _remoteRepository.createCollection(
+          session: _getSession(),
+          name: trimmedName,
+        )).copyWith(kind: kind);
     await _remoteCache.bindCollection(collection);
     state = _loadState();
     return collection.copyWith(isManagedByApp: true);
