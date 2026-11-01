@@ -77,6 +77,22 @@ void main() {
     },
   );
 
+  test('removing and binding again resets kind with the collection', () async {
+    final FavoriteCollection remote = _collection('remote:1');
+    await repository.bindCollection(remote);
+    await repository.setCollectionKind(
+      collectionId: remote.id,
+      kind: CollectionKind.spoken,
+    );
+    await repository.deleteCollection(remote.id);
+    expect(repository.loadState().collections, isEmpty);
+    await repository.bindCollection(remote);
+    expect(
+      repository.loadState().collections.single.kind,
+      CollectionKind.music,
+    );
+  });
+
   test('upserting a first page retains older memberships', () async {
     final FavoriteCollection collection = _collection('remote:1');
     await repository.upsertCollectionItems(

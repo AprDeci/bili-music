@@ -1,7 +1,6 @@
 import 'package:bilimusic/common/domain/collection_kind.dart';
 import 'package:bilimusic/feature/favorites/domain/favorite_collection.dart';
 import 'package:bilimusic/feature/favorites/domain/favorite_entry.dart';
-import 'package:bilimusic/feature/favorites/ui/components/favorite_collection_playable_item.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -28,7 +27,7 @@ void main() {
         createdAt: now,
         updatedAt: now,
       );
-      final item = favoriteCollectionPlayableItem(entry, collection);
+      final item = entry.toPlayableItem(collection: collection);
       expect(item.kind, kind);
       expect(item.collectionId, collection.id);
       expect(item.stableId, entry.toPlayableItem().stableId);

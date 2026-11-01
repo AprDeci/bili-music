@@ -12,11 +12,8 @@ import 'package:bilimusic/feature/metadata/logic/metadata_lookup_service.dart';
 import 'package:bilimusic/feature/meting/data/meting_repository.dart';
 import 'package:bilimusic/feature/meting/domain/meting_search_item.dart';
 import 'package:bilimusic/feature/meting/domain/meting_server.dart';
-import 'package:bilimusic/feature/player/data/player_lyrics_cache_repository.dart';
 import 'package:bilimusic/feature/player/domain/playable_item.dart';
-import 'package:bilimusic/feature/player/domain/player_lyrics_cache_entry.dart';
 import 'package:bilimusic/feature/player/domain/player_state.dart';
-import 'package:bilimusic/feature/player/logic/lyrics/player_lyrics_controller.dart';
 import 'package:bilimusic/feature/player/logic/player_controller.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -62,54 +59,6 @@ void main() {
     expect(fixture.lookup.manualItems, isEmpty);
     expect(fixture.meting.searches, 0);
   });
-
-  test('legacy lyrics pathway cannot fetch or use cache for spoken', () async {
-    final fixture = _Fixture(_music.copyWith(kind: CollectionKind.spoken));
-    final controller = fixture.container.read(
-      playerLyricsControllerProvider.notifier,
-    );
-    await controller.retryCurrent();
-    await controller.searchManual('Music title');
-    await controller.applyManualResult(_searchItem);
-    await controller.adjustOffset(500);
-    await controller.resetOffset();
-    await fixture.flush();
-    final state = fixture.container.read(playerLyricsControllerProvider);
-    expect(state.stableId, _music.stableId);
-    expect(state.rawLyrics, isNull);
-    expect(state.isLoading, isFalse);
-    expect(state.hasSearched, isFalse);
-    expect(fixture.lyricsCache.reads, isEmpty);
-    expect(fixture.meting.searches, 0);
-  });
-
-  test(
-    'legacy lyrics discards a same-id cache result after switching modes',
-    () async {
-      final fixture = _Fixture(null);
-      final pending = Completer<PlayerLyricsCacheEntry?>();
-      fixture.lyricsCache.load = (_) => pending.future;
-      fixture.container.read(playerLyricsControllerProvider);
-      fixture.player.show(_music);
-      await fixture.flush();
-      expect(fixture.lyricsCache.reads, [_music]);
-      fixture.player.show(_music.copyWith(kind: CollectionKind.spoken));
-      pending.complete(
-        PlayerLyricsCacheEntry(
-          stableId: _music.stableId,
-          rawLyrics: '[00:00]Music',
-          lyricOffsetMs: 0,
-          updatedAtEpochMs: 1,
-        ),
-      );
-      await fixture.flush();
-      final state = fixture.container.read(playerLyricsControllerProvider);
-      expect(state.rawLyrics, isNull);
-      expect(state.hasSearched, isFalse);
-      expect(fixture.lyricsCache.reads, hasLength(1));
-      expect(fixture.meting.searches, 0);
-    },
-  );
 
   test('same stable id mode switch rejects a pending cache hit', () async {
     final fixture = _Fixture(null);
@@ -277,7 +226,6 @@ class _Fixture {
         playerControllerProvider.overrideWith(() => player),
         favoritesControllerProvider.overrideWith(_Favorites.new),
         metadataCacheRepositoryProvider.overrideWithValue(cache),
-        playerLyricsCacheRepositoryProvider.overrideWithValue(lyricsCache),
         metadataLookupServiceProvider.overrideWithValue(lookup),
         metingRepositoryProvider.overrideWithValue(meting),
       ],
@@ -287,7 +235,6 @@ class _Fixture {
 
   final _Player player;
   final _Cache cache = _Cache();
-  final _LyricsCache lyricsCache = _LyricsCache();
   final _Lookup lookup = _Lookup();
   final _Meting meting = _Meting();
   late final ProviderContainer container;
@@ -335,20 +282,6 @@ class _Cache implements MetadataCacheRepository {
     required Metadata metadata,
   }) async {
     writes.add(item);
-  }
-
-  @override
-  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
-}
-
-class _LyricsCache implements PlayerLyricsCacheRepository {
-  final List<PlayableItem> reads = [];
-  Future<PlayerLyricsCacheEntry?> Function(PlayableItem) load = (_) async =>
-      null;
-  @override
-  Future<PlayerLyricsCacheEntry?> getCachedEntry({required PlayableItem item}) {
-    reads.add(item);
-    return load(item);
   }
 
   @override

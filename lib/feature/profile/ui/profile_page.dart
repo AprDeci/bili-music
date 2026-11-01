@@ -396,12 +396,12 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
     );
 
     HapticFeedback.lightImpact();
-    final _CollectionAction? action = await showMenu<_CollectionAction>(
+    final Enum? action = await showMenu<Enum>(
       context: context,
       position: position,
-      items: <PopupMenuEntry<_CollectionAction>>[
+      items: <PopupMenuEntry<Enum>>[
         if (!collection.isSystem)
-          PopupMenuItem<_CollectionAction>(
+          PopupMenuItem<Enum>(
             value: _CollectionAction.rename,
             child: ListTile(
               leading: Icon(Icons.drive_file_rename_outline_rounded),
@@ -410,7 +410,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
             ),
           ),
         if (collection.isRemote)
-          PopupMenuItem<_CollectionAction>(
+          PopupMenuItem<Enum>(
             value: _CollectionAction.remove,
             child: ListTile(
               leading: Icon(Icons.remove_circle_outline_rounded),
@@ -419,7 +419,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
             ),
           ),
         if (!collection.isSystem)
-          PopupMenuItem<_CollectionAction>(
+          PopupMenuItem<Enum>(
             value: _CollectionAction.delete,
             child: ListTile(
               leading: Icon(Icons.delete_outline_rounded),
@@ -430,10 +430,8 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
         if (!collection.isSystem || collection.isRemote)
           const PopupMenuDivider(),
         for (final CollectionKind kind in CollectionKind.values)
-          CheckedPopupMenuItem<_CollectionAction>(
-            value: kind == CollectionKind.music
-                ? _CollectionAction.music
-                : _CollectionAction.spoken,
+          CheckedPopupMenuItem<Enum>(
+            value: kind,
             checked: collection.kind == kind,
             child: Text(kind.label),
           ),
@@ -445,18 +443,16 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
     }
 
     switch (action) {
-      case _CollectionAction.music:
-      case _CollectionAction.spoken:
+      case CollectionKind kind:
+        bool saved;
         try {
-          await ref
+          saved = await ref
               .read(favoritesControllerProvider.notifier)
-              .setCollectionKind(
-                collectionId: collection.id,
-                kind: action == _CollectionAction.music
-                    ? CollectionKind.music
-                    : CollectionKind.spoken,
-              );
+              .setCollectionKind(collectionId: collection.id, kind: kind);
         } on Object {
+          saved = false;
+        }
+        if (!saved) {
           _showMessage('类型保存失败，请重试');
         }
       case _CollectionAction.rename:
@@ -636,7 +632,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
   }
 }
 
-enum _CollectionAction { music, spoken, rename, delete, remove }
+enum _CollectionAction { rename, delete, remove }
 
 enum _FavoriteListTab { remote, local }
 

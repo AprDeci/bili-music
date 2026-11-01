@@ -1,5 +1,7 @@
 import 'package:bilimusic/core/hive/hive_keys.dart';
 import 'package:bilimusic/core/settings/app_settings_store.dart';
+import 'package:bilimusic/feature/favorites/logic/favorites_controller.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'favorites_view_mode_logic.g.dart';
@@ -14,6 +16,20 @@ enum FavoriteListViewMode {
       orElse: () => FavoriteListViewMode.video,
     );
   }
+}
+
+@riverpod
+FavoriteListViewMode effectiveFavoritesViewMode(Ref ref, String collectionId) {
+  final bool isSpoken = ref.watch(
+    favoritesControllerProvider.select(
+      (state) => state.collections.any(
+        (collection) => collection.id == collectionId && collection.isSpoken,
+      ),
+    ),
+  );
+  return isSpoken
+      ? FavoriteListViewMode.video
+      : ref.watch(favoritesViewModeLogicProvider(collectionId));
 }
 
 @riverpod

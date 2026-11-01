@@ -26,12 +26,6 @@ void main() {
       testWidgets(
         '${desktop ? 'desktop secondary-click' : 'mobile long-press'} $id keeps types last and changes kind',
         (WidgetTester tester) async {
-          tester.view.physicalSize = desktop
-              ? const Size(1000, 800)
-              : const Size(390, 844);
-          tester.view.devicePixelRatio = 1;
-          addTearDown(tester.view.resetPhysicalSize);
-          addTearDown(tester.view.resetDevicePixelRatio);
           final DateTime now = DateTime(2026);
           final FavoriteCollection collection = FavoriteCollection(
             id: id,
@@ -44,51 +38,11 @@ void main() {
             createdAt: now,
             updatedAt: now,
           );
-          final ProviderContainer container = ProviderContainer(
-            overrides: [
-              favoritesControllerProvider.overrideWith(
-                () => _Favorites(FavoritesState(collections: [collection])),
-              ),
-              biliSessionControllerProvider.overrideWithValue(null),
-              favoriteUpControllerProvider.overrideWithValue(
-                const <FavoriteUp>[],
-              ),
-              recentPlaybackControllerProvider.overrideWithValue(
-                const <RecentPlaybackEntry>[],
-              ),
-            ],
+          final ProviderContainer container = await _pumpProfile(
+            tester,
+            desktop: desktop,
+            favorites: _Favorites(FavoritesState(collections: [collection])),
           );
-          addTearDown(container.dispose);
-          await tester.pumpWidget(
-            UncontrolledProviderScope(
-              container: container,
-              child: MaterialApp(
-                builder: desktop ? FlutterSmartDialog.init() : null,
-                home: desktop
-                    ? const Scaffold(
-                        body: Align(
-                          alignment: Alignment.centerLeft,
-                          child: DesktopProfileSidebar(
-                            currentLocation: '/profile',
-                          ),
-                        ),
-                      )
-                    : const ProfilePage(),
-              ),
-            ),
-          );
-          if (desktop) {
-            addTearDown(() async {
-              final Future<void> dismiss = SmartDialog.dismiss();
-              await tester.pumpAndSettle();
-              await dismiss;
-            });
-          }
-          await tester.pumpAndSettle();
-          if (collection.isLocal && !collection.isSystem) {
-            await tester.tap(find.text('本地歌单'));
-            await tester.pumpAndSettle();
-          }
           final Finder collectionTile = find.text(
             collection.isSystem ? (desktop ? '喜欢·0' : '收藏') : collection.name,
           );
@@ -127,6 +81,32 @@ void main() {
                 .map((Text text) => text.data!)
                 .toList();
             expect(renderedActions, actions);
+            final CollectionKind currentKind = container
+                .read(favoritesControllerProvider)
+                .collections
+                .single
+                .kind;
+            for (final CollectionKind menuKind in CollectionKind.values) {
+              if (desktop) {
+                final CommonAttachMenu<Enum> menu = tester.widget(
+                  find.byType(CommonAttachMenu<Enum>),
+                );
+                final CommonAttachMenuItem<Enum> item = menu.items.singleWhere(
+                  (item) => item.label == menuKind.label,
+                );
+                expect(item.value, menuKind);
+                expect(item.selected, menuKind == currentKind);
+              } else {
+                final CheckedPopupMenuItem<Enum> item = tester.widget(
+                  find.widgetWithText(
+                    CheckedPopupMenuItem<Enum>,
+                    menuKind.label,
+                  ),
+                );
+                expect(item.value, menuKind);
+                expect(item.checked, menuKind == currentKind);
+              }
+            }
             for (int index = 1; index < actions.length; index++) {
               expect(
                 tester.getCenter(find.text(actions[index - 1])).dy,
@@ -160,13 +140,115 @@ void main() {
         },
       );
     }
+    for (final bool throwsOnSave in <bool>[false, true]) {
+      testWidgets(
+        '${desktop ? 'desktop' : 'mobile'} shows kind save failure on ${throwsOnSave ? 'exception' : 'false'}',
+        (WidgetTester tester) async {
+          final ProviderContainer container = await _pumpProfile(
+            tester,
+            desktop: desktop,
+            favorites: _Favorites(
+              FavoritesState(collections: [FavoriteCollection.liked()]),
+              saveResult: false,
+              throwsOnSave: throwsOnSave,
+            ),
+          );
+          final Finder collectionTile = find.text(desktop ? '喜欢·0' : '收藏');
+          if (desktop) {
+            await tester.tap(
+              collectionTile,
+              kind: PointerDeviceKind.mouse,
+              buttons: kSecondaryMouseButton,
+            );
+          } else {
+            await tester.longPress(collectionTile);
+          }
+          await tester.pumpAndSettle();
+          await tester.tap(
+            desktop
+                ? find.text('听声')
+                : find.widgetWithText(CheckedPopupMenuItem<Enum>, '听声'),
+          );
+          await tester.pumpAndSettle();
+          expect(find.text('类型保存失败，请重试'), findsOneWidget);
+          expect(find.text('听声'), findsNothing);
+          expect(
+            container.read(favoritesControllerProvider).collections.single.kind,
+            CollectionKind.music,
+          );
+          expect(tester.takeException(), isNull);
+          await tester.pump(const Duration(seconds: 3));
+          await tester.pumpAndSettle();
+        },
+      );
+    }
   }
 }
 
+Future<ProviderContainer> _pumpProfile(
+  WidgetTester tester, {
+  required bool desktop,
+  required _Favorites favorites,
+}) async {
+  tester.view.physicalSize = desktop
+      ? const Size(1000, 800)
+      : const Size(390, 844);
+  tester.view.devicePixelRatio = 1;
+  addTearDown(tester.view.resetPhysicalSize);
+  addTearDown(tester.view.resetDevicePixelRatio);
+  final ProviderContainer container = ProviderContainer(
+    overrides: [
+      favoritesControllerProvider.overrideWith(() => favorites),
+      biliSessionControllerProvider.overrideWithValue(null),
+      favoriteUpControllerProvider.overrideWithValue(const <FavoriteUp>[]),
+      recentPlaybackControllerProvider.overrideWithValue(
+        const <RecentPlaybackEntry>[],
+      ),
+    ],
+  );
+  addTearDown(container.dispose);
+  await tester.pumpWidget(
+    UncontrolledProviderScope(
+      container: container,
+      child: MaterialApp(
+        builder: FlutterSmartDialog.init(),
+        home: desktop
+            ? const Scaffold(
+                body: Align(
+                  alignment: Alignment.centerLeft,
+                  child: DesktopProfileSidebar(currentLocation: '/profile'),
+                ),
+              )
+            : const ProfilePage(),
+      ),
+    ),
+  );
+  addTearDown(() async {
+    final Future<void> dismiss = SmartDialog.dismiss();
+    final Future<void> dismissToasts = SmartDialog.dismiss(
+      status: SmartStatus.allToast,
+    );
+    await tester.pumpAndSettle();
+    await dismiss;
+    await dismissToasts;
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+  await tester.pumpAndSettle();
+  if (favorites.initial.collections.any(
+    (collection) => collection.isLocal && !collection.isSystem,
+  )) {
+    await tester.tap(find.text('本地歌单'));
+    await tester.pumpAndSettle();
+  }
+  return container;
+}
+
 class _Favorites extends FavoritesController {
-  _Favorites(this.initial);
+  _Favorites(this.initial, {this.saveResult = true, this.throwsOnSave = false});
 
   final FavoritesState initial;
+  final bool saveResult;
+  final bool throwsOnSave;
 
   @override
   FavoritesState build() => initial;
@@ -176,6 +258,12 @@ class _Favorites extends FavoritesController {
     required String collectionId,
     required CollectionKind kind,
   }) async {
+    if (throwsOnSave) {
+      throw StateError('kind save failed');
+    }
+    if (!saveResult) {
+      return false;
+    }
     state = state.copyWith(
       collections: <FavoriteCollection>[
         for (final FavoriteCollection collection in state.collections)

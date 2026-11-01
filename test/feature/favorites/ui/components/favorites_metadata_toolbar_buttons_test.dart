@@ -2,6 +2,7 @@ import 'package:bilimusic/feature/favorites/logic/favorites_view_mode_logic.dart
 import 'package:bilimusic/feature/favorites/ui/components/favorites_metadata_toolbar_buttons.dart';
 import 'package:bilimusic/feature/metadata/domain/metadata_backfill_state.dart';
 import 'package:bilimusic/feature/metadata/logic/metadata_backfill_controller.dart';
+import 'package:bilimusic/feature/player/domain/playable_item.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -26,7 +27,7 @@ void main() {
                     viewMode: mode,
                     onPressed: () => calls++,
                   ),
-                  const MetadataBackfillButton(entries: []),
+                  const MetadataBackfillButton(items: []),
                 ],
               ),
             ),
@@ -55,6 +56,38 @@ void main() {
       expect(tester.takeException(), isNull);
     });
   }
+
+  testWidgets('backfill passes the collection playback context unchanged', (
+    tester,
+  ) async {
+    const PlayableItem item = PlayableItem(
+      aid: 1,
+      bvid: 'BV1',
+      title: 'Title',
+      author: 'Author',
+      coverUrl: '',
+      collectionId: 'target',
+    );
+    final backfill = _FakeBackfillController(const MetadataBackfillState());
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          metadataBackfillControllerProvider.overrideWith(() => backfill),
+        ],
+        child: const MaterialApp(
+          home: Scaffold(
+            body: Center(child: MetadataBackfillButton(items: [item])),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.byType(MetadataBackfillButton));
+    await tester.pumpAndSettle();
+    expect(backfill.items, [item]);
+    await tester.tap(find.byIcon(Icons.close_rounded));
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+  });
 
   testWidgets('shows scanning title and live counts', (
     WidgetTester tester,
@@ -114,7 +147,14 @@ class _FakeBackfillController extends MetadataBackfillController {
   _FakeBackfillController(this._initial);
 
   final MetadataBackfillState _initial;
+  List<PlayableItem> items = [];
 
   @override
   MetadataBackfillState build() => _initial;
+
+  @override
+  Future<int> backfillMissing(Iterable<PlayableItem> items) async {
+    this.items = items.toList();
+    return this.items.length;
+  }
 }

@@ -9,6 +9,91 @@ part of 'favorites_view_mode_logic.dart';
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
 
+@ProviderFor(effectiveFavoritesViewMode)
+final effectiveFavoritesViewModeProvider = EffectiveFavoritesViewModeFamily._();
+
+final class EffectiveFavoritesViewModeProvider
+    extends
+        $FunctionalProvider<
+          FavoriteListViewMode,
+          FavoriteListViewMode,
+          FavoriteListViewMode
+        >
+    with $Provider<FavoriteListViewMode> {
+  EffectiveFavoritesViewModeProvider._({
+    required EffectiveFavoritesViewModeFamily super.from,
+    required String super.argument,
+  }) : super(
+         retry: null,
+         name: r'effectiveFavoritesViewModeProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
+
+  @override
+  String debugGetCreateSourceHash() => _$effectiveFavoritesViewModeHash();
+
+  @override
+  String toString() {
+    return r'effectiveFavoritesViewModeProvider'
+        ''
+        '($argument)';
+  }
+
+  @$internal
+  @override
+  $ProviderElement<FavoriteListViewMode> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  FavoriteListViewMode create(Ref ref) {
+    final argument = this.argument as String;
+    return effectiveFavoritesViewMode(ref, argument);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(FavoriteListViewMode value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<FavoriteListViewMode>(value),
+    );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is EffectiveFavoritesViewModeProvider &&
+        other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$effectiveFavoritesViewModeHash() =>
+    r'1d090eb0aa915c0e6b1556bc295a0fcd1af35a4b';
+
+final class EffectiveFavoritesViewModeFamily extends $Family
+    with $FunctionalFamilyOverride<FavoriteListViewMode, String> {
+  EffectiveFavoritesViewModeFamily._()
+    : super(
+        retry: null,
+        name: r'effectiveFavoritesViewModeProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
+
+  EffectiveFavoritesViewModeProvider call(String collectionId) =>
+      EffectiveFavoritesViewModeProvider._(argument: collectionId, from: this);
+
+  @override
+  String toString() => r'effectiveFavoritesViewModeProvider';
+}
+
 @ProviderFor(FavoritesViewModeLogic)
 final favoritesViewModeLogicProvider = FavoritesViewModeLogicFamily._();
 

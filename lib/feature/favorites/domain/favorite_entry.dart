@@ -1,3 +1,4 @@
+import 'package:bilimusic/feature/favorites/domain/favorite_collection.dart';
 import 'package:bilimusic/feature/player/domain/playable_item.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 
@@ -46,8 +47,8 @@ abstract class FavoriteEntry with _$FavoriteEntry {
     );
   }
 
-  PlayableItem toPlayableItem() {
-    return PlayableItem(
+  PlayableItem toPlayableItem({FavoriteCollection? collection}) {
+    final PlayableItem item = PlayableItem(
       aid: aid,
       bvid: bvid,
       title: title,
@@ -59,6 +60,7 @@ abstract class FavoriteEntry with _$FavoriteEntry {
       pageTitle: pageTitle,
       durationText: durationText,
     );
+    return collection?.contextualize(item) ?? item;
   }
 
   String get contentId {

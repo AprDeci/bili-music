@@ -495,59 +495,59 @@ class _DesktopProfileSidebarState extends ConsumerState<DesktopProfileSidebar> {
             padding: const EdgeInsets.symmetric(vertical: 8.0),
             child: SizedBox(
               width: 144,
-              child: CommonAttachMenu<_CollectionAction>(
+              child: CommonAttachMenu<Enum>(
                 itemHeight: 40,
-                items: <CommonAttachMenuItem<_CollectionAction>>[
+                items: <CommonAttachMenuItem<Enum>>[
                   if (!collection.isSystem)
-                    const CommonAttachMenuItem<_CollectionAction>(
+                    const CommonAttachMenuItem<Enum>(
                       value: _CollectionAction.rename,
                       label: '重命名',
                       icon: SizedBox.shrink(),
                     ),
                   if (collection.isRemote)
-                    const CommonAttachMenuItem<_CollectionAction>(
+                    const CommonAttachMenuItem<Enum>(
                       value: _CollectionAction.sync,
                       label: '同步',
                       icon: Icons.sync_rounded,
                     ),
                   if (collection.isRemote)
-                    CommonAttachMenuItem<_CollectionAction>(
+                    CommonAttachMenuItem<Enum>(
                       value: _CollectionAction.remove,
                       label: '移除',
                       icon: Icons.remove_circle_outline_rounded,
                     ),
                   if (!collection.isSystem)
-                    const CommonAttachMenuItem<_CollectionAction>(
+                    const CommonAttachMenuItem<Enum>(
                       value: _CollectionAction.delete,
                       label: '删除',
                       icon: Icons.delete_outline_rounded,
                     ),
                   for (final CollectionKind kind in CollectionKind.values)
-                    CommonAttachMenuItem<_CollectionAction>(
-                      value: kind == CollectionKind.music
-                          ? _CollectionAction.music
-                          : _CollectionAction.spoken,
+                    CommonAttachMenuItem<Enum>(
+                      value: kind,
                       label: kind.label,
-                      icon: kind == CollectionKind.music
-                          ? Icons.music_note_rounded
-                          : Icons.headphones_rounded,
+                      icon: switch (kind) {
+                        CollectionKind.music => Icons.music_note_rounded,
+                        CollectionKind.spoken => Icons.headphones_rounded,
+                      },
                       selected: collection.kind == kind,
                     ),
                 ],
-                onSelected: (_CollectionAction action) async {
+                onSelected: (Enum action) async {
                   switch (action) {
-                    case _CollectionAction.music:
-                    case _CollectionAction.spoken:
+                    case CollectionKind kind:
+                      bool saved;
                       try {
-                        await ref
+                        saved = await ref
                             .read(favoritesControllerProvider.notifier)
                             .setCollectionKind(
                               collectionId: collection.id,
-                              kind: action == _CollectionAction.music
-                                  ? CollectionKind.music
-                                  : CollectionKind.spoken,
+                              kind: kind,
                             );
                       } on Object {
+                        saved = false;
+                      }
+                      if (!saved) {
                         ToastUtil.show('类型保存失败，请重试');
                       }
                     case _CollectionAction.rename:
@@ -752,7 +752,7 @@ class _DesktopProfileSidebarState extends ConsumerState<DesktopProfileSidebar> {
   }
 }
 
-enum _CollectionAction { music, spoken, rename, delete, remove, sync }
+enum _CollectionAction { rename, delete, remove, sync }
 
 enum _FavoriteListTab { remote, local }
 

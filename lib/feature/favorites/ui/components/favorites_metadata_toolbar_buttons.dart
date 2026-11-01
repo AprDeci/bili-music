@@ -1,9 +1,9 @@
 import 'dart:async';
 
-import 'package:bilimusic/feature/favorites/domain/favorite_entry.dart';
 import 'package:bilimusic/feature/favorites/logic/favorites_view_mode_logic.dart';
 import 'package:bilimusic/feature/metadata/domain/metadata_backfill_state.dart';
 import 'package:bilimusic/feature/metadata/logic/metadata_backfill_controller.dart';
+import 'package:bilimusic/feature/player/domain/playable_item.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hugeicons/hugeicons.dart';
@@ -47,9 +47,9 @@ class MetadataViewModeButton extends StatelessWidget {
 }
 
 class MetadataBackfillButton extends ConsumerWidget {
-  const MetadataBackfillButton({super.key, required this.entries});
+  const MetadataBackfillButton({super.key, required this.items});
 
-  final List<FavoriteEntry> entries;
+  final List<PlayableItem> items;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -102,9 +102,7 @@ class MetadataBackfillButton extends ConsumerWidget {
     unawaited(
       ref
           .read(metadataBackfillControllerProvider.notifier)
-          .backfillMissing(
-            entries.map((FavoriteEntry entry) => entry.toPlayableItem()),
-          ),
+          .backfillMissing(items),
     );
     if (!buttonContext.mounted) {
       return;
@@ -128,7 +126,7 @@ class MetadataBackfillButton extends ConsumerWidget {
           offset: const Offset(0, 8),
         ),
       ],
-      bodyBuilder: (_) => MetadataScanPopup(foundCount: entries.length),
+      bodyBuilder: (_) => MetadataScanPopup(foundCount: items.length),
     );
   }
 }

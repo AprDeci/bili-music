@@ -1,4 +1,5 @@
 import 'package:bilimusic/common/domain/collection_kind.dart';
+import 'package:bilimusic/feature/player/domain/playable_item.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 
 part 'favorite_collection.freezed.dart';
@@ -37,6 +38,11 @@ abstract class FavoriteCollection with _$FavoriteCollection {
   bool get isLocal => source == FavoriteCollectionSource.local;
 
   bool get isRemote => source == FavoriteCollectionSource.remote;
+
+  bool get isSpoken => kind == CollectionKind.spoken;
+
+  PlayableItem contextualize(PlayableItem item) =>
+      item.copyWith(kind: kind, collectionId: id);
 
   static FavoriteCollection liked({DateTime? now}) {
     final DateTime timestamp = now ?? DateTime.now();

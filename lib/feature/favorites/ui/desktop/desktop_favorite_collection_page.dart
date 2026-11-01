@@ -4,7 +4,6 @@ import 'package:bilimusic/common/components/bottom_page_spacer.dart';
 import 'package:bilimusic/common/components/cached_image.dart';
 import 'package:bilimusic/common/components/desktop/desktop_tab_switcher.dart';
 import 'package:bilimusic/common/components/status_view.dart';
-import 'package:bilimusic/common/domain/collection_kind.dart';
 import 'package:bilimusic/common/logger.dart';
 import 'package:bilimusic/common/util/player_util.dart';
 import 'package:bilimusic/common/util/toast_util.dart';
@@ -14,7 +13,6 @@ import 'package:bilimusic/feature/favorites/domain/favorites_state.dart';
 import 'package:bilimusic/feature/favorites/logic/favorite_entry_search.dart';
 import 'package:bilimusic/feature/favorites/logic/favorites_controller.dart';
 import 'package:bilimusic/feature/favorites/logic/favorites_view_mode_logic.dart';
-import 'package:bilimusic/feature/favorites/ui/components/favorite_collection_playable_item.dart';
 import 'package:bilimusic/feature/favorites/ui/components/favorite_collection_search_field.dart';
 import 'package:bilimusic/feature/favorites/ui/components/desktop/desktop_favorite_collection_items_list.dart';
 import 'package:bilimusic/feature/favorites/ui/components/favorite_entry_subtitle.dart';
@@ -261,8 +259,7 @@ class _DesktopFavoriteCollectionPageState
   ) async {
     final List<PlayableItem> selectedItems = _selectedItems(items)
         .map(
-          (FavoriteEntry item) =>
-              favoriteCollectionPlayableItem(item, collection),
+          (FavoriteEntry item) => item.toPlayableItem(collection: collection),
         )
         .toList(growable: false);
     if (selectedItems.isEmpty) {
@@ -369,10 +366,9 @@ class _DesktopFavoriteCollectionPageState
     final List<PlayableItem> queueItems = visibleItems
         .map(
           (FavoriteEntry item) =>
-              favoriteCollectionPlayableItem(item, resolvedCollection),
+              item.toPlayableItem(collection: resolvedCollection),
         )
         .toList(growable: false);
-    final bool isSpoken = resolvedCollection.kind == CollectionKind.spoken;
     final Widget songsBody = Column(
       children: <Widget>[
         RemoteCollectionSyncStatusBar(status: _remoteSyncStatus),
@@ -397,7 +393,11 @@ class _DesktopFavoriteCollectionPageState
                 )
               : Column(
                   children: <Widget>[
-                    _buildItemsToolbar(resolvedCollection, visibleItems),
+                    _buildItemsToolbar(
+                      resolvedCollection,
+                      visibleItems,
+                      queueItems,
+                    ),
                     Expanded(
                       child: visibleItems.isEmpty
                           ? CustomScrollView(
@@ -424,13 +424,11 @@ class _DesktopFavoriteCollectionPageState
                               selectionMode: _selectionMode,
                               onSelectionModeChanged: _setSelectionMode,
                               onSelectionChanged: _setSelectedItemIds,
-                              viewMode: isSpoken
-                                  ? FavoriteListViewMode.video
-                                  : ref.watch(
-                                      favoritesViewModeLogicProvider(
-                                        resolvedCollection.id,
-                                      ),
-                                    ),
+                              viewMode: ref.watch(
+                                effectiveFavoritesViewModeProvider(
+                                  resolvedCollection.id,
+                                ),
+                              ),
                               onTapItem:
                                   (int itemIndex, FavoriteEntry item) async {
                                     await _playCollectionItem(
@@ -499,8 +497,9 @@ class _DesktopFavoriteCollectionPageState
   Widget _buildItemsToolbar(
     FavoriteCollection collection,
     List<FavoriteEntry> visibleItems,
+    List<PlayableItem> queueItems,
   ) {
-    final bool isSpoken = collection.kind == CollectionKind.spoken;
+    final bool isSpoken = collection.isSpoken;
     return Padding(
       padding: const EdgeInsets.fromLTRB(14, 10, 14, 8),
       child: _selectionMode
@@ -538,7 +537,7 @@ class _DesktopFavoriteCollectionPageState
                         .toggle(),
                   ),
                   const SizedBox(width: 8),
-                  MetadataBackfillButton(entries: visibleItems),
+                  MetadataBackfillButton(items: queueItems),
                 ],
                 if (collection.isRemote) ...<Widget>[
                   const SizedBox(width: 8),
@@ -581,9 +580,8 @@ class _DesktopFavoriteCollectionPageState
     required FavoriteEntry item,
     required int index,
   }) async {
-    final PlayableItem playableItem = favoriteCollectionPlayableItem(
-      item,
-      collection,
+    final PlayableItem playableItem = item.toPlayableItem(
+      collection: collection,
     );
     final int stableIndex = queueItems.indexWhere(
       (PlayableItem candidate) =>
@@ -622,9 +620,8 @@ class _DesktopFavoriteCollectionPageState
   }) async {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
-    final PlayableItem playableItem = favoriteCollectionPlayableItem(
-      item,
-      collection,
+    final PlayableItem playableItem = item.toPlayableItem(
+      collection: collection,
     );
 
     await showModalBottomSheet<void>(

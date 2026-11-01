@@ -5,6 +5,12 @@ import 'package:bilimusic/common/domain/collection_kind.dart';
 import 'package:bilimusic/core/bili/session/bili_session.dart';
 import 'package:bilimusic/core/bili/session/bili_session_controller.dart';
 import 'package:bilimusic/core/settings/app_settings_store.dart';
+import 'package:bilimusic/feature/favorites/data/favorites_local_repository.dart';
+import 'package:bilimusic/feature/favorites/data/favorites_remote_cache_repository.dart';
+import 'package:bilimusic/feature/favorites/domain/favorite_collection.dart';
+import 'package:bilimusic/feature/favorites/domain/favorites_state.dart';
+import 'package:bilimusic/feature/favorites/logic/favorites_controller.dart';
+import 'package:bilimusic/feature/favorites/logic/remote_favorites_repositories.dart';
 import 'package:bilimusic/feature/listening/data/bili_history_remote_repository.dart';
 import 'package:bilimusic/feature/listening/data/listening_progress_local_repository.dart';
 import 'package:bilimusic/feature/listening/domain/listening_progress.dart';
@@ -50,7 +56,7 @@ void main() {
 
   for (final bool pauseDuringOpen in [false, true]) {
     test(
-      'engine completion saves before automatic advance, paused open: $pauseDuringOpen',
+      'queue keeps collection mode through reclassification and automatic advance, paused open: $pauseDuringOpen',
       () async {
         final Directory directory = await Directory.systemTemp.createTemp(
           'listening-player-integration-',
@@ -110,8 +116,16 @@ void main() {
         final _AudioEngine engine = _AudioEngine(
           blockFirstOpen: pauseDuringOpen,
         );
+        final queueRepository = _MemoryQueueRepository();
+        final favoritesRepository = _FavoritesRepository();
         final ProviderContainer container = ProviderContainer(
           overrides: [
+            favoritesLocalRepositoryProvider.overrideWithValue(
+              favoritesRepository,
+            ),
+            favoritesRemoteCacheRepositoryProvider.overrideWithValue(
+              _NoRemoteFavorites(),
+            ),
             playerControllerProvider.overrideWith(
               () => PlayerController(audioEngine: engine),
             ),
@@ -129,19 +143,22 @@ void main() {
               _CachedChapters(File('${directory.path}/fake.audio')),
             ),
             playerQueueLocalRepositoryProvider.overrideWithValue(
-              _MemoryQueueRepository(),
+              queueRepository,
             ),
-            recentPlaybackControllerProvider.overrideWith(
-              _NoRecentPlayback.new,
-            ),
+            recentPlaybackControllerProvider.overrideWith(_RecentPlayback.new),
           ],
         );
         addTearDown(container.dispose);
+        container.listen(recentPlaybackControllerProvider, (_, _) {});
         final PlayerController player = container.read(
           playerControllerProvider.notifier,
         );
         addTearDown(player.shutdown);
-        final loading = player.setQueue(<PlayableItem>[_chapter, _nextChapter]);
+        final collection = favoritesRepository.collection;
+        final loading = player.setQueue([
+          collection.contextualize(_chapter),
+          collection.contextualize(_nextChapter),
+        ]);
         if (pauseDuringOpen) {
           await engine.openStarted.future;
           await player.pause();
@@ -168,6 +185,31 @@ void main() {
         await Future<void>.delayed(Duration.zero);
         await listening.flush();
         expect(read(_chapter)!.completed, isFalse);
+
+        final PlayerState before = container.read(playerControllerProvider);
+        final history = container.read(recentPlaybackControllerProvider);
+        final openedCount = engine.openedPositions.length;
+        final favorites = container.read(favoritesControllerProvider.notifier);
+        expect(
+          await favorites.setCollectionKind(
+            collectionId: collection.id,
+            kind: CollectionKind.music,
+          ),
+          isTrue,
+        );
+        await container.pump();
+        expect(container.read(playerControllerProvider), before);
+        expect(engine.openedPositions, hasLength(openedCount));
+        expect(
+          before.queue.map((item) => item.kind),
+          everyElement(CollectionKind.spoken),
+        );
+        expect(
+          queueRepository.snapshot!.queue.map((item) => item.kind),
+          everyElement(CollectionKind.spoken),
+        );
+        expect(container.read(recentPlaybackControllerProvider), history);
+        expect(history.single.kind, CollectionKind.spoken);
 
         final Completer<void> advanced = Completer<void>();
         final ProviderSubscription<PlayerState> subscription = container.listen(
@@ -218,6 +260,46 @@ void main() {
         expect(read(_nextChapter)!.completed, isFalse);
         expect(read(_nextChapter)!.positionMs, 16000);
         expect(local.load('guest'), hasLength(2));
+        final historyAfterAdvance = container.read(
+          recentPlaybackControllerProvider,
+        );
+        expect(historyAfterAdvance.map((item) => item.stableId), [
+          _nextChapter.stableId,
+          _chapter.stableId,
+        ]);
+        expect(
+          historyAfterAdvance.map((item) => item.kind),
+          everyElement(CollectionKind.spoken),
+        );
+
+        final updated = container
+            .read(favoritesControllerProvider)
+            .collections
+            .single;
+        expect(updated.kind, CollectionKind.music);
+        await player.setQueue([
+          updated.contextualize(_chapter),
+          updated.contextualize(_nextChapter),
+        ], autoplay: false);
+        expect(
+          container.read(playerControllerProvider).currentItem!.kind,
+          CollectionKind.music,
+        );
+        expect(
+          container
+              .read(playerControllerProvider)
+              .queue
+              .map((item) => item.kind),
+          everyElement(CollectionKind.music),
+        );
+        expect(
+          queueRepository.snapshot!.queue.map((item) => item.kind),
+          everyElement(CollectionKind.music),
+        );
+        expect(
+          container.read(recentPlaybackControllerProvider),
+          historyAfterAdvance,
+        );
       },
     );
   }
@@ -273,19 +355,60 @@ class _CachedChapters implements PlayerAudioCacheRepository {
 }
 
 class _MemoryQueueRepository implements PlayerQueueLocalRepository {
+  PersistedPlaybackQueue? snapshot;
+
   @override
-  Future<void> save(PersistedPlaybackQueue snapshot) async {}
+  Future<void> save(PersistedPlaybackQueue snapshot) async {
+    this.snapshot = snapshot;
+  }
 
   @override
   noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
-class _NoRecentPlayback extends RecentPlaybackController {
+class _RecentPlayback extends RecentPlaybackController {
   @override
   List<RecentPlaybackEntry> build() => const <RecentPlaybackEntry>[];
 
   @override
-  Future<void> recordItem(PlayableItem item) async {}
+  Future<void> recordItem(PlayableItem item) async {
+    state = [
+      RecentPlaybackEntry.fromPlayableItem(
+        item,
+        playedAtEpochMs: state.length + 1,
+      ),
+      ...state.where((entry) => entry.stableId != item.stableId),
+    ];
+  }
+}
+
+class _FavoritesRepository implements FavoritesLocalRepository {
+  FavoriteCollection collection = FavoriteCollection(
+    id: 'book',
+    name: 'Book',
+    kind: CollectionKind.spoken,
+    createdAt: DateTime(2026),
+    updatedAt: DateTime(2026),
+  );
+
+  @override
+  FavoritesState loadState() => FavoritesState(collections: [collection]);
+
+  @override
+  Future<void> saveCollection(FavoriteCollection collection) async {
+    this.collection = collection;
+  }
+
+  @override
+  noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+class _NoRemoteFavorites implements FavoritesRemoteCacheRepository {
+  @override
+  FavoritesState loadState() => const FavoritesState();
+
+  @override
+  noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
 class _AudioEngine implements PlayerAudioEngine {

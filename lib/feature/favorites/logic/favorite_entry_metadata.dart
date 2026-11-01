@@ -1,6 +1,4 @@
-import 'package:bilimusic/common/domain/collection_kind.dart';
 import 'package:bilimusic/feature/favorites/domain/favorite_entry.dart';
-import 'package:bilimusic/feature/favorites/logic/favorites_controller.dart';
 import 'package:bilimusic/feature/favorites/logic/favorites_view_mode_logic.dart';
 import 'package:bilimusic/feature/metadata/data/metadata_cache_repository.dart';
 import 'package:bilimusic/feature/metadata/domain/metadata.dart';
@@ -24,17 +22,8 @@ String? favoriteEntryCoverUrl(
   if (entry == null) {
     return null;
   }
-  final bool isSpoken = ref
-      .watch(favoritesControllerProvider)
-      .collections
-      .any(
-        (collection) =>
-            collection.id == collectionId &&
-            collection.kind == CollectionKind.spoken,
-      );
-  if (isSpoken ||
-      ref.watch(favoritesViewModeLogicProvider(collectionId)) ==
-          FavoriteListViewMode.video) {
+  if (ref.watch(effectiveFavoritesViewModeProvider(collectionId)) ==
+      FavoriteListViewMode.video) {
     return entry.coverUrl;
   }
   final String coverUrl =

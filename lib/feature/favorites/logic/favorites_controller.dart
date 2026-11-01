@@ -758,17 +758,12 @@ class FavoritesController extends _$FavoritesController {
     required String collectionId,
   }) {
     final FavoriteCollection? collection = _collectionById(collectionId);
-    if (collection?.kind == CollectionKind.spoken) {
+    if (collection == null || collection.isSpoken) {
       return;
     }
     ref
         .read(metadataBackfillControllerProvider.notifier)
-        .enqueue(
-          item.copyWith(
-            kind: collection?.kind ?? CollectionKind.music,
-            collectionId: collectionId,
-          ),
-        );
+        .enqueue(collection.contextualize(item));
   }
 
   Future<void> _upsertEntry({

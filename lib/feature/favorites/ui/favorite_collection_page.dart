@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:bilimusic/common/components/bottom_page_spacer.dart';
 import 'package:bilimusic/common/components/cached_image.dart';
 import 'package:bilimusic/common/components/status_view.dart';
-import 'package:bilimusic/common/domain/collection_kind.dart';
 import 'package:bilimusic/common/logger.dart';
 import 'package:bilimusic/common/util/player_util.dart';
 import 'package:bilimusic/common/util/toast_util.dart';
@@ -14,7 +13,6 @@ import 'package:bilimusic/feature/favorites/logic/favorite_entry_search.dart';
 import 'package:bilimusic/feature/favorites/logic/favorites_controller.dart';
 import 'package:bilimusic/feature/favorites/logic/favorites_view_mode_logic.dart';
 import 'package:bilimusic/feature/favorites/ui/components/favorite_collection_items_list.dart';
-import 'package:bilimusic/feature/favorites/ui/components/favorite_collection_playable_item.dart';
 import 'package:bilimusic/feature/favorites/ui/components/favorite_collection_search_field.dart';
 import 'package:bilimusic/feature/favorites/ui/components/favorite_entry_subtitle.dart';
 import 'package:bilimusic/feature/favorites/ui/components/favorited_seasons_list.dart';
@@ -272,8 +270,7 @@ class _FavoriteCollectionPageState
   ) async {
     final List<PlayableItem> selectedItems = _selectedItems(items)
         .map(
-          (FavoriteEntry item) =>
-              favoriteCollectionPlayableItem(item, collection),
+          (FavoriteEntry item) => item.toPlayableItem(collection: collection),
         )
         .toList(growable: false);
     if (selectedItems.isEmpty) {
@@ -366,7 +363,7 @@ class _FavoriteCollectionPageState
     final List<PlayableItem> queueItems = visibleItems
         .map(
           (FavoriteEntry item) =>
-              favoriteCollectionPlayableItem(item, resolvedCollection),
+              item.toPlayableItem(collection: resolvedCollection),
         )
         .toList(growable: false);
     return _buildPage(
@@ -472,7 +469,7 @@ class _FavoriteCollectionPageState
     }
     return Column(
       children: <Widget>[
-        _buildItemsToolbar(collection, visibleItems),
+        _buildItemsToolbar(collection, visibleItems, queueItems),
         Expanded(
           child: visibleItems.isEmpty
               ? _buildSearchEmptyState(context, collection.isRemote)
@@ -485,6 +482,7 @@ class _FavoriteCollectionPageState
   Widget _buildItemsToolbar(
     FavoriteCollection collection,
     List<FavoriteEntry> visibleItems,
+    List<PlayableItem> queueItems,
   ) {
     if (_selectionMode) {
       return Padding(
@@ -499,7 +497,7 @@ class _FavoriteCollectionPageState
       );
     }
 
-    final bool isSpoken = collection.kind == CollectionKind.spoken;
+    final bool isSpoken = collection.isSpoken;
     return Padding(
       padding: const EdgeInsets.fromLTRB(14, 10, 14, 8),
       child: Row(
@@ -523,7 +521,7 @@ class _FavoriteCollectionPageState
                   .toggle(),
             ),
             const SizedBox(width: 2),
-            MetadataBackfillButton(entries: visibleItems),
+            MetadataBackfillButton(items: queueItems),
           ],
         ],
       ),
@@ -543,9 +541,7 @@ class _FavoriteCollectionPageState
       selectionMode: _selectionMode,
       onSelectionModeChanged: _setSelectionMode,
       onSelectionChanged: _setSelectedItemIds,
-      viewMode: collection.kind == CollectionKind.spoken
-          ? FavoriteListViewMode.video
-          : ref.watch(favoritesViewModeLogicProvider(collection.id)),
+      viewMode: ref.watch(effectiveFavoritesViewModeProvider(collection.id)),
       onRefresh: collection.isRemote
           ? _refreshRemoteCollectionItemsForce
           : null,
@@ -643,9 +639,8 @@ class _FavoriteCollectionPageState
     required FavoriteEntry item,
     required int index,
   }) async {
-    final PlayableItem playableItem = favoriteCollectionPlayableItem(
-      item,
-      collection,
+    final PlayableItem playableItem = item.toPlayableItem(
+      collection: collection,
     );
     final int stableIndex = queueItems.indexWhere(
       (PlayableItem candidate) =>
@@ -684,9 +679,8 @@ class _FavoriteCollectionPageState
   }) async {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
-    final PlayableItem playableItem = favoriteCollectionPlayableItem(
-      item,
-      collection,
+    final PlayableItem playableItem = item.toPlayableItem(
+      collection: collection,
     );
 
     await showModalBottomSheet<void>(
