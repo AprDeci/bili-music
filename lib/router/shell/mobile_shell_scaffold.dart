@@ -181,7 +181,7 @@ class _MobileShellScaffoldState extends ConsumerState<MobileShellScaffold> {
             const LiquidGlassSettings().glassColor,
       ),
       spacing: 4,
-      verticalPadding: 0,
+      verticalPadding: 15,
       barHeight: _bottomBarHeight,
       horizontalPadding: 0,
       unselectedIconColor: theme.textTheme.bodyMedium?.color ?? Colors.black,

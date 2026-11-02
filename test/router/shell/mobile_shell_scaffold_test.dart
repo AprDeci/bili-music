@@ -63,8 +63,8 @@ void main() {
           final Rect miniRect = tester.getRect(mini);
           final Rect tabsRect = tester.getRect(tabs);
           expect(tabsRect.top - miniRect.bottom, closeTo(10, 0.01));
-          expect(tabsRect.height, 52);
-          expect(tabsRect.width, closeTo(420 * 0.75 - 128, 0.01));
+          expect(tabsRect.height, glass ? 82 : 52);
+          expect(tabsRect.width, closeTo(420 * 0.85 - 128, 0.01));
           if (scale == 1) {
             expect(miniRect.height, glass ? 44 : 46);
             expect(
@@ -110,6 +110,48 @@ void main() {
         });
       }
     }
+  }
+
+  for (final double inset in <double>[0, 34]) {
+    testWidgets('glass has room to paint beyond the tabs inset=$inset', (
+      WidgetTester tester,
+    ) async {
+      await _pumpShell(tester, glass: true, inset: inset);
+      final Finder content = find.byKey(
+        const ValueKey<String>('glass_tab_bar_gesture_region'),
+      );
+      final _FakePlayerController controller =
+          ProviderScope.containerOf(
+                tester.element(find.byType(MiniPlayerGlassBar)),
+              ).read(playerControllerProvider.notifier)
+              as _FakePlayerController;
+
+      for (final bool hasMiniPlayer in <bool>[true, false]) {
+        if (!hasMiniPlayer) {
+          controller.clear();
+          await tester.pumpAndSettle();
+        }
+        final Rect contentRect = tester.getRect(content);
+        expect(contentRect.height, 52);
+        final Finder transitions = find.ancestor(
+          of: content,
+          matching: find.byType(SizeTransition),
+        );
+        expect(transitions, findsNWidgets(2));
+        for (final Element transition in transitions.evaluate()) {
+          final Rect clipRect = tester.getRect(
+            find.byElementPredicate((Element element) => element == transition),
+          );
+          expect(contentRect.top - clipRect.top, greaterThanOrEqualTo(15));
+          expect(
+            clipRect.bottom - contentRect.bottom,
+            greaterThanOrEqualTo(15),
+          );
+        }
+        expect(tester.takeException(), isNull);
+      }
+      await _disposeShell(tester);
+    });
   }
 
   for (final Brightness brightness in Brightness.values) {
@@ -175,7 +217,7 @@ void main() {
       appearance.setGlass(true);
       await tester.pumpAndSettle();
       expect(find.byType(MiniPlayerGlassBar), findsOneWidget);
-      expect(_spacerHeight(tester), normalSpacing - 2);
+      expect(_spacerHeight(tester), normalSpacing + 28);
       appearance.setGlass(false);
       await tester.pumpAndSettle();
       controller.clear();
