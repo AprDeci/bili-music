@@ -112,7 +112,10 @@ class _MobileShellScaffoldState extends ConsumerState<MobileShellScaffold> {
                 _animateChrome(
                   visible: showTabs,
                   child: () => Padding(
-                    padding: EdgeInsets.only(top: showMiniPlayer ? 10 : 0),
+                    padding: EdgeInsets.only(
+                      top: showMiniPlayer ? 10 : 0,
+                      bottom: useGlassBar ? 8 : 0,
+                    ),
                     child: FractionallySizedBox(
                       widthFactor: 0.85,
                       child: Padding(
@@ -181,7 +184,7 @@ class _MobileShellScaffoldState extends ConsumerState<MobileShellScaffold> {
             const LiquidGlassSettings().glassColor,
       ),
       spacing: 4,
-      verticalPadding: 15,
+      verticalPadding: 0,
       barHeight: _bottomBarHeight,
       horizontalPadding: 0,
       unselectedIconColor: theme.textTheme.bodyMedium?.color ?? Colors.black,

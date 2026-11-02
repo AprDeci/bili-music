@@ -63,7 +63,7 @@ void main() {
           final Rect miniRect = tester.getRect(mini);
           final Rect tabsRect = tester.getRect(tabs);
           expect(tabsRect.top - miniRect.bottom, closeTo(10, 0.01));
-          expect(tabsRect.height, glass ? 82 : 52);
+          expect(tabsRect.height, glass ? 60 : 52);
           expect(tabsRect.width, closeTo(420 * 0.85 - 128, 0.01));
           if (scale == 1) {
             expect(miniRect.height, glass ? 44 : 46);
@@ -76,7 +76,10 @@ void main() {
               const Size(44, 44),
             );
           }
-          expect(tabsRect.bottom, 900 - (inset == 0 ? 10 : inset));
+          expect(
+            tabsRect.bottom,
+            900 - (inset == 0 ? 10 : inset) - (glass ? 11 : 0),
+          );
           expect(tester.getRect(find.byKey(_viewportKey)).bottom, 900);
           expect(_spacerHeight(tester), closeTo(900 - miniRect.top + 16, 0.01));
           if (scale == 2) {
@@ -113,7 +116,7 @@ void main() {
   }
 
   for (final double inset in <double>[0, 34]) {
-    testWidgets('glass has room to paint beyond the tabs inset=$inset', (
+    testWidgets('glass keeps top spacing and bottom paint room inset=$inset', (
       WidgetTester tester,
     ) async {
       await _pumpShell(tester, glass: true, inset: inset);
@@ -133,6 +136,15 @@ void main() {
         }
         final Rect contentRect = tester.getRect(content);
         expect(contentRect.height, 52);
+        final Rect tabsRect = tester.getRect(find.byType(GlassTabBar));
+        expect(contentRect.top - tabsRect.top, 4);
+        if (hasMiniPlayer) {
+          expect(
+            contentRect.top -
+                tester.getRect(find.byType(MiniPlayerGlassBar)).bottom,
+            14,
+          );
+        }
         final Finder transitions = find.ancestor(
           of: content,
           matching: find.byType(SizeTransition),
@@ -142,7 +154,6 @@ void main() {
           final Rect clipRect = tester.getRect(
             find.byElementPredicate((Element element) => element == transition),
           );
-          expect(contentRect.top - clipRect.top, greaterThanOrEqualTo(15));
           expect(
             clipRect.bottom - contentRect.bottom,
             greaterThanOrEqualTo(15),
@@ -217,7 +228,7 @@ void main() {
       appearance.setGlass(true);
       await tester.pumpAndSettle();
       expect(find.byType(MiniPlayerGlassBar), findsOneWidget);
-      expect(_spacerHeight(tester), normalSpacing + 28);
+      expect(_spacerHeight(tester), normalSpacing + 17);
       appearance.setGlass(false);
       await tester.pumpAndSettle();
       controller.clear();
