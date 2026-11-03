@@ -337,10 +337,45 @@ void main() {
     );
     expect(find.byTooltip('退出车机 UI'), findsNothing);
     expect(find.byIcon(Icons.exit_to_app_rounded), findsNothing);
+    expect(find.byIcon(Icons.library_music_outlined), findsNothing);
+    expect(find.byIcon(Icons.explore_outlined), findsNothing);
+    final Finder myTab = find.widgetWithText(TextButton, '我的');
+    final Finder recommendedTab = find.widgetWithText(TextButton, '推荐');
+    final ThemeData theme = Theme.of(tester.element(myTab));
+    expect(
+      tester
+          .widget<TextButton>(recommendedTab)
+          .style!
+          .foregroundColor!
+          .resolve({}),
+      theme.colorScheme.primary,
+    );
+    expect(
+      tester.widget<TextButton>(myTab).style!.backgroundColor?.resolve({}),
+      Colors.transparent,
+    );
+    expect(
+      tester.getRect(find.byTooltip('搜索')).left -
+          tester.getRect(recommendedTab).right,
+      greaterThan(100),
+    );
+    expect(tester.getRect(myTab).height * 140 / 160, greaterThanOrEqualTo(84));
     await tester.tap(find.text('我的'));
     await tester.pumpAndSettle();
     expect(router.routeInformationProvider.value.uri.path, '/profile');
     expect(find.text('我的页面'), findsOneWidget);
+    expect(
+      tester.widget<TextButton>(myTab).style!.foregroundColor!.resolve({}),
+      theme.colorScheme.primary,
+    );
+    expect(
+      tester
+          .widget<TextButton>(recommendedTab)
+          .style!
+          .foregroundColor!
+          .resolve({}),
+      theme.colorScheme.onSurfaceVariant,
+    );
     await tester.tap(find.text('推荐'));
     await tester.pumpAndSettle();
     expect(router.routeInformationProvider.value.uri.path, '/home');

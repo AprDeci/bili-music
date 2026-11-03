@@ -1,3 +1,4 @@
+import 'package:bilimusic/common/components/underline_tab_switcher.dart';
 import 'package:bilimusic/common/util/platform_util.dart';
 import 'package:bilimusic/feature/player/ui/car/car_player_panel.dart';
 import 'package:flutter/material.dart';
@@ -98,44 +99,42 @@ class _CarNavigation extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colors = theme.colorScheme;
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: Row(
-          spacing: 8,
-          children: <Widget>[
-            for (final (int index, String label, IconData icon, String path)
-                in <(int, String, IconData, String)>[
-                  (1, '我的', Icons.library_music_outlined, '/profile'),
-                  (0, '推荐', Icons.explore_outlined, '/home'),
-                ])
-              TextButton.icon(
-                style: TextButton.styleFrom(
-                  minimumSize: const Size(104, 56),
-                  backgroundColor: currentLocation.startsWith(path)
-                      ? Theme.of(context).colorScheme.primaryContainer
-                      : null,
-                  textStyle: Theme.of(context).textTheme.titleMedium,
-                ),
-                onPressed: () => onSelect(index),
-                icon: Icon(icon),
-                label: Text(label),
-              ),
-            IconButton(
-              tooltip: '搜索',
-              constraints: const BoxConstraints(minWidth: 56, minHeight: 56),
-              onPressed: () => context.go('/search'),
-              icon: const Icon(Icons.search_rounded),
+      child: Row(
+        spacing: 8,
+        children: <Widget>[
+          Expanded(
+            child: UnderlineTabSwitcher(
+              labels: const <String>['我的', '推荐'],
+              selectedIndex: currentLocation.startsWith('/profile')
+                  ? 0
+                  : currentLocation.startsWith('/home')
+                  ? 1
+                  : -1,
+              onChanged: (int index) => onSelect(index == 0 ? 1 : 0),
+              minimumSize: const Size(104, 56),
+              textStyle: theme.textTheme.titleLarge,
+              spacing: 8,
             ),
-            IconButton(
-              tooltip: '设置',
-              constraints: const BoxConstraints(minWidth: 56, minHeight: 56),
-              onPressed: () => context.go('/settings'),
-              icon: const Icon(Icons.settings_outlined),
-            ),
-          ],
-        ),
+          ),
+          IconButton(
+            tooltip: '搜索',
+            color: colors.onSurfaceVariant,
+            constraints: const BoxConstraints(minWidth: 56, minHeight: 56),
+            onPressed: () => context.go('/search'),
+            icon: const Icon(Icons.search_rounded),
+          ),
+          IconButton(
+            tooltip: '设置',
+            color: colors.onSurfaceVariant,
+            constraints: const BoxConstraints(minWidth: 56, minHeight: 56),
+            onPressed: () => context.go('/settings'),
+            icon: const Icon(Icons.settings_outlined),
+          ),
+        ],
       ),
     );
   }
