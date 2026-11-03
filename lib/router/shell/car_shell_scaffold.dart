@@ -1,4 +1,7 @@
+import 'package:bilimusic/common/components/cached_avatar.dart';
+import 'package:bilimusic/feature/auth/logic/bili_auth_controller.dart';
 import 'package:bilimusic/common/components/underline_tab_switcher.dart';
+import 'package:bilimusic/core/bili/session/bili_session_controller.dart';
 import 'package:bilimusic/common/util/platform_util.dart';
 import 'package:bilimusic/feature/player/logic/display/player_cover_color_provider.dart';
 import 'package:bilimusic/feature/player/ui/car/car_player_panel.dart';
@@ -132,14 +135,45 @@ class CarCoverGlow extends ConsumerWidget {
   }
 }
 
-class _CarNavigation extends StatelessWidget {
+class _CarNavigation extends ConsumerWidget {
   const _CarNavigation({required this.currentLocation, required this.onSelect});
 
   final String currentLocation;
   final ValueChanged<int> onSelect;
 
+  Future<void> _confirmLogout(BuildContext context, WidgetRef ref) async {
+    final bool? confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('退出登录'),
+        content: const Text('确认退出当前 B 站账号吗？'),
+        actions: <Widget>[
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('取消'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('退出'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !context.mounted) return;
+    try {
+      await ref.read(biliAuthControllerProvider.notifier).logout();
+    } on Object {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('退出登录失败，请重试')));
+    }
+  }
+
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final session = ref.watch(biliSessionControllerProvider);
+    final bool isLoggedIn = session?.isLoggedIn ?? false;
     final ThemeData theme = Theme.of(context);
     final ColorScheme colors = theme.colorScheme;
     return Padding(
@@ -148,26 +182,49 @@ class _CarNavigation extends StatelessWidget {
         spacing: 8,
         children: <Widget>[
           Expanded(
-            child: UnderlineTabSwitcher(
-              labels: const <String>['我的', '推荐'],
-              selectedIndex: currentLocation.startsWith('/profile')
-                  ? 0
-                  : currentLocation.startsWith('/home')
-                  ? 1
-                  : -1,
-              onChanged: (int index) => onSelect(index == 0 ? 1 : 0),
-              minimumSize: const Size(104, 56),
-              textStyle: theme.textTheme.titleLarge,
+            child: Row(
               spacing: 8,
+              children: <Widget>[
+                Flexible(
+                  child: UnderlineTabSwitcher(
+                    labels: const <String>['我的', '推荐'],
+                    selectedIndex: currentLocation.startsWith('/profile')
+                        ? 0
+                        : currentLocation.startsWith('/home')
+                        ? 1
+                        : -1,
+                    onChanged: (int index) => onSelect(index == 0 ? 1 : 0),
+                    minimumSize: const Size(104, 56),
+                    textStyle: theme.textTheme.titleLarge,
+                    spacing: 8,
+                  ),
+                ),
+                IconButton(
+                  tooltip: '搜索',
+                  color: colors.onSurfaceVariant,
+                  constraints: const BoxConstraints(
+                    minWidth: 56,
+                    minHeight: 56,
+                  ),
+                  onPressed: () => context.go('/search'),
+                  icon: const Icon(Icons.search_rounded),
+                ),
+              ],
             ),
           ),
-          IconButton(
-            tooltip: '搜索',
-            color: colors.onSurfaceVariant,
-            constraints: const BoxConstraints(minWidth: 56, minHeight: 56),
-            onPressed: () => context.go('/search'),
-            icon: const Icon(Icons.search_rounded),
-          ),
+          if (isLoggedIn)
+            IconButton(
+              tooltip: '退出登录',
+              constraints: const BoxConstraints(minWidth: 56, minHeight: 56),
+              onPressed: () => _confirmLogout(context, ref),
+              icon: CommonCachedAvatar(imageUrl: session?.face, size: 40),
+            )
+          else
+            TextButton(
+              style: TextButton.styleFrom(minimumSize: const Size(56, 56)),
+              onPressed: () => context.push('/auth'),
+              child: const Text('登录'),
+            ),
           IconButton(
             tooltip: '设置',
             color: colors.onSurfaceVariant,

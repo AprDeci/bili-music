@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:bilimusic/common/components/cached_avatar.dart';
 import 'package:bilimusic/common/domain/collection_kind.dart';
 import 'package:bilimusic/core/bili/session/bili_session.dart';
 import 'package:bilimusic/core/bili/session/bili_session_controller.dart';
@@ -389,6 +390,8 @@ void main() {
     final router = GoRouter(
       initialLocation: '/home',
       routes: [
+        GoRoute(path: '/auth', builder: (_, _) => const Text('登录页面')),
+        GoRoute(path: '/search', builder: (_, _) => const Text('搜索页面')),
         StatefulShellRoute.indexedStack(
           builder: (context, state, shell) => CarShellScaffold(
             navigationShell: shell,
@@ -432,6 +435,7 @@ void main() {
             const PlayerDisplayInfo(title: '音乐'),
           ),
           recentPlaybackControllerProvider.overrideWithValue([]),
+          biliSessionControllerProvider.overrideWith(_Session.new),
         ],
         child: MaterialApp.router(
           routerConfig: router,
@@ -503,8 +507,39 @@ void main() {
     expect(
       tester.getRect(find.byTooltip('搜索')).left -
           tester.getRect(recommendedTab).right,
-      greaterThan(100),
+      closeTo(tester.getRect(recommendedTab).height * 8 / 56, 0.01),
     );
+    expect(
+      tester.getRect(find.widgetWithText(TextButton, '登录')).left,
+      greaterThan(tester.getRect(find.byTooltip('搜索')).right),
+    );
+    await tester.tap(find.text('登录'));
+    await tester.pumpAndSettle();
+    expect(find.text('登录页面'), findsOneWidget);
+    router.pop();
+    await tester.pumpAndSettle();
+    final container = ProviderScope.containerOf(
+      tester.element(find.byType(CarShellScaffold)),
+    );
+    (container.read(biliSessionControllerProvider.notifier) as _Session)
+        .logIn();
+    await tester.pumpAndSettle();
+    expect(find.widgetWithText(TextButton, '登录'), findsNothing);
+    expect(find.byTooltip('退出登录').hitTestable(), findsOneWidget);
+    expect(
+      tester
+          .widget<CommonCachedAvatar>(find.byType(CommonCachedAvatar))
+          .imageUrl,
+      '',
+    );
+    await tester.tap(find.byTooltip('退出登录'));
+    await tester.pumpAndSettle();
+    expect(find.text('确认退出当前 B 站账号吗？'), findsOneWidget);
+    expect(router.routeInformationProvider.value.uri.path, '/home');
+    await tester.tap(find.text('取消'));
+    await tester.pumpAndSettle();
+    expect(find.byType(AlertDialog), findsNothing);
+    expect(find.byTooltip('退出登录'), findsOneWidget);
     expect(tester.getRect(myTab).height * 140 / 160, greaterThanOrEqualTo(84));
     await tester.tap(find.text('我的'));
     await tester.pumpAndSettle();
@@ -529,6 +564,10 @@ void main() {
     await tester.pumpAndSettle();
     expect(router.routeInformationProvider.value.uri.path, '/settings');
     expect(find.text('设置页面'), findsOneWidget);
+    await tester.tap(find.byTooltip('搜索'));
+    await tester.pumpAndSettle();
+    expect(router.routeInformationProvider.value.uri.path, '/search');
+    expect(find.text('搜索页面'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
@@ -645,6 +684,20 @@ Widget _scope(Widget child, {_Favorites? favorites, BiliSession? session}) =>
         builder: (context, child) => CarUiViewport(child: child!),
       ),
     );
+
+class _Session extends BiliSessionController {
+  @override
+  BiliSession? build() => null;
+
+  void logIn() => state = const BiliSession(
+    sessData: 'test',
+    biliJct: 'test',
+    dedeUserId: '1',
+    refreshToken: '',
+    cookie: '',
+    face: '',
+  );
+}
 
 class _CoverColor extends PlayerCoverColorController {
   @override
