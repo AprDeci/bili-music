@@ -3,6 +3,7 @@ import 'package:bilimusic/core/theme/theme_catalog.dart';
 import 'package:bilimusic/core/theme/theme_logic.dart';
 import 'package:bilimusic/core/theme/theme_ui_model.dart';
 import 'package:bilimusic/feature/setting/logic/appearance_setting_logic.dart';
+import 'package:bilimusic/feature/setting/logic/car_ui_setting_logic.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -20,6 +21,26 @@ class ThemeSettingsPage extends ConsumerWidget {
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
         children: <Widget>[
+          SwitchListTile.adaptive(
+            title: const Text('启用车机 UI'),
+            subtitle: const Text('常驻播放区、大按钮与简化布局，与普通横屏独立'),
+            secondary: const Icon(Icons.directions_car_rounded),
+            value: ref.watch(carUiSettingLogicProvider),
+            onChanged: (bool value) async {
+              try {
+                await ref
+                    .read(carUiSettingLogicProvider.notifier)
+                    .setEnabled(value);
+              } on Object {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('车机 UI 设置保存失败，请重试')),
+                  );
+                }
+              }
+            },
+          ),
+          const SizedBox(height: 16),
           PlatformUtil.isMobile
               ? SwitchListTile.adaptive(
                   title: const Text('启用玻璃导航栏/播放栏'),

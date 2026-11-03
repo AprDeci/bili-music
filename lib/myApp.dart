@@ -5,6 +5,8 @@ import 'package:bilimusic/core/theme/app_theme.dart';
 import 'package:bilimusic/core/theme/theme_logic.dart';
 import 'package:bilimusic/core/theme/theme_ui_model.dart';
 import 'package:bilimusic/router/routers.dart';
+import 'package:bilimusic/router/car_ui_viewport.dart';
+import 'package:bilimusic/feature/setting/logic/car_ui_setting_logic.dart';
 import 'package:bilimusic/feature/listening/ui/listening_progress_listener.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -33,12 +35,17 @@ class _MyAppState extends ConsumerState<MyApp> {
       scrollBehavior: MyBehavior(),
       builder: FlutterSmartDialog.init(
         builder: (BuildContext context, Widget? child) {
+          final Widget content = ListeningProgressListener(
+            navigatorKey: rootNavigatorKey,
+            child: child ?? const SizedBox.shrink(),
+          );
           return Stack(
+            fit: StackFit.expand,
             children: <Widget>[
-              ListeningProgressListener(
-                navigatorKey: rootNavigatorKey,
-                child: child ?? const SizedBox.shrink(),
-              ),
+              if (ref.watch(carUiSettingLogicProvider))
+                CarUiViewport(child: content)
+              else
+                content,
               if (kDebugMode) const DevOverlay(),
             ],
           );
