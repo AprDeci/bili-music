@@ -35,7 +35,9 @@ class _MyAppState extends ConsumerState<MyApp> {
       theme: carUi
           ? carLightTheme()
           : AppTheme.lightTheme(currentTheme.themeVariantId),
-      darkTheme: AppTheme.darkTheme(currentTheme.themeVariantId),
+      darkTheme: carUi
+          ? carDarkTheme()
+          : AppTheme.darkTheme(currentTheme.themeVariantId),
       scrollBehavior: MyBehavior(),
       builder: FlutterSmartDialog.init(
         builder: (BuildContext context, Widget? child) {
