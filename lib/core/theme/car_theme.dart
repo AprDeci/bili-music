@@ -42,8 +42,8 @@ ThemeData carLightTheme() {
     appBarTheme: base.appBarTheme.copyWith(foregroundColor: colors.onSurface),
     filledButtonTheme: FilledButtonThemeData(
       style: FilledButton.styleFrom(
-        backgroundColor: base.colorScheme.primary,
-        foregroundColor: colors.onSurface,
+        backgroundColor: colors.primary,
+        foregroundColor: colors.onPrimary,
       ),
     ),
     sliderTheme: base.sliderTheme.copyWith(

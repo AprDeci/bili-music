@@ -42,6 +42,9 @@ void main() {
       greaterThanOrEqualTo(4.5),
     );
     final ButtonStyle button = theme.filledButtonTheme.style!;
+    expect(button.foregroundColor!.resolve({}), colors.onPrimary);
+    expect(button.foregroundColor!.resolve({}), Colors.white);
+    expect(button.backgroundColor!.resolve({}), colors.primary);
     expect(
       _contrast(
         button.foregroundColor!.resolve({})!,
