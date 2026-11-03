@@ -1,3 +1,4 @@
+import 'package:bilimusic/common/domain/paged_state.dart';
 import 'package:bilimusic/common/logger.dart';
 import 'package:bilimusic/common/util/toast_util.dart';
 import 'package:bilimusic/feature/comment/data/bilibili_comment_repository.dart';
@@ -78,7 +79,9 @@ class CommentController extends _$CommentController {
         // 最新排序下新评论必然在首位；其它排序交给下次刷新定位。
         if (created != null && state.sort == CommentSort.time) {
           state = state.copyWith(
-            items: <CommentItem>[created, ...state.items],
+            mainComments: state.mainComments.copyWith(
+              items: <CommentItem>[created, ...state.items],
+            ),
             total: state.total + 1,
           );
         }
@@ -116,7 +119,9 @@ class CommentController extends _$CommentController {
       hotItems: state.hotItems
           .map((CommentItem item) => mapItem(item)!)
           .toList(),
-      items: state.items.map((CommentItem item) => mapItem(item)!).toList(),
+      mainComments: state.mainComments.copyWith(
+        items: state.items.map((CommentItem item) => mapItem(item)!).toList(),
+      ),
     );
   }
 
@@ -136,7 +141,7 @@ class CommentController extends _$CommentController {
     state = state.copyWith(
       isLoading: true,
       isRefreshing: false,
-      isLoadingMore: false,
+      mainComments: state.mainComments.startingFirstPage(),
       errorMessage: null,
       loadMoreErrorMessage: null,
     );
@@ -160,7 +165,7 @@ class CommentController extends _$CommentController {
 
     state = state.copyWith(
       isRefreshing: true,
-      isLoadingMore: false,
+      mainComments: state.mainComments.startingFirstPage(),
       errorMessage: null,
       loadMoreErrorMessage: null,
     );
@@ -189,7 +194,10 @@ class CommentController extends _$CommentController {
     }
 
     final int nextPage = state.currentPage + 1;
-    state = state.copyWith(isLoadingMore: true, loadMoreErrorMessage: null);
+    state = state.copyWith(
+      mainComments: state.mainComments.startingNextPage(),
+      loadMoreErrorMessage: null,
+    );
 
     try {
       final CommentPageResult page = await _repository.fetchRootComments(
@@ -201,12 +209,13 @@ class CommentController extends _$CommentController {
       );
 
       state = state.copyWith(
-        items: <CommentItem>[...state.items, ...page.items],
+        mainComments: state.mainComments.withNextPage(
+          page.items,
+          page: page.page,
+          hasMore: page.hasMore,
+        ),
         hotItems: page.hotItems,
         topItem: page.topItem ?? state.topItem,
-        isLoadingMore: false,
-        currentPage: page.page,
-        hasMore: page.hasMore,
         nextOffset: page.nextOffset,
         supportedSorts: page.supportedSorts,
         sortTitle: page.sortTitle,
@@ -231,7 +240,7 @@ class CommentController extends _$CommentController {
     } on Object catch (error) {
       _logger.e('loadNextPage failed', error);
       state = state.copyWith(
-        isLoadingMore: false,
+        mainComments: state.mainComments.failed(error),
         loadMoreErrorMessage: error.toString(),
       );
     }
@@ -273,15 +282,16 @@ class CommentController extends _$CommentController {
       );
 
       state = state.copyWith(
-        items: result.items,
+        mainComments: state.mainComments.withFirstPage(
+          result.items,
+          page: result.page,
+          hasMore: result.hasMore,
+        ),
         hotItems: result.hotItems,
         topItem: result.topItem,
         supportedSorts: result.supportedSorts,
         isLoading: false,
         isRefreshing: false,
-        isLoadingMore: false,
-        currentPage: result.page,
-        hasMore: result.hasMore,
         nextOffset: result.nextOffset,
         sortTitle: result.sortTitle,
         isEnd: result.isEnd,
@@ -305,20 +315,15 @@ class CommentController extends _$CommentController {
     } on Object catch (error) {
       _logger.e('_loadPage failed page=$page sort=${state.sort}', error);
       state = state.copyWith(
-        items: resetItems && !preserveExistingItems
-            ? const <CommentItem>[]
-            : state.items,
+        mainComments: resetItems && !preserveExistingItems
+            ? const PagedState<CommentItem>()
+            : state.mainComments.copyWith(status: PagedStatus.ready),
         hotItems: resetItems && !preserveExistingItems
             ? const <CommentItem>[]
             : state.hotItems,
         topItem: resetItems && !preserveExistingItems ? null : state.topItem,
         isLoading: false,
         isRefreshing: false,
-        isLoadingMore: false,
-        currentPage: resetItems && !preserveExistingItems
-            ? 0
-            : state.currentPage,
-        hasMore: resetItems && !preserveExistingItems ? false : state.hasMore,
         nextOffset: resetItems && !preserveExistingItems
             ? null
             : state.nextOffset,

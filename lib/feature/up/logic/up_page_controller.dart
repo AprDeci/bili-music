@@ -1,9 +1,10 @@
+import 'package:bilimusic/common/domain/paged_state.dart';
 import 'package:bilimusic/core/net/bili_client.dart';
 import 'package:bilimusic/feature/up/data/bili_up_repository.dart';
+import 'package:bilimusic/feature/up/domain/up_collection.dart';
 import 'package:bilimusic/feature/up/domain/up_collection_page_result.dart';
 import 'package:bilimusic/feature/up/domain/up_page_state.dart';
 import 'package:bilimusic/feature/up/domain/up_profile.dart';
-import 'package:bilimusic/feature/up/domain/up_collection.dart';
 import 'package:bilimusic/feature/up/domain/up_video_item.dart';
 import 'package:bilimusic/feature/up/domain/up_video_page_result.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -46,7 +47,10 @@ class UpPageController extends _$UpPageController {
       return;
     }
     state = AsyncData(
-      current.copyWith(isLoadingVideosMore: true, videoLoadMoreError: null),
+      current.copyWith(
+        videoFeed: current.videoFeed.startingNextPage(),
+        videoLoadMoreError: null,
+      ),
     );
     try {
       final UpVideoPageResult page = await _repository.fetchVideos(
@@ -57,17 +61,19 @@ class UpPageController extends _$UpPageController {
       final UpPageState latest = state.asData?.value ?? current;
       state = AsyncData(
         latest.copyWith(
-          videos: <UpVideoItem>[...latest.videos, ...page.items],
-          videoPage: page.page,
-          hasMoreVideos: page.hasMore,
-          isLoadingVideosMore: false,
+          videoFeed: latest.videoFeed.withNextPage(
+            page.items,
+            page: page.page,
+            hasMore: page.hasMore,
+          ),
+          videoLoadMoreError: null,
         ),
       );
     } on Object catch (error) {
       final UpPageState latest = state.asData?.value ?? current;
       state = AsyncData(
         latest.copyWith(
-          isLoadingVideosMore: false,
+          videoFeed: latest.videoFeed.failed(error),
           videoLoadMoreError: error.toString(),
         ),
       );
@@ -83,7 +89,7 @@ class UpPageController extends _$UpPageController {
     }
     state = AsyncData(
       current.copyWith(
-        isLoadingCollectionsMore: true,
+        collectionFeed: current.collectionFeed.startingNextPage(),
         collectionLoadMoreError: null,
       ),
     );
@@ -95,17 +101,19 @@ class UpPageController extends _$UpPageController {
       final UpPageState latest = state.asData?.value ?? current;
       state = AsyncData(
         latest.copyWith(
-          collections: <UpCollection>[...latest.collections, ...page.items],
-          collectionPage: page.page,
-          hasMoreCollections: page.hasMore,
-          isLoadingCollectionsMore: false,
+          collectionFeed: latest.collectionFeed.withNextPage(
+            page.items,
+            page: page.page,
+            hasMore: page.hasMore,
+          ),
+          collectionLoadMoreError: null,
         ),
       );
     } on Object catch (error) {
       final UpPageState latest = state.asData?.value ?? current;
       state = AsyncData(
         latest.copyWith(
-          isLoadingCollectionsMore: false,
+          collectionFeed: latest.collectionFeed.failed(error),
           collectionLoadMoreError: error.toString(),
         ),
       );
@@ -149,15 +157,34 @@ class UpPageController extends _$UpPageController {
 
     return UpPageState(
       profile: profile,
-      videos: videos?.items ?? const <UpVideoItem>[],
-      videoPage: videos?.page ?? 0,
-      hasMoreVideos: videos?.hasMore ?? false,
-      collections: collections?.items ?? const <UpCollection>[],
-      collectionPage: collections?.page ?? 0,
-      hasMoreCollections: collections?.hasMore ?? false,
+      videoFeed: _firstPageFeed<UpVideoItem>(
+        videos?.items,
+        page: videos?.page,
+        hasMore: videos?.hasMore,
+      ),
+      collectionFeed: _firstPageFeed<UpCollection>(
+        collections?.items,
+        page: collections?.page,
+        hasMore: collections?.hasMore,
+      ),
       profileError: profileError,
       videoError: videoError,
       collectionError: collectionError,
+    );
+  }
+
+  PagedState<T> _firstPageFeed<T>(
+    List<T>? items, {
+    required int? page,
+    required bool? hasMore,
+  }) {
+    if (items == null) {
+      return PagedState<T>();
+    }
+    return PagedState<T>().withFirstPage(
+      items,
+      page: page ?? 0,
+      hasMore: hasMore ?? false,
     );
   }
 }

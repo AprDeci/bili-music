@@ -1,3 +1,4 @@
+import 'package:bilimusic/common/domain/paged_state.dart';
 import 'package:bilimusic/feature/search/domain/search_result_item.dart';
 import 'package:bilimusic/feature/search/domain/search_sort.dart';
 import 'package:bilimusic/feature/search/domain/search_type.dart';
@@ -8,6 +9,8 @@ part 'search_state.freezed.dart';
 
 @freezed
 abstract class SearchState with _$SearchState {
+  const SearchState._();
+
   const factory SearchState({
     @Default('') String query,
     String? submittedQuery,
@@ -15,17 +18,30 @@ abstract class SearchState with _$SearchState {
     @Default(SearchSort.comprehensive) SearchSort sort,
     @Default(<String>[]) List<String> recentKeywords,
     @Default(<String>[]) List<String> suggestions,
-    @Default(<SearchResultItem>[]) List<SearchResultItem> results,
-    @Default(<SearchUserItem>[]) List<SearchUserItem> userResults,
+    @Default(PagedState<SearchResultItem>())
+    PagedState<SearchResultItem> videoResults,
+    @Default(PagedState<SearchUserItem>())
+    PagedState<SearchUserItem> userResultsPage,
     @Default(false) bool isLoading,
     @Default(false) bool isLoadingSuggestions,
-    @Default(false) bool isLoadingMore,
-    @Default(0) int currentPage,
-    @Default(false) bool hasMore,
     String? errorMessage,
     String? suggestionsErrorMessage,
     String? loadMoreErrorMessage,
   }) = _SearchState;
+
+  List<SearchResultItem> get results => videoResults.items;
+
+  List<SearchUserItem> get userResults => userResultsPage.items;
+
+  bool get isLoadingMore => type == SearchType.video
+      ? videoResults.isLoadingMore
+      : userResultsPage.isLoadingMore;
+
+  int get currentPage =>
+      type == SearchType.video ? videoResults.page : userResultsPage.page;
+
+  bool get hasMore =>
+      type == SearchType.video ? videoResults.hasMore : userResultsPage.hasMore;
 }
 
 extension SearchStateComputed on SearchState {
@@ -36,9 +52,9 @@ extension SearchStateComputed on SearchState {
   int resultCountFor(SearchType type) {
     switch (type) {
       case SearchType.video:
-        return results.length;
+        return videoResults.items.length;
       case SearchType.up:
-        return userResults.length;
+        return userResultsPage.items.length;
     }
   }
 
