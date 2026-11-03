@@ -50,6 +50,13 @@ Before running any `flutter` or `dart` command, first ensure the command is exec
 ### Small-Screen Testing
 - iPhone SE 1st gen: `adb shell wm size 640x1136 && adb shell wm density 320`
 
+### Car UI Testing
+- **Baseline**: landscape **1920×1080 px @ 140 DPI** (≈2194×1234 logical px before system insets).
+- **Setup**: set the phone emulator to portrait base dimensions **1080×1920**, density **140**, then rotate to landscape (rotation locked to 1) so rendered content aligns with the emulator skin.
+- **Verify**: active display should report `real 1920 x 1080`, `rotation 1`, `density 140`. Also eyeball the emulator window itself — a screenshot via ADB won't show skin/content rotation drift.
+- **Tuning**: keep 1920×1080 / 140 DPI throughout; don't bump the DPI just to make undersized controls look acceptable. Enable car UI in **Settings → Appearance** before testing.
+- **Restore**: reset display size, density, and rotation to the phone's defaults when done.
+
 ### Code Generation
 - One-off codegen: `dart run build_runner build --delete-conflicting-outputs`
 - Watch mode: `dart run build_runner watch --delete-conflicting-outputs`
