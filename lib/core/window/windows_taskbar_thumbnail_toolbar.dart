@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:bilimusic/common/util/platform_util.dart';
 import 'package:bilimusic/feature/player/logic/media_session/app_audio_handler.dart';
 import 'package:flutter/services.dart';
@@ -38,11 +40,15 @@ class WindowsTaskbarThumbnailToolbar {
     if (!PlatformUtil.isWindows) {
       return;
     }
-    _channel.invokeMethod<void>('updatePlaybackState', <String, bool>{
-      'isPlaying': isPlaying,
-      'hasPrevious': hasPrevious,
-      'hasNext': hasNext,
-    });
+    unawaited(
+      _channel
+          .invokeMethod<void>('updatePlaybackState', <String, bool>{
+            'isPlaying': isPlaying,
+            'hasPrevious': hasPrevious,
+            'hasNext': hasNext,
+          })
+          .catchError((Object _) {}),
+    );
   }
 
   Future<void> _handleMethodCall(MethodCall call) async {
