@@ -10,10 +10,11 @@ import 'package:bilimusic/core/settings/app_settings_store.dart';
 import 'package:bilimusic/feature/favorites/domain/favorite_collection.dart';
 import 'package:bilimusic/feature/favorites/domain/favorites_state.dart';
 import 'package:bilimusic/feature/favorites/logic/favorites_controller.dart';
+import 'package:bilimusic/feature/favorites/logic/favorites_view_mode_logic.dart';
 import 'package:bilimusic/feature/favorites/ui/car/car_favorite_collection_page.dart';
 import 'package:bilimusic/feature/home/domain/music_ranking_item.dart';
 import 'package:bilimusic/feature/home/logic/music_ranking_controller.dart';
-import 'package:bilimusic/feature/home/ui/car/car_content_widgets.dart';
+import 'package:bilimusic/common/components/car/car_content_widgets.dart';
 import 'package:bilimusic/feature/home/ui/car/car_home_page.dart';
 import 'package:bilimusic/feature/player/domain/playable_item.dart';
 import 'package:bilimusic/feature/player/domain/player_display_info.dart';
@@ -739,6 +740,9 @@ Widget _scope(Widget child, {_Favorites? favorites, BiliSession? session}) =>
         favoritesControllerProvider.overrideWith(
           () => favorites ?? _Favorites(),
         ),
+        favoritesViewModeLogicProvider(
+          'remote:1',
+        ).overrideWith(_FavoriteViewMode.new),
         recentPlaybackControllerProvider.overrideWithValue([
           RecentPlaybackEntry.fromPlayableItem(_item, playedAtEpochMs: 1),
         ]),
@@ -781,6 +785,11 @@ class _Metadata extends MetadataController {
   @override
   MetadataState build() =>
       const MetadataState(stableId: 'bvid:test', hasSearched: true);
+}
+
+class _FavoriteViewMode extends FavoritesViewModeLogic {
+  @override
+  FavoriteListViewMode build(String collectionId) => FavoriteListViewMode.video;
 }
 
 class _Mode extends CarUiSettingLogic {

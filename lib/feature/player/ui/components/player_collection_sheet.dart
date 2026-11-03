@@ -21,6 +21,7 @@ Future<bool?> showPlayerCollectionSheet({
 Future<bool?> showPlayerCollectionItemsSheet({
   required BuildContext context,
   required List<PlayableItem> items,
+  bool carStyle = false,
 }) async {
   if (items.isEmpty) {
     return false;
@@ -29,19 +30,23 @@ Future<bool?> showPlayerCollectionItemsSheet({
   return showModalBottomSheet<bool>(
     useRootNavigator: true,
     context: context,
-    showDragHandle: true,
+    showDragHandle: false,
+    enableDrag: false,
     isScrollControlled: true,
     backgroundColor: Theme.of(context).colorScheme.surface,
     builder: (BuildContext context) {
-      return SafeArea(child: _PlayerCollectionSheet(items: items));
+      return SafeArea(
+        child: _PlayerCollectionSheet(items: items, carStyle: carStyle),
+      );
     },
   );
 }
 
 class _PlayerCollectionSheet extends ConsumerStatefulWidget {
-  const _PlayerCollectionSheet({required this.items});
+  const _PlayerCollectionSheet({required this.items, this.carStyle = false});
 
   final List<PlayableItem> items;
+  final bool carStyle;
 
   @override
   ConsumerState<_PlayerCollectionSheet> createState() =>
@@ -51,6 +56,8 @@ class _PlayerCollectionSheet extends ConsumerStatefulWidget {
 class _PlayerCollectionSheetState
     extends ConsumerState<_PlayerCollectionSheet> {
   _CollectionListTab _selectedTab = _CollectionListTab.remote;
+  bool _isAdding = false;
+  String? _errorMessage;
 
   @override
   Widget build(BuildContext context) {
@@ -62,103 +69,142 @@ class _PlayerCollectionSheetState
     );
     final ThemeData theme = Theme.of(context);
 
-    return DraggableScrollableSheet(
-      expand: false,
-      initialChildSize: 0.5,
-      minChildSize: 0.28,
-      maxChildSize: 0.9,
-      builder: (BuildContext context, ScrollController scrollController) {
-        return Column(
-          children: <Widget>[
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 0, 20, 4),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Text(
-                    '添加 ${widget.items.length} 首到歌单',
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                      fontWeight: FontWeight.w500,
+    return PopScope<bool>(
+      canPop: !_isAdding,
+      child: AbsorbPointer(
+        absorbing: _isAdding,
+        child: DraggableScrollableSheet(
+          expand: false,
+          shouldCloseOnMinExtent: !_isAdding,
+          initialChildSize: widget.carStyle ? 0.75 : 0.5,
+          minChildSize: 0.28,
+          maxChildSize: 0.9,
+          builder: (BuildContext context, ScrollController scrollController) {
+            return Column(
+              children: <Widget>[
+                SizedBox(
+                  height: 32,
+                  child: Center(
+                    child: Container(
+                      width: 32,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.onSurfaceVariant.withValues(
+                          alpha: 0.4,
+                        ),
+                        borderRadius: BorderRadius.circular(2),
+                      ),
                     ),
                   ),
-                  const SizedBox(height: 4),
-                  Row(
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 4),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: <Widget>[
-                      _CollectionTabButton(
-                        label: '网络歌单',
-                        selected: _selectedTab == _CollectionListTab.remote,
-                        onTap: () => _selectTab(_CollectionListTab.remote),
+                      Text(
+                        '添加 ${widget.items.length} 首到歌单',
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                          fontWeight: FontWeight.w500,
+                          fontSize: widget.carStyle ? 24 : null,
+                        ),
                       ),
-                      const SizedBox(width: 22),
-                      _CollectionTabButton(
-                        label: '本地歌单',
-                        selected: _selectedTab == _CollectionListTab.local,
-                        onTap: () => _selectTab(_CollectionListTab.local),
+                      const SizedBox(height: 4),
+                      Row(
+                        children: <Widget>[
+                          _CollectionTabButton(
+                            label: '网络歌单',
+                            carStyle: widget.carStyle,
+                            selected: _selectedTab == _CollectionListTab.remote,
+                            onTap: () => _selectTab(_CollectionListTab.remote),
+                          ),
+                          const SizedBox(width: 22),
+                          _CollectionTabButton(
+                            label: '本地歌单',
+                            carStyle: widget.carStyle,
+                            selected: _selectedTab == _CollectionListTab.local,
+                            onTap: () => _selectTab(_CollectionListTab.local),
+                          ),
+                        ],
                       ),
                     ],
                   ),
-                ],
-              ),
-            ),
-            Expanded(
-              child: collections.isEmpty
-                  ? StatusView(
-                      icon: Icons.queue_music_outlined,
-                      title: _selectedTab == _CollectionListTab.remote
-                          ? '暂无网络歌单'
-                          : '暂无本地歌单',
-                    )
-                  : ListView.separated(
-                      controller: scrollController,
-                      padding: const EdgeInsets.only(bottom: 24),
-                      separatorBuilder: (_, _) => const SizedBox(height: 8),
-                      itemCount: collections.length,
-                      itemBuilder: (BuildContext context, int index) {
-                        final FavoriteCollection collection =
-                            collections[index];
-                        final int addedItemCount = widget.items
-                            .where(
-                              (PlayableItem item) =>
-                                  favoritesState.containsItemInCollection(
-                                    collectionId: collection.id,
-                                    item: item,
-                                  ),
-                            )
-                            .length;
-                        final int count = favoritesState.itemCountForCollection(
-                          collection.id,
-                        );
-
-                        final String coverUrl =
-                            collection.coverUrl?.trim() ?? '';
-                        return _CollectionTile(
-                          collection: collection,
-                          coverUrl: coverUrl.isNotEmpty
-                              ? coverUrl
-                              : favoritesState
-                                    .itemsForCollection(collection.id)
-                                    .map((entry) => entry.coverUrl.trim())
-                                    .firstWhere(
-                                      (String url) => url.isNotEmpty,
-                                      orElse: () => '',
-                                    ),
-                          count: collection.isRemote
-                              ? collection.itemCount
-                              : count,
-                          addedItemCount: addedItemCount,
-                          totalItemCount: widget.items.length,
-                          onTap: () => _handleCollectionTap(
-                            context: context,
-                            collection: collection,
-                          ),
-                        );
-                      },
+                ),
+                if (_isAdding) const LinearProgressIndicator(),
+                if (_errorMessage != null)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 8,
                     ),
-            ),
-          ],
-        );
-      },
+                    child: Text(
+                      _errorMessage!,
+                      style: theme.textTheme.bodyLarge?.copyWith(
+                        color: theme.colorScheme.error,
+                        fontSize: widget.carStyle ? 20 : null,
+                      ),
+                      semanticsLabel: _errorMessage,
+                    ),
+                  ),
+                Expanded(
+                  child: collections.isEmpty
+                      ? StatusView(
+                          icon: Icons.queue_music_outlined,
+                          title: _selectedTab == _CollectionListTab.remote
+                              ? '暂无网络歌单'
+                              : '暂无本地歌单',
+                        )
+                      : ListView.separated(
+                          controller: scrollController,
+                          padding: const EdgeInsets.only(bottom: 24),
+                          separatorBuilder: (_, _) => const SizedBox(height: 8),
+                          itemCount: collections.length,
+                          itemBuilder: (BuildContext context, int index) {
+                            final FavoriteCollection collection =
+                                collections[index];
+                            final int addedItemCount = widget.items
+                                .where(
+                                  (PlayableItem item) =>
+                                      favoritesState.containsItemInCollection(
+                                        collectionId: collection.id,
+                                        item: item,
+                                      ),
+                                )
+                                .length;
+                            final int count = favoritesState
+                                .itemCountForCollection(collection.id);
+
+                            final String coverUrl =
+                                collection.coverUrl?.trim() ?? '';
+                            return _CollectionTile(
+                              collection: collection,
+                              carStyle: widget.carStyle,
+                              coverUrl: coverUrl.isNotEmpty
+                                  ? coverUrl
+                                  : favoritesState
+                                        .itemsForCollection(collection.id)
+                                        .map((entry) => entry.coverUrl.trim())
+                                        .firstWhere(
+                                          (String url) => url.isNotEmpty,
+                                          orElse: () => '',
+                                        ),
+                              count: collection.isRemote
+                                  ? collection.itemCount
+                                  : count,
+                              addedItemCount: addedItemCount,
+                              totalItemCount: widget.items.length,
+                              onTap: () =>
+                                  _handleCollectionTap(collection: collection),
+                            );
+                          },
+                        ),
+                ),
+              ],
+            );
+          },
+        ),
+      ),
     );
   }
 
@@ -189,9 +235,11 @@ class _PlayerCollectionSheetState
   }
 
   Future<void> _handleCollectionTap({
-    required BuildContext context,
     required FavoriteCollection collection,
   }) async {
+    if (_isAdding) {
+      return;
+    }
     final FavoritesState favoritesState = ref.read(favoritesControllerProvider);
     final List<PlayableItem> itemsToAdd = widget.items
         .where(
@@ -205,24 +253,46 @@ class _PlayerCollectionSheetState
       ToastUtil.showCenter('已经添加过了', icon: Icons.error_outline_rounded);
       return;
     }
-    Navigator.of(context).pop(true);
+    final FavoritesController controller = ref.read(
+      favoritesControllerProvider.notifier,
+    );
+    setState(() {
+      _isAdding = true;
+      _errorMessage = null;
+    });
 
     int addedCount = 0;
-    for (final PlayableItem item in itemsToAdd) {
-      final bool added = await ref
-          .read(favoritesControllerProvider.notifier)
-          .addToCollection(collectionId: collection.id, item: item);
-      if (added) {
-        addedCount++;
+    bool failed = false;
+    try {
+      for (final PlayableItem item in itemsToAdd) {
+        final bool added = await controller.addToCollection(
+          collectionId: collection.id,
+          item: item,
+        );
+        if (added) {
+          addedCount++;
+        } else {
+          failed = true;
+        }
       }
+    } on Object {
+      failed = true;
     }
 
-    if (!context.mounted) {
+    if (!mounted) {
       return;
     }
-    ToastUtil.show(
-      '已新增 $addedCount / ${itemsToAdd.length} 项到“${collection.name}”',
-    );
+    final String result =
+        '已新增 $addedCount / ${itemsToAdd.length} 项到“${collection.name}”';
+    setState(() {
+      _isAdding = false;
+      _errorMessage = failed ? '$result，部分添加失败，请点击歌单重试' : null;
+    });
+    if (failed) {
+      return;
+    }
+    Navigator.of(context).pop(true);
+    ToastUtil.show(result);
   }
 }
 
@@ -233,10 +303,12 @@ class _CollectionTabButton extends StatelessWidget {
     required this.label,
     required this.selected,
     required this.onTap,
+    this.carStyle = false,
   });
 
   final String label;
   final bool selected;
+  final bool carStyle;
   final VoidCallback onTap;
 
   @override
@@ -248,7 +320,7 @@ class _CollectionTabButton extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(4),
         child: ConstrainedBox(
-          constraints: const BoxConstraints(minHeight: 48),
+          constraints: BoxConstraints(minHeight: carStyle ? 56 : 48),
           child: Center(
             child: Text(
               label,
@@ -257,6 +329,7 @@ class _CollectionTabButton extends StatelessWidget {
                     ? theme.colorScheme.primary
                     : theme.colorScheme.onSurfaceVariant,
                 fontWeight: selected ? FontWeight.w600 : FontWeight.normal,
+                fontSize: carStyle ? 22 : null,
               ),
             ),
           ),
@@ -274,6 +347,7 @@ class _CollectionTile extends StatelessWidget {
     required this.addedItemCount,
     required this.totalItemCount,
     required this.onTap,
+    this.carStyle = false,
   });
 
   final FavoriteCollection collection;
@@ -282,6 +356,7 @@ class _CollectionTile extends StatelessWidget {
   final int addedItemCount;
   final int totalItemCount;
   final VoidCallback onTap;
+  final bool carStyle;
 
   @override
   Widget build(BuildContext context) {
@@ -303,8 +378,8 @@ class _CollectionTile extends StatelessWidget {
               children: <Widget>[
                 CommonCachedImage(
                   imageUrl: coverUrl,
-                  width: 48,
-                  height: 48,
+                  width: carStyle ? 64 : 48,
+                  height: carStyle ? 64 : 48,
                   borderRadius: BorderRadius.circular(4),
                   backgroundColor: colorScheme.surfaceContainerHighest,
                   iconColor: colorScheme.onSurfaceVariant.withValues(
@@ -324,6 +399,7 @@ class _CollectionTile extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                         style: theme.textTheme.bodyMedium?.copyWith(
                           color: colorScheme.onSurfaceVariant,
+                          fontSize: carStyle ? 22 : null,
                         ),
                       ),
                       const SizedBox(height: 2),
@@ -331,6 +407,7 @@ class _CollectionTile extends StatelessWidget {
                         '$count 首',
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: colorScheme.onSurfaceVariant,
+                          fontSize: carStyle ? 20 : null,
                         ),
                       ),
                     ],

@@ -6,7 +6,7 @@ import 'package:bilimusic/core/bili/session/bili_session_controller.dart';
 import 'package:bilimusic/feature/favorites/domain/favorite_collection.dart';
 import 'package:bilimusic/feature/favorites/domain/favorites_state.dart';
 import 'package:bilimusic/feature/favorites/logic/favorites_controller.dart';
-import 'package:bilimusic/feature/home/ui/car/car_content_widgets.dart';
+import 'package:bilimusic/common/components/car/car_content_widgets.dart';
 import 'package:bilimusic/feature/profile/ui/components/add_collection_dialog.dart';
 import 'package:bilimusic/feature/recent/logic/recent_playback_controller.dart';
 import 'package:flutter/material.dart';

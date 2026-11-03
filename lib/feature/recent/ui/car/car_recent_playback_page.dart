@@ -1,4 +1,4 @@
-import 'package:bilimusic/feature/home/ui/car/car_content_widgets.dart';
+import 'package:bilimusic/common/components/car/car_content_widgets.dart';
 import 'package:bilimusic/feature/player/domain/playable_item.dart';
 import 'package:bilimusic/feature/recent/logic/recent_playback_controller.dart';
 import 'package:flutter/material.dart';

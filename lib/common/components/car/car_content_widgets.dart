@@ -218,11 +218,23 @@ class CarSongTile extends ConsumerWidget {
     required this.item,
     required this.index,
     required this.onTap,
+    this.onLongPress,
+    this.selected,
+    this.trailing,
+    this.title,
+    this.subtitle,
+    this.coverUrl,
   });
 
   final PlayableItem item;
   final int index;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
+  final VoidCallback? onLongPress;
+  final bool? selected;
+  final Widget? trailing;
+  final String? title;
+  final String? subtitle;
+  final String? coverUrl;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -233,17 +245,19 @@ class CarSongTile extends ConsumerWidget {
     );
     final ThemeData theme = Theme.of(context);
     final ColorScheme colors = theme.colorScheme;
+    final bool highlighted = selected ?? current;
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Material(
-        color: current ? colors.primaryContainer : colors.surface,
+        color: highlighted ? colors.primaryContainer : colors.surface,
         borderRadius: BorderRadius.circular(20),
         clipBehavior: Clip.antiAlias,
         child: Semantics(
-          selected: current,
+          selected: highlighted,
           button: true,
           child: InkWell(
             onTap: onTap,
+            onLongPress: onLongPress,
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
               child: Row(
@@ -260,7 +274,7 @@ class CarSongTile extends ConsumerWidget {
                   ),
                   const SizedBox(width: 12),
                   CommonCachedImage(
-                    imageUrl: item.coverUrl,
+                    imageUrl: coverUrl ?? item.coverUrl,
                     width: 56,
                     height: 56,
                     borderRadius: BorderRadius.circular(14),
@@ -274,25 +288,28 @@ class CarSongTile extends ConsumerWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: <Widget>[
                         Text(
-                          item.title,
+                          title ?? item.title,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: theme.textTheme.titleLarge?.copyWith(
-                            color: current ? colors.onPrimaryContainer : null,
+                            color: highlighted
+                                ? colors.onPrimaryContainer
+                                : null,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
                         const SizedBox(height: 6),
                         Text(
-                          <String>[
-                            if (item.author.isNotEmpty) item.author,
-                            if (item.pageTitle?.trim().isNotEmpty ?? false)
-                              item.pageTitle!,
-                          ].join(' · '),
+                          subtitle ??
+                              <String>[
+                                if (item.author.isNotEmpty) item.author,
+                                if (item.pageTitle?.trim().isNotEmpty ?? false)
+                                  item.pageTitle!,
+                              ].join(' · '),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: theme.textTheme.bodyLarge?.copyWith(
-                            color: current
+                            color: highlighted
                                 ? colors.onPrimaryContainer
                                 : colors.onSurfaceVariant,
                           ),
@@ -301,11 +318,14 @@ class CarSongTile extends ConsumerWidget {
                     ),
                   ),
                   const SizedBox(width: 12),
-                  Icon(
-                    Icons.play_arrow_rounded,
-                    color: current ? colors.primary : colors.onSurfaceVariant,
-                    size: 30,
-                  ),
+                  trailing ??
+                      Icon(
+                        Icons.play_arrow_rounded,
+                        color: current
+                            ? colors.primary
+                            : colors.onSurfaceVariant,
+                        size: 30,
+                      ),
                 ],
               ),
             ),
