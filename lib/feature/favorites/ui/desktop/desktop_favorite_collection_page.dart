@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:bilimusic/common/components/bottom_page_spacer.dart';
 import 'package:bilimusic/common/components/cached_image.dart';
-import 'package:bilimusic/common/components/desktop/desktop_tab_switcher.dart';
+import 'package:bilimusic/common/components/underline_tab_switcher.dart';
 import 'package:bilimusic/common/components/status_view.dart';
 import 'package:bilimusic/common/logger.dart';
 import 'package:bilimusic/common/util/player_util.dart';
@@ -493,14 +493,17 @@ class _DesktopFavoriteCollectionPageState
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          DesktopTabSwitcher(
-            labels: const <String>['歌曲', '合集'],
-            selectedIndex: _showFavoritedSeasons ? 1 : 0,
-            onChanged: (int index) {
-              setState(() {
-                _showFavoritedSeasons = index == 1;
-              });
-            },
+          Padding(
+            padding: const EdgeInsets.fromLTRB(22, 16, 22, 8),
+            child: UnderlineTabSwitcher(
+              labels: const <String>['歌曲', '合集'],
+              selectedIndex: _showFavoritedSeasons ? 1 : 0,
+              onChanged: (int index) {
+                setState(() {
+                  _showFavoritedSeasons = index == 1;
+                });
+              },
+            ),
           ),
           Expanded(
             child: _showFavoritedSeasons
