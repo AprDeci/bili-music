@@ -1,0 +1,494 @@
+import 'dart:io';
+
+import 'package:bilimusic/core/bili/session/bili_session_controller.dart';
+import 'package:bilimusic/core/hive/hive_keys.dart';
+import 'package:bilimusic/core/settings/app_settings_store.dart';
+import 'package:bilimusic/feature/favorites/domain/favorite_collection.dart';
+import 'package:bilimusic/feature/favorites/domain/favorites_state.dart';
+import 'package:bilimusic/feature/favorites/logic/favorites_controller.dart';
+import 'package:bilimusic/feature/favorites/ui/car/car_favorite_collection_page.dart';
+import 'package:bilimusic/feature/home/domain/music_ranking_item.dart';
+import 'package:bilimusic/feature/home/logic/music_ranking_controller.dart';
+import 'package:bilimusic/feature/home/ui/car/car_content_widgets.dart';
+import 'package:bilimusic/feature/home/ui/car/car_home_page.dart';
+import 'package:bilimusic/feature/player/domain/playable_item.dart';
+import 'package:bilimusic/feature/player/domain/player_display_info.dart';
+import 'package:bilimusic/feature/player/domain/player_state.dart';
+import 'package:bilimusic/feature/player/domain/player_lyric_settings.dart';
+import 'package:bilimusic/feature/player/logic/lyrics/player_lyric_settings_logic.dart';
+import 'package:bilimusic/feature/player/logic/display/player_display_provider.dart';
+import 'package:bilimusic/feature/player/logic/player_controller.dart';
+import 'package:bilimusic/feature/player/ui/car/car_player_panel.dart';
+import 'package:bilimusic/feature/player/ui/car/car_player_page.dart';
+import 'package:bilimusic/feature/metadata/domain/metadata_state.dart';
+import 'package:bilimusic/feature/metadata/logic/metadata_controller.dart';
+import 'package:bilimusic/router/shell/car_shell_scaffold.dart';
+import 'package:bilimusic/feature/profile/ui/car/car_profile_page.dart';
+import 'package:bilimusic/feature/recent/domain/recent_playback_entry.dart';
+import 'package:bilimusic/feature/recent/logic/recent_playback_controller.dart';
+import 'package:bilimusic/feature/recent/ui/car/car_recent_playback_page.dart';
+import 'package:bilimusic/feature/setting/logic/car_ui_setting_logic.dart';
+import 'package:bilimusic/router/car_ui_page.dart';
+import 'package:bilimusic/router/car_ui_viewport.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
+import 'package:hive_ce/hive.dart';
+
+const _item = PlayableItem(
+  aid: 1,
+  bvid: 'test',
+  title: '旅途中的音乐',
+  author: '测试歌手',
+  coverUrl: '',
+);
+
+void main() {
+  test('car UI defaults off and persists across containers', () async {
+    final Directory directory = await Directory.systemTemp.createTemp(
+      'car-ui-',
+    );
+    Hive.init(directory.path);
+    final prefs = await Hive.openBox<String>('car-ui-test');
+    ProviderContainer container = ProviderContainer(
+      overrides: [
+        appSettingsStoreProvider.overrideWithValue(AppSettingsStore(prefs)),
+      ],
+    );
+    try {
+      expect(container.read(carUiSettingLogicProvider), isFalse);
+      await container.read(carUiSettingLogicProvider.notifier).setEnabled(true);
+      expect(prefs.get(HiveKeys.carUiEnabled), 'true');
+      container.dispose();
+      container = ProviderContainer(
+        overrides: [
+          appSettingsStoreProvider.overrideWithValue(AppSettingsStore(prefs)),
+        ],
+      );
+      expect(container.read(carUiSettingLogicProvider), isTrue);
+      await container
+          .read(carUiSettingLogicProvider.notifier)
+          .setEnabled(false);
+      expect(container.read(carUiSettingLogicProvider), isFalse);
+    } finally {
+      container.dispose();
+      await prefs.close();
+      await directory.delete(recursive: true);
+    }
+  });
+
+  testWidgets('page mode changes in place without rebuilding the router', (
+    tester,
+  ) async {
+    final router = GoRouter(
+      routes: [
+        GoRoute(
+          path: '/',
+          builder: (_, _) => CarUiPage(
+            carBuilder: (_) => const Text('car'),
+            standardBuilder: (_) => const Text('standard'),
+          ),
+        ),
+      ],
+    );
+    addTearDown(router.dispose);
+    final container = ProviderContainer(
+      overrides: [carUiSettingLogicProvider.overrideWith(_Mode.new)],
+    );
+    addTearDown(container.dispose);
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: MaterialApp.router(routerConfig: router),
+      ),
+    );
+    expect(find.text('standard'), findsOneWidget);
+    await container.read(carUiSettingLogicProvider.notifier).setEnabled(true);
+    await tester.pump();
+    expect(find.text('car'), findsOneWidget);
+    expect(router.routeInformationProvider.value.uri.path, '/');
+    await container.read(carUiSettingLogicProvider.notifier).setEnabled(false);
+    await tester.pump();
+    expect(find.text('standard'), findsOneWidget);
+  });
+
+  for (final size in [
+    const Size(360, 640),
+    const Size(600, 280),
+    const Size(1000, 520),
+  ]) {
+    testWidgets('content pages fit $size', (tester) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      for (final page in [
+        const CarHomePage(),
+        const CarProfilePage(),
+        const CarRecentPlaybackPage(),
+      ]) {
+        await tester.pumpWidget(_scope(Scaffold(body: page)));
+        await tester.pump();
+        expect(tester.takeException(), isNull);
+        await tester.pumpWidget(const SizedBox.shrink());
+      }
+    });
+  }
+
+  testWidgets('content pages fit the 1080p 140 DPI car viewport', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1920, 1080);
+    tester.view.devicePixelRatio = 140 / 160;
+    addTearDown(tester.view.reset);
+    for (final page in [
+      const CarHomePage(),
+      const CarProfilePage(),
+      const CarRecentPlaybackPage(),
+    ]) {
+      await tester.pumpWidget(_scope(Scaffold(body: page)));
+      await tester.pump();
+      expect(tester.takeException(), isNull);
+      await tester.pumpWidget(const SizedBox.shrink());
+    }
+  });
+
+  testWidgets(
+    'song row highlights current track and keeps a large tap target',
+    (tester) async {
+      await tester.pumpWidget(
+        _scope(
+          Scaffold(
+            body: CarSongTile(item: _item, index: 0, onTap: () {}),
+          ),
+        ),
+      );
+      final row = find.byType(CarSongTile);
+      expect(tester.getSize(row).height, greaterThanOrEqualTo(88));
+      expect(find.byIcon(Icons.equalizer_rounded), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'car viewport scales controls and preserves accessibility metrics',
+    (tester) async {
+      tester.view.physicalSize = const Size(1920, 1080);
+      tester.view.devicePixelRatio = 140 / 160;
+      tester.view.padding = FakeViewPadding(top: 28, bottom: 28);
+      tester.view.viewPadding = FakeViewPadding(top: 28, bottom: 28);
+      addTearDown(tester.view.reset);
+      MediaQueryData? actual;
+      await tester.pumpWidget(
+        MaterialApp(
+          builder: (context, child) => MediaQuery(
+            data: MediaQuery.of(context).copyWith(
+              textScaler: TextScaler.linear(1.5),
+              viewInsets: const EdgeInsets.only(bottom: 160),
+            ),
+            child: CarUiViewport(child: child!),
+          ),
+          home: Builder(
+            builder: (context) {
+              actual = MediaQuery.of(context);
+              return const Scaffold(
+                body: Center(child: SizedBox(width: 56, height: 56)),
+              );
+            },
+          ),
+        ),
+      );
+      expect(actual!.size.width, closeTo(1280, 0.01));
+      expect(actual!.size.height, closeTo(720, 0.01));
+      expect(actual!.devicePixelRatio, closeTo(1.5, 0.01));
+      expect(actual!.textScaler.scale(16), 24);
+      expect(
+        actual!.viewInsets.bottom * actual!.devicePixelRatio,
+        closeTo(160 * 140 / 160, 0.01),
+      );
+      expect(actual!.padding.top * actual!.devicePixelRatio, closeTo(28, 0.01));
+      final target = find.byWidgetPredicate(
+        (widget) =>
+            widget is SizedBox && widget.width == 56 && widget.height == 56,
+      );
+      expect(tester.getRect(target).width * 140 / 160, closeTo(84, 0.01));
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets('recent playback has an explicit empty state', (tester) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [recentPlaybackControllerProvider.overrideWithValue([])],
+        child: const MaterialApp(home: Scaffold(body: CarRecentPlaybackPage())),
+      ),
+    );
+    expect(find.text('还没有最近播放'), findsOneWidget);
+  });
+
+  testWidgets('remote collection sync failure can be retried', (tester) async {
+    final favorites = _Favorites()..fail = true;
+    await tester.pumpWidget(
+      _scope(
+        const Scaffold(
+          body: CarFavoriteCollectionPage(collectionId: 'remote:1'),
+        ),
+        favorites: favorites,
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(favorites.syncCount, 1);
+    expect(find.text('歌单同步失败'), findsOneWidget);
+    favorites.fail = false;
+    await tester.tap(find.text('重试'));
+    await tester.pumpAndSettle();
+    expect(favorites.syncCount, 2);
+    expect(find.text('这个歌单还是空的'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('car shell keeps playback controls visible across window sizes', (
+    tester,
+  ) async {
+    final router = GoRouter(
+      initialLocation: '/home',
+      routes: [
+        StatefulShellRoute.indexedStack(
+          builder: (context, state, shell) => CarShellScaffold(
+            navigationShell: shell,
+            currentLocation: state.uri.path,
+          ),
+          branches: [
+            StatefulShellBranch(
+              routes: [
+                GoRoute(
+                  path: '/home',
+                  builder: (_, _) => const CarRecentPlaybackPage(),
+                ),
+              ],
+            ),
+            StatefulShellBranch(
+              routes: [
+                GoRoute(
+                  path: '/profile',
+                  builder: (_, _) => const Text('我的页面'),
+                ),
+              ],
+            ),
+            StatefulShellBranch(
+              routes: [
+                GoRoute(
+                  path: '/settings',
+                  builder: (_, _) => const Text('设置页面'),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ],
+    );
+    addTearDown(router.dispose);
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          playerControllerProvider.overrideWith(_Player.new),
+          playerDisplayProvider.overrideWithValue(
+            const PlayerDisplayInfo(title: '音乐'),
+          ),
+          recentPlaybackControllerProvider.overrideWithValue([]),
+        ],
+        child: MaterialApp.router(
+          routerConfig: router,
+          builder: (context, child) => CarUiViewport(child: child!),
+        ),
+      ),
+    );
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    tester.view.devicePixelRatio = 1;
+    for (final size in [
+      const Size(360, 640),
+      const Size(600, 280),
+      const Size(1000, 520),
+    ]) {
+      tester.view.physicalSize = size;
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+      expect(find.byTooltip('暂停').hitTestable(), findsOneWidget);
+    }
+    tester.view.physicalSize = const Size(1920, 1080);
+    tester.view.devicePixelRatio = 140 / 160;
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+    final Rect panel = tester.getRect(find.byType(CarPlayerPanel));
+    final double screenWidth = 1920 / (140 / 160);
+    expect(panel.width / screenWidth, inInclusiveRange(0.28, 0.31));
+    expect(
+      tester.getRect(find.byTooltip('设置')).width * 140 / 160,
+      greaterThanOrEqualTo(84),
+    );
+    expect(find.byTooltip('播放进度').hitTestable(), findsOneWidget);
+    expect(find.byTooltip('暂停').hitTestable(), findsOneWidget);
+    expect(find.byTooltip('播放队列（1 首）').hitTestable(), findsOneWidget);
+    expect(
+      tester.getTopLeft(find.text('我的')).dx,
+      lessThan(tester.getTopLeft(find.text('推荐')).dx),
+    );
+    expect(find.byTooltip('退出车机 UI'), findsNothing);
+    expect(find.byIcon(Icons.exit_to_app_rounded), findsNothing);
+    await tester.tap(find.text('我的'));
+    await tester.pumpAndSettle();
+    expect(router.routeInformationProvider.value.uri.path, '/profile');
+    expect(find.text('我的页面'), findsOneWidget);
+    await tester.tap(find.text('推荐'));
+    await tester.pumpAndSettle();
+    expect(router.routeInformationProvider.value.uri.path, '/home');
+    await tester.tap(find.byTooltip('设置'));
+    await tester.pumpAndSettle();
+    expect(router.routeInformationProvider.value.uri.path, '/settings');
+    expect(find.text('设置页面'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets(
+    'full player retains queue and shows controls on a short screen',
+    (tester) async {
+      tester.view.physicalSize = const Size(1000, 480);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            playerControllerProvider.overrideWith(_Player.new),
+            playerDisplayProvider.overrideWithValue(
+              const PlayerDisplayInfo(title: '音乐'),
+            ),
+            metadataControllerProvider.overrideWith(_Metadata.new),
+            playerLyricSettingsLogicProvider.overrideWithValue(
+              const PlayerLyricSettings(),
+            ),
+          ],
+          child: MaterialApp(
+            home: const CarPlayerPage(initialItem: _item),
+            builder: (context, child) => CarUiViewport(child: child!),
+          ),
+        ),
+      );
+      await tester.pump();
+      expect(tester.takeException(), isNull);
+      expect(find.byTooltip('暂停').hitTestable(), findsOneWidget);
+      final container = ProviderScope.containerOf(
+        tester.element(find.byType(CarPlayerPage)),
+      );
+      expect(container.read(playerControllerProvider).queue, [_item]);
+      tester.view.physicalSize = const Size(1920, 1080);
+      tester.view.devicePixelRatio = 140 / 160;
+      await tester.pump();
+      expect(tester.takeException(), isNull);
+      expect(find.byTooltip('暂停').hitTestable(), findsOneWidget);
+      expect(find.byTooltip('播放进度').hitTestable(), findsOneWidget);
+    },
+  );
+
+  testWidgets('player panel fits narrow and short landscape constraints', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      _scope(
+        const Scaffold(
+          body: SizedBox(width: 240, height: 280, child: CarPlayerPanel()),
+        ),
+      ),
+    );
+    expect(tester.takeException(), isNull);
+    expect(find.byTooltip('暂停').hitTestable(), findsOneWidget);
+    expect(
+      tester.getSize(find.byTooltip('暂停')).shortestSide,
+      greaterThanOrEqualTo(56),
+    );
+    expect(tester.takeException(), isNull);
+  });
+}
+
+Widget _scope(Widget child, {_Favorites? favorites}) => ProviderScope(
+  overrides: [
+    favoritesControllerProvider.overrideWith(() => favorites ?? _Favorites()),
+    recentPlaybackControllerProvider.overrideWithValue([
+      RecentPlaybackEntry.fromPlayableItem(_item, playedAtEpochMs: 1),
+    ]),
+    musicRankingControllerProvider.overrideWith(_Ranking.new),
+    biliSessionControllerProvider.overrideWithValue(null),
+    playerControllerProvider.overrideWith(_Player.new),
+    playerDisplayProvider.overrideWithValue(
+      const PlayerDisplayInfo(title: '旅途中的音乐', artist: '测试歌手'),
+    ),
+  ],
+  child: MaterialApp(
+    home: child,
+    builder: (context, child) => CarUiViewport(child: child!),
+  ),
+);
+
+class _Metadata extends MetadataController {
+  @override
+  MetadataState build() =>
+      const MetadataState(stableId: 'bvid:test', hasSearched: true);
+}
+
+class _Mode extends CarUiSettingLogic {
+  @override
+  bool build() => false;
+  @override
+  Future<void> setEnabled(bool value) async {
+    state = value;
+  }
+}
+
+class _Player extends PlayerController {
+  @override
+  PlayerState build() => const PlayerState(
+    currentItem: _item,
+    queue: [_item],
+    currentQueueIndex: 0,
+    isReady: true,
+    isPlaying: true,
+    duration: Duration(minutes: 3),
+  );
+}
+
+class _Ranking extends MusicRankingController {
+  @override
+  Future<List<MusicRankingItem>> build() async => [];
+}
+
+class _Favorites extends FavoritesController {
+  bool fail = false;
+  int syncCount = 0;
+  @override
+  FavoritesState build() => FavoritesState(
+    collections: [
+      FavoriteCollection.liked(),
+      FavoriteCollection(
+        id: 'remote:1',
+        name: '网络歌单',
+        source: FavoriteCollectionSource.remote,
+        remoteId: '1',
+        createdAt: DateTime(2026),
+        updatedAt: DateTime(2026),
+      ),
+    ],
+  );
+  @override
+  Future<RemoteCollectionSyncResult> syncRemoteCollectionIfStale(
+    String collectionId, {
+    bool force = false,
+  }) async {
+    syncCount++;
+    if (fail) {
+      throw StateError('offline');
+    }
+    return RemoteCollectionSyncResult.skipped;
+  }
+}
