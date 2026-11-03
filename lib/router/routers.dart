@@ -26,6 +26,12 @@ import 'package:bilimusic/feature/up/ui/desktop_up_page.dart';
 import 'package:bilimusic/feature/up/ui/favorite_up_list_page.dart';
 import 'package:bilimusic/feature/up/ui/up_page.dart';
 import 'package:bilimusic/router/shell/app_shell.dart';
+import 'package:bilimusic/router/car_ui_page.dart';
+import 'package:bilimusic/feature/home/ui/car/car_home_page.dart';
+import 'package:bilimusic/feature/profile/ui/car/car_profile_page.dart';
+import 'package:bilimusic/feature/favorites/ui/car/car_favorite_collection_page.dart';
+import 'package:bilimusic/feature/recent/ui/car/car_recent_playback_page.dart';
+import 'package:bilimusic/feature/player/ui/car/car_player_page.dart';
 import 'package:bilimusic/router/util/mobile_branch_navigator_keys.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -48,13 +54,19 @@ GoRouter router(Ref ref) => GoRouter(
 final List<Map<String, dynamic>> mobileTabs = [
   {
     'path': '/home',
-    'builder': (context, state) => const HomePage(),
+    'builder': (context, state) => CarUiPage(
+      carBuilder: (_) => const CarHomePage(),
+      standardBuilder: (_) => const HomePage(),
+    ),
     'icon': HugeIcon(icon: HugeIcons.strokeRoundedHome07),
     'label': '首页',
   },
   {
     'path': '/profile',
-    'builder': (context, state) => const ProfilePage(),
+    'builder': (context, state) => CarUiPage(
+      carBuilder: (_) => const CarProfilePage(),
+      standardBuilder: (_) => const ProfilePage(),
+    ),
     'routes': <RouteBase>[
       GoRoute(path: 'import', builder: (context, state) => const ImportPage()),
       GoRoute(
@@ -64,18 +76,25 @@ final List<Map<String, dynamic>> mobileTabs = [
       GoRoute(
         path: 'recent',
         builder: (context, state) {
-          return PlatformUtil.isDesktop
-              ? const DesktopRecentPlaybackPage()
-              : const RecentPlaybackPage();
+          return CarUiPage(
+            carBuilder: (_) => const CarRecentPlaybackPage(),
+            standardBuilder: (_) => PlatformUtil.isDesktop
+                ? const DesktopRecentPlaybackPage()
+                : const RecentPlaybackPage(),
+          );
         },
       ),
       GoRoute(
         path: 'favorites/:collectionId',
         builder: (context, state) {
           final String collectionId = state.pathParameters['collectionId']!;
-          return PlatformUtil.isDesktop
-              ? DesktopFavoriteCollectionPage(collectionId: collectionId)
-              : FavoriteCollectionPage(collectionId: collectionId);
+          return CarUiPage(
+            carBuilder: (_) =>
+                CarFavoriteCollectionPage(collectionId: collectionId),
+            standardBuilder: (_) => PlatformUtil.isDesktop
+                ? DesktopFavoriteCollectionPage(collectionId: collectionId)
+                : FavoriteCollectionPage(collectionId: collectionId),
+          );
         },
       ),
     ],
@@ -278,7 +297,10 @@ final List<RouteBase> desktopRoutes = [
       final PlayableItem? item = state.extra as PlayableItem?;
       return CustomTransitionPage<void>(
         key: state.pageKey,
-        child: DesktopPlayerPage(initialItem: item),
+        child: CarUiPage(
+          carBuilder: (_) => CarPlayerPage(initialItem: item),
+          standardBuilder: (_) => DesktopPlayerPage(initialItem: item),
+        ),
         transitionDuration: const Duration(milliseconds: 450),
         reverseTransitionDuration: const Duration(milliseconds: 400),
         transitionsBuilder: (context, animation, secondaryAnimation, child) {

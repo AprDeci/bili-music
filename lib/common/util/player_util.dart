@@ -2,6 +2,7 @@ import 'package:bilimusic/common/util/platform_util.dart';
 import 'package:bilimusic/feature/player/data/bili_player_repository.dart';
 import 'package:bilimusic/feature/player/domain/playable_item.dart';
 import 'package:bilimusic/feature/player/logic/player_controller.dart';
+import 'package:bilimusic/feature/setting/logic/car_ui_setting_logic.dart';
 import 'package:bilimusic/router/util/player_navigation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_lyric/flutter_lyric.dart';
@@ -25,7 +26,9 @@ class PlayerUtil {
         .read(playerControllerProvider.notifier)
         .setQueue(items, startIndex: startIndex, sourceLabel: sourceLabel);
 
-    if (context.mounted && PlatformUtil.isMobile) {
+    if (context.mounted &&
+        PlatformUtil.isMobile &&
+        !ref.read(carUiSettingLogicProvider)) {
       await openPlayerPage(context);
     }
 

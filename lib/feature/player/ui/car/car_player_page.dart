@@ -1,0 +1,242 @@
+import 'dart:async';
+
+import 'package:bilimusic/feature/player/domain/playable_item.dart';
+import 'package:bilimusic/feature/player/domain/player_state.dart';
+import 'package:bilimusic/feature/player/logic/display/player_display_provider.dart';
+import 'package:bilimusic/feature/player/logic/player_controller.dart';
+import 'package:bilimusic/feature/player/ui/car/car_player_panel.dart';
+import 'package:bilimusic/feature/player/ui/components/player_artwork.dart';
+import 'package:bilimusic/feature/player/ui/lyrics/player_lyric_panel.dart';
+import 'package:bilimusic/router/util/player_navigation.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+class CarPlayerPage extends ConsumerStatefulWidget {
+  const CarPlayerPage({super.key, this.initialItem});
+
+  final PlayableItem? initialItem;
+
+  @override
+  ConsumerState<CarPlayerPage> createState() => _CarPlayerPageState();
+}
+
+class _CarPlayerPageState extends ConsumerState<CarPlayerPage> {
+  String? _initialError;
+
+  @override
+  void initState() {
+    super.initState();
+    markPlayerPageVisible();
+    _scheduleInitialItem();
+  }
+
+  @override
+  void didUpdateWidget(covariant CarPlayerPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.initialItem != widget.initialItem) {
+      _scheduleInitialItem();
+    }
+  }
+
+  @override
+  void dispose() {
+    markPlayerPageHidden();
+    super.dispose();
+  }
+
+  void _scheduleInitialItem() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        unawaited(_loadInitialItem());
+      }
+    });
+  }
+
+  Future<void> _loadInitialItem() async {
+    final PlayableItem? item = widget.initialItem;
+    if (item == null) {
+      return;
+    }
+    if (_initialError != null) {
+      setState(() => _initialError = null);
+    }
+    final PlayerState state = ref.read(playerControllerProvider);
+    final PlayerController controller = ref.read(
+      playerControllerProvider.notifier,
+    );
+    try {
+      if (state.currentItem?.stableId == item.stableId) {
+        if (!state.isReady && !state.isLoading) {
+          await controller.play();
+        }
+        return;
+      }
+      if (!state.queue.any((queued) => queued.stableId == item.stableId)) {
+        await controller.enqueue(<PlayableItem>[item]);
+      }
+      if (!mounted || widget.initialItem != item) {
+        return;
+      }
+      final PlayerState current = ref.read(playerControllerProvider);
+      final int index = current.queue.indexWhere(
+        (queued) => queued.stableId == item.stableId,
+      );
+      if (index < 0) {
+        return;
+      }
+      if (current.currentItem?.stableId == item.stableId) {
+        await controller.play();
+      } else {
+        await controller.skipToQueueIndex(index);
+      }
+    } on Object {
+      if (mounted && widget.initialItem == item) {
+        setState(() => _initialError = '无法载入播放内容，请重试');
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final PlayerState state = ref.watch(playerControllerProvider);
+    final display = ref.watch(playerDisplayProvider);
+    final PlayerController controller = ref.read(
+      playerControllerProvider.notifier,
+    );
+
+    return Scaffold(
+      backgroundColor: theme.colorScheme.surface,
+      appBar: AppBar(
+        toolbarHeight: 64,
+        leadingWidth: 64,
+        leading: IconButton(
+          tooltip: '返回',
+          constraints: const BoxConstraints(minWidth: 56, minHeight: 56),
+          onPressed: () => Navigator.of(context).maybePop(),
+          icon: const Icon(Icons.arrow_back_rounded),
+        ),
+        title: const Text('正在播放'),
+      ),
+      body: SafeArea(
+        top: false,
+        child: LayoutBuilder(
+          builder: (BuildContext context, BoxConstraints constraints) {
+            final bool stacked = constraints.maxWidth < 760;
+            final double textScale =
+                MediaQuery.textScalerOf(context).scale(16) / 16;
+            final double minimumHeight =
+                (stacked ? 960 : 280) * textScale.clamp(1.0, 2.0);
+            final double height = constraints.maxHeight.clamp(
+              minimumHeight,
+              double.infinity,
+            );
+            final Widget artwork = Center(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(maxWidth: stacked ? 240 : 380),
+                child: Semantics(
+                  image: true,
+                  label: '${display.title ?? '暂无播放内容'}封面',
+                  child: PlayerArtworkFrame(
+                    coverUrl: display.coverUrl ?? '',
+                    borderRadius: 28,
+                  ),
+                ),
+              ),
+            );
+            final Widget lyricsAndControls = Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: <Widget>[
+                Text(
+                  display.title ?? '还没有播放内容',
+                  maxLines: stacked ? 2 : 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
+                  style: theme.textTheme.headlineSmall,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  display.artist ?? '选择一首音乐，开始旅程',
+                  maxLines: stacked ? 2 : 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                if (_initialError != null)
+                  Semantics(
+                    liveRegion: true,
+                    child: TextButton.icon(
+                      style: TextButton.styleFrom(
+                        minimumSize: const Size(56, 56),
+                        foregroundColor: theme.colorScheme.error,
+                      ),
+                      onPressed: _loadInitialItem,
+                      icon: const Icon(Icons.refresh_rounded),
+                      label: Text(_initialError!),
+                    ),
+                  ),
+                const SizedBox(height: 16),
+                Expanded(
+                  child: Theme(
+                    data: theme.copyWith(
+                      textButtonTheme: TextButtonThemeData(
+                        style: TextButton.styleFrom(
+                          minimumSize: const Size(56, 56),
+                        ),
+                      ),
+                      filledButtonTheme: FilledButtonThemeData(
+                        style: FilledButton.styleFrom(
+                          minimumSize: const Size(56, 56),
+                        ),
+                      ),
+                    ),
+                    child: PlayerLyricPanel(
+                      state: state,
+                      item: state.currentItem,
+                      isActive: true,
+                      onSeek: state.isReady
+                          ? controller.seekFromProgressBar
+                          : (_) {},
+                      activeColor: theme.colorScheme.primary,
+                      variant: PlayerLyricPanelVariant.desktop,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                CarPlayerControls(
+                  compact: stacked || constraints.maxHeight < 480,
+                ),
+              ],
+            );
+
+            return SingleChildScrollView(
+              child: SizedBox(
+                height: height,
+                child: Padding(
+                  padding: EdgeInsets.all(stacked ? 16 : 24),
+                  child: stacked
+                      ? Column(
+                          children: <Widget>[
+                            artwork,
+                            const SizedBox(height: 24),
+                            Expanded(child: lyricsAndControls),
+                          ],
+                        )
+                      : Row(
+                          children: <Widget>[
+                            Expanded(flex: 6, child: lyricsAndControls),
+                            const SizedBox(width: 32),
+                            Expanded(flex: 4, child: artwork),
+                          ],
+                        ),
+                ),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
