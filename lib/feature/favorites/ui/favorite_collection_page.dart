@@ -10,6 +10,8 @@ import 'package:bilimusic/feature/favorites/domain/favorite_collection.dart';
 import 'package:bilimusic/feature/favorites/domain/favorite_entry.dart';
 import 'package:bilimusic/feature/favorites/domain/favorites_state.dart';
 import 'package:bilimusic/feature/favorites/logic/favorite_entry_search.dart';
+import 'package:bilimusic/feature/favorites/domain/remote_collection_sync_state.dart';
+import 'package:bilimusic/feature/favorites/logic/remote_collection_sync_controller.dart';
 import 'package:bilimusic/feature/favorites/logic/favorites_controller.dart';
 import 'package:bilimusic/feature/favorites/logic/favorites_view_mode_logic.dart';
 import 'package:bilimusic/feature/favorites/ui/components/collection_kind_tag.dart';
@@ -44,164 +46,80 @@ class _FavoriteCollectionPageState
   String _searchQuery = '';
   Set<String> _selectedItemIds = <String>{};
   bool _selectionMode = false;
-  int _remoteRefreshRequestId = 0;
-  bool _isSyncingRemoteCollection = false;
-  bool _remoteRefreshFailed = false;
-  RemoteCollectionSyncStatus? _remoteSyncStatus;
-  Timer? _remoteSyncStatusTimer;
-  Future<void>? _remoteRefreshFuture;
 
   @override
   void initState() {
     super.initState();
-    unawaited(_refreshRemoteCollectionItems());
+    _scheduleSync();
   }
 
   @override
   void didUpdateWidget(covariant FavoriteCollectionPage oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.collectionId != widget.collectionId) {
-      _remoteSyncStatusTimer?.cancel();
-      _remoteSyncStatus = null;
       _resetSearchState();
-      _resetRemoteSyncState();
       _selectedItemIds = <String>{};
       _selectionMode = false;
-      unawaited(_refreshRemoteCollectionItems());
+      _scheduleSync();
     }
   }
 
-  Future<void> _refreshRemoteCollectionItems({bool force = false}) {
-    final Future<void>? existing = _remoteRefreshFuture;
-    if (existing != null) {
-      return existing;
-    }
-    if (!_isCurrentCollectionRemote) {
-      return Future<void>.value();
-    }
+  RemoteCollectionSyncState get _syncState =>
+      ref.watch(remoteCollectionSyncControllerProvider(widget.collectionId));
 
-    final String collectionId = widget.collectionId;
-    final int requestId = ++_remoteRefreshRequestId;
-    final Future<void> refresh = Future<void>.microtask(() async {
-      try {
-        if (mounted) {
-          _remoteSyncStatusTimer?.cancel();
-          setState(() {
-            _isSyncingRemoteCollection = true;
-            _remoteRefreshFailed = false;
-            _remoteSyncStatus = RemoteCollectionSyncStatus.syncing;
-          });
-        }
-        final RemoteCollectionSyncResult result = await ref
-            .read(favoritesControllerProvider.notifier)
-            .syncRemoteCollectionIfStale(collectionId, force: force);
-        if (!_canApplyRemoteRefreshResult(collectionId, requestId)) {
-          return;
-        }
-        if (result == RemoteCollectionSyncResult.skipped) {
-          _remoteSyncStatusTimer?.cancel();
-          setState(() {
-            _isSyncingRemoteCollection = false;
-            _remoteSyncStatus = null;
-          });
-          return;
-        }
-        if (result == RemoteCollectionSyncResult.incomplete) {
-          setState(() {
-            _remoteRefreshFailed = true;
-            _isSyncingRemoteCollection = false;
-            _remoteSyncStatus = RemoteCollectionSyncStatus.failure;
-          });
-          ToastUtil.show('同步未完成，已使用本地数据');
-          _clearRemoteSyncStatusAfter(const Duration(milliseconds: 2500));
-          return;
-        }
-        setState(() {
-          _isSyncingRemoteCollection = false;
-          _remoteSyncStatus = RemoteCollectionSyncStatus.success;
-        });
-        _clearRemoteSyncStatusAfter(const Duration(milliseconds: 350));
+  Future<void> _triggerSync({bool force = false}) {
+    return ref
+        .read(
+          remoteCollectionSyncControllerProvider(widget.collectionId).notifier,
+        )
+        .sync(force: force);
+  }
+
+  Future<void> _forceSync() => _triggerSync(force: true);
+
+  void _scheduleSync() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
         return;
-      } on Object catch (error, stackTrace) {
-        FavoriteCollectionPage._logger.w(
-          'Failed to refresh remote collection',
-          error,
-          stackTrace,
-        );
-        if (_canApplyRemoteRefreshResult(collectionId, requestId)) {
-          setState(() {
-            _remoteRefreshFailed = true;
-            _isSyncingRemoteCollection = false;
-            _remoteSyncStatus = RemoteCollectionSyncStatus.failure;
-          });
-          ToastUtil.show('网络歌单同步失败，请稍后重试');
-          _clearRemoteSyncStatusAfter(const Duration(milliseconds: 2500));
-        }
-      } finally {
-        if (_canApplyRemoteRefreshResult(collectionId, requestId)) {
-          setState(() {
-            _isSyncingRemoteCollection = false;
-          });
-        }
       }
-    });
-    _remoteRefreshFuture = refresh;
-    refresh.then<void>(
-      (_) {
-        if (identical(_remoteRefreshFuture, refresh)) {
-          _remoteRefreshFuture = null;
-        }
-      },
-      onError: (Object error, StackTrace stackTrace) {
-        if (identical(_remoteRefreshFuture, refresh)) {
-          _remoteRefreshFuture = null;
-        }
-      },
-    );
-    return refresh;
-  }
-
-  Future<void> _refreshRemoteCollectionItemsForce() {
-    return _refreshRemoteCollectionItems(force: true);
-  }
-
-  void _clearRemoteSyncStatusAfter(Duration duration) {
-    _remoteSyncStatusTimer?.cancel();
-    _remoteSyncStatusTimer = Timer(duration, () {
-      if (mounted) {
-        setState(() => _remoteSyncStatus = null);
-      }
+      unawaited(_triggerSync());
     });
   }
 
-  bool get _isCurrentCollectionRemote {
-    final FavoriteCollection? collection = _collectionForCurrentId();
-    return collection != null && collection.isRemote;
+  Future<void> _loadMoreRemoteItems() {
+    return ref
+        .read(
+          remoteCollectionSyncControllerProvider(widget.collectionId).notifier,
+        )
+        .loadMore();
   }
 
-  FavoriteCollection? _collectionForCurrentId() {
-    for (final FavoriteCollection collection
-        in ref.read(favoritesControllerProvider).collections) {
-      if (collection.id == widget.collectionId) {
-        return collection;
-      }
+  bool _onScrollNotification(ScrollNotification notification) {
+    if (notification.metrics.extentAfter <= 200) {
+      unawaited(_loadMoreRemoteItems());
     }
-    return null;
+    return false;
   }
 
-  void _resetRemoteSyncState() {
-    _remoteSyncStatusTimer?.cancel();
-    _remoteSyncStatus = null;
-    _remoteRefreshRequestId++;
-    _isSyncingRemoteCollection = false;
-    _remoteRefreshFuture = null;
-    _remoteRefreshFailed = false;
-  }
-
-  bool _canApplyRemoteRefreshResult(String collectionId, int requestId) {
-    return mounted &&
-        widget.collectionId == collectionId &&
-        _remoteRefreshRequestId == requestId;
+  Widget _buildRemoteLoadMoreFooter(bool isRemote) {
+    if (!isRemote || !_syncState.hasMoreRemotePages) {
+      return const BottomPageSpacer();
+    }
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+      child: Center(
+        child: _syncState.isLoadingMore
+            ? const SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              )
+            : TextButton(
+                onPressed: () => unawaited(_loadMoreRemoteItems()),
+                child: const Text('加载更多'),
+              ),
+      ),
+    );
   }
 
   @override
@@ -217,7 +135,6 @@ class _FavoriteCollectionPageState
 
   @override
   void dispose() {
-    _remoteSyncStatusTimer?.cancel();
     _searchController.dispose();
     super.dispose();
   }
@@ -446,7 +363,7 @@ class _FavoriteCollectionPageState
   ) {
     return Column(
       children: <Widget>[
-        RemoteCollectionSyncStatusBar(status: _remoteSyncStatus),
+        RemoteCollectionSyncStatusBar(status: _syncState.status),
         Expanded(
           child: _buildCollectionItemsContent(
             collection,
@@ -465,14 +382,14 @@ class _FavoriteCollectionPageState
     List<FavoriteEntry> visibleItems,
     List<PlayableItem> queueItems,
   ) {
-    if (items.isEmpty && _remoteRefreshFailed) {
+    if (items.isEmpty && _syncState.hasFailed) {
       return StatusView(
         icon: Icons.wifi_off_rounded,
         iconColor: Theme.of(context).colorScheme.error,
         title: '网络歌单同步失败',
         description: '请检查网络后重试。',
-        isRetrying: _isSyncingRemoteCollection,
-        onRetry: _refreshRemoteCollectionItemsForce,
+        isRetrying: _syncState.isSyncing,
+        onRetry: _forceSync,
       );
     }
     if (items.isEmpty) {
@@ -549,16 +466,14 @@ class _FavoriteCollectionPageState
   ) {
     return FavoriteCollectionItemsList(
       items: visibleItems,
-      footer: const BottomPageSpacer(),
-      onNotification: (_) => false,
+      footer: _buildRemoteLoadMoreFooter(collection.isRemote),
+      onNotification: _onScrollNotification,
       selectedItemIds: _selectedItemIds,
       selectionMode: _selectionMode,
       onSelectionModeChanged: _setSelectionMode,
       onSelectionChanged: _setSelectedItemIds,
       viewMode: ref.watch(effectiveFavoritesViewModeProvider(collection.id)),
-      onRefresh: collection.isRemote
-          ? _refreshRemoteCollectionItemsForce
-          : null,
+      onRefresh: collection.isRemote ? _forceSync : null,
       onTapItem: (int itemIndex, FavoriteEntry item) async {
         await _playCollectionItem(
           context,
@@ -612,10 +527,7 @@ class _FavoriteCollectionPageState
       ],
     );
     return collection.isRemote
-        ? RefreshIndicator(
-            onRefresh: _refreshRemoteCollectionItemsForce,
-            child: list,
-          )
+        ? RefreshIndicator(onRefresh: _forceSync, child: list)
         : list;
   }
 
@@ -638,10 +550,7 @@ class _FavoriteCollectionPageState
       ],
     );
     return isRemote
-        ? RefreshIndicator(
-            onRefresh: _refreshRemoteCollectionItemsForce,
-            child: list,
-          )
+        ? RefreshIndicator(onRefresh: _forceSync, child: list)
         : list;
   }
 
