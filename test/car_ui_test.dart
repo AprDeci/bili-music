@@ -385,9 +385,12 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('car shell keeps playback controls visible across window sizes', (
+  testWidgets('car shell keeps full controls in the car viewport', (
     tester,
   ) async {
+    tester.view.physicalSize = const Size(1920, 1080);
+    tester.view.devicePixelRatio = 140 / 160;
+    addTearDown(tester.view.reset);
     final router = GoRouter(
       initialLocation: '/home',
       routes: [
@@ -445,21 +448,6 @@ void main() {
         ),
       ),
     );
-    addTearDown(tester.view.resetPhysicalSize);
-    addTearDown(tester.view.resetDevicePixelRatio);
-    tester.view.devicePixelRatio = 1;
-    for (final size in [
-      const Size(360, 640),
-      const Size(600, 280),
-      const Size(1000, 520),
-    ]) {
-      tester.view.physicalSize = size;
-      await tester.pumpAndSettle();
-      expect(tester.takeException(), isNull);
-      expect(find.byTooltip('暂停').hitTestable(), findsOneWidget);
-    }
-    tester.view.physicalSize = const Size(1920, 1080);
-    tester.view.devicePixelRatio = 140 / 160;
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
     final Rect panel = tester.getRect(find.byType(CarPlayerPanel));
@@ -573,10 +561,10 @@ void main() {
   });
 
   testWidgets(
-    'full player retains queue and shows controls on a short screen',
+    'full player retains queue and shows full controls in the car viewport',
     (tester) async {
-      tester.view.physicalSize = const Size(1000, 480);
-      tester.view.devicePixelRatio = 1;
+      tester.view.physicalSize = const Size(1920, 1080);
+      tester.view.devicePixelRatio = 140 / 160;
       addTearDown(tester.view.resetPhysicalSize);
       addTearDown(tester.view.resetDevicePixelRatio);
       await tester.pumpWidget(
@@ -643,6 +631,28 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('car sidebar aligns artwork title and progress edges', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      _scope(
+        const Scaffold(
+          body: SizedBox(width: 400, height: 700, child: CarPlayerPanel()),
+        ),
+      ),
+    );
+    final artwork = tester.getRect(find.byType(PlayerArtworkFrame));
+    final title = tester.getRect(find.text('旅途中的音乐'));
+    final slider = tester.getRect(find.byType(Slider));
+    final controls = tester.getRect(find.byType(CarPlayerControls));
+    expect(title.left, closeTo(artwork.left, 0.01));
+    expect(slider.left, closeTo(artwork.left, 0.01));
+    expect(slider.right, closeTo(artwork.right, 0.01));
+    expect(controls.left, closeTo(artwork.left, 0.01));
+    expect(controls.right, closeTo(artwork.right, 0.01));
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('car controls reuse mobile progress and center playback', (
     tester,
   ) async {
@@ -679,21 +689,22 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('player panel fits narrow and short landscape constraints', (
-    tester,
-  ) async {
+  testWidgets('player panel always shows full car controls', (tester) async {
     await tester.pumpWidget(
       _scope(
         const Scaffold(
-          body: SizedBox(width: 240, height: 280, child: CarPlayerPanel()),
+          body: SizedBox(width: 400, height: 600, child: CarPlayerPanel()),
         ),
       ),
     );
     expect(tester.takeException(), isNull);
     expect(find.byTooltip('暂停').hitTestable(), findsOneWidget);
+    expect(find.byTooltip('播放进度').hitTestable(), findsOneWidget);
+    expect(find.byTooltip('顺序播放，切换播放模式').hitTestable(), findsOneWidget);
+    expect(find.byTooltip('播放队列（1 首）').hitTestable(), findsOneWidget);
     expect(
       tester.getSize(find.byTooltip('暂停')).shortestSide,
-      greaterThanOrEqualTo(56),
+      greaterThanOrEqualTo(64),
     );
     expect(tester.takeException(), isNull);
   });

@@ -122,18 +122,16 @@ class _CarPlayerPageState extends ConsumerState<CarPlayerPage> {
         top: false,
         child: LayoutBuilder(
           builder: (BuildContext context, BoxConstraints constraints) {
-            final bool stacked = constraints.maxWidth < 760;
             final double textScale =
                 MediaQuery.textScalerOf(context).scale(16) / 16;
-            final double minimumHeight =
-                (stacked ? 960 : 280) * textScale.clamp(1.0, 2.0);
+            final double minimumHeight = 480 * textScale.clamp(1.0, 2.0);
             final double height = constraints.maxHeight.clamp(
               minimumHeight,
               double.infinity,
             );
             final Widget artwork = Center(
               child: ConstrainedBox(
-                constraints: BoxConstraints(maxWidth: stacked ? 240 : 380),
+                constraints: const BoxConstraints(maxWidth: 380),
                 child: Semantics(
                   image: true,
                   label: '${display.title ?? '暂无播放内容'}封面',
@@ -157,7 +155,7 @@ class _CarPlayerPageState extends ConsumerState<CarPlayerPage> {
               children: <Widget>[
                 Text(
                   display.title ?? '还没有播放内容',
-                  maxLines: stacked ? 2 : 1,
+                  maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   textAlign: TextAlign.center,
                   style: theme.textTheme.headlineSmall,
@@ -165,7 +163,7 @@ class _CarPlayerPageState extends ConsumerState<CarPlayerPage> {
                 const SizedBox(height: 8),
                 Text(
                   display.artist ?? '选择一首音乐，开始旅程',
-                  maxLines: stacked ? 2 : 1,
+                  maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   textAlign: TextAlign.center,
                   style: theme.textTheme.titleMedium?.copyWith(
@@ -213,9 +211,7 @@ class _CarPlayerPageState extends ConsumerState<CarPlayerPage> {
                   ),
                 ),
                 const SizedBox(height: 16),
-                CarPlayerControls(
-                  compact: stacked || constraints.maxHeight < 480,
-                ),
+                const CarPlayerControls(),
               ],
             );
 
@@ -223,22 +219,14 @@ class _CarPlayerPageState extends ConsumerState<CarPlayerPage> {
               child: SizedBox(
                 height: height,
                 child: Padding(
-                  padding: EdgeInsets.all(stacked ? 16 : 24),
-                  child: stacked
-                      ? Column(
-                          children: <Widget>[
-                            artwork,
-                            const SizedBox(height: 24),
-                            Expanded(child: lyricsAndControls),
-                          ],
-                        )
-                      : Row(
-                          children: <Widget>[
-                            Expanded(flex: 6, child: lyricsAndControls),
-                            const SizedBox(width: 32),
-                            Expanded(flex: 4, child: artwork),
-                          ],
-                        ),
+                  padding: const EdgeInsets.all(24),
+                  child: Row(
+                    children: <Widget>[
+                      Expanded(flex: 6, child: lyricsAndControls),
+                      const SizedBox(width: 32),
+                      Expanded(flex: 4, child: artwork),
+                    ],
+                  ),
                 ),
               ),
             );

@@ -41,10 +41,6 @@ class CarShellScaffold extends StatelessWidget {
                 Expanded(
                   child: LayoutBuilder(
                     builder: (context, constraints) {
-                      final bool wide =
-                          constraints.maxWidth >= 720 ||
-                          (constraints.maxWidth >= 560 &&
-                              constraints.maxHeight < 400);
                       final Widget content = Column(
                         children: <Widget>[
                           _CarNavigation(
@@ -63,32 +59,21 @@ class CarShellScaffold extends StatelessWidget {
                         ],
                       );
                       return Padding(
-                        padding: EdgeInsets.all(wide ? 16 : 8),
-                        child: wide
-                            ? Row(
-                                crossAxisAlignment: CrossAxisAlignment.stretch,
-                                children: <Widget>[
-                                  SizedBox(
-                                    width: (constraints.maxWidth * 0.29).clamp(
-                                      240,
-                                      400,
-                                    ),
-                                    child: const CarPlayerPanel(),
-                                  ),
-                                  const SizedBox(width: 20),
-                                  Expanded(child: content),
-                                ],
-                              )
-                            : Column(
-                                children: <Widget>[
-                                  Expanded(child: content),
-                                  const SizedBox(height: 8),
-                                  const SizedBox(
-                                    height: 144,
-                                    child: CarPlayerPanel(compact: true),
-                                  ),
-                                ],
+                        padding: const EdgeInsets.all(16),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: <Widget>[
+                            SizedBox(
+                              width: (constraints.maxWidth * 0.29).clamp(
+                                240,
+                                400,
                               ),
+                              child: const CarPlayerPanel(),
+                            ),
+                            const SizedBox(width: 20),
+                            Expanded(child: content),
+                          ],
+                        ),
                       );
                     },
                   ),
