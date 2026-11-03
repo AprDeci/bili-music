@@ -7,6 +7,7 @@ import 'package:bilimusic/feature/favorites/domain/favorite_collection.dart';
 import 'package:bilimusic/feature/favorites/domain/favorites_state.dart';
 import 'package:bilimusic/feature/favorites/logic/favorites_controller.dart';
 import 'package:bilimusic/feature/home/ui/car/car_content_widgets.dart';
+import 'package:bilimusic/feature/profile/ui/components/add_collection_dialog.dart';
 import 'package:bilimusic/feature/recent/logic/recent_playback_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -119,18 +120,7 @@ class _CarProfilePageState extends ConsumerState<CarProfilePage> {
                     ),
                   ),
                 ),
-                _sectionTitle(context, '自建歌单'),
-                if (local.isEmpty)
-                  const SliverToBoxAdapter(
-                    child: StatusView(
-                      title: '还没有自建歌单',
-                      description: '在手机端收藏或创建歌单后，即可在这里收听。',
-                      icon: Icons.library_music_rounded,
-                    ),
-                  )
-                else
-                  _collectionGrid(favorites, local),
-                _sectionTitle(context, '网络歌单'),
+                _sectionTitle(context, '网络歌单', remote: true),
                 if (_refreshing)
                   const SliverToBoxAdapter(
                     child: Padding(
@@ -153,12 +143,23 @@ class _CarProfilePageState extends ConsumerState<CarProfilePage> {
                   const SliverToBoxAdapter(
                     child: StatusView(
                       title: '还没有网络歌单',
-                      description: '在手机端导入 B 站收藏夹后，即可在这里收听。',
+                      description: '点击标题旁的 +，导入 B 站收藏夹或新建网络歌单。',
                       icon: Icons.cloud_queue_rounded,
                     ),
                   )
                 else
                   _collectionGrid(favorites, remote),
+                _sectionTitle(context, '自建歌单', remote: false),
+                if (local.isEmpty)
+                  const SliverToBoxAdapter(
+                    child: StatusView(
+                      title: '还没有自建歌单',
+                      description: '点击标题旁的 +，创建自己的歌单。',
+                      icon: Icons.library_music_rounded,
+                    ),
+                  )
+                else
+                  _collectionGrid(favorites, local),
               ],
             ),
           ),
@@ -167,11 +168,30 @@ class _CarProfilePageState extends ConsumerState<CarProfilePage> {
     );
   }
 
-  Widget _sectionTitle(BuildContext context, String title) {
+  Widget _sectionTitle(
+    BuildContext context,
+    String title, {
+    required bool remote,
+  }) {
     return SliverToBoxAdapter(
       child: Padding(
         padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
-        child: Text(title, style: Theme.of(context).textTheme.titleLarge),
+        child: Row(
+          children: <Widget>[
+            Text(title, style: Theme.of(context).textTheme.titleLarge),
+            const SizedBox(width: 8),
+            IconButton(
+              tooltip: '添加$title',
+              constraints: const BoxConstraints(minWidth: 56, minHeight: 56),
+              onPressed: () => showAddCollectionDialog(
+                context: context,
+                ref: ref,
+                remote: remote,
+              ),
+              icon: const Icon(Icons.add_rounded),
+            ),
+          ],
+        ),
       ),
     );
   }

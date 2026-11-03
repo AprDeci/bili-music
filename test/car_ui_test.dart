@@ -1,5 +1,7 @@
 import 'dart:io';
 
+import 'package:bilimusic/common/domain/collection_kind.dart';
+import 'package:bilimusic/core/bili/session/bili_session.dart';
 import 'package:bilimusic/core/bili/session/bili_session_controller.dart';
 import 'package:bilimusic/core/hive/hive_keys.dart';
 import 'package:bilimusic/core/theme/car_theme.dart';
@@ -155,6 +157,80 @@ void main() {
       await tester.pumpWidget(const SizedBox.shrink());
     }
   });
+
+  testWidgets('car playlists put remote first with adjacent add buttons', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1920, 1080);
+    tester.view.devicePixelRatio = 140 / 160;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(_scope(const Scaffold(body: CarProfilePage())));
+    await tester.pumpAndSettle();
+    final Finder remoteTitle = find.text('网络歌单').first;
+    final Finder localTitle = find.text('自建歌单');
+    expect(
+      tester.getTopLeft(remoteTitle).dy,
+      lessThan(tester.getTopLeft(localTitle).dy),
+    );
+    for (final title in ['网络歌单', '自建歌单']) {
+      final Rect label = tester.getRect(find.text(title).first);
+      final Rect button = tester.getRect(find.byTooltip('添加$title'));
+      expect((button.left - label.right) * 140 / 160, closeTo(12, 0.01));
+      expect(button.center.dy, closeTo(label.center.dy, 0.01));
+      expect(button.shortestSide * 140 / 160, greaterThanOrEqualTo(84));
+    }
+    await tester.tap(find.byTooltip('添加网络歌单'));
+    await tester.pumpAndSettle();
+    expect(find.text('登录后可用'), findsOneWidget);
+    expect(find.text('网络歌单需要登录 B 站账号'), findsOneWidget);
+    await tester.tap(find.text('以后再说'));
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+  });
+
+  for (final remote in [false, true]) {
+    testWidgets('car add playlist creates ${remote ? 'remote' : 'local'}', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(1920, 1080);
+      tester.view.devicePixelRatio = 140 / 160;
+      addTearDown(tester.view.reset);
+      final favorites = _Favorites();
+      await tester.pumpWidget(
+        _scope(
+          const Scaffold(body: CarProfilePage()),
+          favorites: favorites,
+          session: remote
+              ? const BiliSession(
+                  sessData: 'test',
+                  biliJct: 'test',
+                  dedeUserId: '1',
+                  refreshToken: '',
+                  cookie: '',
+                )
+              : null,
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.byTooltip(remote ? '添加网络歌单' : '添加自建歌单'));
+      await tester.pumpAndSettle();
+      if (remote) {
+        expect(find.text('导入已有收藏夹'), findsOneWidget);
+        await tester.tap(find.text('新建网络歌单'));
+        await tester.pumpAndSettle();
+      }
+      await tester.enterText(find.byType(TextField), '旅途歌单');
+      await tester.tap(find.text('创建'));
+      await tester.pumpAndSettle();
+      expect(find.text('选择歌单类型'), findsOneWidget);
+      await tester.tap(find.text('确定'));
+      await tester.pumpAndSettle();
+      expect(favorites.createdRemote, remote);
+      expect(favorites.createdKind, CollectionKind.music);
+      expect(find.text('旅途歌单'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+  }
 
   testWidgets(
     'song row highlights current track and keeps a large tap target',
@@ -480,25 +556,28 @@ void main() {
   });
 }
 
-Widget _scope(Widget child, {_Favorites? favorites}) => ProviderScope(
-  overrides: [
-    favoritesControllerProvider.overrideWith(() => favorites ?? _Favorites()),
-    recentPlaybackControllerProvider.overrideWithValue([
-      RecentPlaybackEntry.fromPlayableItem(_item, playedAtEpochMs: 1),
-    ]),
-    musicRankingControllerProvider.overrideWith(_Ranking.new),
-    biliSessionControllerProvider.overrideWithValue(null),
-    playerControllerProvider.overrideWith(_Player.new),
-    playerDisplayProvider.overrideWithValue(
-      const PlayerDisplayInfo(title: '旅途中的音乐', artist: '测试歌手'),
-    ),
-  ],
-  child: MaterialApp(
-    theme: carLightTheme(),
-    home: child,
-    builder: (context, child) => CarUiViewport(child: child!),
-  ),
-);
+Widget _scope(Widget child, {_Favorites? favorites, BiliSession? session}) =>
+    ProviderScope(
+      overrides: [
+        favoritesControllerProvider.overrideWith(
+          () => favorites ?? _Favorites(),
+        ),
+        recentPlaybackControllerProvider.overrideWithValue([
+          RecentPlaybackEntry.fromPlayableItem(_item, playedAtEpochMs: 1),
+        ]),
+        musicRankingControllerProvider.overrideWith(_Ranking.new),
+        biliSessionControllerProvider.overrideWithValue(session),
+        playerControllerProvider.overrideWith(_Player.new),
+        playerDisplayProvider.overrideWithValue(
+          const PlayerDisplayInfo(title: '旅途中的音乐', artist: '测试歌手'),
+        ),
+      ],
+      child: MaterialApp(
+        theme: carLightTheme(),
+        home: child,
+        builder: (context, child) => CarUiViewport(child: child!),
+      ),
+    );
 
 class _Metadata extends MetadataController {
   @override
@@ -535,6 +614,42 @@ class _Ranking extends MusicRankingController {
 class _Favorites extends FavoritesController {
   bool fail = false;
   int syncCount = 0;
+  bool? createdRemote;
+  CollectionKind? createdKind;
+
+  @override
+  Future<void> refreshRemoteCollections() async {}
+
+  @override
+  Future<FavoriteCollection?> createCollection(
+    String name, {
+    CollectionKind kind = CollectionKind.music,
+  }) async {
+    createdKind = kind;
+    createdRemote ??= false;
+    final collection = FavoriteCollection(
+      id: createdRemote! ? 'remote:2' : 'local:1',
+      name: name,
+      source: createdRemote!
+          ? FavoriteCollectionSource.remote
+          : FavoriteCollectionSource.local,
+      kind: kind,
+      createdAt: DateTime(2026),
+      updatedAt: DateTime(2026),
+    );
+    state = state.copyWith(collections: [...state.collections, collection]);
+    return collection;
+  }
+
+  @override
+  Future<FavoriteCollection?> createRemoteCollection(
+    String name, {
+    CollectionKind kind = CollectionKind.music,
+  }) {
+    createdRemote = true;
+    return createCollection(name, kind: kind);
+  }
+
   @override
   FavoritesState build() => FavoritesState(
     collections: [
