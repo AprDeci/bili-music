@@ -162,36 +162,14 @@ class CarSongList extends ConsumerWidget {
         ],
       );
     }
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: <Widget>[
-        Padding(
-          padding: const EdgeInsets.fromLTRB(20, 4, 20, 12),
-          child: Align(
-            alignment: Alignment.centerLeft,
-            child: FilledButton.icon(
-              style: FilledButton.styleFrom(
-                minimumSize: const Size(0, 56),
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-              ),
-              onPressed: () => _play(context, ref, 0),
-              icon: const Icon(Icons.play_arrow_rounded, size: 28),
-              label: Text('播放全部 · ${items.length}'),
-            ),
-          ),
-        ),
-        Expanded(
-          child: ListView.builder(
-            padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
-            itemCount: items.length,
-            itemBuilder: (BuildContext context, int index) => CarSongTile(
-              item: items[index],
-              index: index,
-              onTap: () => _play(context, ref, index),
-            ),
-          ),
-        ),
-      ],
+    return ListView.builder(
+      padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+      itemCount: items.length,
+      itemBuilder: (BuildContext context, int index) => CarSongTile(
+        item: items[index],
+        index: index,
+        onTap: () => _play(context, ref, index),
+      ),
     );
   }
 

@@ -12,6 +12,7 @@ import 'package:bilimusic/feature/favorites/logic/favorites_controller.dart';
 import 'package:bilimusic/feature/favorites/logic/favorite_entry_metadata.dart';
 import 'package:bilimusic/feature/favorites/logic/favorites_view_mode_logic.dart';
 import 'package:bilimusic/feature/favorites/ui/components/favorite_entry_subtitle.dart';
+import 'package:bilimusic/feature/favorites/ui/components/favorites_metadata_toolbar_buttons.dart';
 import 'package:bilimusic/feature/metadata/domain/metadata.dart';
 import 'package:bilimusic/feature/player/domain/playable_item.dart';
 import 'package:bilimusic/feature/player/ui/components/player_collection_sheet.dart';
@@ -248,11 +249,7 @@ class _CarFavoriteCollectionPageState
     }
   }
 
-  Widget _toolbar(
-    FavoriteCollection collection,
-    List<FavoriteEntry> entries,
-    FavoriteListViewMode viewMode,
-  ) {
+  Widget _toolbar(FavoriteCollection collection, List<FavoriteEntry> entries) {
     final List<FavoriteEntry> selected = entries
         .where((entry) => _selectedItemIds.contains(entry.itemId))
         .toList(growable: false);
@@ -265,80 +262,45 @@ class _CarFavoriteCollectionPageState
         runSpacing: 8,
         crossAxisAlignment: WrapCrossAlignment.center,
         children: [
-          if (_selectionMode) ...[
-            Text(
-              '已选 ${selected.length} 项',
-              style: Theme.of(context).textTheme.titleMedium,
+          Text(
+            '已选 ${selected.length} 项',
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+          TextButton(
+            style: TextButton.styleFrom(minimumSize: const Size(80, 56)),
+            onPressed: _busy
+                ? null
+                : () => setState(
+                    () => _selectedItemIds = allSelected
+                        ? <String>{}
+                        : entries.map((entry) => entry.itemId).toSet(),
+                  ),
+            child: Text(allSelected ? '取消全选' : '全选'),
+          ),
+          FilledButton.tonalIcon(
+            style: FilledButton.styleFrom(minimumSize: const Size(0, 56)),
+            onPressed: _busy || selected.isEmpty
+                ? null
+                : () => _addSelected(collection, selected),
+            icon: const Icon(Icons.playlist_add_rounded),
+            label: const Text('添加到歌单'),
+          ),
+          TextButton.icon(
+            style: TextButton.styleFrom(
+              minimumSize: const Size(0, 56),
+              foregroundColor: Theme.of(context).colorScheme.error,
             ),
-            TextButton(
-              style: TextButton.styleFrom(minimumSize: const Size(80, 56)),
-              onPressed: _busy
-                  ? null
-                  : () => setState(
-                      () => _selectedItemIds = allSelected
-                          ? <String>{}
-                          : entries.map((entry) => entry.itemId).toSet(),
-                    ),
-              child: Text(allSelected ? '取消全选' : '全选'),
-            ),
-            FilledButton.tonalIcon(
-              style: FilledButton.styleFrom(minimumSize: const Size(0, 56)),
-              onPressed: _busy || selected.isEmpty
-                  ? null
-                  : () => _addSelected(collection, selected),
-              icon: const Icon(Icons.playlist_add_rounded),
-              label: const Text('添加到歌单'),
-            ),
-            TextButton.icon(
-              style: TextButton.styleFrom(
-                minimumSize: const Size(0, 56),
-                foregroundColor: Theme.of(context).colorScheme.error,
-              ),
-              onPressed: _busy || _syncing || selected.isEmpty
-                  ? null
-                  : () => _deleteSelected(collection, selected),
-              icon: const Icon(Icons.delete_outline_rounded),
-              label: const Text('删除'),
-            ),
-            TextButton(
-              style: TextButton.styleFrom(minimumSize: const Size(80, 56)),
-              onPressed: _busy ? null : () => _setSelectionMode(false),
-              child: const Text('完成'),
-            ),
-          ] else ...[
-            FilledButton.icon(
-              style: FilledButton.styleFrom(
-                minimumSize: const Size(0, 56),
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-              ),
-              onPressed: entries.isEmpty ? null : () => _play(collection, 0),
-              icon: const Icon(Icons.play_arrow_rounded, size: 28),
-              label: Text('播放全部'),
-            ),
-            if (!collection.isSpoken)
-              OutlinedButton.icon(
-                style: OutlinedButton.styleFrom(minimumSize: const Size(0, 56)),
-                onPressed: () => ref
-                    .read(
-                      favoritesViewModeLogicProvider(collection.id).notifier,
-                    )
-                    .toggle(),
-                icon: Icon(
-                  viewMode == FavoriteListViewMode.video
-                      ? Icons.video_library_outlined
-                      : Icons.music_note_rounded,
-                ),
-                label: Text(
-                  viewMode == FavoriteListViewMode.video ? '视频视图' : '元数据视图',
-                ),
-              ),
-            TextButton.icon(
-              style: TextButton.styleFrom(minimumSize: const Size(0, 56)),
-              onPressed: entries.isEmpty ? null : () => _setSelectionMode(true),
-              icon: const Icon(Icons.checklist_rounded),
-              label: const Text('多选'),
-            ),
-          ],
+            onPressed: _busy || _syncing || selected.isEmpty
+                ? null
+                : () => _deleteSelected(collection, selected),
+            icon: const Icon(Icons.delete_outline_rounded),
+            label: const Text('删除'),
+          ),
+          TextButton(
+            style: TextButton.styleFrom(minimumSize: const Size(80, 56)),
+            onPressed: _busy ? null : () => _setSelectionMode(false),
+            child: const Text('完成'),
+          ),
         ],
       ),
     );
@@ -371,21 +333,39 @@ class _CarFavoriteCollectionPageState
           CarContentHeader(
             title: collection?.name ?? '歌单',
             backLocation: _busy || _selectionMode ? null : '/profile',
-            action: collection?.isRemote == true
-                ? IconButton(
-                    tooltip: '同步歌单',
-                    constraints: const BoxConstraints(
-                      minWidth: 56,
-                      minHeight: 56,
-                    ),
-                    onPressed: _syncing || _busy
-                        ? null
-                        : () => _sync(force: true),
-                    icon: const Icon(Icons.sync_rounded),
-                  )
-                : null,
+            action: collection == null
+                ? null
+                : Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (!collection.isSpoken)
+                        MetadataViewModeButton(
+                          viewMode: viewMode,
+                          buttonSize: 56,
+                          onPressed: () => ref
+                              .read(
+                                favoritesViewModeLogicProvider(
+                                  collection.id,
+                                ).notifier,
+                              )
+                              .toggle(),
+                        ),
+                      if (collection.isRemote)
+                        IconButton(
+                          tooltip: '同步歌单',
+                          constraints: const BoxConstraints(
+                            minWidth: 56,
+                            minHeight: 56,
+                          ),
+                          onPressed: _syncing || _busy
+                              ? null
+                              : () => _sync(force: true),
+                          icon: const Icon(Icons.sync_rounded),
+                        ),
+                    ],
+                  ),
           ),
-          if (collection != null) _toolbar(collection, items, viewMode),
+          if (collection != null && _selectionMode) _toolbar(collection, items),
           if (_operationError != null)
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),

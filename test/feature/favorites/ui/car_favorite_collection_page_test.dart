@@ -9,6 +9,7 @@ import 'package:bilimusic/feature/favorites/logic/favorite_entry_metadata.dart';
 import 'package:bilimusic/feature/favorites/logic/favorites_controller.dart';
 import 'package:bilimusic/feature/favorites/logic/favorites_view_mode_logic.dart';
 import 'package:bilimusic/feature/favorites/ui/car/car_favorite_collection_page.dart';
+import 'package:bilimusic/feature/favorites/ui/components/favorites_metadata_toolbar_buttons.dart';
 import 'package:bilimusic/feature/metadata/domain/metadata.dart';
 import 'package:bilimusic/feature/player/domain/playable_item.dart';
 import 'package:bilimusic/feature/player/domain/player_state.dart';
@@ -32,14 +33,19 @@ void main() {
     tester,
   ) async {
     await _pump(tester);
-    expect(find.text('视频视图'), findsOneWidget);
+    expect(find.textContaining('播放全部'), findsNothing);
+    expect(find.text('多选'), findsNothing);
+    expect(find.text('视频视图'), findsNothing);
+    expect(find.text('元数据视图'), findsNothing);
+    expect(find.byType(MetadataViewModeButton), findsOneWidget);
+    expect(find.byTooltip('切换到元信息视图'), findsOneWidget);
     expect(find.text('视频一'), findsOneWidget);
     expect(find.text('视频二'), findsOneWidget);
     expect(find.text('歌曲一'), findsNothing);
 
-    await tester.tap(find.text('视频视图'));
+    await tester.tap(find.byTooltip('切换到元信息视图'));
     await tester.pumpAndSettle();
-    expect(find.text('元数据视图'), findsOneWidget);
+    expect(find.byTooltip('切换到视频视图'), findsOneWidget);
     expect(find.text('歌曲一'), findsOneWidget);
     expect(find.text('歌手一'), findsOneWidget);
     expect(find.text('视频一'), findsNothing);
@@ -52,12 +58,50 @@ void main() {
       everyElement(''),
     );
 
-    await tester.tap(find.text('元数据视图'));
+    await tester.tap(find.byTooltip('切换到视频视图'));
     await tester.pumpAndSettle();
-    expect(find.text('视频视图'), findsOneWidget);
+    expect(find.byTooltip('切换到元信息视图'), findsOneWidget);
     expect(find.text('视频一'), findsOneWidget);
     expect(find.text('作者二'), findsOneWidget);
     expect(find.text('歌曲一'), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('shared car song list has no play-all and keeps the full queue', (
+    tester,
+  ) async {
+    final player = _Player();
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [playerControllerProvider.overrideWith(() => player)],
+        child: const MaterialApp(
+          home: Scaffold(
+            body: CarSongList(items: _items, sourceLabel: '最近播放'),
+          ),
+        ),
+      ),
+    );
+    expect(find.textContaining('播放全部'), findsNothing);
+    expect(find.byType(CarSongTile), findsNWidgets(2));
+    await tester.tap(find.text('视频二'));
+    await tester.pumpAndSettle();
+    expect(player.playCount, 1);
+    expect(player.queuedItems, _items);
+    expect(player.startIndex, 1);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('tapping a collection song keeps the full queue', (tester) async {
+    final player = _Player();
+    await _pump(tester, player: player);
+    await tester.tap(find.text('视频二'));
+    await tester.pumpAndSettle();
+    expect(player.playCount, 1);
+    expect(
+      player.queuedItems.map((item) => item.stableId),
+      _items.map((item) => item.stableId),
+    );
+    expect(player.startIndex, 1);
     expect(tester.takeException(), isNull);
   });
 
@@ -75,6 +119,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('视频视图'), findsNothing);
     expect(find.text('元数据视图'), findsNothing);
+    expect(find.byType(MetadataViewModeButton), findsNothing);
     expect(find.text('视频一'), findsOneWidget);
     expect(find.text('视频二'), findsOneWidget);
     expect(find.text('歌曲一'), findsNothing);
@@ -107,7 +152,7 @@ void main() {
     await tester.tap(find.text('完成'));
     await tester.pumpAndSettle();
     expect(find.byType(Checkbox), findsNothing);
-    expect(find.text('播放全部 · 2'), findsOneWidget);
+    expect(find.textContaining('播放全部'), findsNothing);
     expect(player.playCount, 0);
     expect(tester.takeException(), isNull);
   });
@@ -158,7 +203,7 @@ void main() {
           ..failedId = _entries.last.itemId
           ..throwOnFailure = throws;
         await _pump(tester, favorites: favorites);
-        await tester.tap(find.text('多选'));
+        await tester.longPress(find.text('视频一'));
         await tester.pumpAndSettle();
         await tester.tap(find.text('全选'));
         await tester.pumpAndSettle();
@@ -196,7 +241,7 @@ void main() {
       expect(favorites.state.itemsForCollection('local:3'), [_entries.first]);
       expect(favorites.state.itemsForCollection('local:1'), _entries);
       expect(find.byType(Checkbox), findsNothing);
-      expect(find.text('多选'), findsOneWidget);
+      expect(find.text('多选'), findsNothing);
       await _dismissToast(tester);
       expect(tester.takeException(), isNull);
     },
@@ -218,11 +263,11 @@ void main() {
     );
     expect(find.text('另一个歌单'), findsOneWidget);
     expect(find.byType(Checkbox), findsNothing);
-    expect(find.text('多选'), findsOneWidget);
-    await tester.tap(find.text('多选'));
+    expect(find.text('多选'), findsNothing);
+    await tester.longPress(find.text('视频一'));
     await tester.pumpAndSettle();
-    expect(find.text('已选 0 项'), findsOneWidget);
-    expect(_checked(tester), 0);
+    expect(find.text('已选 1 项'), findsOneWidget);
+    expect(_checked(tester), 1);
     expect(tester.takeException(), isNull);
   });
 }
@@ -297,6 +342,8 @@ class _ViewMode extends FavoritesViewModeLogic {
 
 class _Player extends PlayerController {
   int playCount = 0;
+  List<PlayableItem> queuedItems = [];
+  int? startIndex;
 
   @override
   PlayerState build() => const PlayerState();
@@ -309,6 +356,8 @@ class _Player extends PlayerController {
     bool autoplay = true,
   }) async {
     playCount++;
+    queuedItems = items;
+    this.startIndex = startIndex;
   }
 }
 

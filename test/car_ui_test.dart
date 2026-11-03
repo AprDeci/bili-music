@@ -324,6 +324,15 @@ void main() {
     );
     await tester.pumpAndSettle();
     expect(favorites.syncCount, 1);
+    final viewToggle = find.byTooltip('切换到元信息视图');
+    final syncButton = find.byTooltip('同步歌单');
+    expect(
+      tester.getRect(viewToggle).right,
+      lessThanOrEqualTo(tester.getRect(syncButton).left),
+    );
+    expect(tester.getRect(viewToggle).shortestSide, greaterThanOrEqualTo(56));
+    expect(find.textContaining('播放全部'), findsNothing);
+    expect(find.text('多选'), findsNothing);
     expect(find.text('歌单同步失败'), findsOneWidget);
     favorites.fail = false;
     await tester.tap(find.text('重试'));
