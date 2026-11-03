@@ -29,7 +29,7 @@ const _item = PlayableItem(
 
 void main() {
   testWidgets(
-    'car player uses default route and flies artwork in both directions',
+    'car player uses default route and flies artwork and controls in both directions',
     (tester) async {
       tester.view.physicalSize = const Size(1920, 1080);
       tester.view.devicePixelRatio = 140 / 160;
@@ -73,8 +73,16 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      final sourceHero = tester.widget<Hero>(find.byType(Hero));
+      final artworkHero = find.byWidgetPredicate(
+        (widget) => widget is Hero && widget.tag == 'car-player-artwork',
+      );
+      final controlsHero = find.byWidgetPredicate(
+        (widget) => widget is Hero && widget.tag == 'car-player-controls',
+      );
+      expect(artworkHero, findsOneWidget);
+      expect(controlsHero, findsOneWidget);
       final source = tester.getRect(find.byType(PlayerArtworkFrame));
+      final sourceControls = tester.getRect(find.byType(CarPlayerControls));
       expect(
         tester
             .widget<PlayerArtworkFrame>(find.byType(PlayerArtworkFrame))
@@ -83,24 +91,38 @@ void main() {
       );
       await tester.tap(find.byTooltip('打开完整播放器'));
       await tester.pump();
-      await tester.pump(const Duration(milliseconds: 100));
+      for (int frame = 0; frame < 5; frame++) {
+        await tester.pump(const Duration(milliseconds: 20));
+        expect(tester.takeException(), isNull);
+      }
       final flight = find.descendant(
         of: find.byType(Overlay),
         matching: find.byType(PlayerArtworkFrame),
       );
       expect(flight, findsOneWidget);
       final middle = tester.getRect(flight);
+      final controlsFlight = find.descendant(
+        of: find.byType(Overlay),
+        matching: find.byType(CarPlayerControls),
+      );
+      expect(controlsFlight, findsOneWidget);
+      final middleControls = tester.getRect(controlsFlight);
+      expect(tester.takeException(), isNull);
       await tester.pumpAndSettle();
       expect(find.byType(CarPlayerPage), findsOneWidget);
       final pageContext = tester.element(find.byType(CarPlayerPage));
       expect(ModalRoute.of(pageContext)!.settings, isA<MaterialPage<void>>());
-      final destinationHero = tester.widget<Hero>(find.byType(Hero));
-      expect(destinationHero.tag, sourceHero.tag);
+      expect(artworkHero, findsOneWidget);
+      expect(controlsHero, findsOneWidget);
       final destination = tester.getRect(find.byType(PlayerArtworkFrame));
       expect(middle.center.dx, greaterThan(source.center.dx));
       expect(middle.center.dx, lessThan(destination.center.dx));
       expect(destination.center.dy, lessThan(1080 / (140 / 160) * 0.55));
       final controls = tester.getRect(find.byType(CarPlayerControls));
+      expect(middleControls.center.dx, greaterThan(sourceControls.center.dx));
+      expect(middleControls.center.dx, lessThan(controls.center.dx));
+      expect(middleControls.width, greaterThan(sourceControls.width));
+      expect(middleControls.width, lessThan(controls.width));
       final page = tester.getRect(find.byType(CarPlayerPage));
       expect(controls.width / page.width, inExclusiveRange(0.40, 0.53));
       expect(controls.left - page.left, greaterThan(page.width * 0.05));
@@ -113,11 +135,25 @@ void main() {
       );
       await tester.tap(find.byTooltip('返回'));
       await tester.pump();
-      await tester.pump(const Duration(milliseconds: 100));
+      for (int frame = 0; frame < 5; frame++) {
+        await tester.pump(const Duration(milliseconds: 20));
+        expect(tester.takeException(), isNull);
+      }
       expect(find.byType(PlayerArtworkFrame), findsOneWidget);
+      expect(controlsFlight, findsOneWidget);
+      final returningControls = tester.getRect(controlsFlight);
+      expect(
+        returningControls.center.dx,
+        greaterThan(sourceControls.center.dx),
+      );
+      expect(returningControls.center.dx, lessThan(controls.center.dx));
+      expect(returningControls.width, greaterThan(sourceControls.width));
+      expect(returningControls.width, lessThan(controls.width));
+      expect(tester.takeException(), isNull);
       await tester.pumpAndSettle();
       expect(find.byType(CarPlayerPage), findsNothing);
       expect(tester.getRect(find.byType(PlayerArtworkFrame)), source);
+      expect(tester.getRect(find.byType(CarPlayerControls)), sourceControls);
       expect(tester.takeException(), isNull);
     },
   );

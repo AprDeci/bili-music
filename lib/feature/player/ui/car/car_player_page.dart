@@ -217,7 +217,15 @@ class _CarPlayerPageState extends ConsumerState<CarPlayerPage> {
                   ),
                 ),
                 const SizedBox(height: 16),
-                const CarPlayerControls(),
+                Hero(
+                  tag: 'car-player-controls',
+                  createRectTween: (begin, end) =>
+                      RectTween(begin: begin, end: end),
+                  child: const Material(
+                    type: MaterialType.transparency,
+                    child: CarPlayerControls(),
+                  ),
+                ),
               ],
             );
 

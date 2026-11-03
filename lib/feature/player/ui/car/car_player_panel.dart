@@ -105,7 +105,15 @@ class CarPlayerPanel extends ConsumerWidget {
                   ),
                 ),
                 const SizedBox(height: 8),
-                const CarPlayerControls(),
+                Hero(
+                  tag: 'car-player-controls',
+                  createRectTween: (begin, end) =>
+                      RectTween(begin: begin, end: end),
+                  child: const Material(
+                    type: MaterialType.transparency,
+                    child: CarPlayerControls(),
+                  ),
+                ),
               ],
             ),
           );
