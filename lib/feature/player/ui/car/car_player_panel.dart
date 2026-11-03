@@ -4,8 +4,8 @@ import 'package:bilimusic/feature/player/logic/display/player_display_provider.d
 import 'package:bilimusic/feature/player/logic/player_controller.dart';
 import 'package:bilimusic/feature/player/logic/player_progress_provider.dart';
 import 'package:bilimusic/feature/player/logic/utils/player_progress_ui_helpers.dart';
-import 'package:bilimusic/feature/player/logic/utils/player_ui_helpers.dart';
 import 'package:bilimusic/feature/player/ui/components/player_artwork.dart';
+import 'package:bilimusic/feature/player/ui/components/player_controls.dart';
 import 'package:bilimusic/router/util/player_navigation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -145,21 +145,13 @@ class CarPlayerPanel extends ConsumerWidget {
   }
 }
 
-class CarPlayerControls extends ConsumerStatefulWidget {
+class CarPlayerControls extends ConsumerWidget {
   const CarPlayerControls({super.key, this.compact = false});
 
   final bool compact;
 
   @override
-  ConsumerState<CarPlayerControls> createState() => _CarPlayerControlsState();
-}
-
-class _CarPlayerControlsState extends ConsumerState<CarPlayerControls> {
-  double? _dragProgress;
-
-  @override
-  Widget build(BuildContext context) {
-    final bool compact = widget.compact;
+  Widget build(BuildContext context, WidgetRef ref) {
     final ThemeData theme = Theme.of(context);
     final PlayerState state = ref.watch(playerControllerProvider);
     final PlayerController controller = ref.read(
@@ -234,69 +226,26 @@ class _CarPlayerControlsState extends ConsumerState<CarPlayerControls> {
             message: '播放进度',
             child: Semantics(
               label: '播放进度',
-              child: SliderTheme(
-                data: theme.sliderTheme.copyWith(
-                  trackHeight: 5,
-                  overlayShape: const RoundSliderOverlayShape(
-                    overlayRadius: 28,
-                  ),
-                ),
-                child: SizedBox(
-                  height: 56,
-                  child: Slider(
-                    value: canSeek && _dragProgress != null
-                        ? _dragProgress!
-                        : milliseconds > 0
-                        ? (progress.position.inMilliseconds / milliseconds)
-                              .clamp(0.0, 1.0)
-                        : 0,
-                    label: formatPlayerDuration(progress.position),
-                    semanticFormatterCallback: (double value) =>
-                        formatPlayerDuration(
-                          Duration(
-                            milliseconds: (value * milliseconds).round(),
-                          ),
-                        ),
-                    onChanged: canSeek
-                        ? (double value) =>
-                              setState(() => _dragProgress = value)
-                        : null,
-                    onChangeEnd: canSeek
-                        ? (double value) {
-                            setState(() => _dragProgress = null);
-                            controller.seekFromProgressBar(
-                              Duration(
-                                milliseconds: (value * milliseconds).round(),
-                              ),
-                            );
-                          }
-                        : null,
-                  ),
+              child: PlayerProgressSection(
+                position: progress.position,
+                duration: progress.duration,
+                isReady: canSeek,
+                onChanged: (double value) => controller.seekFromProgressBar(
+                  Duration(milliseconds: (value * milliseconds).round()),
                 ),
               ),
             ),
           ),
-        if (!compact)
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: <Widget>[
-              Text(
-                formatPlayerDuration(progress.position),
-                style: theme.textTheme.labelLarge,
-              ),
-              Text(
-                formatPlayerDuration(total),
-                style: theme.textTheme.labelLarge,
-              ),
-            ],
-          ),
         if (!compact) const SizedBox(height: 12),
-        Wrap(
-          alignment: WrapAlignment.center,
-          crossAxisAlignment: WrapCrossAlignment.center,
-          spacing: 0,
-          runSpacing: 8,
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: <Widget>[
+            if (!compact)
+              action(
+                tooltip: '$modeLabel，切换播放模式',
+                icon: queueModeIcon(state.queueMode),
+                onPressed: state.hasQueue ? controller.toggleQueueMode : null,
+              ),
             action(
               tooltip: '上一首',
               icon: const Icon(Icons.skip_previous_rounded),
@@ -336,12 +285,6 @@ class _CarPlayerControlsState extends ConsumerState<CarPlayerControls> {
                   ? controller.skipToNext
                   : null,
             ),
-            if (!compact)
-              action(
-                tooltip: '$modeLabel，切换播放模式',
-                icon: queueModeIcon(state.queueMode),
-                onPressed: state.hasQueue ? controller.toggleQueueMode : null,
-              ),
             if (!compact)
               action(
                 tooltip: '播放队列（${state.queue.length} 首）',

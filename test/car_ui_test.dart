@@ -26,6 +26,7 @@ import 'package:bilimusic/feature/player/logic/player_controller.dart';
 import 'package:bilimusic/feature/player/ui/car/car_player_panel.dart';
 import 'package:bilimusic/feature/player/ui/car/car_player_page.dart';
 import 'package:bilimusic/feature/player/ui/components/player_artwork.dart';
+import 'package:bilimusic/feature/player/ui/components/player_controls.dart';
 import 'package:bilimusic/feature/metadata/domain/metadata_state.dart';
 import 'package:bilimusic/feature/metadata/logic/metadata_controller.dart';
 import 'package:bilimusic/router/shell/car_shell_scaffold.dart';
@@ -639,6 +640,42 @@ void main() {
       ),
     );
     expect(find.byType(PlayerArtworkFallback), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('car controls reuse mobile progress and center playback', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      _scope(
+        const Scaffold(
+          body: Center(child: SizedBox(width: 320, child: CarPlayerControls())),
+        ),
+      ),
+    );
+    expect(find.byType(PlayerProgressSection), findsOneWidget);
+    final SliderTheme sliderTheme = tester.widget(
+      find
+          .ancestor(of: find.byType(Slider), matching: find.byType(SliderTheme))
+          .first,
+    );
+    expect(sliderTheme.data.trackHeight, 2);
+    final controls = tester.getRect(find.byType(CarPlayerControls));
+    final buttons = [
+      find.byTooltip('顺序播放，切换播放模式'),
+      find.byTooltip('上一首'),
+      find.byTooltip('暂停'),
+      find.byTooltip('下一首'),
+      find.byTooltip('播放队列（1 首）'),
+    ].map(tester.getRect).toList();
+    expect(buttons[2].center.dx, closeTo(controls.center.dx, 0.01));
+    for (int index = 1; index < buttons.length; index++) {
+      expect(
+        buttons[index].left,
+        greaterThanOrEqualTo(buttons[index - 1].right),
+      );
+      expect(buttons[index].center.dy, closeTo(buttons[0].center.dy, 0.01));
+    }
     expect(tester.takeException(), isNull);
   });
 
