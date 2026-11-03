@@ -14,7 +14,9 @@ import 'package:bilimusic/feature/recent/ui/desktop/desktop_recent_playback_page
 import 'package:bilimusic/feature/recent/ui/recent_playback_page.dart';
 import 'package:bilimusic/feature/search/ui/search_page.dart';
 import 'package:bilimusic/feature/statistics/ui/song_statistics_page.dart';
+import 'package:bilimusic/feature/setting/logic/car_ui_setting_logic.dart';
 import 'package:bilimusic/feature/setting/ui/about_settings_page.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:bilimusic/feature/setting/ui/cache_settings_page.dart';
 import 'package:bilimusic/feature/setting/ui/app_transfer_page.dart';
 import 'package:bilimusic/feature/setting/ui/hotkey_settings_page.dart';
@@ -295,6 +297,18 @@ final List<RouteBase> desktopRoutes = [
     parentNavigatorKey: _rootNavigatorKey,
     pageBuilder: (context, state) {
       final PlayableItem? item = state.extra as PlayableItem?;
+      if (ProviderScope.containerOf(
+        context,
+        listen: false,
+      ).read(carUiSettingLogicProvider)) {
+        return MaterialPage<void>(
+          key: state.pageKey,
+          child: CarUiPage(
+            carBuilder: (_) => CarPlayerPage(initialItem: item),
+            standardBuilder: (_) => DesktopPlayerPage(initialItem: item),
+          ),
+        );
+      }
       return CustomTransitionPage<void>(
         key: state.pageKey,
         child: CarUiPage(

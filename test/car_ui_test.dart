@@ -754,11 +754,23 @@ void main() {
       ),
     );
     await tester.tap(find.byTooltip('播放队列（1 首）'));
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
     expect(find.byType(CarSidePanel), findsOneWidget);
     expect(find.byType(CarPlayerQueueContent), findsOneWidget);
     expect(find.byType(BottomSheet), findsNothing);
-    expect(find.text('播放队列 · 1 首'), findsOneWidget);
+    expect(find.text('播放队列'), findsOneWidget);
+    final Material listMaterial = tester.widget(
+      find
+          .ancestor(of: find.byType(ListView), matching: find.byType(Material))
+          .first,
+    );
+    expect(listMaterial.color, carDarkTheme().colorScheme.surface);
+    expect(listMaterial.clipBehavior, Clip.hardEdge);
+    expect(
+      tester.getRect(find.byWidget(listMaterial)),
+      tester.getRect(find.byType(ListView)),
+    );
     expect(find.text('队列歌曲'), findsOneWidget);
     final ListTile row = tester.widget(find.byType(ListTile));
     expect(row.selected, isTrue);
@@ -771,7 +783,8 @@ void main() {
     expect(find.byType(CarSidePanel), findsNothing);
     expect(player.skippedIndex, isNull);
     await tester.tap(find.byTooltip('播放队列（1 首）'));
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
     await tester.tap(find.text('队列歌曲'));
     await tester.pumpAndSettle();
     expect(player.skippedIndex, 0);

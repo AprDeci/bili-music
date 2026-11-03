@@ -4,6 +4,8 @@ import 'package:bilimusic/feature/player/domain/playable_item.dart';
 import 'package:bilimusic/feature/player/ui/player_page.dart';
 import 'package:bilimusic/feature/player/ui/car/car_player_page.dart';
 import 'package:bilimusic/router/car_ui_page.dart';
+import 'package:bilimusic/feature/setting/logic/car_ui_setting_logic.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
@@ -41,7 +43,18 @@ Future<void> openPlayerPage(
     }
     markPlayerPageVisible();
     await (navigator ?? Navigator.of(context)).push<void>(
-      _createMobilePlayerRoute(item),
+      ProviderScope.containerOf(
+            context,
+            listen: false,
+          ).read(carUiSettingLogicProvider)
+          ? MaterialPageRoute<void>(
+              settings: const RouteSettings(name: playerNativeRouteName),
+              builder: (_) => CarUiPage(
+                carBuilder: (_) => CarPlayerPage(initialItem: item),
+                standardBuilder: (_) => PlayerPage(initialItem: item),
+              ),
+            )
+          : _createMobilePlayerRoute(item),
     );
   } finally {
     if (PlatformUtil.isMobile) {

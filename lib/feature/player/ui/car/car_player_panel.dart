@@ -36,16 +36,18 @@ class CarPlayerPanel extends ConsumerWidget {
               enabled: hasItem,
               child: InkWell(
                 onTap: hasItem ? () => openPlayerPage(context) : null,
-                borderRadius: BorderRadius.circular(20),
-                child: PlayerArtworkFrame(
-                  coverUrl: display.coverUrl ?? '',
-                  borderRadius: 20,
-                  fallback: ColoredBox(
-                    color: theme.colorScheme.surfaceContainerHighest,
-                    child: Icon(
-                      Icons.music_note_rounded,
-                      size: 84,
-                      color: theme.colorScheme.onSurfaceVariant,
+                borderRadius: BorderRadius.circular(8),
+                child: Hero(
+                  tag: 'car-player-artwork',
+                  child: PlayerArtworkFrame(
+                    coverUrl: display.coverUrl ?? '',
+                    fallback: ColoredBox(
+                      color: theme.colorScheme.surfaceContainerHighest,
+                      child: Icon(
+                        Icons.music_note_rounded,
+                        size: 84,
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
                     ),
                   ),
                 ),

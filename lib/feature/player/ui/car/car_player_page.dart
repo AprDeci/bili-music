@@ -116,7 +116,6 @@ class _CarPlayerPageState extends ConsumerState<CarPlayerPage> {
           onPressed: () => Navigator.of(context).maybePop(),
           icon: const Icon(Icons.arrow_back_rounded),
         ),
-        title: const Text('正在播放'),
       ),
       body: SafeArea(
         top: false,
@@ -129,21 +128,28 @@ class _CarPlayerPageState extends ConsumerState<CarPlayerPage> {
               minimumHeight,
               double.infinity,
             );
+            final double horizontalInset = (constraints.maxWidth * 0.055).clamp(
+              16.0,
+              72.0,
+            );
+            final double bottomInset = (height * 0.12).clamp(24.0, 80.0);
             final Widget artwork = Center(
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 380),
                 child: Semantics(
                   image: true,
                   label: '${display.title ?? '暂无播放内容'}封面',
-                  child: PlayerArtworkFrame(
-                    coverUrl: display.coverUrl ?? '',
-                    borderRadius: 28,
-                    fallback: ColoredBox(
-                      color: theme.colorScheme.surfaceContainerHighest,
-                      child: Icon(
-                        Icons.music_note_rounded,
-                        size: 84,
-                        color: theme.colorScheme.onSurfaceVariant,
+                  child: Hero(
+                    tag: 'car-player-artwork',
+                    child: PlayerArtworkFrame(
+                      coverUrl: display.coverUrl ?? '',
+                      fallback: ColoredBox(
+                        color: theme.colorScheme.surfaceContainerHighest,
+                        child: Icon(
+                          Icons.music_note_rounded,
+                          size: 84,
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
                       ),
                     ),
                   ),
@@ -219,11 +225,16 @@ class _CarPlayerPageState extends ConsumerState<CarPlayerPage> {
               child: SizedBox(
                 height: height,
                 child: Padding(
-                  padding: const EdgeInsets.all(24),
+                  padding: EdgeInsets.fromLTRB(
+                    horizontalInset,
+                    24,
+                    horizontalInset,
+                    bottomInset,
+                  ),
                   child: Row(
                     children: <Widget>[
                       Expanded(flex: 6, child: lyricsAndControls),
-                      const SizedBox(width: 32),
+                      SizedBox(width: horizontalInset),
                       Expanded(flex: 4, child: artwork),
                     ],
                   ),
