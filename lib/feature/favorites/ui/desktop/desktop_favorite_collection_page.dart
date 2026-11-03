@@ -11,6 +11,8 @@ import 'package:bilimusic/feature/favorites/domain/favorite_collection.dart';
 import 'package:bilimusic/feature/favorites/domain/favorite_entry.dart';
 import 'package:bilimusic/feature/favorites/domain/favorites_state.dart';
 import 'package:bilimusic/feature/favorites/logic/favorite_entry_search.dart';
+import 'package:bilimusic/feature/favorites/domain/remote_collection_sync_state.dart';
+import 'package:bilimusic/feature/favorites/logic/remote_collection_sync_controller.dart';
 import 'package:bilimusic/feature/favorites/logic/favorites_controller.dart';
 import 'package:bilimusic/feature/favorites/logic/favorites_view_mode_logic.dart';
 import 'package:bilimusic/feature/favorites/ui/components/collection_kind_tag.dart';
@@ -46,151 +48,81 @@ class _DesktopFavoriteCollectionPageState
   String _searchQuery = '';
   Set<String> _selectedItemIds = <String>{};
   bool _selectionMode = false;
-  int _remoteRefreshRequestId = 0;
-  bool _isSyncingRemoteCollection = false;
-  bool _remoteRefreshFailed = false;
   bool _showFavoritedSeasons = false;
-  RemoteCollectionSyncStatus? _remoteSyncStatus;
-  Timer? _remoteSyncStatusTimer;
 
   @override
   void initState() {
     super.initState();
-    _refreshRemoteCollectionItems();
+    _scheduleSync();
   }
 
   @override
   void didUpdateWidget(covariant DesktopFavoriteCollectionPage oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.collectionId != widget.collectionId) {
-      _remoteSyncStatusTimer?.cancel();
-      _remoteSyncStatus = null;
       _resetSearchState();
-      _resetRemoteSyncState();
       _selectedItemIds = <String>{};
       _selectionMode = false;
-      _refreshRemoteCollectionItems();
+      _scheduleSync();
     }
   }
 
-  void _refreshRemoteCollectionItems({bool force = false}) {
-    if (_isSyncingRemoteCollection ||
-        (!force && !_shouldSyncRemoteCollection)) {
-      return;
-    }
+  RemoteCollectionSyncState get _syncState =>
+      ref.watch(remoteCollectionSyncControllerProvider(widget.collectionId));
 
-    final String collectionId = widget.collectionId;
-    final int requestId = ++_remoteRefreshRequestId;
-    unawaited(
-      Future<void>.microtask(() async {
-        try {
-          if (mounted) {
-            setState(() {
-              _isSyncingRemoteCollection = true;
-              _remoteRefreshFailed = false;
-              _remoteSyncStatus = RemoteCollectionSyncStatus.syncing;
-            });
-          }
-          final RemoteCollectionSyncResult result = await ref
-              .read(favoritesControllerProvider.notifier)
-              .syncRemoteCollectionIfStale(collectionId, force: force);
-          if (!_canApplyRemoteRefreshResult(collectionId, requestId)) {
-            return;
-          }
-          if (result == RemoteCollectionSyncResult.skipped) {
-            setState(() {
-              _isSyncingRemoteCollection = false;
-              _remoteSyncStatus = null;
-            });
-            _remoteSyncStatusTimer?.cancel();
-            return;
-          }
-          if (result == RemoteCollectionSyncResult.incomplete) {
-            setState(() {
-              _remoteRefreshFailed = true;
-              _isSyncingRemoteCollection = false;
-              _remoteSyncStatus = RemoteCollectionSyncStatus.failure;
-            });
-            ToastUtil.show('同步未完成，已使用本地数据');
-            _clearRemoteSyncStatusAfter(const Duration(milliseconds: 2500));
-            return;
-          }
-          setState(() {
-            _isSyncingRemoteCollection = false;
-            _remoteSyncStatus = RemoteCollectionSyncStatus.success;
-          });
-          _clearRemoteSyncStatusAfter(const Duration(milliseconds: 350));
-          return;
-        } on Object catch (error, stackTrace) {
-          DesktopFavoriteCollectionPage._logger.w(
-            'Failed to refresh remote collection',
-            error,
-            stackTrace,
-          );
-          if (_canApplyRemoteRefreshResult(collectionId, requestId)) {
-            setState(() {
-              _remoteRefreshFailed = true;
-              _isSyncingRemoteCollection = false;
-              _remoteSyncStatus = RemoteCollectionSyncStatus.failure;
-            });
-            ToastUtil.show('网络歌单同步失败，请稍后重试');
-            _clearRemoteSyncStatusAfter(const Duration(milliseconds: 2500));
-          }
-        } finally {
-          if (_canApplyRemoteRefreshResult(collectionId, requestId)) {
-            setState(() {
-              _isSyncingRemoteCollection = false;
-            });
-          }
-        }
-      }),
-    );
+  Future<void> _triggerSync({bool force = false}) {
+    return ref
+        .read(
+          remoteCollectionSyncControllerProvider(widget.collectionId).notifier,
+        )
+        .sync(force: force);
   }
 
-  void _refreshRemoteCollectionItemsForce() {
-    _refreshRemoteCollectionItems(force: true);
-  }
+  Future<void> _forceSync() => _triggerSync(force: true);
 
-  void _clearRemoteSyncStatusAfter(Duration duration) {
-    _remoteSyncStatusTimer?.cancel();
-    _remoteSyncStatusTimer = Timer(duration, () {
-      if (mounted) {
-        setState(() => _remoteSyncStatus = null);
+  void _scheduleSync() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
       }
+      unawaited(_triggerSync());
     });
   }
 
-  bool get _shouldSyncRemoteCollection {
-    final FavoriteCollection? collection = _collectionForCurrentId();
-    return collection != null &&
-        collection.isRemote &&
-        (collection.lastSyncedAt == null ||
-            DateTime.now().difference(collection.lastSyncedAt!) >
-                const Duration(minutes: 5));
+  Future<void> _loadMoreRemoteItems() {
+    return ref
+        .read(
+          remoteCollectionSyncControllerProvider(widget.collectionId).notifier,
+        )
+        .loadMore();
   }
 
-  FavoriteCollection? _collectionForCurrentId() {
-    for (final FavoriteCollection collection
-        in ref.read(favoritesControllerProvider).collections) {
-      if (collection.id == widget.collectionId) {
-        return collection;
-      }
+  bool _onScrollNotification(ScrollNotification notification) {
+    if (notification.metrics.extentAfter <= 200) {
+      unawaited(_loadMoreRemoteItems());
     }
-    return null;
+    return false;
   }
 
-  void _resetRemoteSyncState() {
-    _remoteSyncStatusTimer?.cancel();
-    _remoteSyncStatus = null;
-    _remoteRefreshRequestId++;
-    _isSyncingRemoteCollection = false;
-    _remoteRefreshFailed = false;
-  }
-
-  bool _canApplyRemoteRefreshResult(String collectionId, int requestId) {
-    return mounted &&
-        widget.collectionId == collectionId &&
-        _remoteRefreshRequestId == requestId;
+  Widget _buildRemoteLoadMoreFooter(bool isRemote) {
+    if (!isRemote || !_syncState.hasMoreRemotePages) {
+      return const BottomPageSpacer();
+    }
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+      child: Center(
+        child: _syncState.isLoadingMore
+            ? const SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              )
+            : TextButton(
+                onPressed: () => unawaited(_loadMoreRemoteItems()),
+                child: const Text('加载更多'),
+              ),
+      ),
+    );
   }
 
   @override
@@ -206,7 +138,6 @@ class _DesktopFavoriteCollectionPageState
 
   @override
   void dispose() {
-    _remoteSyncStatusTimer?.cancel();
     _searchController.dispose();
     super.dispose();
   }
@@ -389,16 +320,16 @@ class _DesktopFavoriteCollectionPageState
             ],
           ),
         ),
-        RemoteCollectionSyncStatusBar(status: _remoteSyncStatus),
+        RemoteCollectionSyncStatusBar(status: _syncState.status),
         Expanded(
-          child: items.isEmpty && _remoteRefreshFailed
+          child: items.isEmpty && _syncState.hasFailed
               ? StatusView(
                   icon: Icons.wifi_off_rounded,
                   iconColor: Theme.of(context).colorScheme.error,
                   title: '网络歌单同步失败',
                   description: '请检查网络后重试。',
-                  isRetrying: _isSyncingRemoteCollection,
-                  onRetry: _refreshRemoteCollectionItems,
+                  isRetrying: _syncState.isSyncing,
+                  onRetry: _triggerSync,
                 )
               : items.isEmpty
               ? StatusView(
@@ -436,8 +367,10 @@ class _DesktopFavoriteCollectionPageState
                             )
                           : DesktopFavoriteCollectionItemsList(
                               items: visibleItems,
-                              footer: const BottomPageSpacer(),
-                              onNotification: (_) => false,
+                              footer: _buildRemoteLoadMoreFooter(
+                                collection.isRemote,
+                              ),
+                              onNotification: _onScrollNotification,
                               selectedItemIds: _selectedItemIds,
                               selectionMode: _selectionMode,
                               onSelectionModeChanged: _setSelectionMode,
@@ -562,16 +495,14 @@ class _DesktopFavoriteCollectionPageState
                   Tooltip(
                     message: '同步网络歌单',
                     child: IconButton(
-                      onPressed: _isSyncingRemoteCollection
-                          ? null
-                          : _refreshRemoteCollectionItemsForce,
+                      onPressed: _syncState.isSyncing ? null : _forceSync,
                       padding: EdgeInsets.zero,
                       visualDensity: VisualDensity.compact,
                       constraints: const BoxConstraints.tightFor(
                         width: 32,
                         height: 32,
                       ),
-                      icon: _isSyncingRemoteCollection
+                      icon: _syncState.isSyncing
                           ? const SizedBox(
                               width: 16,
                               height: 16,
