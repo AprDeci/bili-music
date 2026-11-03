@@ -1,6 +1,8 @@
 import 'dart:io';
 
 import 'package:bilimusic/common/components/cached_avatar.dart';
+import 'package:bilimusic/common/components/car/car_side_panel.dart';
+import 'package:bilimusic/feature/player/ui/car/car_player_queue_panel.dart';
 import 'package:bilimusic/common/domain/collection_kind.dart';
 import 'package:bilimusic/core/bili/session/bili_session.dart';
 import 'package:bilimusic/core/bili/session/bili_session_controller.dart';
@@ -725,6 +727,59 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('car queue uses the left panel and selects the tapped item', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1920, 1080);
+    tester.view.devicePixelRatio = 140 / 160;
+    addTearDown(tester.view.reset);
+    final player = _Player();
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          playerControllerProvider.overrideWith(() => player),
+          playerQueueDisplayProvider(_item).overrideWith(
+            (_) async => const PlayerDisplayInfo(title: '队列歌曲', artist: '队列歌手'),
+          ),
+        ],
+        child: MaterialApp(
+          theme: carDarkTheme(),
+          builder: (context, child) => CarUiViewport(child: child!),
+          home: const Scaffold(
+            body: Center(
+              child: SizedBox(width: 320, child: CarPlayerControls()),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.byTooltip('播放队列（1 首）'));
+    await tester.pumpAndSettle();
+    expect(find.byType(CarSidePanel), findsOneWidget);
+    expect(find.byType(CarPlayerQueueContent), findsOneWidget);
+    expect(find.byType(BottomSheet), findsNothing);
+    expect(find.text('播放队列 · 1 首'), findsOneWidget);
+    expect(find.text('队列歌曲'), findsOneWidget);
+    final ListTile row = tester.widget(find.byType(ListTile));
+    expect(row.selected, isTrue);
+    expect(
+      tester.getRect(find.byType(ListTile)).height * 140 / 160,
+      greaterThanOrEqualTo(84),
+    );
+    await tester.tap(find.byTooltip('关闭播放队列'));
+    await tester.pumpAndSettle();
+    expect(find.byType(CarSidePanel), findsNothing);
+    expect(player.skippedIndex, isNull);
+    await tester.tap(find.byTooltip('播放队列（1 首）'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('队列歌曲'));
+    await tester.pumpAndSettle();
+    expect(player.skippedIndex, 0);
+    expect(find.byType(CarSidePanel), findsNothing);
+    expect(find.byType(CarPlayerControls), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('player panel always shows full car controls', (tester) async {
     await tester.pumpWidget(
       _scope(
@@ -814,6 +869,13 @@ class _Mode extends CarUiSettingLogic {
 }
 
 class _Player extends PlayerController {
+  int? skippedIndex;
+
+  @override
+  Future<void> skipToQueueIndex(int index, {bool autoplay = true}) async {
+    skippedIndex = index;
+  }
+
   @override
   PlayerState build() => const PlayerState(
     currentItem: _item,

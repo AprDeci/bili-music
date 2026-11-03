@@ -4,6 +4,7 @@ import 'package:bilimusic/feature/player/logic/display/player_display_provider.d
 import 'package:bilimusic/feature/player/logic/player_controller.dart';
 import 'package:bilimusic/feature/player/logic/player_progress_provider.dart';
 import 'package:bilimusic/feature/player/logic/utils/player_progress_ui_helpers.dart';
+import 'package:bilimusic/feature/player/ui/car/car_player_queue_panel.dart';
 import 'package:bilimusic/feature/player/ui/components/player_artwork.dart';
 import 'package:bilimusic/feature/player/ui/components/player_controls.dart';
 import 'package:bilimusic/router/util/player_navigation.dart';
@@ -257,91 +258,10 @@ class CarPlayerControls extends ConsumerWidget {
               icon: const Icon(Icons.queue_music_rounded),
               alignment: Alignment.centerRight,
               onPressed: state.hasQueue
-                  ? () => showModalBottomSheet<void>(
-                      context: context,
-                      showDragHandle: true,
-                      isScrollControlled: true,
-                      builder: (_) => const FractionallySizedBox(
-                        heightFactor: 0.85,
-                        child: SafeArea(child: _CarPlayerQueue()),
-                      ),
-                    )
+                  ? () => showCarPlayerQueuePanel(context: context)
                   : null,
             ),
           ],
-        ),
-      ],
-    );
-  }
-}
-
-class _CarPlayerQueue extends ConsumerWidget {
-  const _CarPlayerQueue();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final PlayerState state = ref.watch(playerControllerProvider);
-    final PlayerController controller = ref.read(
-      playerControllerProvider.notifier,
-    );
-    final ThemeData theme = Theme.of(context);
-    return Column(
-      children: <Widget>[
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20),
-          child: Row(
-            children: <Widget>[
-              Expanded(
-                child: Text(
-                  '播放队列 · ${state.queue.length} 首',
-                  style: theme.textTheme.titleLarge,
-                ),
-              ),
-              IconButton(
-                tooltip: '关闭播放队列',
-                constraints: const BoxConstraints(minWidth: 56, minHeight: 56),
-                onPressed: () => Navigator.of(context).pop(),
-                icon: const Icon(Icons.close_rounded),
-              ),
-            ],
-          ),
-        ),
-        Expanded(
-          child: !state.hasQueue
-              ? const Center(child: Text('播放队列为空'))
-              : ListView.builder(
-                  itemCount: state.queue.length,
-                  itemBuilder: (BuildContext context, int index) {
-                    final item = state.queue[index];
-                    final display = ref
-                        .watch(playerQueueDisplayProvider(item))
-                        .asData
-                        ?.value;
-                    return ListTile(
-                      minTileHeight: 72,
-                      selected: state.currentQueueIndex == index,
-                      leading: Icon(
-                        state.currentQueueIndex == index
-                            ? Icons.graphic_eq_rounded
-                            : Icons.music_note_rounded,
-                      ),
-                      title: Text(
-                        display?.title ?? item.title,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      subtitle: Text(
-                        display?.artist ?? item.author,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      onTap: () {
-                        Navigator.of(context).pop();
-                        controller.skipToQueueIndex(index);
-                      },
-                    );
-                  },
-                ),
         ),
       ],
     );
