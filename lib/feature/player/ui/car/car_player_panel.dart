@@ -24,7 +24,7 @@ class CarPlayerPanel extends ConsumerWidget {
     );
 
     return Material(
-      color: theme.colorScheme.surfaceContainerLow,
+      color: Colors.transparent,
       borderRadius: BorderRadius.circular(24),
       clipBehavior: Clip.antiAlias,
       child: LayoutBuilder(

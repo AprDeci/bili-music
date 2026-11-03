@@ -20,6 +20,7 @@ import 'package:bilimusic/feature/player/domain/player_state.dart';
 import 'package:bilimusic/feature/player/domain/player_lyric_settings.dart';
 import 'package:bilimusic/feature/player/logic/lyrics/player_lyric_settings_logic.dart';
 import 'package:bilimusic/feature/player/logic/display/player_display_provider.dart';
+import 'package:bilimusic/feature/player/logic/display/player_cover_color_provider.dart';
 import 'package:bilimusic/feature/player/logic/player_controller.dart';
 import 'package:bilimusic/feature/player/ui/car/car_player_panel.dart';
 import 'package:bilimusic/feature/player/ui/car/car_player_page.dart';
@@ -326,6 +327,62 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('car glow follows cover color and fades away without a cover', (
+    tester,
+  ) async {
+    final cover = _CoverColor();
+    int taps = 0;
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          playerCoverColorControllerProvider.overrideWith(() => cover),
+        ],
+        child: MaterialApp(
+          theme: carLightTheme(),
+          home: Scaffold(
+            body: Stack(
+              fit: StackFit.expand,
+              children: [
+                TextButton(onPressed: () => taps++, child: const Text('tap')),
+                const CarCoverGlow(),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+    final Finder container = find.descendant(
+      of: find.byType(CarCoverGlow),
+      matching: find.byType(AnimatedContainer),
+    );
+    RadialGradient gradient() =>
+        (tester.widget<AnimatedContainer>(container).decoration!
+                    as BoxDecoration)
+                .gradient!
+            as RadialGradient;
+    expect(gradient().colors.first.a, 0);
+    cover.setColor(Colors.red);
+    await tester.pumpAndSettle();
+    expect(gradient().center, const Alignment(-1.0, 1.0));
+    final Color red = gradient().colors.first;
+    expect(red.r, greaterThan(red.b));
+    expect(red.a, closeTo(0.30, 0.01));
+    expect(gradient().colors.last.a, 0);
+    await tester.tap(find.text('tap'));
+    expect(taps, 1);
+    cover.setColor(Colors.blue);
+    await tester.pump();
+    final AnimatedContainer animation = tester.widget(container);
+    expect(animation.duration, const Duration(milliseconds: 1000));
+    await tester.pumpAndSettle();
+    final Color blue = gradient().colors.first;
+    expect(blue.b, greaterThan(blue.r));
+    cover.setColor(null);
+    await tester.pumpAndSettle();
+    expect(gradient().colors.first.a, 0);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('car shell keeps playback controls visible across window sizes', (
     tester,
   ) async {
@@ -401,6 +458,16 @@ void main() {
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
     final Rect panel = tester.getRect(find.byType(CarPlayerPanel));
+    expect(find.byType(CarCoverGlow), findsOneWidget);
+    final Material panelMaterial = tester.widget(
+      find
+          .descendant(
+            of: find.byType(CarPlayerPanel),
+            matching: find.byType(Material),
+          )
+          .first,
+    );
+    expect(panelMaterial.color, Colors.transparent);
     final double screenWidth = 1920 / (140 / 160);
     expect(panel.width / screenWidth, inInclusiveRange(0.28, 0.31));
     expect(
@@ -578,6 +645,13 @@ Widget _scope(Widget child, {_Favorites? favorites, BiliSession? session}) =>
         builder: (context, child) => CarUiViewport(child: child!),
       ),
     );
+
+class _CoverColor extends PlayerCoverColorController {
+  @override
+  Color? build() => null;
+
+  void setColor(Color? color) => state = color;
+}
 
 class _Metadata extends MetadataController {
   @override
