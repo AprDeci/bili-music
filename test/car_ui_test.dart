@@ -216,6 +216,9 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
+      expect(favorites.refreshCount, remote ? 1 : 0);
+      expect(find.byTooltip('刷新网络歌单'), findsNothing);
+      expect(find.byType(RefreshIndicator), findsNothing);
       await tester.tap(find.byTooltip(remote ? '添加网络歌单' : '添加自建歌单'));
       await tester.pumpAndSettle();
       if (remote) {
@@ -821,11 +824,14 @@ class _Ranking extends MusicRankingController {
 class _Favorites extends FavoritesController {
   bool fail = false;
   int syncCount = 0;
+  int refreshCount = 0;
   bool? createdRemote;
   CollectionKind? createdKind;
 
   @override
-  Future<void> refreshRemoteCollections() async {}
+  Future<void> refreshRemoteCollections() async {
+    refreshCount++;
+  }
 
   @override
   Future<FavoriteCollection?> createCollection(

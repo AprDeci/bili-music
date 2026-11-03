@@ -74,94 +74,82 @@ class _CarProfilePageState extends ConsumerState<CarProfilePage> {
         .toList(growable: false);
     return Column(
       children: <Widget>[
-        CarContentHeader(
-          title: '我的音乐',
-          action: IconButton(
-            tooltip: '刷新网络歌单',
-            constraints: const BoxConstraints(minWidth: 56, minHeight: 56),
-            onPressed: _refreshing ? null : _refreshRemoteCollections,
-            icon: const Icon(Icons.refresh_rounded),
-          ),
-        ),
+        const CarContentHeader(title: '我的音乐'),
         Expanded(
-          child: RefreshIndicator(
-            onRefresh: _refreshRemoteCollections,
-            child: CustomScrollView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              slivers: <Widget>[
-                SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
-                  sliver: SliverLayoutBuilder(
-                    builder: (context, constraints) => SliverGrid(
-                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: (constraints.crossAxisExtent / 240)
-                            .floor()
-                            .clamp(1, 2),
-                        crossAxisSpacing: 16,
-                        mainAxisSpacing: 16,
-                        mainAxisExtent: 152,
-                      ),
-                      delegate: SliverChildListDelegate(<Widget>[
-                        CarContentCard(
-                          title: '最近播放',
-                          subtitle: '${recent.length} 首歌曲',
-                          icon: Icons.history_rounded,
-                          coverUrl: recent.firstOrNull?.coverUrl,
-                          onTap: () => context.push('/profile/recent'),
-                        ),
-                        CarContentCard(
-                          title: '我喜欢',
-                          subtitle:
-                              '${favorites.itemCountForCollection(FavoriteCollection.likedCollectionId)} 首歌曲',
-                          icon: Icons.favorite_rounded,
-                          onTap: () => context.push('/profile/favorites/liked'),
-                        ),
-                      ]),
+          child: CustomScrollView(
+            slivers: <Widget>[
+              SliverPadding(
+                padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+                sliver: SliverLayoutBuilder(
+                  builder: (context, constraints) => SliverGrid(
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: (constraints.crossAxisExtent / 240)
+                          .floor()
+                          .clamp(1, 2),
+                      crossAxisSpacing: 16,
+                      mainAxisSpacing: 16,
+                      mainAxisExtent: 152,
                     ),
+                    delegate: SliverChildListDelegate(<Widget>[
+                      CarContentCard(
+                        title: '最近播放',
+                        subtitle: '${recent.length} 首歌曲',
+                        icon: Icons.history_rounded,
+                        coverUrl: recent.firstOrNull?.coverUrl,
+                        onTap: () => context.push('/profile/recent'),
+                      ),
+                      CarContentCard(
+                        title: '我喜欢',
+                        subtitle:
+                            '${favorites.itemCountForCollection(FavoriteCollection.likedCollectionId)} 首歌曲',
+                        icon: Icons.favorite_rounded,
+                        onTap: () => context.push('/profile/favorites/liked'),
+                      ),
+                    ]),
                   ),
                 ),
-                _sectionTitle(context, '网络歌单', remote: true),
-                if (_refreshing)
-                  const SliverToBoxAdapter(
-                    child: Padding(
-                      padding: EdgeInsets.fromLTRB(20, 0, 20, 16),
-                      child: LinearProgressIndicator(),
-                    ),
+              ),
+              _sectionTitle(context, '网络歌单', remote: true),
+              if (_refreshing)
+                const SliverToBoxAdapter(
+                  child: Padding(
+                    padding: EdgeInsets.fromLTRB(20, 0, 20, 16),
+                    child: LinearProgressIndicator(),
                   ),
-                if (_refreshFailed)
-                  SliverToBoxAdapter(
-                    child: StatusView(
-                      title: '网络歌单同步失败',
-                      description: '已保留本地缓存，可重试同步。',
-                      icon: Icons.cloud_off_rounded,
-                      iconColor: Theme.of(context).colorScheme.error,
-                      onRetry: _refreshRemoteCollections,
-                      isRetrying: _refreshing,
-                    ),
+                ),
+              if (_refreshFailed)
+                SliverToBoxAdapter(
+                  child: StatusView(
+                    title: '网络歌单同步失败',
+                    description: '已保留本地缓存，可重试同步。',
+                    icon: Icons.cloud_off_rounded,
+                    iconColor: Theme.of(context).colorScheme.error,
+                    onRetry: _refreshRemoteCollections,
+                    isRetrying: _refreshing,
                   ),
-                if (remote.isEmpty && !_refreshing && !_refreshFailed)
-                  const SliverToBoxAdapter(
-                    child: StatusView(
-                      title: '还没有网络歌单',
-                      description: '点击标题旁的 +，导入 B 站收藏夹或新建网络歌单。',
-                      icon: Icons.cloud_queue_rounded,
-                    ),
-                  )
-                else
-                  _collectionGrid(favorites, remote),
-                _sectionTitle(context, '自建歌单', remote: false),
-                if (local.isEmpty)
-                  const SliverToBoxAdapter(
-                    child: StatusView(
-                      title: '还没有自建歌单',
-                      description: '点击标题旁的 +，创建自己的歌单。',
-                      icon: Icons.library_music_rounded,
-                    ),
-                  )
-                else
-                  _collectionGrid(favorites, local),
-              ],
-            ),
+                ),
+              if (remote.isEmpty && !_refreshing && !_refreshFailed)
+                const SliverToBoxAdapter(
+                  child: StatusView(
+                    title: '还没有网络歌单',
+                    description: '点击标题旁的 +，导入 B 站收藏夹或新建网络歌单。',
+                    icon: Icons.cloud_queue_rounded,
+                  ),
+                )
+              else
+                _collectionGrid(favorites, remote),
+              _sectionTitle(context, '自建歌单', remote: false),
+              if (local.isEmpty)
+                const SliverToBoxAdapter(
+                  child: StatusView(
+                    title: '还没有自建歌单',
+                    description: '点击标题旁的 +，创建自己的歌单。',
+                    icon: Icons.library_music_rounded,
+                  ),
+                )
+              else
+                _collectionGrid(favorites, local),
+            ],
           ),
         ),
       ],
