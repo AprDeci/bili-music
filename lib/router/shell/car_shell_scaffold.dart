@@ -2,13 +2,11 @@ import 'package:bilimusic/common/components/cached_avatar.dart';
 import 'package:bilimusic/feature/auth/logic/bili_auth_controller.dart';
 import 'package:bilimusic/common/components/underline_tab_switcher.dart';
 import 'package:bilimusic/core/bili/session/bili_session_controller.dart';
-import 'package:bilimusic/common/util/platform_util.dart';
 import 'package:bilimusic/feature/player/logic/display/player_cover_color_provider.dart';
 import 'package:bilimusic/feature/player/ui/car/car_player_panel.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:window_manager/window_manager.dart';
 
 class CarShellScaffold extends StatelessWidget {
   const CarShellScaffold({
@@ -30,55 +28,39 @@ class CarShellScaffold extends StatelessWidget {
         children: <Widget>[
           const Positioned.fill(child: CarCoverGlow()),
           SafeArea(
-            child: Column(
-              children: <Widget>[
-                if (PlatformUtil.isMacOS)
-                  GestureDetector(
-                    behavior: HitTestBehavior.opaque,
-                    onPanStart: (_) => windowManager.startDragging(),
-                    child: const SizedBox(height: 28, width: double.infinity),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final Widget content = Column(
+                  children: <Widget>[
+                    _CarNavigation(
+                      currentLocation: currentLocation,
+                      onSelect: (int index) => navigationShell.goBranch(index),
+                    ),
+                    Expanded(
+                      child: Material(
+                        color: Colors.transparent,
+                        borderRadius: BorderRadius.circular(24),
+                        clipBehavior: Clip.antiAlias,
+                        child: navigationShell,
+                      ),
+                    ),
+                  ],
+                );
+                return Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: <Widget>[
+                      SizedBox(
+                        width: (constraints.maxWidth * 0.29).clamp(240, 400),
+                        child: const CarPlayerPanel(),
+                      ),
+                      const SizedBox(width: 20),
+                      Expanded(child: content),
+                    ],
                   ),
-                Expanded(
-                  child: LayoutBuilder(
-                    builder: (context, constraints) {
-                      final Widget content = Column(
-                        children: <Widget>[
-                          _CarNavigation(
-                            currentLocation: currentLocation,
-                            onSelect: (int index) =>
-                                navigationShell.goBranch(index),
-                          ),
-                          Expanded(
-                            child: Material(
-                              color: Colors.transparent,
-                              borderRadius: BorderRadius.circular(24),
-                              clipBehavior: Clip.antiAlias,
-                              child: navigationShell,
-                            ),
-                          ),
-                        ],
-                      );
-                      return Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: <Widget>[
-                            SizedBox(
-                              width: (constraints.maxWidth * 0.29).clamp(
-                                240,
-                                400,
-                              ),
-                              child: const CarPlayerPanel(),
-                            ),
-                            const SizedBox(width: 20),
-                            Expanded(child: content),
-                          ],
-                        ),
-                      );
-                    },
-                  ),
-                ),
-              ],
+                );
+              },
             ),
           ),
         ],

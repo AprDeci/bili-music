@@ -451,6 +451,17 @@ void main() {
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
     final Rect panel = tester.getRect(find.byType(CarPlayerPanel));
+    final BuildContext shellContext = tester.element(
+      find.byType(CarShellScaffold),
+    );
+    final double viewportScale = MediaQuery.devicePixelRatioOf(shellContext);
+    expect(
+      panel.top * 140 / 160,
+      closeTo(
+        (MediaQuery.paddingOf(shellContext).top + 16) * viewportScale,
+        0.01,
+      ),
+    );
     expect(find.byType(CarCoverGlow), findsOneWidget);
     final Material panelMaterial = tester.widget(
       find
