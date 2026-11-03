@@ -661,6 +661,18 @@ void main() {
     expect(slider.right, closeTo(artwork.right, 0.01));
     expect(controls.left, closeTo(artwork.left, 0.01));
     expect(controls.right, closeTo(artwork.right, 0.01));
+    final queueButton = tester.widget<IconButton>(
+      find.widgetWithIcon(IconButton, Icons.queue_music_rounded),
+    );
+    final queueIcon = tester.getRect(find.byWidget(queueButton.icon));
+    final repeatButton = tester.widget<IconButton>(
+      find.byWidgetPredicate(
+        (widget) => widget is IconButton && widget.tooltip == '顺序播放，切换播放模式',
+      ),
+    );
+    final repeatIcon = tester.getRect(find.byWidget(repeatButton.icon));
+    expect(repeatIcon.left, closeTo(artwork.left, 0.01));
+    expect(queueIcon.right, closeTo(artwork.right, 0.01));
     expect(tester.takeException(), isNull);
   });
 

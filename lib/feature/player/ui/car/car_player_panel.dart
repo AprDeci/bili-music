@@ -150,6 +150,7 @@ class CarPlayerControls extends ConsumerWidget {
       required Widget icon,
       required VoidCallback? onPressed,
       bool primary = false,
+      Alignment alignment = Alignment.center,
     }) {
       return IconButton(
         tooltip: tooltip,
@@ -158,6 +159,8 @@ class CarPlayerControls extends ConsumerWidget {
         iconSize: primary ? 44 : 36,
         style: IconButton.styleFrom(
           minimumSize: Size.square(primary ? 64 : 56),
+          alignment: alignment,
+          padding: EdgeInsets.zero,
           backgroundColor: primary ? theme.colorScheme.primaryContainer : null,
           foregroundColor: primary
               ? theme.colorScheme.onPrimaryContainer
@@ -202,11 +205,12 @@ class CarPlayerControls extends ConsumerWidget {
         ),
         const SizedBox(height: 12),
         Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: <Widget>[
             action(
               tooltip: '$modeLabel，切换播放模式',
               icon: queueModeIcon(state.queueMode),
+              alignment: Alignment.centerLeft,
               onPressed: state.hasQueue ? controller.toggleQueueMode : null,
             ),
             action(
@@ -251,6 +255,7 @@ class CarPlayerControls extends ConsumerWidget {
             action(
               tooltip: '播放队列（${state.queue.length} 首）',
               icon: const Icon(Icons.queue_music_rounded),
+              alignment: Alignment.centerRight,
               onPressed: state.hasQueue
                   ? () => showModalBottomSheet<void>(
                       context: context,
