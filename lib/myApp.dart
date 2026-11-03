@@ -2,6 +2,7 @@ import 'dart:ui';
 
 import 'package:bilimusic/core/devtools/dev_overlay.dart';
 import 'package:bilimusic/core/theme/app_theme.dart';
+import 'package:bilimusic/core/theme/car_theme.dart';
 import 'package:bilimusic/core/theme/theme_logic.dart';
 import 'package:bilimusic/core/theme/theme_ui_model.dart';
 import 'package:bilimusic/router/routers.dart';
@@ -26,11 +27,14 @@ class _MyAppState extends ConsumerState<MyApp> {
   Widget build(BuildContext context) {
     final GoRouter router = ref.watch(routerProvider);
     final ThemeUiModel currentTheme = ref.watch(themeLogicProvider);
+    final bool carUi = ref.watch(carUiSettingLogicProvider);
 
     return MaterialApp.router(
       routerConfig: router,
       themeMode: currentTheme.themeMode,
-      theme: AppTheme.lightTheme(currentTheme.themeVariantId),
+      theme: carUi
+          ? carLightTheme()
+          : AppTheme.lightTheme(currentTheme.themeVariantId),
       darkTheme: AppTheme.darkTheme(currentTheme.themeVariantId),
       scrollBehavior: MyBehavior(),
       builder: FlutterSmartDialog.init(
@@ -42,10 +46,7 @@ class _MyAppState extends ConsumerState<MyApp> {
           return Stack(
             fit: StackFit.expand,
             children: <Widget>[
-              if (ref.watch(carUiSettingLogicProvider))
-                CarUiViewport(child: content)
-              else
-                content,
+              if (carUi) CarUiViewport(child: content) else content,
               if (kDebugMode) const DevOverlay(),
             ],
           );

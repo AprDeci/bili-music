@@ -79,7 +79,7 @@ class CarContentCard extends StatelessWidget {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colors = theme.colorScheme;
     return Material(
-      color: colors.surfaceContainerLow,
+      color: colors.surface,
       borderRadius: BorderRadius.circular(24),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
@@ -95,8 +95,8 @@ class CarContentCard extends StatelessWidget {
                 borderRadius: BorderRadius.circular(18),
                 fallbackIcon: icon,
                 iconSize: 30,
-                iconColor: colors.primary,
-                backgroundColor: colors.primaryContainer,
+                iconColor: colors.onSurfaceVariant,
+                backgroundColor: colors.surfaceContainerLow,
               ),
               const SizedBox(width: 16),
               Expanded(
@@ -236,7 +236,7 @@ class CarSongTile extends ConsumerWidget {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Material(
-        color: current ? colors.primaryContainer : colors.surfaceContainerLow,
+        color: current ? colors.primaryContainer : colors.surface,
         borderRadius: BorderRadius.circular(20),
         clipBehavior: Clip.antiAlias,
         child: Semantics(
@@ -265,7 +265,7 @@ class CarSongTile extends ConsumerWidget {
                     height: 56,
                     borderRadius: BorderRadius.circular(14),
                     fallbackIcon: Icons.music_note_rounded,
-                    iconColor: colors.primary,
+                    iconColor: colors.onSurfaceVariant,
                     backgroundColor: colors.surfaceContainerHighest,
                   ),
                   const SizedBox(width: 16),

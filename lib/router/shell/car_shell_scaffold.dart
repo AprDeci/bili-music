@@ -45,7 +45,7 @@ class CarShellScaffold extends StatelessWidget {
                       ),
                       Expanded(
                         child: Material(
-                          color: colors.surface,
+                          color: colors.surfaceContainerLow,
                           borderRadius: BorderRadius.circular(24),
                           clipBehavior: Clip.antiAlias,
                           child: navigationShell,

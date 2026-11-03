@@ -13,10 +13,12 @@ class PlayerArtworkFrame extends StatelessWidget {
     super.key,
     required this.coverUrl,
     this.borderRadius = 8,
+    this.fallback = const PlayerArtworkFallback(),
   });
 
   final String coverUrl;
   final double borderRadius;
+  final Widget fallback;
 
   @override
   Widget build(BuildContext context) {
@@ -34,8 +36,8 @@ class PlayerArtworkFrame extends StatelessWidget {
               CommonCachedImage(
                 imageUrl: coverUrl,
                 fit: BoxFit.cover,
-                placeholder: const PlayerArtworkFallback(),
-                errorWidget: const PlayerArtworkFallback(),
+                placeholder: fallback,
+                errorWidget: fallback,
               ),
             ],
           ),

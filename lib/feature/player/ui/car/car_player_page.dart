@@ -140,6 +140,14 @@ class _CarPlayerPageState extends ConsumerState<CarPlayerPage> {
                   child: PlayerArtworkFrame(
                     coverUrl: display.coverUrl ?? '',
                     borderRadius: 28,
+                    fallback: ColoredBox(
+                      color: theme.colorScheme.surfaceContainerHighest,
+                      child: Icon(
+                        Icons.music_note_rounded,
+                        size: 84,
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
                   ),
                 ),
               ),

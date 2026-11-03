@@ -41,6 +41,14 @@ class CarPlayerPanel extends ConsumerWidget {
                 child: PlayerArtworkFrame(
                   coverUrl: display.coverUrl ?? '',
                   borderRadius: 20,
+                  fallback: ColoredBox(
+                    color: theme.colorScheme.surfaceContainerHighest,
+                    child: Icon(
+                      Icons.music_note_rounded,
+                      size: 84,
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
                 ),
               ),
             ),

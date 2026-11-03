@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:bilimusic/core/bili/session/bili_session_controller.dart';
 import 'package:bilimusic/core/hive/hive_keys.dart';
+import 'package:bilimusic/core/theme/car_theme.dart';
 import 'package:bilimusic/core/settings/app_settings_store.dart';
 import 'package:bilimusic/feature/favorites/domain/favorite_collection.dart';
 import 'package:bilimusic/feature/favorites/domain/favorites_state.dart';
@@ -20,6 +21,7 @@ import 'package:bilimusic/feature/player/logic/display/player_display_provider.d
 import 'package:bilimusic/feature/player/logic/player_controller.dart';
 import 'package:bilimusic/feature/player/ui/car/car_player_panel.dart';
 import 'package:bilimusic/feature/player/ui/car/car_player_page.dart';
+import 'package:bilimusic/feature/player/ui/components/player_artwork.dart';
 import 'package:bilimusic/feature/metadata/domain/metadata_state.dart';
 import 'package:bilimusic/feature/metadata/logic/metadata_controller.dart';
 import 'package:bilimusic/router/shell/car_shell_scaffold.dart';
@@ -300,6 +302,7 @@ void main() {
         ],
         child: MaterialApp.router(
           routerConfig: router,
+          theme: carLightTheme(),
           builder: (context, child) => CarUiViewport(child: child!),
         ),
       ),
@@ -427,6 +430,36 @@ void main() {
     },
   );
 
+  testWidgets('car artwork stays neutral while standard artwork is unchanged', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      _scope(
+        const Scaffold(
+          body: SizedBox(width: 320, height: 600, child: CarPlayerPanel()),
+        ),
+      ),
+    );
+    expect(find.byType(PlayerArtworkFallback), findsNothing);
+    final PlayerArtworkFrame artwork = tester.widget(
+      find.byType(PlayerArtworkFrame),
+    );
+    final ColoredBox fallback = artwork.fallback as ColoredBox;
+    expect(fallback.color, carLightTheme().colorScheme.surfaceContainerHighest);
+    expect(
+      (fallback.child! as Icon).color,
+      carLightTheme().colorScheme.onSurfaceVariant,
+    );
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: carLightTheme(),
+        home: const Scaffold(body: PlayerArtworkFrame(coverUrl: '')),
+      ),
+    );
+    expect(find.byType(PlayerArtworkFallback), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('player panel fits narrow and short landscape constraints', (
     tester,
   ) async {
@@ -461,6 +494,7 @@ Widget _scope(Widget child, {_Favorites? favorites}) => ProviderScope(
     ),
   ],
   child: MaterialApp(
+    theme: carLightTheme(),
     home: child,
     builder: (context, child) => CarUiViewport(child: child!),
   ),
