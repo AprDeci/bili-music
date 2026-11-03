@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:bilimusic/common/domain/collection_kind.dart';
 import 'package:bilimusic/common/logger.dart';
+import 'package:bilimusic/feature/favorites/data/favorites_item_id_migration.dart';
 import 'package:bilimusic/feature/favorites/domain/favorite_collection.dart';
 import 'package:bilimusic/feature/favorites/domain/favorite_entry.dart';
 import 'package:bilimusic/feature/favorites/domain/favorite_membership.dart';
@@ -26,6 +27,13 @@ class FavoritesRemoteCacheRepository {
   final Box<FavoriteEntry> entriesBox;
   final Box<FavoriteMembership> membershipsBox;
   final Box<String>? wastedResourceIdsBox;
+
+  Future<int> normalizeItemIds() {
+    return migrateFavoriteItemIds(
+      entriesBox: entriesBox,
+      membershipsBox: membershipsBox,
+    );
+  }
 
   ({bool hasFullSnapshot, Set<String> ids}) loadWastedSnapshot(
     String collectionId,

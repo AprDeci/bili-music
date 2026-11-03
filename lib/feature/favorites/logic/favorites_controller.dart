@@ -7,6 +7,7 @@ import 'package:bilimusic/core/bili/session/bili_auth_required_exception.dart';
 import 'package:bilimusic/core/bili/session/bili_session.dart';
 import 'package:bilimusic/core/bili/session/bili_session_controller.dart';
 import 'package:bilimusic/feature/favorites/data/bili_favorites_remote_repository.dart';
+import 'package:bilimusic/feature/favorites/data/favorites_item_id_migration.dart';
 import 'package:bilimusic/feature/favorites/data/favorites_local_repository.dart';
 import 'package:bilimusic/feature/favorites/data/favorites_remote_cache_repository.dart';
 import 'package:bilimusic/feature/favorites/domain/bili_favorite_collection_page.dart';
@@ -20,10 +21,6 @@ import 'package:bilimusic/feature/player/domain/playable_item.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'favorites_controller.g.dart';
-
-int remoteFavoriteSyncBatchLimit(int itemCount) {
-  return max(1, ((itemCount + 19) ~/ 20) + 2);
-}
 
 enum RemoteCollectionSyncResult { skipped, completed, incomplete }
 
@@ -51,6 +48,12 @@ class FavoritesController extends _$FavoritesController {
   }
 
   Future<void> initialize() async {
+    final int migratedItems =
+        await _repository.normalizeItemIds() +
+        await _remoteCache.normalizeItemIds();
+    if (migratedItems > 0) {
+      _logger.d('favorite item ids normalized: $migratedItems');
+    }
     final FavoritesState nextState = await _repository.initialize();
     state = _mergeStates(
       localState: nextState,
@@ -917,23 +920,19 @@ class FavoritesController extends _$FavoritesController {
     final Set<String> supported = <String>{
       for (final FavoriteRemoteResource resource in resources)
         resource.stableId,
-      for (final FavoriteRemoteResource resource in resources)
-        if (resource.aid > 0) 'aid:${resource.aid}',
-      for (final FavoriteRemoteResource resource in resources)
-        if (resource.bvid.isNotEmpty) resource.bvid,
     };
     for (final FavoriteEntry entry in state.itemsForCollection(collectionId)) {
       if (resources.any(
         (FavoriteRemoteResource resource) =>
             _resourceMatchesEntry(resource, entry),
       )) {
-        supported.add(entry.itemId);
-        if (entry.aid > 0) {
-          supported.add('aid:${entry.aid}');
-        }
-        if (entry.bvid.isNotEmpty) {
-          supported.add(entry.bvid);
-        }
+        supported.add(
+          canonicalFavoriteItemId(
+            aid: entry.aid,
+            bvid: entry.bvid,
+            cid: entry.cid,
+          ),
+        );
       }
     }
     return supported;
