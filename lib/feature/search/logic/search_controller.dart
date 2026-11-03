@@ -1,3 +1,4 @@
+import 'package:bilimusic/common/domain/paged_state.dart';
 import 'package:bilimusic/core/net/bili_client.dart';
 import 'package:bilimusic/feature/search/data/bili_search_repository.dart';
 import 'package:bilimusic/feature/search/data/search_history_store.dart';
@@ -29,10 +30,6 @@ class SearchPageController extends _$SearchPageController {
   String? _cacheKeyword;
   bool _videoLoaded = false;
   bool _userLoaded = false;
-  int _videoPage = 0;
-  int _userPage = 0;
-  bool _videoHasMore = false;
-  bool _userHasMore = false;
 
   @override
   SearchState build() {
@@ -56,13 +53,10 @@ class SearchPageController extends _$SearchPageController {
         query: '',
         submittedQuery: null,
         suggestions: const <String>[],
-        results: const <SearchResultItem>[],
-        userResults: const <SearchUserItem>[],
+        videoResults: const PagedState<SearchResultItem>(),
+        userResultsPage: const PagedState<SearchUserItem>(),
         isLoading: false,
         isLoadingSuggestions: false,
-        isLoadingMore: false,
-        currentPage: 0,
-        hasMore: false,
         errorMessage: null,
         suggestionsErrorMessage: null,
         loadMoreErrorMessage: null,
@@ -82,13 +76,10 @@ class SearchPageController extends _$SearchPageController {
       submittedQuery: nextQuery,
       recentKeywords: nextRecentKeywords,
       suggestions: const <String>[],
-      results: const <SearchResultItem>[],
-      userResults: const <SearchUserItem>[],
+      videoResults: const PagedState<SearchResultItem>(),
+      userResultsPage: const PagedState<SearchUserItem>(),
       isLoading: true,
       isLoadingSuggestions: false,
-      isLoadingMore: false,
-      currentPage: 0,
-      hasMore: false,
       errorMessage: null,
       suggestionsErrorMessage: null,
       loadMoreErrorMessage: null,
@@ -104,22 +95,13 @@ class SearchPageController extends _$SearchPageController {
       );
       _recordLoadedPage(state.type, page);
 
-      state = state.copyWith(
-        results: page.videoItems,
-        userResults: page.userItems,
-        isLoading: false,
-        currentPage: page.page,
-        hasMore: page.hasMore,
-      );
+      state = _applyFirstPage(state, state.type, page);
     } on Object catch (error) {
       state = state.copyWith(
-        results: const <SearchResultItem>[],
-        userResults: const <SearchUserItem>[],
+        videoResults: const PagedState<SearchResultItem>(),
+        userResultsPage: const PagedState<SearchUserItem>(),
         isLoading: false,
         isLoadingSuggestions: false,
-        isLoadingMore: false,
-        currentPage: 0,
-        hasMore: false,
         errorMessage: error.toString(),
         suggestionsErrorMessage: null,
         loadMoreErrorMessage: null,
@@ -132,13 +114,13 @@ class SearchPageController extends _$SearchPageController {
     if (submittedQuery.isEmpty ||
         state.isLoading ||
         state.isLoadingMore ||
-        !_hasMoreFor(state.type)) {
+        !state.hasMore) {
       return;
     }
 
     final SearchType activeType = state.type;
-    final int nextPage = _pageFor(activeType) + 1;
-    state = state.copyWith(isLoadingMore: true, loadMoreErrorMessage: null);
+    final int nextPage = state.currentPage + 1;
+    state = _applyLoadingMore(state, activeType);
 
     try {
       final _SearchPageLoadResult page = await _loadPage(
@@ -146,27 +128,11 @@ class SearchPageController extends _$SearchPageController {
         type: activeType,
         page: nextPage,
       );
-      final List<SearchResultItem> nextResults = activeType == SearchType.video
-          ? <SearchResultItem>[...state.results, ...page.videoItems]
-          : state.results;
-      final List<SearchUserItem> nextUserResults = activeType == SearchType.up
-          ? <SearchUserItem>[...state.userResults, ...page.userItems]
-          : state.userResults;
       _recordLoadedPage(activeType, page);
 
-      state = state.copyWith(
-        results: nextResults,
-        userResults: nextUserResults,
-        isLoadingMore: false,
-        currentPage: page.page,
-        hasMore: page.hasMore,
-        loadMoreErrorMessage: null,
-      );
+      state = _applyNextPage(state, activeType, page);
     } on Object catch (error) {
-      state = state.copyWith(
-        isLoadingMore: false,
-        loadMoreErrorMessage: error.toString(),
-      );
+      state = _applyPageFailure(state, activeType, error);
     }
   }
 
@@ -270,8 +236,6 @@ class SearchPageController extends _$SearchPageController {
     final String submittedQuery = state.submittedQuery?.trim() ?? '';
     state = state.copyWith(
       type: type,
-      currentPage: _pageFor(type),
-      hasMore: _hasMoreFor(type),
       errorMessage: null,
       loadMoreErrorMessage: null,
     );
@@ -279,7 +243,7 @@ class SearchPageController extends _$SearchPageController {
       return;
     }
 
-    state = state.copyWith(isLoading: true, isLoadingMore: false);
+    state = state.copyWith(isLoading: true);
     try {
       final _SearchPageLoadResult page = await _loadPage(
         submittedQuery,
@@ -287,20 +251,13 @@ class SearchPageController extends _$SearchPageController {
         page: 1,
       );
       _recordLoadedPage(type, page);
-      state = state.copyWith(
-        results: type == SearchType.video ? page.videoItems : state.results,
-        userResults: type == SearchType.up ? page.userItems : state.userResults,
-        isLoading: false,
-        currentPage: page.page,
-        hasMore: page.hasMore,
-        errorMessage: null,
-      );
+      state = _applyFirstPage(state, type, page);
     } on Object catch (error) {
-      state = state.copyWith(
-        isLoading: false,
-        currentPage: 0,
-        hasMore: false,
-        errorMessage: error.toString(),
+      state = _applyPageFailure(
+        state.copyWith(isLoading: false),
+        type,
+        error,
+        resetPage: true,
       );
     }
   }
@@ -311,13 +268,10 @@ class SearchPageController extends _$SearchPageController {
       query: '',
       submittedQuery: null,
       suggestions: const <String>[],
-      results: const <SearchResultItem>[],
-      userResults: const <SearchUserItem>[],
+      videoResults: const PagedState<SearchResultItem>(),
+      userResultsPage: const PagedState<SearchUserItem>(),
       isLoading: false,
       isLoadingSuggestions: false,
-      isLoadingMore: false,
-      currentPage: 0,
-      hasMore: false,
       errorMessage: null,
       suggestionsErrorMessage: null,
       loadMoreErrorMessage: null,
@@ -330,14 +284,95 @@ class SearchPageController extends _$SearchPageController {
     _historyStore.clear();
   }
 
+  SearchState _applyFirstPage(
+    SearchState current,
+    SearchType type,
+    _SearchPageLoadResult page,
+  ) {
+    return current.copyWith(
+      videoResults: type == SearchType.video
+          ? current.videoResults.withFirstPage(
+              page.videoItems,
+              page: page.page,
+              hasMore: page.hasMore,
+            )
+          : current.videoResults,
+      userResultsPage: type == SearchType.up
+          ? current.userResultsPage.withFirstPage(
+              page.userItems,
+              page: page.page,
+              hasMore: page.hasMore,
+            )
+          : current.userResultsPage,
+      isLoading: false,
+      errorMessage: null,
+    );
+  }
+
+  SearchState _applyLoadingMore(SearchState current, SearchType type) {
+    return current.copyWith(
+      videoResults: type == SearchType.video
+          ? current.videoResults.startingNextPage()
+          : current.videoResults,
+      userResultsPage: type == SearchType.up
+          ? current.userResultsPage.startingNextPage()
+          : current.userResultsPage,
+      loadMoreErrorMessage: null,
+    );
+  }
+
+  SearchState _applyNextPage(
+    SearchState current,
+    SearchType type,
+    _SearchPageLoadResult page,
+  ) {
+    return current.copyWith(
+      videoResults: type == SearchType.video
+          ? current.videoResults.withNextPage(
+              page.videoItems,
+              page: page.page,
+              hasMore: page.hasMore,
+            )
+          : current.videoResults,
+      userResultsPage: type == SearchType.up
+          ? current.userResultsPage.withNextPage(
+              page.userItems,
+              page: page.page,
+              hasMore: page.hasMore,
+            )
+          : current.userResultsPage,
+      loadMoreErrorMessage: null,
+    );
+  }
+
+  SearchState _applyPageFailure(
+    SearchState current,
+    SearchType type,
+    Object error, {
+    bool resetPage = false,
+  }) {
+    final PagedState<SearchResultItem> videoResults = type == SearchType.video
+        ? resetPage
+              ? current.videoResults.reset()
+              : current.videoResults.failed(error)
+        : current.videoResults;
+    final PagedState<SearchUserItem> userResultsPage = type == SearchType.up
+        ? resetPage
+              ? current.userResultsPage.reset()
+              : current.userResultsPage.failed(error)
+        : current.userResultsPage;
+    return current.copyWith(
+      videoResults: videoResults,
+      userResultsPage: userResultsPage,
+      isLoading: false,
+      errorMessage: error.toString(),
+    );
+  }
+
   void _resetResultCache({String? keyword}) {
     _cacheKeyword = keyword;
     _videoLoaded = false;
     _userLoaded = false;
-    _videoPage = 0;
-    _userPage = 0;
-    _videoHasMore = false;
-    _userHasMore = false;
   }
 
   bool _isLoaded(SearchType type) {
@@ -352,34 +387,12 @@ class SearchPageController extends _$SearchPageController {
     }
   }
 
-  int _pageFor(SearchType type) {
-    switch (type) {
-      case SearchType.video:
-        return _videoPage;
-      case SearchType.up:
-        return _userPage;
-    }
-  }
-
-  bool _hasMoreFor(SearchType type) {
-    switch (type) {
-      case SearchType.video:
-        return _videoHasMore;
-      case SearchType.up:
-        return _userHasMore;
-    }
-  }
-
   void _recordLoadedPage(SearchType type, _SearchPageLoadResult page) {
     switch (type) {
       case SearchType.video:
         _videoLoaded = true;
-        _videoPage = page.page;
-        _videoHasMore = page.hasMore;
       case SearchType.up:
         _userLoaded = true;
-        _userPage = page.page;
-        _userHasMore = page.hasMore;
     }
   }
 }
