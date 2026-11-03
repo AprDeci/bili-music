@@ -3,6 +3,10 @@ import 'dart:io';
 import 'package:bilimusic/core/hive/hive_keys.dart';
 import 'package:bilimusic/core/theme/theme_logic.dart';
 import 'package:bilimusic/core/theme/theme_ui_model.dart';
+import 'package:bilimusic/common/util/platform_util.dart';
+import 'package:bilimusic/feature/setting/logic/appearance_setting_logic.dart';
+import 'package:bilimusic/feature/setting/logic/car_ui_setting_logic.dart';
+import 'package:bilimusic/feature/setting/ui/theme_settings_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -23,6 +27,55 @@ void main() {
       await tempDirectory.delete(recursive: true);
     }
   });
+
+  testWidgets(
+    'car mode hides standard appearance options without resetting them',
+    (tester) async {
+      tester.view.physicalSize = const Size(1000, 2000);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final ProviderContainer container = ProviderContainer();
+      addTearDown(container.dispose);
+      await tester.runAsync(() async {
+        container.read(themeLogicProvider.notifier).setThemeVariant('skyBlue');
+        await container
+            .read(appearanceSettingLogicProvider.notifier)
+            .setUseGlassBar(true);
+      });
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: const MaterialApp(home: ThemeSettingsPage()),
+        ),
+      );
+      expect(find.text('主题颜色'), findsOneWidget);
+      expect(find.byType(RadioListTile<String>), findsNWidgets(6));
+      expect(
+        find.text('启用玻璃导航栏/播放栏'),
+        PlatformUtil.isMobile ? findsOneWidget : findsNothing,
+      );
+      await tester.tap(find.text('启用车机 UI'));
+      await tester.pumpAndSettle();
+      expect(container.read(carUiSettingLogicProvider), isTrue);
+      expect(find.text('主题颜色'), findsNothing);
+      expect(find.byType(RadioListTile<String>), findsNothing);
+      expect(find.text('启用玻璃导航栏/播放栏'), findsNothing);
+      expect(find.text('主题模式'), findsOneWidget);
+      expect(find.byType(RadioListTile<ThemeMode>), findsNWidgets(3));
+      await tester.tap(find.text('启用车机 UI'));
+      await tester.pumpAndSettle();
+      expect(find.text('主题颜色'), findsOneWidget);
+      expect(find.byType(RadioListTile<String>), findsNWidgets(6));
+      expect(
+        find.text('启用玻璃导航栏/播放栏'),
+        PlatformUtil.isMobile ? findsOneWidget : findsNothing,
+      );
+      expect(container.read(themeLogicProvider).themeVariantId, 'skyBlue');
+      expect(container.read(appearanceSettingLogicProvider), isTrue);
+      expect(tester.takeException(), isNull);
+    },
+  );
 
   test('uses frost tea white as default theme variant', () async {
     final ProviderContainer container = ProviderContainer();

@@ -14,6 +14,7 @@ class ThemeSettingsPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final ThemeData theme = Theme.of(context);
     final ThemeUiModel themeState = ref.watch(themeLogicProvider);
+    final bool carUi = ref.watch(carUiSettingLogicProvider);
     final bool useGlassBar = ref.watch(appearanceSettingLogicProvider);
 
     return Scaffold(
@@ -25,7 +26,7 @@ class ThemeSettingsPage extends ConsumerWidget {
             title: const Text('启用车机 UI'),
             subtitle: const Text('常驻播放区、大按钮与简化布局，与普通横屏独立'),
             secondary: const Icon(Icons.directions_car_rounded),
-            value: ref.watch(carUiSettingLogicProvider),
+            value: carUi,
             onChanged: (bool value) async {
               try {
                 await ref
@@ -41,17 +42,16 @@ class ThemeSettingsPage extends ConsumerWidget {
             },
           ),
           const SizedBox(height: 16),
-          PlatformUtil.isMobile
-              ? SwitchListTile.adaptive(
-                  title: const Text('启用玻璃导航栏/播放栏'),
-                  value: useGlassBar,
-                  onChanged: (bool value) async {
-                    await ref
-                        .read(appearanceSettingLogicProvider.notifier)
-                        .setUseGlassBar(value);
-                  },
-                )
-              : Container(),
+          if (!carUi && PlatformUtil.isMobile)
+            SwitchListTile.adaptive(
+              title: const Text('启用玻璃导航栏/播放栏'),
+              value: useGlassBar,
+              onChanged: (bool value) async {
+                await ref
+                    .read(appearanceSettingLogicProvider.notifier)
+                    .setUseGlassBar(value);
+              },
+            ),
           Text('主题模式', style: theme.textTheme.titleMedium),
           const SizedBox(height: 8),
           Card(
@@ -78,36 +78,38 @@ class ThemeSettingsPage extends ConsumerWidget {
               ),
             ),
           ),
-          const SizedBox(height: 24),
-          Text('主题颜色', style: theme.textTheme.titleMedium),
-          const SizedBox(height: 8),
-          Card(
-            margin: EdgeInsets.zero,
-            clipBehavior: Clip.antiAlias,
-            child: RadioGroup(
-              onChanged: (String? value) {
-                if (value == null) {
-                  return;
-                }
-                ref.read(themeLogicProvider.notifier).setThemeVariant(value);
-              },
-              groupValue: themeState.themeVariantId,
-              child: Column(
-                children: themeCatalog
-                    .map((ThemeDefinition definition) {
-                      return RadioListTile<String>(
-                        value: definition.id,
-                        title: Text(definition.label),
-                        subtitle: Text(definition.description),
-                        secondary: _ThemePreviewDot(
-                          color: definition.seedColor,
-                        ),
-                      );
-                    })
-                    .toList(growable: false),
+          if (!carUi) ...<Widget>[
+            const SizedBox(height: 24),
+            Text('主题颜色', style: theme.textTheme.titleMedium),
+            const SizedBox(height: 8),
+            Card(
+              margin: EdgeInsets.zero,
+              clipBehavior: Clip.antiAlias,
+              child: RadioGroup(
+                onChanged: (String? value) {
+                  if (value == null) {
+                    return;
+                  }
+                  ref.read(themeLogicProvider.notifier).setThemeVariant(value);
+                },
+                groupValue: themeState.themeVariantId,
+                child: Column(
+                  children: themeCatalog
+                      .map((ThemeDefinition definition) {
+                        return RadioListTile<String>(
+                          value: definition.id,
+                          title: Text(definition.label),
+                          subtitle: Text(definition.description),
+                          secondary: _ThemePreviewDot(
+                            color: definition.seedColor,
+                          ),
+                        );
+                      })
+                      .toList(growable: false),
+                ),
               ),
             ),
-          ),
+          ],
         ],
       ),
     );
