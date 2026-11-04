@@ -40,6 +40,7 @@ class MobileChromeConfig {
 
     if (path == '/profile/import' ||
         path.startsWith('/profile/favorites/') ||
+        path == '/profile/downloads' ||
         path == '/profile/recent') {
       return detail;
     }
