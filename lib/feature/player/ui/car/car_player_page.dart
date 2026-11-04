@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'package:bilimusic/common/components/car/car_cover_glow.dart';
+import 'package:bilimusic/feature/player/logic/display/player_cover_color_provider.dart';
 import 'package:bilimusic/feature/player/domain/playable_item.dart';
 import 'package:bilimusic/feature/player/domain/player_state.dart';
 import 'package:bilimusic/feature/player/logic/display/player_display_provider.dart';
@@ -93,6 +95,7 @@ class _CarPlayerPageState extends ConsumerState<CarPlayerPage> {
     final ThemeData theme = Theme.of(context);
     final PlayerState state = ref.watch(playerControllerProvider);
     final display = ref.watch(playerDisplayProvider);
+    final Color? coverColor = ref.watch(playerCoverColorControllerProvider);
     final PlayerController controller = ref.read(
       playerControllerProvider.notifier,
     );
@@ -109,140 +112,144 @@ class _CarPlayerPageState extends ConsumerState<CarPlayerPage> {
           icon: const Icon(Icons.arrow_back_rounded),
         ),
       ),
-      body: SafeArea(
-        top: false,
-        child: LayoutBuilder(
-          builder: (BuildContext context, BoxConstraints constraints) {
-            final double textScale =
-                MediaQuery.textScalerOf(context).scale(16) / 16;
-            final double minimumHeight = 480 * textScale.clamp(1.0, 2.0);
-            final double height = constraints.maxHeight.clamp(
-              minimumHeight,
-              double.infinity,
-            );
-            final double horizontalInset = (constraints.maxWidth * 0.055).clamp(
-              16.0,
-              72.0,
-            );
-            final double bottomInset = (height * 0.12).clamp(24.0, 80.0);
-            final Widget artwork = Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 380),
-                child: Semantics(
-                  image: true,
-                  label: '${display.title ?? '暂无播放内容'}封面',
-                  child: Hero(
-                    tag: 'car-player-artwork',
-                    child: PlayerArtworkFrame(
-                      coverUrl: display.coverUrl ?? '',
-                      fallback: ColoredBox(
-                        color: theme.colorScheme.surfaceContainerHighest,
-                        child: Icon(
-                          Icons.music_note_rounded,
-                          size: 84,
-                          color: theme.colorScheme.onSurfaceVariant,
+      body: Stack(
+        fit: StackFit.expand,
+        children: <Widget>[
+          const Positioned.fill(child: CarCoverGlow(bottom: true)),
+          SafeArea(
+            top: false,
+            child: LayoutBuilder(
+              builder: (BuildContext context, BoxConstraints constraints) {
+                final double textScale =
+                    MediaQuery.textScalerOf(context).scale(16) / 16;
+                final double minimumHeight = 480 * textScale.clamp(1.0, 2.0);
+                final double height = constraints.maxHeight.clamp(
+                  minimumHeight,
+                  double.infinity,
+                );
+                final double horizontalInset = (constraints.maxWidth * 0.055)
+                    .clamp(16.0, 72.0);
+                final double bottomInset = (height * 0.12).clamp(24.0, 80.0);
+                final Widget artwork = Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 380),
+                    child: Semantics(
+                      image: true,
+                      label: '${display.title ?? '暂无播放内容'}封面',
+                      child: Hero(
+                        tag: 'car-player-artwork',
+                        child: PlayerArtworkFrame(
+                          coverUrl: display.coverUrl ?? '',
+                          fallback: ColoredBox(
+                            color: theme.colorScheme.surfaceContainerHighest,
+                            child: Icon(
+                              Icons.music_note_rounded,
+                              size: 84,
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
+                          ),
                         ),
                       ),
                     ),
                   ),
-                ),
-              ),
-            );
-            final Widget lyricsAndControls = Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: <Widget>[
-                Text(
-                  display.title ?? '还没有播放内容',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  textAlign: TextAlign.center,
-                  style: theme.textTheme.headlineSmall,
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  display.artist ?? '选择一首音乐，开始旅程',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  textAlign: TextAlign.center,
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
-                ),
-                if (_initialError != null)
-                  Semantics(
-                    liveRegion: true,
-                    child: TextButton.icon(
-                      style: TextButton.styleFrom(
-                        minimumSize: const Size(56, 56),
-                        foregroundColor: theme.colorScheme.error,
-                      ),
-                      onPressed: _loadInitialItem,
-                      icon: const Icon(Icons.refresh_rounded),
-                      label: Text(_initialError!),
+                );
+                final Widget lyricsAndControls = Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: <Widget>[
+                    Text(
+                      display.title ?? '还没有播放内容',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.center,
+                      style: theme.textTheme.headlineSmall,
                     ),
-                  ),
-                const SizedBox(height: 16),
-                Expanded(
-                  child: Theme(
-                    data: theme.copyWith(
-                      textButtonTheme: TextButtonThemeData(
-                        style: TextButton.styleFrom(
-                          minimumSize: const Size(56, 56),
+                    const SizedBox(height: 8),
+                    Text(
+                      display.artist ?? '选择一首音乐，开始旅程',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.center,
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    if (_initialError != null)
+                      Semantics(
+                        liveRegion: true,
+                        child: TextButton.icon(
+                          style: TextButton.styleFrom(
+                            minimumSize: const Size(56, 56),
+                            foregroundColor: theme.colorScheme.error,
+                          ),
+                          onPressed: _loadInitialItem,
+                          icon: const Icon(Icons.refresh_rounded),
+                          label: Text(_initialError!),
                         ),
                       ),
-                      filledButtonTheme: FilledButtonThemeData(
-                        style: FilledButton.styleFrom(
-                          minimumSize: const Size(56, 56),
+                    const SizedBox(height: 16),
+                    Expanded(
+                      child: Theme(
+                        data: theme.copyWith(
+                          textButtonTheme: TextButtonThemeData(
+                            style: TextButton.styleFrom(
+                              minimumSize: const Size(56, 56),
+                            ),
+                          ),
+                          filledButtonTheme: FilledButtonThemeData(
+                            style: FilledButton.styleFrom(
+                              minimumSize: const Size(56, 56),
+                            ),
+                          ),
+                        ),
+                        child: PlayerLyricPanel(
+                          state: state,
+                          item: state.currentItem,
+                          isActive: true,
+                          onSeek: state.isReady
+                              ? controller.seekFromProgressBar
+                              : (_) {},
+                          activeColor: coverColor,
+                          variant: PlayerLyricPanelVariant.desktop,
                         ),
                       ),
                     ),
-                    child: PlayerLyricPanel(
-                      state: state,
-                      item: state.currentItem,
-                      isActive: true,
-                      onSeek: state.isReady
-                          ? controller.seekFromProgressBar
-                          : (_) {},
-                      activeColor: theme.colorScheme.primary,
-                      variant: PlayerLyricPanelVariant.desktop,
+                    const SizedBox(height: 16),
+                    Hero(
+                      tag: 'car-player-controls',
+                      createRectTween: (begin, end) =>
+                          RectTween(begin: begin, end: end),
+                      child: const Material(
+                        type: MaterialType.transparency,
+                        child: CarPlayerControls(),
+                      ),
                     ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Hero(
-                  tag: 'car-player-controls',
-                  createRectTween: (begin, end) =>
-                      RectTween(begin: begin, end: end),
-                  child: const Material(
-                    type: MaterialType.transparency,
-                    child: CarPlayerControls(),
-                  ),
-                ),
-              ],
-            );
+                  ],
+                );
 
-            return SingleChildScrollView(
-              child: SizedBox(
-                height: height,
-                child: Padding(
-                  padding: EdgeInsets.fromLTRB(
-                    horizontalInset,
-                    24,
-                    horizontalInset,
-                    bottomInset,
+                return SingleChildScrollView(
+                  child: SizedBox(
+                    height: height,
+                    child: Padding(
+                      padding: EdgeInsets.fromLTRB(
+                        horizontalInset,
+                        24,
+                        horizontalInset,
+                        bottomInset,
+                      ),
+                      child: Row(
+                        children: <Widget>[
+                          Expanded(flex: 6, child: lyricsAndControls),
+                          SizedBox(width: horizontalInset),
+                          Expanded(flex: 4, child: artwork),
+                        ],
+                      ),
+                    ),
                   ),
-                  child: Row(
-                    children: <Widget>[
-                      Expanded(flex: 6, child: lyricsAndControls),
-                      SizedBox(width: horizontalInset),
-                      Expanded(flex: 4, child: artwork),
-                    ],
-                  ),
-                ),
-              ),
-            );
-          },
-        ),
+                );
+              },
+            ),
+          ),
+        ],
       ),
     );
   }

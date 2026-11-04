@@ -16,6 +16,8 @@ import 'package:bilimusic/feature/listening/logic/listening_progress_controller.
 
 import 'package:bilimusic/common/components/cached_avatar.dart';
 import 'package:bilimusic/common/components/car/car_side_panel.dart';
+import 'package:bilimusic/common/components/car/car_cover_glow.dart';
+import 'package:bilimusic/feature/player/ui/lyrics/player_lyric_panel.dart';
 import 'package:bilimusic/feature/player/ui/car/car_player_queue_panel.dart';
 import 'package:bilimusic/common/domain/collection_kind.dart';
 import 'package:bilimusic/core/bili/session/bili_session.dart';
@@ -1156,6 +1158,74 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  for (final bool dark in <bool>[false, true]) {
+    testWidgets(
+      'car player lyrics and bottom glow follow cover color ($dark)',
+      (tester) async {
+        tester.view.physicalSize = const Size(1920, 1080);
+        tester.view.devicePixelRatio = 140 / 160;
+        addTearDown(tester.view.reset);
+        final cover = _CoverColor();
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              playerCoverColorControllerProvider.overrideWith(() => cover),
+              playerControllerProvider.overrideWith(_Player.new),
+              playerDisplayProvider.overrideWithValue(
+                const PlayerDisplayInfo(title: '音乐'),
+              ),
+              metadataControllerProvider.overrideWith(_Metadata.new),
+              playerLyricSettingsLogicProvider.overrideWithValue(
+                const PlayerLyricSettings(),
+              ),
+            ],
+            child: MaterialApp(
+              theme: dark ? carDarkTheme() : carLightTheme(),
+              home: const CarPlayerPage(),
+              builder: (_, child) => CarUiViewport(child: child!),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+        final container = find.descendant(
+          of: find.byType(CarCoverGlow),
+          matching: find.byType(AnimatedContainer),
+        );
+        LinearGradient gradient() =>
+            (tester.widget<AnimatedContainer>(container).decoration!
+                        as BoxDecoration)
+                    .gradient!
+                as LinearGradient;
+        Color? lyricColor() => tester
+            .widget<PlayerLyricPanel>(find.byType(PlayerLyricPanel))
+            .activeColor;
+        expect(gradient().colors.first.a, 0);
+        expect(lyricColor(), isNull);
+        for (final color in <Color>[Colors.orange, Colors.blue]) {
+          cover.setColor(color);
+          await tester.pumpAndSettle();
+          expect(lyricColor(), color);
+          expect(gradient().begin, Alignment.bottomCenter);
+          expect(gradient().end, Alignment.topCenter);
+          expect(gradient().stops!.last, lessThan(0.65));
+          expect(gradient().colors.first.a, closeTo(dark ? 0.18 : 0.30, 0.01));
+          expect(gradient().colors.last.a, 0);
+          expect(
+            HSLColor.fromColor(gradient().colors.first).hue,
+            closeTo(HSLColor.fromColor(color).hue, 0.5),
+          );
+          expect(find.byTooltip('暂停').hitTestable(), findsOneWidget);
+          expect(find.byTooltip('播放进度').hitTestable(), findsOneWidget);
+        }
+        cover.setColor(null);
+        await tester.pumpAndSettle();
+        expect(lyricColor(), isNull);
+        expect(gradient().colors.first.a, 0);
+        expect(tester.takeException(), isNull);
+      },
+    );
+  }
+
   testWidgets(
     'full player retains queue and shows full controls in the car viewport',
     (tester) async {
@@ -1170,6 +1240,7 @@ void main() {
             playerDisplayProvider.overrideWithValue(
               const PlayerDisplayInfo(title: '音乐'),
             ),
+            playerCoverColorControllerProvider.overrideWith(_CoverColor.new),
             metadataControllerProvider.overrideWith(_Metadata.new),
             playerLyricSettingsLogicProvider.overrideWithValue(
               const PlayerLyricSettings(),
