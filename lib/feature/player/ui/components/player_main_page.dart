@@ -24,7 +24,7 @@ class PlayerMainPage extends ConsumerWidget {
     required this.item,
     required this.display,
     required this.commentCount,
-    required this.availableParts,
+    required this.canOpenJumpPanel,
     required this.onPartTap,
     required this.onOpenCollectionSheet,
     required this.isFavorite,
@@ -43,7 +43,7 @@ class PlayerMainPage extends ConsumerWidget {
   final PlayableItem? item;
   final PlayerDisplayInfo display;
   final int? commentCount;
-  final List<PlayableItem> availableParts;
+  final bool canOpenJumpPanel;
   final VoidCallback? onPartTap;
   final VoidCallback? onOpenCollectionSheet;
   final bool isFavorite;
@@ -61,7 +61,6 @@ class PlayerMainPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final MediaQueryData mediaQuery = MediaQuery.of(context);
     final Size screenSize = mediaQuery.size;
-    final bool canOpenPartSelector = item != null && availableParts.length > 1;
     final bool isCompact = screenSize.height < 600;
     final double artworkSize = playerArtworkSize(screenSize);
     final AsyncValue<PlayerOnlineAudience?> onlineAudienceAsync = ref.watch(
@@ -105,7 +104,7 @@ class PlayerMainPage extends ConsumerWidget {
                           state: state,
                           item: item,
                           commentCount: commentCount,
-                          canOpenPartSelector: canOpenPartSelector,
+                          canOpenJumpPanel: canOpenJumpPanel,
                           onPartTap: onPartTap,
                           onOpenCollectionSheet: onOpenCollectionSheet,
                           onOpenComments: onOpenComments,
@@ -237,7 +236,7 @@ class _PlayerStatusAndTools extends StatelessWidget {
     required this.state,
     required this.item,
     required this.commentCount,
-    required this.canOpenPartSelector,
+    required this.canOpenJumpPanel,
     required this.onPartTap,
     required this.onOpenCollectionSheet,
     required this.onOpenComments,
@@ -246,7 +245,7 @@ class _PlayerStatusAndTools extends StatelessWidget {
   final PlayerState state;
   final PlayableItem? item;
   final int? commentCount;
-  final bool canOpenPartSelector;
+  final bool canOpenJumpPanel;
   final VoidCallback? onPartTap;
   final VoidCallback? onOpenCollectionSheet;
   final VoidCallback? onOpenComments;
@@ -263,7 +262,7 @@ class _PlayerStatusAndTools extends StatelessWidget {
           hasItem: item != null,
           item: item,
           commentCount: commentCount,
-          canOpenPartSelector: canOpenPartSelector,
+          canOpenJumpPanel: canOpenJumpPanel,
           onPartTap: onPartTap,
           onOpenCollectionSheet: onOpenCollectionSheet,
           onOpenComments: onOpenComments,
@@ -302,7 +301,7 @@ class _PlayerToolBar extends StatelessWidget {
     required this.hasItem,
     required this.item,
     required this.commentCount,
-    required this.canOpenPartSelector,
+    required this.canOpenJumpPanel,
     required this.onPartTap,
     required this.onOpenCollectionSheet,
     required this.onOpenComments,
@@ -312,7 +311,7 @@ class _PlayerToolBar extends StatelessWidget {
   final bool hasItem;
   final PlayableItem? item;
   final int? commentCount;
-  final bool canOpenPartSelector;
+  final bool canOpenJumpPanel;
   final VoidCallback? onPartTap;
   final VoidCallback? onOpenCollectionSheet;
   final VoidCallback? onOpenComments;
@@ -327,7 +326,7 @@ class _PlayerToolBar extends StatelessWidget {
       children: <Widget>[
         _PlayerPartToolButton(
           item: item,
-          isEnabled: canOpenPartSelector,
+          isEnabled: canOpenJumpPanel,
           onTap: onPartTap,
         ),
         _PlayerToolButton(
@@ -447,7 +446,7 @@ Future<void> _showPlayerQualitySheet({
   );
 }
 
-class _PlayerPartToolButton extends StatelessWidget {
+class _PlayerPartToolButton extends ConsumerWidget {
   const _PlayerPartToolButton({
     required this.item,
     required this.isEnabled,
@@ -459,8 +458,16 @@ class _PlayerPartToolButton extends StatelessWidget {
   final VoidCallback? onTap;
 
   @override
-  Widget build(BuildContext context) {
-    final String? badge = formatPartBadge(item);
+  Widget build(BuildContext context, WidgetRef ref) {
+    final String? badge = ref.watch(
+      playerControllerProvider.select(
+        (PlayerState state) => formatJumpBadge(
+          item: state.currentItem ?? item,
+          chapters: state.chapters,
+          position: state.position,
+        ),
+      ),
+    );
 
     return BadgedIconButton(
       noBadgeIcon: const HugeIcon(icon: HugeIcons.strokeRoundedListVideo),

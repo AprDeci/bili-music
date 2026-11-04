@@ -286,6 +286,12 @@ class _FakeHost implements PlayerSessionHost {
   Future<void> persistQueueSnapshot() async => calls.add('persist');
 
   @override
+  Future<void> enqueueAvailableParts(List<PlayableItem> parts) async {
+    calls.add('enqueueParts:${parts.length}');
+  }
+
+  @override
+  void scheduleChapterResolution() => calls.add('chapters');
   void resetEnginePlaybackSnapshot({
     required PlayerEngineProcessingState processingState,
   }) {}

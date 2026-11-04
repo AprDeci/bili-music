@@ -35,6 +35,7 @@ import 'package:bilimusic/feature/player/ui/components/player_dynamic_backdrop.d
 import 'package:bilimusic/feature/player/ui/lyrics/player_lyric_panel.dart';
 import 'package:bilimusic/feature/player/ui/lyrics/player_lyric_settings_sheet.dart';
 import 'package:bilimusic/feature/player/ui/lyrics/player_subtitle_sheet.dart';
+import 'package:bilimusic/feature/player/ui/components/player_chapter_selector.dart';
 import 'package:bilimusic/feature/player/ui/components/player_part_selector.dart';
 import 'package:bilimusic/feature/player/ui/components/player_queue_sheet.dart';
 import 'package:bilimusic/feature/player/logic/utils/player_ui_helpers.dart';
@@ -228,15 +229,30 @@ class _DesktopPlayerPageState extends ConsumerState<DesktopPlayerPage> {
                           context: context,
                           item: item,
                         ),
-                  onPartTap: item == null || state.availableParts.length < 2
+                  onPartTap:
+                      item == null ||
+                          (state.availableParts.length < 2 &&
+                              state.chapters.length < 2)
                       ? null
-                      : () => showDesktopPlayerPartSelectorPanel(
-                          context: context,
-                          parts: state.availableParts,
-                          currentItem: item,
-                          state: state,
-                          controller: controller,
-                        ),
+                      : () {
+                          if (state.availableParts.length > 1) {
+                            showDesktopPlayerPartSelectorPanel(
+                              context: context,
+                              parts: state.availableParts,
+                              currentItem: item,
+                              state: state,
+                              controller: controller,
+                            );
+                            return;
+                          }
+                          showDesktopPlayerChapterSelectorPanel(
+                            context: context,
+                            chapters: state.chapters,
+                            position: state.position,
+                            isPlaying: state.isPlaying,
+                            onSeek: controller.seek,
+                          );
+                        },
                   onOpenQueue: () => showDesktopPlayerQueuePanel(
                     context: context,
                     state: state,
@@ -871,7 +887,11 @@ class _DesktopPlayerControlDeck extends StatelessWidget {
                             BmIcons.partListWithBadge,
                             size: 26,
                           ),
-                          badge: formatPartBadge(item),
+                          badge: formatJumpBadge(
+                            item: item,
+                            chapters: state.chapters,
+                            position: state.position,
+                          ),
                           badgeOffset: const Offset(-4, -2),
                           tooltip: '选择分 P',
                           onPressed: onPartTap,

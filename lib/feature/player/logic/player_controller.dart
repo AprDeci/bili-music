@@ -9,11 +9,13 @@ import 'package:bilimusic/core/settings/app_settings_store.dart';
 import 'package:bilimusic/core/window/windows_taskbar_thumbnail_toolbar.dart';
 import 'package:bilimusic/feature/listening/logic/listening_progress_controller.dart';
 import 'package:bilimusic/feature/player/data/audio_cache_repository.dart';
+import 'package:bilimusic/feature/player/data/bili_chapter_repository.dart';
 import 'package:bilimusic/feature/player/data/bili_player_repository.dart';
 import 'package:bilimusic/feature/player/data/player_queue_local_repository.dart';
 import 'package:bilimusic/feature/player/domain/player_audio_quality_preference.dart';
 import 'package:bilimusic/feature/player/domain/player_event.dart';
 import 'package:bilimusic/feature/player/domain/playable_item.dart';
+import 'package:bilimusic/feature/player/domain/playback_chapter.dart';
 import 'package:bilimusic/feature/player/domain/persisted_playback_queue.dart';
 import 'package:bilimusic/feature/player/domain/player_state.dart';
 import 'package:bilimusic/feature/player/logic/media_session/app_audio_handler.dart';
@@ -26,6 +28,7 @@ import 'package:bilimusic/feature/player/logic/playback/player_audio_session_coo
 import 'package:bilimusic/feature/player/logic/player_event_hub.dart';
 import 'package:bilimusic/feature/player/logic/playback/player_settings_logic.dart';
 import 'package:bilimusic/feature/recent/logic/recent_playback_controller.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 final NotifierProvider<PlayerController, PlayerState> playerControllerProvider =
@@ -58,6 +61,9 @@ class PlayerController extends Notifier<PlayerState>
     logEvent: _logPlayerEvent,
   );
   late final PlayerQueueManager _queueManager = PlayerQueueManager();
+  late final BiliChapterRepository _chapterRepository = ref.read(
+    biliChapterRepositoryProvider,
+  );
   late final PlayerSessionCoordinator _session = PlayerSessionCoordinator(
     host: this,
     playbackLoader: _playbackLoader,
@@ -410,6 +416,7 @@ class PlayerController extends Notifier<PlayerState>
       currentItem: queue[resolvedIndex],
       queueSourceLabel: sourceLabel,
       availableParts: const <PlayableItem>[],
+      chapters: const <PlaybackChapter>[],
       audioStream: null,
       duration: null,
       position: Duration.zero,
@@ -458,6 +465,7 @@ class PlayerController extends Notifier<PlayerState>
       currentQueueIndex: currentIndex,
       currentItem: item,
       availableParts: const <PlayableItem>[],
+      chapters: const <PlaybackChapter>[],
       audioStream: null,
       duration: null,
       position: Duration.zero,
@@ -645,6 +653,7 @@ class PlayerController extends Notifier<PlayerState>
       currentQueueIndex: null,
       currentItem: null,
       availableParts: const <PlayableItem>[],
+      chapters: const <PlaybackChapter>[],
       audioStream: null,
       queueSourceLabel: null,
       isLoading: false,
@@ -764,6 +773,7 @@ class PlayerController extends Notifier<PlayerState>
       queueMode: snapshot.queueMode,
       queueSourceLabel: snapshot.queueSourceLabel,
       availableParts: const <PlayableItem>[],
+      chapters: const <PlaybackChapter>[],
       audioStream: null,
       duration: null,
       position: Duration.zero,
@@ -1076,6 +1086,46 @@ class PlayerController extends Notifier<PlayerState>
 
   @override
   void publishPlaybackState() => _publishPlaybackState();
+
+  @override
+  void scheduleChapterResolution() {
+    unawaited(_resolveChaptersForCurrentItem());
+  }
+
+  Future<void> _resolveChaptersForCurrentItem() async {
+    final PlayableItem? item = state.currentItem;
+    if (item == null) {
+      return;
+    }
+
+    final String stableId = item.stableId;
+    final List<PlaybackChapter> chapters;
+    try {
+      chapters = await _chapterRepository.fetchChapters(
+        item,
+        duration: state.duration,
+      );
+    } on Object catch (error) {
+      _logPlayerEvent(
+        'chapters:failed',
+        details: <String, Object?>{'error': error.toString()},
+      );
+      return;
+    }
+
+    if (!ref.mounted || state.currentItem?.stableId != stableId) {
+      return;
+    }
+    if (listEquals(state.chapters, chapters)) {
+      return;
+    }
+
+    state = state.copyWith(chapters: chapters);
+    _logPlayerEvent(
+      'chapters:resolved',
+      details: <String, Object?>{'count': chapters.length},
+    );
+  }
 
   @override
   Future<void> persistQueueSnapshot() => _persistQueueSnapshot();
