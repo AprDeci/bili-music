@@ -196,7 +196,12 @@ class _CarNavigation extends ConsumerWidget {
             tooltip: '设置',
             color: colors.onSurfaceVariant,
             constraints: const BoxConstraints(minWidth: 56, minHeight: 56),
-            onPressed: () => context.go('/settings'),
+            onPressed: () {
+              if (currentLocation != '/settings' &&
+                  !currentLocation.startsWith('/settings/')) {
+                context.push('/settings');
+              }
+            },
             icon: const Icon(Icons.settings_outlined),
           ),
         ],

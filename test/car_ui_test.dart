@@ -434,6 +434,133 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  for (final entry in ['mobile', 'car', 'reopen']) {
+    testWidgets(
+      'settings keeps back navigation after car toggle, entry=$entry',
+      (tester) async {
+        tester.view.physicalSize = const Size(1920, 1080);
+        tester.view.devicePixelRatio = 140 / 160;
+        addTearDown(tester.view.reset);
+        final settings = mobileHiddenBranches.last;
+        final router = GoRouter(
+          navigatorKey: rootNavigatorKey,
+          initialLocation: '/profile',
+          routes: [
+            StatefulShellRoute.indexedStack(
+              builder: (context, state, shell) => AppShell(
+                navigationShell: shell,
+                currentLocation: state.uri.path,
+              ),
+              branches: [
+                StatefulShellBranch(
+                  routes: [
+                    GoRoute(path: '/home', builder: (_, _) => const Scaffold()),
+                  ],
+                ),
+                StatefulShellBranch(
+                  routes: [
+                    GoRoute(
+                      path: '/profile',
+                      builder: (context, _) => Scaffold(
+                        body: TextButton(
+                          onPressed: () => context.push('/settings'),
+                          child: const Text('打开设置'),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                StatefulShellBranch(
+                  routes: [
+                    GoRoute(
+                      path: settings['path'] as String,
+                      builder: settings['builder'] as GoRouterWidgetBuilder,
+                      routes: settings['routes'] as List<RouteBase>,
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ],
+        );
+        addTearDown(router.dispose);
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              routerProvider.overrideWithValue(router),
+              carUiSettingLogicProvider.overrideWith(_Mode.new),
+              themeLogicProvider.overrideWithValue(const ThemeUiModel()),
+              appearanceSettingLogicProvider.overrideWithValue(false),
+              listeningProgressControllerProvider.overrideWithValue(
+                const ListeningState(),
+              ),
+              playerControllerProvider.overrideWith(_Player.new),
+              playerDisplayProvider.overrideWithValue(
+                const PlayerDisplayInfo(title: '音乐'),
+              ),
+              biliSessionControllerProvider.overrideWith(_Session.new),
+            ],
+            child: const MyApp(),
+          ),
+        );
+        await tester.pumpAndSettle();
+        if (entry == 'car') {
+          final container = ProviderScope.containerOf(
+            tester.element(find.byType(MyApp)),
+          );
+          await container
+              .read(carUiSettingLogicProvider.notifier)
+              .setEnabled(true);
+          await tester.pumpAndSettle();
+          await tester.tap(find.byTooltip('设置'));
+        } else {
+          await tester.tap(find.text('打开设置'));
+        }
+        await tester.pumpAndSettle();
+        expect(
+          find.byType(BackButton),
+          entry == 'car' ? findsNothing : findsOneWidget,
+        );
+        if (entry == 'car') {
+          await tester.tap(find.byTooltip('设置'));
+          await tester.pumpAndSettle();
+        }
+        await tester.tap(find.text('外观设置'));
+        await tester.pumpAndSettle();
+        if (entry != 'car') {
+          await tester.tap(find.text('启用车机 UI'));
+          await tester.pumpAndSettle();
+        }
+        if (entry == 'reopen') {
+          final route = ModalRoute.of(
+            tester.element(find.byType(ThemeSettingsPage)),
+          );
+          await tester.tap(find.byTooltip('设置'));
+          await tester.pumpAndSettle();
+          expect(
+            ModalRoute.of(tester.element(find.byType(ThemeSettingsPage))),
+            same(route),
+          );
+        }
+        await tester.tap(find.text('启用车机 UI'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.byType(BackButton));
+        await tester.pumpAndSettle();
+        expect(find.text('外观设置'), findsOneWidget);
+        expect(find.byType(BackButton), findsOneWidget);
+        if (entry == 'car') {
+          await tester.binding.handlePopRoute();
+        } else {
+          await tester.tap(find.byType(BackButton));
+        }
+        await tester.pumpAndSettle();
+        expect(find.text('打开设置'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+        await tester.pumpWidget(const SizedBox.shrink());
+      },
+    );
+  }
+
   testWidgets('car settings survive enabling on the reset phone display', (
     tester,
   ) async {
@@ -1016,7 +1143,11 @@ void main() {
     expect(router.routeInformationProvider.value.uri.path, '/home');
     await tester.tap(find.byTooltip('设置'));
     await tester.pumpAndSettle();
-    expect(router.routeInformationProvider.value.uri.path, '/settings');
+    expect(
+      GoRouterState.of(tester.element(find.text('设置页面'))).uri.path,
+      '/settings',
+    );
+    expect(router.canPop(), isTrue);
     expect(find.text('设置页面'), findsOneWidget);
     await tester.tap(find.byTooltip('搜索'));
     await tester.pumpAndSettle();
