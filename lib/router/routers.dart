@@ -38,6 +38,31 @@ final GlobalKey<NavigatorState> _rootNavigatorKey = GlobalKey<NavigatorState>();
 
 GlobalKey<NavigatorState> get rootNavigatorKey => _rootNavigatorKey;
 
+CommentTarget? commentTargetFromRoute({
+  required Object? extra,
+  required Map<String, String> queryParameters,
+}) {
+  if (extra is CommentTarget) {
+    return extra;
+  }
+  final int oid = int.tryParse(queryParameters['oid'] ?? '') ?? 0;
+  final int parsedAid = int.tryParse(queryParameters['aid'] ?? '') ?? 0;
+  final int aid = parsedAid > 0 ? parsedAid : oid;
+  final String bvid = queryParameters['bvid']?.trim() ?? '';
+  final int type = int.tryParse(queryParameters['type'] ?? '') ?? 1;
+  if (aid <= 0 && bvid.isEmpty) {
+    return null;
+  }
+  return CommentTarget(
+    oid: oid > 0 ? oid : aid,
+    type: type,
+    aid: aid > 0 ? aid : null,
+    bvid: bvid.isEmpty ? null : bvid,
+    title: queryParameters['title'],
+    coverUrl: queryParameters['cover'],
+  );
+}
+
 @riverpod
 GoRouter router(Ref ref) => GoRouter(
   navigatorKey: _rootNavigatorKey,
@@ -113,7 +138,13 @@ final List<Map<String, dynamic>> mobileHiddenBranches = [
   {
     'path': '/comments',
     'builder': (context, state) {
-      final CommentTarget target = state.extra! as CommentTarget;
+      final CommentTarget? target = commentTargetFromRoute(
+        extra: state.extra,
+        queryParameters: state.uri.queryParameters,
+      );
+      if (target == null) {
+        return const ErrorPage(message: '缺少评论目标参数');
+      }
       return CommentPage(target: target);
     },
   },
@@ -192,7 +223,13 @@ final List<Map<String, dynamic>> desktopTabs = [
   {
     'path': '/comments',
     'builder': (context, state) {
-      final CommentTarget target = state.extra! as CommentTarget;
+      final CommentTarget? target = commentTargetFromRoute(
+        extra: state.extra,
+        queryParameters: state.uri.queryParameters,
+      );
+      if (target == null) {
+        return const ErrorPage(message: '缺少评论目标参数');
+      }
       return CommentPage(target: target);
     },
   },
