@@ -34,33 +34,14 @@ class MobileShellScaffold extends ConsumerStatefulWidget {
 class _MobileShellScaffoldState extends ConsumerState<MobileShellScaffold> {
   static const Duration _animationDuration = Duration(milliseconds: 200);
   static const Curve _animationCurve = Curves.easeInOutCubic;
-  static const Duration _autoUpdateCheckDelay = Duration(milliseconds: 600);
 
   static const double _bottomBarCornerRadius = 40;
   static const double _bottomBarHeight = 52;
 
-  bool _didScheduleUpdateCheck = false;
-
   @override
   void initState() {
     super.initState();
-    _scheduleAutoUpdateCheck();
-  }
-
-  void _scheduleAutoUpdateCheck() {
-    if (_didScheduleUpdateCheck) {
-      return;
-    }
-
-    _didScheduleUpdateCheck = true;
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      await Future<void>.delayed(_autoUpdateCheckDelay);
-      if (!mounted) {
-        return;
-      }
-
-      await UpdateChecker.checkAndPrompt(context);
-    });
+    UpdateChecker.scheduleStartupCheck(context);
   }
 
   @override

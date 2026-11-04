@@ -3,12 +3,13 @@ import 'package:bilimusic/common/components/desktop/desktop_side_panel.dart';
 import 'package:bilimusic/common/util/platform_util.dart';
 import 'package:bilimusic/feature/profile/ui/desktop_profile_sidebar.dart';
 import 'package:bilimusic/feature/player/ui/desktop/desktop_player_bar.dart';
+import 'package:bilimusic/feature/updater/logic/update_checker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:window_manager/window_manager.dart';
 
-class DesktopShellScaffold extends ConsumerWidget {
+class DesktopShellScaffold extends ConsumerStatefulWidget {
   const DesktopShellScaffold({
     super.key,
     required this.navigationShell,
@@ -21,7 +22,19 @@ class DesktopShellScaffold extends ConsumerWidget {
   final String currentLocation;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<DesktopShellScaffold> createState() =>
+      _DesktopShellScaffoldState();
+}
+
+class _DesktopShellScaffoldState extends ConsumerState<DesktopShellScaffold> {
+  @override
+  void initState() {
+    super.initState();
+    UpdateChecker.scheduleStartupCheck(context);
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       body: SafeArea(
         child: Padding(
@@ -30,14 +43,17 @@ class DesktopShellScaffold extends ConsumerWidget {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
               if (PlatformUtil.isMacOS)
-                const _MacOSTitleBarDragArea(height: _macOSTitleBarHeight),
+                const _MacOSTitleBarDragArea(
+                  height: DesktopShellScaffold._macOSTitleBarHeight,
+                ),
               Expanded(
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: <Widget>[
-                    DesktopProfileSidebar(currentLocation: currentLocation),
+                    DesktopProfileSidebar(
+                      currentLocation: widget.currentLocation,
+                    ),
                     const SizedBox(width: 16),
-                    // 内容区
                     Expanded(
                       child: Column(
                         children: <Widget>[
@@ -48,10 +64,12 @@ class DesktopShellScaffold extends ConsumerWidget {
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: Column(
-                                children: [
+                                children: <Widget>[
                                   const DesktopTopBar(),
                                   Expanded(
-                                    child: Container(child: navigationShell),
+                                    child: Container(
+                                      child: widget.navigationShell,
+                                    ),
                                   ),
                                 ],
                               ),
