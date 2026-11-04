@@ -1,11 +1,9 @@
 import 'package:bilimusic/common/logger.dart';
-import 'package:bilimusic/common/util/platform_util.dart';
+import 'package:bilimusic/core/layout/app_layout.dart';
 import 'package:bilimusic/feature/player/domain/playable_item.dart';
 import 'package:bilimusic/feature/player/ui/player_page.dart';
 import 'package:bilimusic/feature/player/ui/car/car_player_page.dart';
 import 'package:bilimusic/router/car_ui_page.dart';
-import 'package:bilimusic/feature/setting/logic/car_ui_setting_logic.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
@@ -37,16 +35,13 @@ Future<void> openPlayerPage(
 
   _playerPageOpening = true;
   try {
-    if (PlatformUtil.isDesktop) {
+    if (AppLayout.isDesktopPlatform) {
       await context.push(playerRoutePath, extra: item);
       return;
     }
     markPlayerPageVisible();
     await (navigator ?? Navigator.of(context)).push<void>(
-      ProviderScope.containerOf(
-            context,
-            listen: false,
-          ).read(carUiSettingLogicProvider)
+      AppLayoutScope.of(context) == AppLayout.car
           ? MaterialPageRoute<void>(
               settings: const RouteSettings(name: playerNativeRouteName),
               builder: (_) => CarUiPage(
@@ -57,7 +52,7 @@ Future<void> openPlayerPage(
           : _createMobilePlayerRoute(item),
     );
   } finally {
-    if (PlatformUtil.isMobile) {
+    if (!AppLayout.isDesktopPlatform) {
       markPlayerPageHidden();
     }
     _playerPageOpening = false;

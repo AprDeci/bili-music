@@ -139,6 +139,19 @@ void main() {
     await container.read(carUiSettingLogicProvider.notifier).setEnabled(true);
     await tester.pumpAndSettle();
     expect(actual().colorScheme, carLightTheme().colorScheme);
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await tester.pumpAndSettle();
+    expect(actual().colorScheme, standard.colorScheme);
+    expect(container.read(carUiSettingLogicProvider), isTrue);
+    expect(
+      MediaQuery.sizeOf(tester.element(find.text('theme probe'))),
+      const Size(390, 844),
+    );
+    tester.view.physicalSize = const Size(844, 390);
+    await tester.pumpAndSettle();
+    expect(actual().colorScheme, carLightTheme().colorScheme);
     expect(container.read(themeLogicProvider).themeVariantId, 'skyBlue');
     final MaterialApp app = tester.widget(find.byType(MaterialApp));
     expect(app.darkTheme!.colorScheme, carDarkTheme().colorScheme);

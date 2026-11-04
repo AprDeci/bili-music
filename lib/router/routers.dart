@@ -1,5 +1,4 @@
 import 'package:bilimusic/common/components/error_page.dart';
-import 'package:bilimusic/common/util/platform_util.dart';
 import 'package:bilimusic/feature/comment/domain/comment_target.dart';
 import 'package:bilimusic/feature/comment/ui/comment_page.dart';
 import 'package:bilimusic/feature/auth/ui/auth_page.dart';
@@ -14,9 +13,8 @@ import 'package:bilimusic/feature/recent/ui/desktop/desktop_recent_playback_page
 import 'package:bilimusic/feature/recent/ui/recent_playback_page.dart';
 import 'package:bilimusic/feature/search/ui/search_page.dart';
 import 'package:bilimusic/feature/statistics/ui/song_statistics_page.dart';
-import 'package:bilimusic/feature/setting/logic/car_ui_setting_logic.dart';
+import 'package:bilimusic/core/layout/app_layout.dart';
 import 'package:bilimusic/feature/setting/ui/about_settings_page.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:bilimusic/feature/setting/ui/cache_settings_page.dart';
 import 'package:bilimusic/feature/setting/ui/app_transfer_page.dart';
 import 'package:bilimusic/feature/setting/ui/hotkey_settings_page.dart';
@@ -33,7 +31,6 @@ import 'package:bilimusic/feature/home/ui/car/car_home_page.dart';
 import 'package:bilimusic/feature/profile/ui/car/car_profile_page.dart';
 import 'package:bilimusic/feature/favorites/ui/car/car_favorite_collection_page.dart';
 import 'package:bilimusic/feature/recent/ui/car/car_recent_playback_page.dart';
-import 'package:bilimusic/feature/player/ui/car/car_player_page.dart';
 import 'package:bilimusic/router/util/mobile_branch_navigator_keys.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -50,7 +47,7 @@ GlobalKey<NavigatorState> get rootNavigatorKey => _rootNavigatorKey;
 GoRouter router(Ref ref) => GoRouter(
   navigatorKey: _rootNavigatorKey,
   initialLocation: '/home',
-  routes: PlatformUtil.isDesktop ? desktopRoutes : mobileRoutes,
+  routes: AppLayout.isDesktopPlatform ? desktopRoutes : mobileRoutes,
 );
 
 final List<Map<String, dynamic>> mobileTabs = [
@@ -80,7 +77,8 @@ final List<Map<String, dynamic>> mobileTabs = [
         builder: (context, state) {
           return CarUiPage(
             carBuilder: (_) => const CarRecentPlaybackPage(),
-            standardBuilder: (_) => PlatformUtil.isDesktop
+            standardBuilder: (_) =>
+                AppLayoutScope.of(context) == AppLayout.desktop
                 ? const DesktopRecentPlaybackPage()
                 : const RecentPlaybackPage(),
           );
@@ -93,7 +91,8 @@ final List<Map<String, dynamic>> mobileTabs = [
           return CarUiPage(
             carBuilder: (_) =>
                 CarFavoriteCollectionPage(collectionId: collectionId),
-            standardBuilder: (_) => PlatformUtil.isDesktop
+            standardBuilder: (_) =>
+                AppLayoutScope.of(context) == AppLayout.desktop
                 ? DesktopFavoriteCollectionPage(collectionId: collectionId)
                 : FavoriteCollectionPage(collectionId: collectionId),
           );
@@ -297,24 +296,9 @@ final List<RouteBase> desktopRoutes = [
     parentNavigatorKey: _rootNavigatorKey,
     pageBuilder: (context, state) {
       final PlayableItem? item = state.extra as PlayableItem?;
-      if (ProviderScope.containerOf(
-        context,
-        listen: false,
-      ).read(carUiSettingLogicProvider)) {
-        return MaterialPage<void>(
-          key: state.pageKey,
-          child: CarUiPage(
-            carBuilder: (_) => CarPlayerPage(initialItem: item),
-            standardBuilder: (_) => DesktopPlayerPage(initialItem: item),
-          ),
-        );
-      }
       return CustomTransitionPage<void>(
         key: state.pageKey,
-        child: CarUiPage(
-          carBuilder: (_) => CarPlayerPage(initialItem: item),
-          standardBuilder: (_) => DesktopPlayerPage(initialItem: item),
-        ),
+        child: DesktopPlayerPage(initialItem: item),
         transitionDuration: const Duration(milliseconds: 450),
         reverseTransitionDuration: const Duration(milliseconds: 400),
         transitionsBuilder: (context, animation, secondaryAnimation, child) {

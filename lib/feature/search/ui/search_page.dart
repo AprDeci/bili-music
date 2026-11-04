@@ -1,5 +1,5 @@
 import 'package:bilimusic/common/util/player_util.dart';
-import 'package:bilimusic/common/util/screen_util.dart';
+import 'package:bilimusic/core/layout/app_layout.dart';
 import 'package:bilimusic/feature/player/data/bili_player_repository.dart';
 import 'package:bilimusic/feature/player/domain/playable_item.dart';
 import 'package:bilimusic/feature/player/logic/player_controller.dart';
@@ -106,7 +106,7 @@ class _SearchPageState extends ConsumerState<SearchPage>
     final SearchPageController controller = ref.read(
       searchPageControllerProvider.notifier,
     );
-    final bool isDesktop = ScreenUtil.shouldUseDesktopShell(context);
+    final bool isDesktop = AppLayoutScope.of(context) == AppLayout.desktop;
     final String trimmedQuery = state.query.trim();
     final bool isShowingSuggestions =
         !isDesktop && _focusNode.hasFocus && trimmedQuery.isNotEmpty;

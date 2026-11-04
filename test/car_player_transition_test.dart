@@ -1,3 +1,4 @@
+import 'package:bilimusic/core/layout/app_layout.dart';
 import 'package:bilimusic/core/theme/car_theme.dart';
 import 'package:bilimusic/feature/metadata/domain/metadata_state.dart';
 import 'package:bilimusic/feature/metadata/logic/metadata_controller.dart';
@@ -11,9 +12,8 @@ import 'package:bilimusic/feature/player/logic/player_controller.dart';
 import 'package:bilimusic/feature/player/ui/car/car_player_page.dart';
 import 'package:bilimusic/feature/player/ui/car/car_player_panel.dart';
 import 'package:bilimusic/feature/player/ui/components/player_artwork.dart';
-import 'package:bilimusic/feature/setting/logic/car_ui_setting_logic.dart';
 import 'package:bilimusic/router/car_ui_viewport.dart';
-import 'package:bilimusic/router/routers.dart';
+import 'package:bilimusic/router/util/player_navigation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -29,13 +29,12 @@ const _item = PlayableItem(
 
 void main() {
   testWidgets(
-    'car player uses default route and flies artwork and controls in both directions',
+    'car player uses native material route and flies artwork and controls in both directions',
     (tester) async {
       tester.view.physicalSize = const Size(1920, 1080);
       tester.view.devicePixelRatio = 140 / 160;
       addTearDown(tester.view.reset);
       final router = GoRouter(
-        navigatorKey: rootNavigatorKey,
         routes: [
           GoRoute(
             path: '/',
@@ -46,16 +45,12 @@ void main() {
               ),
             ),
           ),
-          desktopRoutes.firstWhere(
-            (route) => route is GoRoute && route.path == '/player',
-          ),
         ],
       );
       addTearDown(router.dispose);
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            carUiSettingLogicProvider.overrideWithValue(true),
             playerControllerProvider.overrideWith(_Player.new),
             playerDisplayProvider.overrideWithValue(
               const PlayerDisplayInfo(title: '音乐', artist: '歌手'),
@@ -65,10 +60,13 @@ void main() {
               const PlayerLyricSettings(),
             ),
           ],
-          child: MaterialApp.router(
-            theme: carDarkTheme(),
-            routerConfig: router,
-            builder: (_, child) => CarUiViewport(child: child!),
+          child: AppLayoutScope(
+            layout: AppLayout.car,
+            child: MaterialApp.router(
+              theme: carDarkTheme(),
+              routerConfig: router,
+              builder: (_, child) => CarUiViewport(child: child!),
+            ),
           ),
         ),
       );
@@ -111,7 +109,9 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.byType(CarPlayerPage), findsOneWidget);
       final pageContext = tester.element(find.byType(CarPlayerPage));
-      expect(ModalRoute.of(pageContext)!.settings, isA<MaterialPage<void>>());
+      final route = ModalRoute.of(pageContext)!;
+      expect(route, isA<MaterialPageRoute<void>>());
+      expect(route.settings.name, playerNativeRouteName);
       expect(artworkHero, findsOneWidget);
       expect(controlsHero, findsOneWidget);
       final destination = tester.getRect(find.byType(PlayerArtworkFrame));

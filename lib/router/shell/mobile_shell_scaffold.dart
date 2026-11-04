@@ -1,10 +1,10 @@
 import 'package:bilimusic/common/util/color_util.dart';
+import 'package:bilimusic/core/layout/shell_content_insets.dart';
 import 'package:bilimusic/feature/player/domain/player_state.dart';
 import 'package:bilimusic/feature/player/logic/player_controller.dart';
 import 'package:bilimusic/feature/player/ui/mini/mini_player_bar.dart';
 import 'package:bilimusic/feature/player/ui/mini/mini_player_glass_bar.dart';
 import 'package:bilimusic/feature/setting/logic/appearance_setting_logic.dart';
-import 'package:bilimusic/feature/updater/logic/update_checker.dart';
 import 'package:bilimusic/router/util/mobile_branch_navigator_keys.dart';
 import 'package:bilimusic/router/util/mobile_chrome_config.dart';
 import 'package:bilimusic/router/util/player_navigation.dart';
@@ -34,34 +34,9 @@ class MobileShellScaffold extends ConsumerStatefulWidget {
 class _MobileShellScaffoldState extends ConsumerState<MobileShellScaffold> {
   static const Duration _animationDuration = Duration(milliseconds: 200);
   static const Curve _animationCurve = Curves.easeInOutCubic;
-  static const Duration _autoUpdateCheckDelay = Duration(milliseconds: 600);
 
   static const double _bottomBarCornerRadius = 40;
   static const double _bottomBarHeight = 52;
-
-  bool _didScheduleUpdateCheck = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _scheduleAutoUpdateCheck();
-  }
-
-  void _scheduleAutoUpdateCheck() {
-    if (_didScheduleUpdateCheck) {
-      return;
-    }
-
-    _didScheduleUpdateCheck = true;
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      await Future<void>.delayed(_autoUpdateCheckDelay);
-      if (!mounted) {
-        return;
-      }
-
-      await UpdateChecker.checkAndPrompt(context);
-    });
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -85,7 +60,7 @@ class _MobileShellScaffoldState extends ConsumerState<MobileShellScaffold> {
     return GlassPage(
       child: Scaffold(
         extendBody: true,
-        body: widget.navigationShell,
+        body: ShellContentInsets(child: widget.navigationShell),
         bottomNavigationBar: _animateChrome(
           visible: showTabs || showMiniPlayer,
           child: () => SafeArea(
@@ -114,7 +89,7 @@ class _MobileShellScaffoldState extends ConsumerState<MobileShellScaffold> {
                   child: () => Padding(
                     padding: EdgeInsets.only(
                       top: showMiniPlayer ? 10 : 0,
-                      bottom: useGlassBar ? 8 : 0,
+                      bottom: useGlassBar ? 11 : 0,
                     ),
                     child: FractionallySizedBox(
                       widthFactor: 0.85,
@@ -184,7 +159,7 @@ class _MobileShellScaffoldState extends ConsumerState<MobileShellScaffold> {
             const LiquidGlassSettings().glassColor,
       ),
       spacing: 4,
-      verticalPadding: 0,
+      verticalPadding: 4,
       barHeight: _bottomBarHeight,
       horizontalPadding: 0,
       unselectedIconColor: theme.textTheme.bodyMedium?.color ?? Colors.black,

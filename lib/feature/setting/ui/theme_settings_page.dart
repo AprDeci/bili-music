@@ -1,4 +1,4 @@
-import 'package:bilimusic/common/util/platform_util.dart';
+import 'package:bilimusic/core/layout/app_layout.dart';
 import 'package:bilimusic/core/theme/theme_catalog.dart';
 import 'package:bilimusic/core/theme/theme_logic.dart';
 import 'package:bilimusic/core/theme/theme_ui_model.dart';
@@ -15,6 +15,7 @@ class ThemeSettingsPage extends ConsumerWidget {
     final ThemeData theme = Theme.of(context);
     final ThemeUiModel themeState = ref.watch(themeLogicProvider);
     final bool carUi = ref.watch(carUiSettingLogicProvider);
+    final bool useCarLayout = AppLayoutScope.of(context) == AppLayout.car;
     final bool useGlassBar = ref.watch(appearanceSettingLogicProvider);
 
     return Scaffold(
@@ -22,27 +23,29 @@ class ThemeSettingsPage extends ConsumerWidget {
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
         children: <Widget>[
-          SwitchListTile.adaptive(
-            title: const Text('启用车机 UI'),
-            subtitle: const Text('常驻播放区、大按钮与简化布局，与普通横屏独立'),
-            secondary: const Icon(Icons.directions_car_rounded),
-            value: carUi,
-            onChanged: (bool value) async {
-              try {
-                await ref
-                    .read(carUiSettingLogicProvider.notifier)
-                    .setEnabled(value);
-              } on Object {
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('车机 UI 设置保存失败，请重试')),
-                  );
+          if (!AppLayout.isDesktopPlatform) ...[
+            SwitchListTile.adaptive(
+              title: const Text('启用车机 UI'),
+              subtitle: const Text('横屏使用常驻播放区与大按钮，竖屏使用移动端布局'),
+              secondary: const Icon(Icons.directions_car_rounded),
+              value: carUi,
+              onChanged: (bool value) async {
+                try {
+                  await ref
+                      .read(carUiSettingLogicProvider.notifier)
+                      .setEnabled(value);
+                } on Object {
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('车机 UI 设置保存失败，请重试')),
+                    );
+                  }
                 }
-              }
-            },
-          ),
-          const SizedBox(height: 16),
-          if (!carUi && PlatformUtil.isMobile)
+              },
+            ),
+            const SizedBox(height: 16),
+          ],
+          if (!useCarLayout && !AppLayout.isDesktopPlatform)
             SwitchListTile.adaptive(
               title: const Text('启用玻璃导航栏/播放栏'),
               value: useGlassBar,
@@ -78,7 +81,7 @@ class ThemeSettingsPage extends ConsumerWidget {
               ),
             ),
           ),
-          if (!carUi) ...<Widget>[
+          if (!useCarLayout) ...<Widget>[
             const SizedBox(height: 24),
             Text('主题颜色', style: theme.textTheme.titleMedium),
             const SizedBox(height: 8),

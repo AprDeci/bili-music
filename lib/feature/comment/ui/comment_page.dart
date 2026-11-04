@@ -1,6 +1,6 @@
 import 'package:bilimusic/common/components/cached_image.dart';
 import 'package:bilimusic/common/components/status_view.dart';
-import 'package:bilimusic/common/util/platform_util.dart';
+import 'package:bilimusic/core/layout/app_layout.dart';
 import 'package:bilimusic/feature/comment/domain/comment_item.dart';
 import 'package:bilimusic/feature/comment/domain/comment_sort.dart';
 import 'package:bilimusic/feature/comment/domain/comment_state.dart';
@@ -88,7 +88,9 @@ class _CommentPageState extends ConsumerState<CommentPage> {
     final ColorScheme colorScheme = theme.colorScheme;
 
     return Scaffold(
-      appBar: PlatformUtil.isDesktop ? null : AppBar(title: const Text('评论')),
+      appBar: AppLayoutScope.of(context) == AppLayout.desktop
+          ? null
+          : AppBar(title: const Text('评论')),
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       floatingActionButton: AnimatedSlide(
         duration: const Duration(milliseconds: 180),

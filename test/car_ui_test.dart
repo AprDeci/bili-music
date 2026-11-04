@@ -1,5 +1,19 @@
 import 'dart:io';
 
+import 'package:bilimusic/myApp.dart';
+import 'package:bilimusic/core/layout/app_layout.dart';
+import 'package:bilimusic/feature/player/logic/lyrics/desktop_lyrics_controller.dart';
+import 'package:bilimusic/feature/player/ui/desktop/desktop_player_page.dart';
+import 'package:bilimusic/feature/player/ui/player_page.dart';
+import 'package:bilimusic/feature/player/ui/mini/mini_player_bar.dart';
+import 'package:bilimusic/feature/player/ui/mini/mini_player_glass_bar.dart';
+import 'package:bilimusic/router/util/player_navigation.dart';
+import 'package:bilimusic/router/routers.dart';
+import 'package:bilimusic/router/shell/app_shell.dart';
+import 'package:bilimusic/router/shell/mobile_shell_scaffold.dart';
+import 'package:bilimusic/feature/listening/domain/listening_state.dart';
+import 'package:bilimusic/feature/listening/logic/listening_progress_controller.dart';
+
 import 'package:bilimusic/common/components/cached_avatar.dart';
 import 'package:bilimusic/common/components/car/car_side_panel.dart';
 import 'package:bilimusic/feature/player/ui/car/car_player_queue_panel.dart';
@@ -8,6 +22,10 @@ import 'package:bilimusic/core/bili/session/bili_session.dart';
 import 'package:bilimusic/core/bili/session/bili_session_controller.dart';
 import 'package:bilimusic/core/hive/hive_keys.dart';
 import 'package:bilimusic/core/theme/car_theme.dart';
+import 'package:bilimusic/core/theme/theme_logic.dart';
+import 'package:bilimusic/core/theme/theme_ui_model.dart';
+import 'package:bilimusic/feature/setting/logic/appearance_setting_logic.dart';
+import 'package:bilimusic/feature/setting/ui/theme_settings_page.dart';
 import 'package:bilimusic/core/settings/app_settings_store.dart';
 import 'package:bilimusic/feature/favorites/domain/favorite_collection.dart';
 import 'package:bilimusic/feature/favorites/domain/favorites_state.dart';
@@ -104,20 +122,33 @@ void main() {
     );
     addTearDown(router.dispose);
     final container = ProviderContainer(
-      overrides: [carUiSettingLogicProvider.overrideWith(_Mode.new)],
+      overrides: [
+        carUiSettingLogicProvider.overrideWith(_Mode.new),
+        routerProvider.overrideWithValue(router),
+        themeLogicProvider.overrideWithValue(const ThemeUiModel()),
+        listeningProgressControllerProvider.overrideWithValue(
+          const ListeningState(),
+        ),
+      ],
     );
     addTearDown(container.dispose);
     await tester.pumpWidget(
-      UncontrolledProviderScope(
-        container: container,
-        child: MaterialApp.router(routerConfig: router),
-      ),
+      UncontrolledProviderScope(container: container, child: const MyApp()),
     );
     expect(find.text('standard'), findsOneWidget);
     await container.read(carUiSettingLogicProvider.notifier).setEnabled(true);
     await tester.pump();
     expect(find.text('car'), findsOneWidget);
     expect(router.routeInformationProvider.value.uri.path, '/');
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await tester.pump();
+    expect(find.text('standard'), findsOneWidget);
+    expect(container.read(carUiSettingLogicProvider), isTrue);
+    tester.view.physicalSize = const Size(844, 390);
+    await tester.pump();
+    expect(find.text('car'), findsOneWidget);
     await container.read(carUiSettingLogicProvider.notifier).setEnabled(false);
     await tester.pump();
     expect(find.text('standard'), findsOneWidget);
@@ -315,6 +346,9 @@ void main() {
   });
 
   testWidgets('remote collection sync failure can be retried', (tester) async {
+    tester.view.physicalSize = const Size(1920, 1080);
+    tester.view.devicePixelRatio = 140 / 160;
+    addTearDown(tester.view.reset);
     final favorites = _Favorites()..fail = true;
     await tester.pumpWidget(
       _scope(
@@ -399,6 +433,411 @@ void main() {
     expect(gradient().colors.first.a, 0);
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets('car settings survive enabling on the reset phone display', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1080, 2280);
+    tester.view.devicePixelRatio = 440 / 160;
+    addTearDown(tester.view.reset);
+    final container = ProviderContainer(
+      overrides: [
+        carUiSettingLogicProvider.overrideWith(_Mode.new),
+        themeLogicProvider.overrideWithValue(const ThemeUiModel()),
+        appearanceSettingLogicProvider.overrideWithValue(false),
+        listeningProgressControllerProvider.overrideWithValue(
+          const ListeningState(),
+        ),
+        playerControllerProvider.overrideWith(_Player.new),
+        playerDisplayProvider.overrideWithValue(
+          const PlayerDisplayInfo(title: '音乐'),
+        ),
+        biliSessionControllerProvider.overrideWith(_Session.new),
+      ],
+    );
+    addTearDown(container.dispose);
+    final router = GoRouter(
+      initialLocation: '/settings/theme',
+      routes: [
+        StatefulShellRoute.indexedStack(
+          builder: (context, state, shell) =>
+              AppShell(navigationShell: shell, currentLocation: state.uri.path),
+          branches: [
+            StatefulShellBranch(
+              routes: [
+                GoRoute(
+                  path: '/settings/theme',
+                  builder: (_, _) => const ThemeSettingsPage(),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ],
+    );
+    addTearDown(router.dispose);
+    final appContainer = ProviderContainer(
+      parent: container,
+      overrides: [routerProvider.overrideWithValue(router)],
+    );
+    addTearDown(appContainer.dispose);
+    await tester.pumpWidget(
+      UncontrolledProviderScope(container: appContainer, child: const MyApp()),
+    );
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+    await tester.tap(find.text('启用车机 UI'));
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+    expect(container.read(carUiSettingLogicProvider), isTrue);
+    expect(router.routeInformationProvider.value.uri.path, '/settings/theme');
+    for (final size in [
+      const Size(1080, 2280),
+      const Size(2280, 1080),
+      const Size(1080, 2280),
+    ]) {
+      tester.view.physicalSize = size;
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+      final bool landscape = size.width > size.height;
+      expect(
+        find.byType(CarShellScaffold),
+        landscape ? findsOneWidget : findsNothing,
+      );
+      expect(
+        find.byType(MobileShellScaffold),
+        landscape ? findsNothing : findsOneWidget,
+      );
+      expect(
+        find.byWidgetPredicate(
+          (widget) => widget is CarUiViewport && widget.enabled,
+        ),
+        landscape ? findsOneWidget : findsNothing,
+      );
+      expect(container.read(carUiSettingLogicProvider), isTrue);
+      expect(container.read(playerControllerProvider).queue, [_item]);
+      expect(router.routeInformationProvider.value.uri.path, '/settings/theme');
+      expect(find.text('跟随系统').hitTestable(), findsOneWidget);
+    }
+    await tester.tap(find.text('启用车机 UI'));
+    await tester.pumpAndSettle();
+    expect(container.read(carUiSettingLogicProvider), isFalse);
+    expect(find.byType(CarShellScaffold), findsNothing);
+    expect(tester.takeException(), isNull);
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pump(const Duration(seconds: 1));
+    appContainer.dispose();
+    container.dispose();
+  });
+
+  testWidgets(
+    'open player switches between portrait mobile and landscape car',
+    (tester) async {
+      tester.view.physicalSize = const Size(1080, 2280);
+      tester.view.devicePixelRatio = 440 / 160;
+      addTearDown(tester.view.reset);
+      final router = GoRouter(
+        navigatorKey: rootNavigatorKey,
+        routes: [
+          StatefulShellRoute.indexedStack(
+            builder: (context, state, shell) => AppShell(
+              navigationShell: shell,
+              currentLocation: state.uri.path,
+            ),
+            branches: [
+              StatefulShellBranch(
+                routes: [
+                  GoRoute(
+                    path: '/',
+                    builder: (context, _) => Scaffold(
+                      body: TextButton(
+                        onPressed: () => openPlayerPage(context),
+                        child: const Text('打开播放器'),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              StatefulShellBranch(
+                routes: [
+                  GoRoute(
+                    path: '/profile',
+                    builder: (_, _) => const Scaffold(),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ],
+      );
+      addTearDown(router.dispose);
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            routerProvider.overrideWithValue(router),
+            carUiSettingLogicProvider.overrideWithValue(true),
+            appearanceSettingLogicProvider.overrideWithValue(false),
+            biliSessionControllerProvider.overrideWith(_Session.new),
+            themeLogicProvider.overrideWithValue(const ThemeUiModel()),
+            listeningProgressControllerProvider.overrideWithValue(
+              const ListeningState(),
+            ),
+            favoritesControllerProvider.overrideWith(_Favorites.new),
+            playerControllerProvider.overrideWith(_Player.new),
+            playerDisplayProvider.overrideWithValue(
+              const PlayerDisplayInfo(title: '音乐'),
+            ),
+            playerCoverColorControllerProvider.overrideWith(_CoverColor.new),
+            metadataControllerProvider.overrideWith(_Metadata.new),
+            playerLyricSettingsLogicProvider.overrideWithValue(
+              const PlayerLyricSettings(),
+            ),
+          ],
+          child: const MyApp(),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('打开播放器'));
+      await tester.pumpAndSettle();
+      final route = ModalRoute.of(tester.element(find.byType(PlayerPage)));
+      for (final size in [
+        const Size(1080, 2280),
+        const Size(2280, 1080),
+        const Size(1080, 2280),
+      ]) {
+        tester.view.physicalSize = size;
+        await tester.pumpAndSettle();
+        final bool landscape = size.width > size.height;
+        expect(
+          find.byType(PlayerPage),
+          landscape ? findsNothing : findsOneWidget,
+        );
+        expect(
+          find.byType(CarPlayerPage),
+          landscape ? findsOneWidget : findsNothing,
+        );
+        expect(
+          ModalRoute.of(
+            tester.element(find.byType(landscape ? CarPlayerPage : PlayerPage)),
+          ),
+          same(route),
+        );
+        final container = ProviderScope.containerOf(
+          tester.element(find.byType(MyApp)),
+        );
+        expect(container.read(carUiSettingLogicProvider), isTrue);
+        expect(container.read(playerControllerProvider).queue, [_item]);
+        expect(playerPageVisibilityListenable.value, isTrue);
+        expect(find.byType(MiniPlayerBar), findsNothing);
+        expect(find.byType(MiniPlayerGlassBar), findsNothing);
+        expect(tester.takeException(), isNull);
+      }
+      Navigator.of(tester.element(find.byType(PlayerPage))).pop();
+      await tester.pumpAndSettle();
+      expect(find.text('打开播放器'), findsOneWidget);
+      await tester.pumpWidget(const SizedBox.shrink());
+    },
+  );
+
+  testWidgets('shell rotation preserves nested navigation and page state', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final branchKey = GlobalKey<NavigatorState>();
+    final probeKey = GlobalKey<_ShellProbeState>();
+    final router = GoRouter(
+      navigatorKey: rootNavigatorKey,
+      initialLocation: '/home',
+      routes: [
+        StatefulShellRoute.indexedStack(
+          builder: (context, state, shell) =>
+              AppShell(navigationShell: shell, currentLocation: state.uri.path),
+          branches: [
+            StatefulShellBranch(
+              navigatorKey: branchKey,
+              routes: [
+                GoRoute(
+                  path: '/home',
+                  builder: (_, _) => _ShellProbe(key: probeKey),
+                  routes: [
+                    GoRoute(
+                      path: 'detail',
+                      builder: (_, _) =>
+                          const Scaffold(body: Text('nested detail')),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            StatefulShellBranch(
+              routes: [
+                GoRoute(
+                  path: '/profile',
+                  builder: (_, _) =>
+                      const Scaffold(body: Text('profile probe')),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ],
+    );
+    addTearDown(router.dispose);
+    final container = ProviderContainer(
+      overrides: [
+        routerProvider.overrideWithValue(router),
+        carUiSettingLogicProvider.overrideWith(_Mode.new),
+        themeLogicProvider.overrideWithValue(const ThemeUiModel()),
+        appearanceSettingLogicProvider.overrideWithValue(false),
+        listeningProgressControllerProvider.overrideWithValue(
+          const ListeningState(),
+        ),
+        playerControllerProvider.overrideWith(_Player.new),
+        playerDisplayProvider.overrideWithValue(
+          const PlayerDisplayInfo(title: '音乐'),
+        ),
+        biliSessionControllerProvider.overrideWith(_Session.new),
+      ],
+    );
+    addTearDown(container.dispose);
+    await tester.pumpWidget(
+      UncontrolledProviderScope(container: container, child: const MyApp()),
+    );
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField), 'preserved input');
+    await tester.drag(find.byType(ListView), const Offset(0, -220));
+    await tester.pumpAndSettle();
+    final probe = probeKey.currentState!;
+    final offset = probe.scroll.offset;
+    final navigator = branchKey.currentState!;
+    final root = rootNavigatorKey.currentState;
+    final player = container.read(playerControllerProvider);
+    final controller = container.read(playerControllerProvider.notifier);
+    router.push('/home/detail');
+    await tester.pumpAndSettle();
+    final detail = ModalRoute.of(tester.element(find.text('nested detail')));
+    await container.read(carUiSettingLogicProvider.notifier).setEnabled(true);
+    for (final size in [
+      const Size(844, 390),
+      const Size(390, 844),
+      const Size(844, 390),
+    ]) {
+      tester.view.physicalSize = size;
+      await tester.pumpAndSettle();
+      expect(rootNavigatorKey.currentState, same(root));
+      expect(branchKey.currentState, same(navigator));
+      expect(probeKey.currentState, same(probe));
+      expect(probe.text.text, 'preserved input');
+      expect(probe.scroll.offset, offset);
+      expect(
+        ModalRoute.of(tester.element(find.text('nested detail'))),
+        same(detail),
+      );
+      expect(container.read(playerControllerProvider), same(player));
+      expect(
+        container.read(playerControllerProvider.notifier),
+        same(controller),
+      );
+      expect(
+        GoRouterState.of(tester.element(find.text('nested detail'))).uri.path,
+        '/home/detail',
+      );
+      expect(tester.takeException(), isNull);
+    }
+    await container.read(carUiSettingLogicProvider.notifier).setEnabled(false);
+    await tester.pumpAndSettle();
+    expect(branchKey.currentState, same(navigator));
+    router.pop();
+    await tester.pumpAndSettle();
+    expect(find.byType(TextField), findsOneWidget);
+    expect(probeKey.currentState, same(probe));
+    expect(probe.text.text, 'preserved input');
+    expect(probe.scroll.offset, offset);
+    await tester.pumpWidget(const SizedBox.shrink());
+    container.dispose();
+  });
+
+  testWidgets(
+    'desktop ignores saved car mode at every window size',
+    (tester) async {
+      tester.view.physicalSize = const Size(1280, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      final router = GoRouter(
+        navigatorKey: rootNavigatorKey,
+        routes: [
+          GoRoute(path: '/', builder: (_, _) => const ThemeSettingsPage()),
+          desktopRoutes.firstWhere(
+            (route) => route is GoRoute && route.path == '/player',
+          ),
+        ],
+      );
+      addTearDown(router.dispose);
+      final container = ProviderContainer(
+        overrides: [
+          routerProvider.overrideWithValue(router),
+          carUiSettingLogicProvider.overrideWithValue(true),
+          themeLogicProvider.overrideWithValue(const ThemeUiModel()),
+          appearanceSettingLogicProvider.overrideWithValue(false),
+          listeningProgressControllerProvider.overrideWithValue(
+            const ListeningState(),
+          ),
+          favoritesControllerProvider.overrideWith(_Favorites.new),
+          playerControllerProvider.overrideWith(_Player.new),
+          playerDisplayProvider.overrideWithValue(
+            const PlayerDisplayInfo(title: '音乐'),
+          ),
+          playerCoverColorControllerProvider.overrideWith(_CoverColor.new),
+          desktopLyricsControllerProvider.overrideWithValue(false),
+          metadataControllerProvider.overrideWith(_Metadata.new),
+          playerLyricSettingsLogicProvider.overrideWithValue(
+            const PlayerLyricSettings(),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+      await tester.pumpWidget(
+        UncontrolledProviderScope(container: container, child: const MyApp()),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('启用车机 UI'), findsNothing);
+      expect(find.text('主题颜色'), findsOneWidget);
+      final context = tester.element(find.byType(ThemeSettingsPage));
+      expect(AppLayoutScope.of(context), AppLayout.desktop);
+      openPlayerPage(context);
+      await tester.pumpAndSettle();
+      final route = ModalRoute.of(
+        tester.element(find.byType(DesktopPlayerPage)),
+      );
+      for (final width in [959.0, 960.0, 1280.0]) {
+        tester.view.physicalSize = Size(width, 900);
+        await tester.pumpAndSettle();
+        final context = tester.element(find.byType(DesktopPlayerPage));
+        expect(
+          AppLayoutScope.of(context),
+          width < 960 ? AppLayout.mobile : AppLayout.desktop,
+        );
+        expect(ModalRoute.of(context), same(route));
+        expect(find.byType(CarPlayerPage), findsNothing);
+        expect(
+          find.byWidgetPredicate(
+            (widget) => widget is CarUiViewport && widget.enabled,
+          ),
+          findsNothing,
+        );
+        expect(container.read(carUiSettingLogicProvider), isTrue);
+        expect(GoRouterState.of(context).uri.path, '/player');
+        expect(tester.takeException(), isNull);
+      }
+      router.pop();
+      await tester.pumpAndSettle();
+      expect(find.text('启用车机 UI'), findsNothing);
+      await tester.pumpWidget(const SizedBox.shrink());
+    },
+    variant: TargetPlatformVariant({TargetPlatform.macOS}),
+  );
 
   testWidgets('car shell keeps full controls in the car viewport', (
     tester,
@@ -839,6 +1278,36 @@ Widget _scope(Widget child, {_Favorites? favorites, BiliSession? session}) =>
         builder: (context, child) => CarUiViewport(child: child!),
       ),
     );
+
+class _ShellProbe extends StatefulWidget {
+  const _ShellProbe({super.key});
+
+  @override
+  State<_ShellProbe> createState() => _ShellProbeState();
+}
+
+class _ShellProbeState extends State<_ShellProbe> {
+  final TextEditingController text = TextEditingController();
+  final ScrollController scroll = ScrollController();
+
+  @override
+  void dispose() {
+    text.dispose();
+    scroll.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => Scaffold(
+    body: ListView(
+      controller: scroll,
+      children: [
+        TextField(controller: text),
+        const SizedBox(height: 1600),
+      ],
+    ),
+  );
+}
 
 class _Session extends BiliSessionController {
   @override

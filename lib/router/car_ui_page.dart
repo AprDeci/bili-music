@@ -1,8 +1,7 @@
-import 'package:bilimusic/feature/setting/logic/car_ui_setting_logic.dart';
+import 'package:bilimusic/core/layout/app_layout.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class CarUiPage extends ConsumerWidget {
+class CarUiPage extends StatelessWidget {
   const CarUiPage({
     super.key,
     required this.carBuilder,
@@ -13,8 +12,8 @@ class CarUiPage extends ConsumerWidget {
   final WidgetBuilder standardBuilder;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) =>
-      ref.watch(carUiSettingLogicProvider)
+  Widget build(BuildContext context) =>
+      AppLayoutScope.of(context) == AppLayout.car
       ? carBuilder(context)
       : standardBuilder(context);
 }

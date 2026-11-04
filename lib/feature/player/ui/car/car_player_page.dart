@@ -7,7 +7,6 @@ import 'package:bilimusic/feature/player/logic/player_controller.dart';
 import 'package:bilimusic/feature/player/ui/car/car_player_panel.dart';
 import 'package:bilimusic/feature/player/ui/components/player_artwork.dart';
 import 'package:bilimusic/feature/player/ui/lyrics/player_lyric_panel.dart';
-import 'package:bilimusic/router/util/player_navigation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -26,7 +25,6 @@ class _CarPlayerPageState extends ConsumerState<CarPlayerPage> {
   @override
   void initState() {
     super.initState();
-    markPlayerPageVisible();
     _scheduleInitialItem();
   }
 
@@ -36,12 +34,6 @@ class _CarPlayerPageState extends ConsumerState<CarPlayerPage> {
     if (oldWidget.initialItem != widget.initialItem) {
       _scheduleInitialItem();
     }
-  }
-
-  @override
-  void dispose() {
-    markPlayerPageHidden();
-    super.dispose();
   }
 
   void _scheduleInitialItem() {

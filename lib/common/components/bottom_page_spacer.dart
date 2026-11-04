@@ -1,4 +1,4 @@
-import 'package:bilimusic/common/util/screen_util.dart';
+import 'package:bilimusic/core/layout/shell_content_insets.dart';
 import 'package:flutter/material.dart';
 
 class BottomPageSpacer extends StatelessWidget {
@@ -6,10 +6,6 @@ class BottomPageSpacer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (ScreenUtil.shouldUseDesktopShell(context)) {
-      return const SizedBox.shrink();
-    }
-
-    return SizedBox(height: MediaQuery.paddingOf(context).bottom + 16);
+    return SizedBox(height: ShellContentInsets.bottomOf(context));
   }
 }

@@ -1,6 +1,7 @@
 import 'package:bilimusic/common/components/car/car_content_widgets.dart';
 import 'package:bilimusic/common/domain/collection_kind.dart';
 import 'package:bilimusic/core/theme/car_theme.dart';
+import 'package:bilimusic/core/layout/app_layout.dart';
 import 'package:bilimusic/feature/favorites/domain/favorite_collection.dart';
 import 'package:bilimusic/feature/favorites/domain/favorite_entry.dart';
 import 'package:bilimusic/feature/favorites/domain/favorite_membership.dart';
@@ -74,9 +75,12 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [playerControllerProvider.overrideWith(() => player)],
-        child: const MaterialApp(
-          home: Scaffold(
-            body: CarSongList(items: _items, sourceLabel: '最近播放'),
+        child: const AppLayoutScope(
+          layout: AppLayout.car,
+          child: MaterialApp(
+            home: Scaffold(
+              body: CarSongList(items: _items, sourceLabel: '最近播放'),
+            ),
           ),
         ),
       ),
@@ -309,14 +313,17 @@ Future<void> _pump(
       child: MaterialApp(
         theme: carLightTheme(),
         builder: FlutterSmartDialog.init(),
-        home: Scaffold(
-          body: collectionId == null
-              ? const CarFavoriteCollectionPage(collectionId: 'local:1')
-              : ValueListenableBuilder<String>(
-                  valueListenable: collectionId,
-                  builder: (_, id, _) =>
-                      CarFavoriteCollectionPage(collectionId: id),
-                ),
+        home: AppLayoutScope(
+          layout: AppLayout.car,
+          child: Scaffold(
+            body: collectionId == null
+                ? const CarFavoriteCollectionPage(collectionId: 'local:1')
+                : ValueListenableBuilder<String>(
+                    valueListenable: collectionId,
+                    builder: (_, id, _) =>
+                        CarFavoriteCollectionPage(collectionId: id),
+                  ),
+          ),
         ),
       ),
     ),
