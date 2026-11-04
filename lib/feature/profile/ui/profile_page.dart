@@ -17,7 +17,7 @@ import 'package:bilimusic/feature/favorites/logic/favorites_controller.dart';
 import 'package:bilimusic/feature/favorites/ui/components/collection_kind_dialog.dart';
 import 'package:bilimusic/feature/profile/ui/components/remote_collection_import_dialog.dart';
 import 'package:bilimusic/feature/profile/ui/components/user_card.dart';
-import 'package:bilimusic/feature/up/logic/favorite_up_controller.dart';
+import 'package:bilimusic/feature/recent/logic/recent_playback_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -61,7 +61,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
     final int likedCount = favoritesState.itemCountForCollection(
       FavoriteCollection.likedCollectionId,
     );
-    final int favoriteUpCount = ref.watch(favoriteUpControllerProvider).length;
+    final int recentCount = ref.watch(recentPlaybackControllerProvider).length;
     final List<FavoriteCollection> remoteCollections = favoritesState
         .collections
         .where((FavoriteCollection collection) => collection.isRemote)
@@ -100,7 +100,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
           const SizedBox(height: 18),
           _ProfileQuickActions(
             likedCount: likedCount,
-            favoriteUpCount: favoriteUpCount,
+            recentCount: recentCount,
             onLikedTap: () => context.push(
               '/profile/favorites/${FavoriteCollection.likedCollectionId}',
             ),
@@ -109,7 +109,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                   details: details,
                   collection: favoritesState.likedCollection,
                 ),
-            onFavoriteUpTap: () => context.push('/profile/favorite-ups'),
+            onRecentTap: () => context.push('/profile/recent'),
           ),
           const SizedBox(height: 16),
           _ProfileSectionHeader(
@@ -725,17 +725,17 @@ class _CollectionNameDialogState extends State<_CollectionNameDialog> {
 class _ProfileQuickActions extends StatelessWidget {
   const _ProfileQuickActions({
     required this.likedCount,
-    required this.favoriteUpCount,
+    required this.recentCount,
     required this.onLikedTap,
     required this.onLikedLongPressStart,
-    required this.onFavoriteUpTap,
+    required this.onRecentTap,
   });
 
   final int likedCount;
-  final int favoriteUpCount;
+  final int recentCount;
   final VoidCallback onLikedTap;
   final GestureLongPressStartCallback onLikedLongPressStart;
-  final VoidCallback onFavoriteUpTap;
+  final VoidCallback onRecentTap;
 
   @override
   Widget build(BuildContext context) {
@@ -753,10 +753,10 @@ class _ProfileQuickActions extends StatelessWidget {
         const SizedBox(width: 12),
         Expanded(
           child: _ProfileQuickActionCard(
-            icon: BmIcons.bilier,
-            title: 'UP主',
-            count: favoriteUpCount,
-            onTap: onFavoriteUpTap,
+            icon: Icons.history_rounded,
+            title: '历史记录',
+            count: recentCount,
+            onTap: onRecentTap,
           ),
         ),
         const SizedBox(width: 12),

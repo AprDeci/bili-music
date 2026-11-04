@@ -19,7 +19,6 @@ import 'package:bilimusic/feature/favorites/logic/favorites_controller.dart';
 import 'package:bilimusic/feature/favorites/ui/components/collection_kind_dialog.dart';
 import 'package:bilimusic/feature/profile/ui/components/remote_collection_import_dialog.dart';
 import 'package:bilimusic/feature/recent/logic/recent_playback_controller.dart';
-import 'package:bilimusic/feature/up/logic/favorite_up_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_smart_dialog/flutter_smart_dialog.dart';
@@ -68,12 +67,9 @@ class _DesktopProfileSidebarState extends ConsumerState<DesktopProfileSidebar> {
       FavoriteCollection.likedCollectionId,
     );
     final int recentCount = ref.watch(recentPlaybackControllerProvider).length;
-    final int favoriteUpCount = ref.watch(favoriteUpControllerProvider).length;
     final bool isLikedSelected =
         widget.currentLocation ==
         '/profile/favorites/${FavoriteCollection.likedCollectionId}';
-    final bool isFavoriteUpSelected =
-        widget.currentLocation == '/profile/favorite-ups';
     final bool isRecentSelected = widget.currentLocation == '/profile/recent';
     final List<FavoriteCollection> remoteCollections = favoritesState
         .collections
@@ -151,27 +147,13 @@ class _DesktopProfileSidebarState extends ConsumerState<DesktopProfileSidebar> {
           const SizedBox(height: 8),
           _SidebarListItem(
             leading: Icon(
-              BmIcons.bilier,
-              size: 24,
-              color: isFavoriteUpSelected
-                  ? Colors.black
-                  : colorScheme.onSurfaceVariant,
-            ),
-            title: 'UP主',
-            count: favoriteUpCount,
-            isSelected: isFavoriteUpSelected,
-            onTap: () => context.go('/profile/favorite-ups'),
-          ),
-          const SizedBox(height: 8),
-          _SidebarListItem(
-            leading: Icon(
               Icons.history_rounded,
               size: 22,
               color: isRecentSelected
                   ? Colors.black
                   : colorScheme.onSurfaceVariant,
             ),
-            title: '最近播放',
+            title: '历史记录',
             count: recentCount,
             isSelected: isRecentSelected,
             onTap: () => context.go('/profile/recent'),

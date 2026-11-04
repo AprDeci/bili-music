@@ -25,6 +25,7 @@ import 'package:bilimusic/feature/favorites/ui/components/remote_collection_sync
 import 'package:bilimusic/feature/player/domain/playable_item.dart';
 import 'package:bilimusic/feature/player/logic/player_controller.dart';
 import 'package:bilimusic/feature/player/ui/components/player_collection_sheet.dart';
+import 'package:bilimusic/feature/up/ui/components/favorite_up_list.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -48,7 +49,7 @@ class _DesktopFavoriteCollectionPageState
   String _searchQuery = '';
   Set<String> _selectedItemIds = <String>{};
   bool _selectionMode = false;
-  bool _showFavoritedSeasons = false;
+  int _selectedSection = 0;
 
   @override
   void initState() {
@@ -427,18 +428,20 @@ class _DesktopFavoriteCollectionPageState
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
           DesktopTabSwitcher(
-            labels: const <String>['歌曲', '合集'],
-            selectedIndex: _showFavoritedSeasons ? 1 : 0,
+            labels: const <String>['歌曲', '合集', 'UP主'],
+            selectedIndex: _selectedSection,
             onChanged: (int index) {
               setState(() {
-                _showFavoritedSeasons = index == 1;
+                _selectedSection = index;
               });
             },
           ),
           Expanded(
-            child: _showFavoritedSeasons
-                ? const FavoritedSeasonsList()
-                : songsBody,
+            child: switch (_selectedSection) {
+              1 => const FavoritedSeasonsList(),
+              2 => const FavoriteUpList(),
+              _ => songsBody,
+            },
           ),
         ],
       ),
