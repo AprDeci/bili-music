@@ -1485,6 +1485,21 @@ void main() {
     expect(find.byType(CarPlayerQueueContent), findsOneWidget);
     expect(find.byType(BottomSheet), findsNothing);
     expect(find.text('播放队列'), findsOneWidget);
+    final Finder segmented = find.byWidgetPredicate(
+      (widget) => widget is SegmentedButton,
+    );
+    final Finder header = find
+        .ancestor(of: segmented, matching: find.byType(Row))
+        .first;
+    expect(
+      tester.getSize(segmented).width,
+      lessThan(tester.getSize(header).width - 56 - 20),
+    );
+    expect(tester.getSize(segmented).height, greaterThanOrEqualTo(48));
+    final SegmentedButton<dynamic> tabs = tester.widget(segmented);
+    final RoundedRectangleBorder shape =
+        tabs.style!.shape!.resolve({})! as RoundedRectangleBorder;
+    expect(shape.borderRadius, BorderRadius.circular(12));
     final Material listMaterial = tester.widget(
       find
           .ancestor(of: find.byType(ListView), matching: find.byType(Material))
@@ -1503,7 +1518,7 @@ void main() {
       tester.getRect(find.byType(ListTile)).height * 140 / 160,
       greaterThanOrEqualTo(84),
     );
-    await tester.tap(find.byTooltip('关闭播放队列'));
+    await tester.tap(find.byTooltip('关闭'));
     await tester.pumpAndSettle();
     expect(find.byType(CarSidePanel), findsNothing);
     expect(player.skippedIndex, isNull);
