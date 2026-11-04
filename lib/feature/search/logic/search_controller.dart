@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:bilimusic/common/domain/paged_state.dart';
 import 'package:bilimusic/core/net/bili_client.dart';
 import 'package:bilimusic/feature/search/data/bili_search_repository.dart';
@@ -27,12 +29,19 @@ class SearchPageController extends _$SearchPageController {
     searchHistoryStoreProvider,
   );
   int _suggestionRequestId = 0;
+  int _searchRequestId = 0;
   String? _cacheKeyword;
   bool _videoLoaded = false;
   bool _userLoaded = false;
+  Timer? _suggestionDebounceTimer;
+
+  static const Duration suggestionDebounce = Duration(milliseconds: 300);
 
   @override
   SearchState build() {
+    ref.onDispose(() {
+      _suggestionDebounceTimer?.cancel();
+    });
     return SearchState(recentKeywords: _historyStore.load());
   }
 
@@ -43,11 +52,23 @@ class SearchPageController extends _$SearchPageController {
       errorMessage: null,
       suggestionsErrorMessage: null,
     );
-    loadSuggestions(nextQuery);
+    _scheduleSuggestions(nextQuery);
+  }
+
+  void _scheduleSuggestions(String term) {
+    _suggestionDebounceTimer?.cancel();
+    _suggestionDebounceTimer = Timer(suggestionDebounce, () {
+      if (state.query.trimLeft() != term) {
+        return;
+      }
+      loadSuggestions(term);
+    });
   }
 
   Future<void> submitSearch([String? value]) async {
     final String nextQuery = (value ?? state.query).trim();
+    _suggestionDebounceTimer?.cancel();
+    final int requestId = ++_searchRequestId;
     if (nextQuery.isEmpty) {
       state = state.copyWith(
         query: '',
@@ -93,10 +114,16 @@ class SearchPageController extends _$SearchPageController {
         type: state.type,
         page: 1,
       );
+      if (requestId != _searchRequestId) {
+        return;
+      }
       _recordLoadedPage(state.type, page);
 
       state = _applyFirstPage(state, state.type, page);
     } on Object catch (error) {
+      if (requestId != _searchRequestId) {
+        return;
+      }
       state = state.copyWith(
         videoResults: const PagedState<SearchResultItem>(),
         userResultsPage: const PagedState<SearchUserItem>(),
@@ -120,6 +147,7 @@ class SearchPageController extends _$SearchPageController {
 
     final SearchType activeType = state.type;
     final int nextPage = state.currentPage + 1;
+    final int requestId = _searchRequestId;
     state = _applyLoadingMore(state, activeType);
 
     try {
@@ -128,10 +156,16 @@ class SearchPageController extends _$SearchPageController {
         type: activeType,
         page: nextPage,
       );
+      if (requestId != _searchRequestId) {
+        return;
+      }
       _recordLoadedPage(activeType, page);
 
       state = _applyNextPage(state, activeType, page);
     } on Object catch (error) {
+      if (requestId != _searchRequestId) {
+        return;
+      }
       state = _applyPageFailure(state, activeType, error);
     }
   }
@@ -142,6 +176,8 @@ class SearchPageController extends _$SearchPageController {
   }
 
   Future<void> loadSuggestions(String value) async {
+    _suggestionDebounceTimer?.cancel();
+    _suggestionDebounceTimer = null;
     final String term = value.trim();
     final int requestId = ++_suggestionRequestId;
 
@@ -244,15 +280,22 @@ class SearchPageController extends _$SearchPageController {
     }
 
     state = state.copyWith(isLoading: true);
+    final int requestId = _searchRequestId;
     try {
       final _SearchPageLoadResult page = await _loadPage(
         submittedQuery,
         type: type,
         page: 1,
       );
+      if (requestId != _searchRequestId) {
+        return;
+      }
       _recordLoadedPage(type, page);
       state = _applyFirstPage(state, type, page);
     } on Object catch (error) {
+      if (requestId != _searchRequestId) {
+        return;
+      }
       state = _applyPageFailure(
         state.copyWith(isLoading: false),
         type,
@@ -263,7 +306,10 @@ class SearchPageController extends _$SearchPageController {
   }
 
   void clearQuery() {
+    _suggestionDebounceTimer?.cancel();
+    _suggestionDebounceTimer = null;
     _suggestionRequestId++;
+    _searchRequestId++;
     state = state.copyWith(
       query: '',
       submittedQuery: null,
