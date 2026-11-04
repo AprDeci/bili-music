@@ -1277,6 +1277,20 @@ void main() {
         tester.element(find.byType(CarPlayerPage)),
       );
       expect(container.read(playerControllerProvider).queue, [_item]);
+      final Rect progress = tester.getRect(find.byTooltip('播放进度'));
+      for (final label in ['手动匹配歌词', '歌词偏移']) {
+        final Finder button = find.byTooltip(label);
+        expect(button.hitTestable(), findsOneWidget);
+        final Rect bounds = tester.getRect(button);
+        expect(bounds.bottom, lessThanOrEqualTo(progress.top));
+        expect(bounds.shortestSide, greaterThanOrEqualTo(56));
+      }
+      expect(find.byTooltip('歌词外观'), findsNothing);
+      await tester.tap(find.byTooltip('歌词偏移'));
+      await tester.pumpAndSettle();
+      expect(find.byTooltip('歌词延后 0.5 秒'), findsOneWidget);
+      Navigator.of(tester.element(find.byType(CarPlayerPage))).pop();
+      await tester.pumpAndSettle();
       tester.view.physicalSize = const Size(1920, 1080);
       tester.view.devicePixelRatio = 140 / 160;
       await tester.pump();

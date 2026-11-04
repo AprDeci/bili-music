@@ -49,6 +49,7 @@ String _metadataSearchKeyword(MetadataState metadataState, PlayableItem? item) {
 Future<void> showManualLyricSearchSheet({
   required BuildContext context,
   required String initialKeyword,
+  VoidCallback? onApplied,
 }) async {
   await showModalBottomSheet<void>(
     context: context,
@@ -57,15 +58,19 @@ Future<void> showManualLyricSearchSheet({
       borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
     ),
     builder: (BuildContext context) {
-      return _LyricSearchSheet(initialKeyword: initialKeyword);
+      return _LyricSearchSheet(
+        initialKeyword: initialKeyword,
+        onApplied: onApplied,
+      );
     },
   );
 }
 
 class _LyricSearchSheet extends ConsumerStatefulWidget {
-  const _LyricSearchSheet({required this.initialKeyword});
+  const _LyricSearchSheet({required this.initialKeyword, this.onApplied});
 
   final String initialKeyword;
+  final VoidCallback? onApplied;
 
   @override
   ConsumerState<_LyricSearchSheet> createState() => _LyricSearchSheetState();
@@ -234,6 +239,7 @@ class _LyricSearchSheetState extends ConsumerState<_LyricSearchSheet> {
     final MetadataState nextState = ref.read(metadataControllerProvider);
     if (nextState.manualSearchError == null ||
         nextState.manualSearchError!.isEmpty) {
+      widget.onApplied?.call();
       navigator.pop();
     }
   }

@@ -9,6 +9,8 @@ import 'package:bilimusic/feature/player/logic/player_controller.dart';
 import 'package:bilimusic/feature/player/ui/car/car_player_panel.dart';
 import 'package:bilimusic/feature/player/ui/components/player_artwork.dart';
 import 'package:bilimusic/feature/player/ui/lyrics/player_lyric_panel.dart';
+import 'package:bilimusic/feature/player/ui/lyrics/player_lyric_page.dart';
+import 'package:bilimusic/feature/player/logic/lyrics/player_lyric_settings_logic.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -95,6 +97,11 @@ class _CarPlayerPageState extends ConsumerState<CarPlayerPage> {
     final ThemeData theme = Theme.of(context);
     final PlayerState state = ref.watch(playerControllerProvider);
     final display = ref.watch(playerDisplayProvider);
+    final bool showTranslation = ref.watch(
+      playerLyricSettingsLogicProvider.select(
+        (settings) => settings.showTranslation,
+      ),
+    );
     final Color? coverColor = ref.watch(playerCoverColorControllerProvider);
     final PlayerController controller = ref.read(
       playerControllerProvider.notifier,
@@ -210,10 +217,17 @@ class _CarPlayerPageState extends ConsumerState<CarPlayerPage> {
                               : (_) {},
                           activeColor: coverColor,
                           variant: PlayerLyricPanelVariant.desktop,
+                          showTranslation: showTranslation,
                         ),
                       ),
                     ),
                     const SizedBox(height: 16),
+                    if (state.currentItem != null)
+                      PlayerLyricToolbar(
+                        item: state.currentItem!,
+                        activeColor: coverColor,
+                        carMode: true,
+                      ),
                     Hero(
                       tag: 'car-player-controls',
                       createRectTween: (begin, end) =>
