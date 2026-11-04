@@ -26,4 +26,16 @@ class RecentPlaybackController extends _$RecentPlaybackController {
     );
     state = nextEntries;
   }
+
+  Future<void> removeEntry(String stableId) async {
+    final List<RecentPlaybackEntry> nextEntries = await _repository.removeEntry(
+      stableId,
+    );
+    state = nextEntries;
+  }
+
+  Future<void> clear() async {
+    await _repository.clearAll();
+    state = const <RecentPlaybackEntry>[];
+  }
 }

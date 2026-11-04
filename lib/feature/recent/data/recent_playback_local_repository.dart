@@ -35,15 +35,42 @@ class RecentPlaybackLocalRepository {
   }
 
   Future<List<RecentPlaybackEntry>> saveEntry(RecentPlaybackEntry entry) async {
-    final List<RecentPlaybackEntry> nextEntries = <RecentPlaybackEntry>[
-      entry,
-      ...load().where(
-        (RecentPlaybackEntry item) => item.stableId != entry.stableId,
-      ),
-    ].take(maxEntries).toList(growable: false);
+    await _deleteByStableId(entry.stableId);
+    await _box.put(entry.stableId, entry);
+    await _trimOverflow();
+    return load();
+  }
 
-    await _box.clear();
-    await _box.addAll(nextEntries);
-    return nextEntries;
+  Future<List<RecentPlaybackEntry>> removeEntry(String stableId) async {
+    await _deleteByStableId(stableId);
+    return load();
+  }
+
+  Future<void> clearAll() {
+    return _box.clear();
+  }
+
+  Future<void> _deleteByStableId(String stableId) async {
+    final List<dynamic> keys = _box.keys.toList(growable: false);
+    for (final dynamic key in keys) {
+      final RecentPlaybackEntry? value = _box.get(key);
+      if (value != null && value.stableId == stableId) {
+        await _box.delete(key);
+      }
+    }
+  }
+
+  Future<void> _trimOverflow() async {
+    final List<RecentPlaybackEntry> sorted = _box.values.toList(growable: false)
+      ..sort(
+        (RecentPlaybackEntry a, RecentPlaybackEntry b) =>
+            b.playedAtEpochMs.compareTo(a.playedAtEpochMs),
+      );
+    if (sorted.length <= maxEntries) {
+      return;
+    }
+    for (final RecentPlaybackEntry stale in sorted.skip(maxEntries)) {
+      await _deleteByStableId(stale.stableId);
+    }
   }
 }

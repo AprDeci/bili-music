@@ -20,10 +20,16 @@ class PlayerUtil {
     required List<PlayableItem> items,
     int startIndex = 0,
     String? sourceLabel,
+    Duration initialPosition = Duration.zero,
   }) async {
     final Future<void> setQueueFuture = ref
         .read(playerControllerProvider.notifier)
-        .setQueue(items, startIndex: startIndex, sourceLabel: sourceLabel);
+        .setQueue(
+          items,
+          startIndex: startIndex,
+          sourceLabel: sourceLabel,
+          initialPosition: initialPosition,
+        );
 
     if (context.mounted && PlatformUtil.isMobile) {
       await openPlayerPage(context);

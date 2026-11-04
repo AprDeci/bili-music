@@ -121,6 +121,53 @@ void main() {
       'item ${count - RecentPlaybackLocalRepository.maxEntries}',
     );
   });
+
+  test('removeEntry only deletes the matching stable id', () async {
+    await repository.saveEntry(
+      _entry(aid: 1, cid: 11, title: 'a', playedAt: 1),
+    );
+    await repository.saveEntry(
+      _entry(aid: 2, cid: 22, title: 'b', playedAt: 2),
+    );
+
+    final List<RecentPlaybackEntry> result = await repository.removeEntry(
+      'aid:1:cid:11',
+    );
+
+    expect(result.map((RecentPlaybackEntry e) => e.stableId), <String>[
+      'aid:2:cid:22',
+    ]);
+    expect(box.length, 1);
+  });
+
+  test('clearAll empties the recent box', () async {
+    await repository.saveEntry(
+      _entry(aid: 1, cid: 11, title: 'a', playedAt: 1),
+    );
+    await repository.saveEntry(
+      _entry(aid: 2, cid: 22, title: 'b', playedAt: 2),
+    );
+
+    await repository.clearAll();
+
+    expect(repository.load(), isEmpty);
+    expect(box.length, 0);
+  });
+
+  test(
+    'saveEntry replaces an existing stable id instead of duplicating',
+    () async {
+      await repository.saveEntry(
+        _entry(aid: 1, cid: 11, title: 'old', playedAt: 1),
+      );
+      await repository.saveEntry(
+        _entry(aid: 1, cid: 11, title: 'new', playedAt: 2),
+      );
+
+      expect(box.length, 1);
+      expect(repository.load().single.title, 'new');
+    },
+  );
 }
 
 RecentPlaybackEntry _entry({

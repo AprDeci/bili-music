@@ -393,6 +393,7 @@ class _FakePlayerController extends PlayerController {
     int startIndex = 0,
     String? sourceLabel,
     bool autoplay = true,
+    Duration initialPosition = Duration.zero,
   }) async {}
 
   @override

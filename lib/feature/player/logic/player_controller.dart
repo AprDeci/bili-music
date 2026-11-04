@@ -383,6 +383,7 @@ class PlayerController extends Notifier<PlayerState>
     int startIndex = 0,
     String? sourceLabel,
     bool autoplay = true,
+    Duration initialPosition = Duration.zero,
   }) async {
     if (items.isEmpty) {
       return;
@@ -425,7 +426,7 @@ class PlayerController extends Notifier<PlayerState>
     await _session.load(
       resolvedIndex,
       autoplay: autoplay,
-      initialPosition: Duration.zero,
+      initialPosition: initialPosition,
       generation: generation,
     );
   }
