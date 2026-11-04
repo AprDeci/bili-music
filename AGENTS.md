@@ -161,6 +161,15 @@ Before running any `flutter` or `dart` command, first ensure the command is exec
 - Preserve the current visual language unless the task asks for a redesign.
 - Keep desktop and mobile behavior sensible; current layouts use `ConstrainedBox` and padded cards.
 
+## UI Design Principles
+Avoid unnecessary secondary labels, descriptions, and redundant explanatory text. Let the layout communicate structure and meaning through visual hierarchy, grouping, spacing, alignment, typography, and clear control names.
+
+Before adding any text, ask whether it provides essential information or merely repeats what the interface already communicates.
+
+Prefer improving unclear layouts over adding explanatory paragraphs. Keep interfaces concise, purposeful, and visually balanced.
+
+Preserve essential labels, accessibility, input constraints, error messages, and confirmation text for consequential actions. Never sacrifice usability for minimalism.
+
 ## Networking and Persistence
 - Network access goes through `BiliClient` and Dio.
 - Keep API base configuration in `lib/core/net/net_config.dart`.
