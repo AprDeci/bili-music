@@ -97,6 +97,10 @@ final List<Map<String, dynamic>> mobileTabs = [
         },
       ),
       GoRoute(
+        path: 'downloads',
+        builder: (context, state) => const DownloadsPage(),
+      ),
+      GoRoute(
         path: 'favorites/:collectionId',
         builder: (context, state) {
           final String collectionId = state.pathParameters['collectionId']!;
@@ -171,10 +175,6 @@ final List<Map<String, dynamic>> mobileHiddenBranches = [
         builder: (context, state) => const ProgressBarSettingsPage(),
       ),
       GoRoute(
-        path: 'downloads',
-        builder: (context, state) => const DownloadsPage(),
-      ),
-      GoRoute(
         path: 'app-transfer',
         builder: (context, state) => const AppTransferPage(),
       ),
@@ -217,10 +217,6 @@ final List<Map<String, dynamic>> desktopTabs = [
       GoRoute(
         path: 'progress',
         builder: (context, state) => const ProgressBarSettingsPage(),
-      ),
-      GoRoute(
-        path: 'downloads',
-        builder: (context, state) => const DownloadsPage(),
       ),
       GoRoute(
         path: 'app-transfer',

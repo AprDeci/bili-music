@@ -2,6 +2,7 @@ import 'package:bilimusic/common/components/common_attach_menu.dart';
 import 'package:bilimusic/common/domain/collection_kind.dart';
 import 'package:bilimusic/core/bili/session/bili_session.dart';
 import 'package:bilimusic/core/bili/session/bili_session_controller.dart';
+import 'package:bilimusic/feature/download/logic/download_controller.dart';
 import 'package:bilimusic/feature/favorites/domain/bili_favorite_collection_page.dart';
 import 'package:bilimusic/feature/favorites/domain/favorite_collection.dart';
 import 'package:bilimusic/feature/favorites/domain/favorites_state.dart';
@@ -329,6 +330,7 @@ Future<ProviderContainer> _pumpProfile(
       recentPlaybackControllerProvider.overrideWithValue(
         const <RecentPlaybackEntry>[],
       ),
+      downloadControllerProvider.overrideWith(_EmptyDownloads.new),
     ],
   );
   addTearDown(container.dispose);
@@ -485,4 +487,9 @@ class _Favorites extends FavoritesController {
     );
     return true;
   }
+}
+
+class _EmptyDownloads extends DownloadController {
+  @override
+  DownloadState build() => const DownloadState();
 }

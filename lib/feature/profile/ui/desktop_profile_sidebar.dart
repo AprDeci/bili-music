@@ -10,6 +10,7 @@ import 'package:bilimusic/core/bili/session/bili_session.dart';
 import 'package:bilimusic/core/bili/session/bili_session_controller.dart';
 import 'package:bilimusic/feature/auth/data/bili_auth_repository.dart';
 import 'package:bilimusic/feature/auth/logic/bili_auth_controller.dart';
+import 'package:bilimusic/feature/download/logic/download_controller.dart';
 import 'package:bilimusic/feature/favorites/domain/favorite_collection.dart';
 import 'package:bilimusic/feature/favorites/domain/favorite_entry.dart';
 import 'package:bilimusic/feature/favorites/domain/favorites_state.dart';
@@ -65,10 +66,16 @@ class _DesktopProfileSidebarState extends ConsumerState<DesktopProfileSidebar> {
       FavoriteCollection.likedCollectionId,
     );
     final int recentCount = ref.watch(recentPlaybackControllerProvider).length;
+    final int downloadCount = ref
+        .watch(downloadControllerProvider)
+        .tracks
+        .length;
     final bool isLikedSelected =
         widget.currentLocation ==
         '/profile/favorites/${FavoriteCollection.likedCollectionId}';
     final bool isRecentSelected = widget.currentLocation == '/profile/recent';
+    final bool isDownloadsSelected =
+        widget.currentLocation == '/profile/downloads';
     final bool isLoggedIn =
         (ref.watch(biliSessionControllerProvider)?.isLoggedIn ?? false);
     final List<FavoriteCollection> visibleCollections =
@@ -157,6 +164,20 @@ class _DesktopProfileSidebarState extends ConsumerState<DesktopProfileSidebar> {
             count: recentCount,
             isSelected: isRecentSelected,
             onTap: () => context.go('/profile/recent'),
+          ),
+          const SizedBox(height: 8),
+          _SidebarListItem(
+            leading: Icon(
+              Icons.library_music_rounded,
+              size: 22,
+              color: isDownloadsSelected
+                  ? Colors.black
+                  : colorScheme.onSurfaceVariant,
+            ),
+            title: '本地',
+            count: downloadCount,
+            isSelected: isDownloadsSelected,
+            onTap: () => context.go('/profile/downloads'),
           ),
           const SizedBox(height: 22),
           _CollectionHeader(
