@@ -1151,6 +1151,24 @@ void main() {
     );
     expect(router.canPop(), isTrue);
     expect(find.text('设置页面'), findsOneWidget);
+    for (final tab in ['推荐', '我的']) {
+      await tester.tap(find.text(tab));
+      await tester.pumpAndSettle();
+      expect(find.text('设置页面'), findsNothing);
+      expect(find.text(tab == '推荐' ? '最近播放' : '我的页面'), findsOneWidget);
+      await tester.tap(find.byTooltip('设置'));
+      await tester.pumpAndSettle();
+      expect(find.text('设置页面'), findsOneWidget);
+      for (final destination in [tab, tab == '推荐' ? '我的' : '推荐', tab]) {
+        await tester.tap(find.text(destination));
+        await tester.pumpAndSettle();
+        expect(find.text('设置页面'), findsNothing);
+        expect(
+          find.text(destination == '推荐' ? '最近播放' : '我的页面'),
+          findsOneWidget,
+        );
+      }
+    }
     await tester.tap(find.byTooltip('搜索'));
     await tester.pumpAndSettle();
     expect(router.routeInformationProvider.value.uri.path, '/search');

@@ -34,7 +34,10 @@ class CarShellScaffold extends StatelessWidget {
                   children: <Widget>[
                     _CarNavigation(
                       currentLocation: currentLocation,
-                      onSelect: (int index) => navigationShell.goBranch(index),
+                      onSelect: (int index) => navigationShell.goBranch(
+                        index,
+                        initialLocation: true,
+                      ),
                     ),
                     Expanded(
                       child: Material(
