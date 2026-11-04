@@ -1,6 +1,11 @@
 import 'dart:io';
 
 import 'package:bilimusic/myApp.dart';
+import 'package:bilimusic/feature/comment/domain/comment_state.dart';
+import 'package:bilimusic/feature/comment/domain/comment_target.dart';
+import 'package:bilimusic/feature/comment/logic/comment_controller.dart';
+import 'package:bilimusic/feature/comment/ui/comment_page.dart';
+import 'package:bilimusic/feature/player/domain/audio_stream_info.dart';
 import 'package:bilimusic/core/layout/app_layout.dart';
 import 'package:bilimusic/feature/player/logic/lyrics/desktop_lyrics_controller.dart';
 import 'package:bilimusic/feature/player/ui/desktop/desktop_player_page.dart';
@@ -60,6 +65,8 @@ import 'package:bilimusic/feature/recent/ui/car/car_recent_playback_page.dart';
 import 'package:bilimusic/feature/setting/logic/car_ui_setting_logic.dart';
 import 'package:bilimusic/router/car_ui_page.dart';
 import 'package:bilimusic/router/car_ui_viewport.dart';
+import 'package:bilimusic/feature/player/logic/sleep_timer_controller.dart';
+import 'package:bilimusic/feature/player/ui/sleep_timer_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -1311,6 +1318,223 @@ void main() {
     },
   );
 
+  testWidgets('car player menu opens on the right and applies actions', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1280, 720);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          playerControllerProvider.overrideWith(_Player.new),
+          playerDisplayProvider.overrideWithValue(
+            const PlayerDisplayInfo(title: '音乐'),
+          ),
+          playerCoverColorControllerProvider.overrideWith(_CoverColor.new),
+          metadataControllerProvider.overrideWith(_Metadata.new),
+          playerLyricSettingsLogicProvider.overrideWithValue(
+            const PlayerLyricSettings(),
+          ),
+        ],
+        child: MaterialApp(theme: carDarkTheme(), home: const CarPlayerPage()),
+      ),
+    );
+    await tester.pumpAndSettle();
+    final container = ProviderScope.containerOf(
+      tester.element(find.byType(CarPlayerPage)),
+    );
+    final menu = find.byTooltip('播放器菜单');
+    expect(tester.getRect(menu).center.dx, greaterThan(1200));
+    expect(tester.getSize(menu).shortestSide, greaterThanOrEqualTo(56));
+    await tester.tap(menu);
+    await tester.pumpAndSettle();
+    expect(
+      tester.getRect(find.byType(CarSidePanel)),
+      const Rect.fromLTWH(896, 24, 360, 392),
+    );
+    expect(find.text('定时关闭'), findsOneWidget);
+    for (final label in ['歌词设置', '音质设置', '添加到歌单', '查看评论']) {
+      expect(find.text(label), findsOneWidget);
+    }
+    expect(find.text('外部应用打开'), findsNothing);
+    expect(find.byType(BottomSheet), findsNothing);
+    final buttons = find.descendant(
+      of: find.byType(CarSidePanel),
+      matching: find.byType(FilledButton),
+    );
+    expect(buttons, findsNWidgets(6));
+    for (int index = 0; index < 6; index++) {
+      final button = tester.widget<FilledButton>(buttons.at(index));
+      final shape = button.style!.shape!.resolve({})! as RoundedRectangleBorder;
+      expect(shape.borderRadius, BorderRadius.circular(12));
+      expect(button.style!.backgroundColor, isNull);
+      expect(button.style!.foregroundColor, isNull);
+      final material = tester.widget<Material>(
+        find.descendant(of: buttons.at(index), matching: find.byType(Material)),
+      );
+      expect(material.color, const Color(0xFF20242C));
+      final rect = tester.getRect(buttons.at(index));
+      expect(rect.shortestSide, greaterThanOrEqualTo(56));
+      if (index.isOdd) {
+        final previous = tester.getRect(buttons.at(index - 1));
+        expect(rect.top, previous.top);
+        expect(rect.left - previous.right, 12);
+      } else if (index >= 2) {
+        final previousRow = tester.getRect(buttons.at(index - 2));
+        expect(rect.left, previousRow.left);
+        expect(rect.top - previousRow.bottom, 12);
+      }
+    }
+    await tester.tap(find.text('倍速播放'));
+    await tester.pumpAndSettle();
+    expect(find.text('1.0x'), findsOneWidget);
+    expect(find.byIcon(Icons.check_rounded), findsOneWidget);
+    await tester.tap(find.text('1.5x'));
+    await tester.pumpAndSettle();
+    expect(container.read(playerControllerProvider).speed, 1.5);
+    expect(find.byType(CarSidePanel), findsNothing);
+    await tester.tap(menu);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('定时关闭'));
+    await tester.pumpAndSettle();
+    expect(find.byType(SleepTimerPage), findsOneWidget);
+    expect(find.byType(CarSidePanel), findsOneWidget);
+    await tester.tap(find.text('15分钟'));
+    await tester.pump();
+    expect(
+      container.read(sleepTimerControllerProvider).duration,
+      const Duration(minutes: 15),
+    );
+    container.read(sleepTimerControllerProvider.notifier).cancel();
+    await tester.pumpAndSettle();
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+    expect(find.byType(CarSidePanel), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+  for (final label in ['歌词设置', '音质设置', '添加到歌单', '查看评论']) {
+    testWidgets('car player menu opens $label', (tester) async {
+      tester.view.physicalSize = const Size(1280, 720);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      final player = _QualityPlayer();
+      final favorites = _Favorites();
+      final comments = _Comments();
+      final target = CommentTarget.video(
+        aid: _item.aid,
+        bvid: _item.bvid,
+        title: _item.title,
+        coverUrl: _item.coverUrl,
+      );
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            playerControllerProvider.overrideWith(() => player),
+            playerDisplayProvider.overrideWithValue(
+              const PlayerDisplayInfo(title: '音乐'),
+            ),
+            playerCoverColorControllerProvider.overrideWith(_CoverColor.new),
+            metadataControllerProvider.overrideWith(_Metadata.new),
+            playerLyricSettingsLogicProvider.overrideWithValue(
+              const PlayerLyricSettings(),
+            ),
+            favoritesControllerProvider.overrideWith(() => favorites),
+            commentControllerProvider(target).overrideWith(() => comments),
+          ],
+          child: MaterialApp(
+            theme: carDarkTheme(),
+            home: const CarPlayerPage(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.byTooltip('播放器菜单'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(label));
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
+      switch (label) {
+        case '歌词设置':
+          expect(find.text('歌词外观'), findsOneWidget);
+          expect(find.byKey(const Key('lyricActiveFontSize')), findsOneWidget);
+          await tester.tap(find.byTooltip('关闭歌词外观'));
+        case '音质设置':
+          expect(find.text('192K'), findsOneWidget);
+          expect(find.byIcon(Icons.check_rounded), findsOneWidget);
+          await tester.tap(find.text('132K'));
+          await tester.pumpAndSettle();
+          expect(player.switchedQuality, 30216);
+        case '添加到歌单':
+          expect(find.text('添加 1 首到歌单'), findsOneWidget);
+          await tester.tap(find.text('网络歌单').last);
+          await tester.pumpAndSettle();
+          expect(favorites.addedItem, _item);
+          expect(find.textContaining('部分添加失败'), findsOneWidget);
+          await tester.binding.handlePopRoute();
+        case '查看评论':
+          expect(
+            tester.widget<CommentPage>(find.byType(CommentPage)).target,
+            target,
+          );
+          expect(comments.loadCount, 1);
+          await tester.binding.handlePopRoute();
+      }
+      await tester.pumpAndSettle();
+      expect(find.byType(CarSidePanel), findsNothing);
+      expect(find.byType(CarPlayerPage), findsOneWidget);
+      expect(
+        ProviderScope.containerOf(
+          tester.element(find.byType(CarPlayerPage)),
+        ).read(playerControllerProvider).currentItem,
+        _item,
+      );
+      expect(tester.takeException(), isNull);
+    });
+  }
+
+  testWidgets('car player menu disables unavailable track actions', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(600, 280);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          playerControllerProvider.overrideWith(_EmptyPlayer.new),
+          playerDisplayProvider.overrideWithValue(const PlayerDisplayInfo()),
+          playerCoverColorControllerProvider.overrideWith(_CoverColor.new),
+          playerLyricSettingsLogicProvider.overrideWithValue(
+            const PlayerLyricSettings(),
+          ),
+        ],
+        child: MaterialApp(theme: carDarkTheme(), home: const CarPlayerPage()),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('播放器菜单'));
+    await tester.pumpAndSettle();
+    expect(tester.getSize(find.byType(CarSidePanel)).height, 232);
+    for (final label in ['音质设置', '添加到歌单', '查看评论']) {
+      await tester.scrollUntilVisible(
+        find.text(label),
+        80,
+        scrollable: find.descendant(
+          of: find.byType(CarSidePanel),
+          matching: find.byType(Scrollable),
+        ),
+      );
+      await tester.pumpAndSettle();
+      final button = tester.widget<FilledButton>(
+        find.widgetWithText(FilledButton, label),
+      );
+      expect(button.onPressed, isNull);
+    }
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('car artwork stays neutral while standard artwork is unchanged', (
     tester,
   ) async {
@@ -1655,6 +1879,11 @@ class _Player extends PlayerController {
   int? skippedIndex;
 
   @override
+  Future<void> setSpeed(double speed) async {
+    state = state.copyWith(speed: speed);
+  }
+
+  @override
   Future<void> skipToQueueIndex(int index, {bool autoplay = true}) async {
     skippedIndex = index;
   }
@@ -1670,6 +1899,53 @@ class _Player extends PlayerController {
   );
 }
 
+class _QualityPlayer extends _Player {
+  int? switchedQuality;
+
+  @override
+  PlayerState build() => super.build().copyWith(
+    audioStream: const AudioStreamInfo(
+      streamUrl: '',
+      backupUrls: [],
+      headers: {},
+      cid: 1,
+      duration: null,
+      bandwidth: 192000,
+      availableQualities: [
+        AudioQualityOption(
+          qualityId: 30280,
+          bandwidth: 192000,
+          label: '192K',
+          isSelected: true,
+        ),
+        AudioQualityOption(qualityId: 30216, bandwidth: 132000, label: '132K'),
+      ],
+    ),
+  );
+
+  @override
+  Future<void> switchCurrentAudioQuality(int? qualityId) async {
+    switchedQuality = qualityId;
+  }
+}
+
+class _EmptyPlayer extends _Player {
+  @override
+  PlayerState build() => const PlayerState();
+}
+
+class _Comments extends CommentController {
+  int loadCount = 0;
+
+  @override
+  CommentState build(CommentTarget target) => CommentState(target: target);
+
+  @override
+  Future<void> loadInitial() async {
+    loadCount++;
+  }
+}
+
 class _Ranking extends MusicRankingController {
   @override
   Future<List<MusicRankingItem>> build() async => [];
@@ -1681,6 +1957,16 @@ class _Favorites extends FavoritesController {
   int refreshCount = 0;
   bool? createdRemote;
   CollectionKind? createdKind;
+  PlayableItem? addedItem;
+
+  @override
+  Future<bool> addToCollection({
+    required String collectionId,
+    required PlayableItem item,
+  }) async {
+    addedItem = item;
+    return false;
+  }
 
   @override
   Future<void> refreshRemoteCollections() async {

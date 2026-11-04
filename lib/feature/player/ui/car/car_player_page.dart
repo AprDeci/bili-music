@@ -1,6 +1,14 @@
 import 'dart:async';
 
 import 'package:bilimusic/common/components/car/car_cover_glow.dart';
+import 'package:bilimusic/common/components/car/car_side_panel.dart';
+import 'package:bilimusic/common/util/toast_util.dart';
+import 'package:bilimusic/feature/comment/domain/comment_target.dart';
+import 'package:bilimusic/feature/comment/ui/comment_page.dart';
+import 'package:bilimusic/feature/player/domain/audio_stream_info.dart';
+import 'package:bilimusic/feature/player/ui/components/player_collection_sheet.dart';
+import 'package:bilimusic/feature/player/ui/lyrics/player_lyric_settings_sheet.dart';
+import 'package:bilimusic/feature/player/domain/player_playback_speed.dart';
 import 'package:bilimusic/feature/player/logic/display/player_cover_color_provider.dart';
 import 'package:bilimusic/feature/player/domain/playable_item.dart';
 import 'package:bilimusic/feature/player/domain/player_state.dart';
@@ -11,8 +19,19 @@ import 'package:bilimusic/feature/player/ui/components/player_artwork.dart';
 import 'package:bilimusic/feature/player/ui/lyrics/player_lyric_panel.dart';
 import 'package:bilimusic/feature/player/ui/lyrics/player_lyric_page.dart';
 import 'package:bilimusic/feature/player/logic/lyrics/player_lyric_settings_logic.dart';
+import 'package:bilimusic/feature/player/ui/sleep_timer_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hugeicons/hugeicons.dart';
+
+enum _CarPlayerMenuAction {
+  sleep,
+  speed,
+  lyrics,
+  quality,
+  collection,
+  comments,
+}
 
 class CarPlayerPage extends ConsumerStatefulWidget {
   const CarPlayerPage({super.key, this.initialItem});
@@ -92,6 +111,174 @@ class _CarPlayerPageState extends ConsumerState<CarPlayerPage> {
     }
   }
 
+  Future<void> _showMenu() async {
+    final PlayerState state = ref.read(playerControllerProvider);
+    final PlayableItem? item = state.currentItem;
+    final List<AudioQualityOption> qualities =
+        state.audioStream?.availableQualities ?? const <AudioQualityOption>[];
+    final _CarPlayerMenuAction?
+    action = await showCarSidePanel<_CarPlayerMenuAction>(
+      context: context,
+      width: 360,
+      height: 392,
+      alignment: Alignment.topRight,
+      slideFrom: const Offset(0, 1),
+      builder: (context) => GridView(
+        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 2,
+          mainAxisSpacing: 12,
+          crossAxisSpacing: 12,
+          mainAxisExtent: 112 * MediaQuery.textScalerOf(context).scale(16) / 16,
+        ),
+        padding: const EdgeInsets.all(16),
+        children: <Widget>[
+          for (final (action, icon, label, enabled) in [
+            (_CarPlayerMenuAction.sleep, Icons.timer_outlined, '定时关闭', true),
+            (_CarPlayerMenuAction.speed, Icons.speed_rounded, '倍速播放', true),
+            (_CarPlayerMenuAction.lyrics, Icons.lyrics_outlined, '歌词设置', true),
+            (
+              _CarPlayerMenuAction.quality,
+              Icons.high_quality_outlined,
+              '音质设置',
+              item != null && qualities.isNotEmpty,
+            ),
+            (
+              _CarPlayerMenuAction.collection,
+              Icons.playlist_add_rounded,
+              '添加到歌单',
+              item != null,
+            ),
+            (
+              _CarPlayerMenuAction.comments,
+              Icons.comment_outlined,
+              '查看评论',
+              item != null && item.aid > 0,
+            ),
+          ])
+            FilledButton.tonal(
+              style: FilledButton.styleFrom(
+                padding: const EdgeInsets.all(8),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              onPressed: enabled
+                  ? () => Navigator.of(context).pop(action)
+                  : null,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: <Widget>[
+                  Icon(icon),
+                  const SizedBox(height: 8),
+                  Text(label, textAlign: TextAlign.center),
+                  if (action == _CarPlayerMenuAction.speed)
+                    Text(formatPlaybackSpeed(state.speed)),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
+    if (!mounted || action == null) return;
+    switch (action) {
+      case _CarPlayerMenuAction.sleep:
+        await showCarSidePanel<void>(
+          context: context,
+          width: 480,
+          alignment: Alignment.centerRight,
+          slideFrom: const Offset(1, 0),
+          builder: (_) => const SleepTimerPage(),
+        );
+      case _CarPlayerMenuAction.speed:
+        final double? speed = await showCarSidePanel<double>(
+          context: context,
+          width: 360,
+          height: 432,
+          alignment: Alignment.topRight,
+          slideFrom: const Offset(1, 0),
+          builder: (context) => ListView(
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            children: <Widget>[
+              for (final speed in kPlayerPlaybackSpeeds)
+                ListTile(
+                  minTileHeight: 80,
+                  title: Text(formatPlaybackSpeed(speed)),
+                  selected: speed == state.speed,
+                  trailing: speed == state.speed
+                      ? const Icon(Icons.check_rounded)
+                      : null,
+                  onTap: () => Navigator.of(context).pop(speed),
+                ),
+            ],
+          ),
+        );
+        if (!mounted || speed == null) return;
+        try {
+          await ref.read(playerControllerProvider.notifier).setSpeed(speed);
+        } on Object {
+          if (mounted) ToastUtil.show('倍速设置失败，请重试');
+        }
+      case _CarPlayerMenuAction.lyrics:
+        await showPlayerLyricSettings(
+          context,
+          activeColor: ref.read(playerCoverColorControllerProvider),
+        );
+      case _CarPlayerMenuAction.quality:
+        final AudioQualityOption? quality =
+            await showCarSidePanel<AudioQualityOption>(
+              context: context,
+              width: 360,
+              height: 352,
+              alignment: Alignment.topRight,
+              slideFrom: const Offset(1, 0),
+              builder: (context) => ListView(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                children: <Widget>[
+                  for (final option in qualities)
+                    ListTile(
+                      minTileHeight: 80,
+                      title: Text(option.label),
+                      selected: option.isSelected,
+                      trailing: option.isSelected
+                          ? const Icon(Icons.check_rounded)
+                          : null,
+                      onTap: () => Navigator.of(context).pop(option),
+                    ),
+                ],
+              ),
+            );
+        if (!mounted || quality == null) return;
+        try {
+          await ref
+              .read(playerControllerProvider.notifier)
+              .switchCurrentAudioQuality(quality.qualityId);
+        } on Object {
+          if (mounted) ToastUtil.show('音质切换失败，请重试');
+        }
+      case _CarPlayerMenuAction.collection:
+        if (item == null) return;
+        await showPlayerCollectionItemsSheet(
+          context: context,
+          items: <PlayableItem>[item],
+          carStyle: true,
+        );
+      case _CarPlayerMenuAction.comments:
+        if (item == null || item.aid <= 0) return;
+        await Navigator.of(context).push<void>(
+          MaterialPageRoute<void>(
+            builder: (_) => CommentPage(
+              target: CommentTarget.video(
+                aid: item.aid,
+                bvid: item.bvid,
+                title: item.title,
+                coverUrl: item.coverUrl,
+              ),
+            ),
+          ),
+        );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
@@ -118,6 +305,18 @@ class _CarPlayerPageState extends ConsumerState<CarPlayerPage> {
           onPressed: () => Navigator.of(context).maybePop(),
           icon: const Icon(Icons.arrow_back_rounded),
         ),
+        actions: <Widget>[
+          IconButton(
+            tooltip: '播放器菜单',
+            constraints: const BoxConstraints(minWidth: 56, minHeight: 56),
+            onPressed: _showMenu,
+            icon: const HugeIcon(
+              icon: HugeIcons.strokeRoundedMenuSquare,
+              size: 30,
+            ),
+          ),
+          const SizedBox(width: 16),
+        ],
       ),
       body: Stack(
         fit: StackFit.expand,
@@ -203,8 +402,10 @@ class _CarPlayerPageState extends ConsumerState<CarPlayerPage> {
                             ),
                           ),
                           filledButtonTheme: FilledButtonThemeData(
-                            style: FilledButton.styleFrom(
-                              minimumSize: const Size(56, 56),
+                            style: theme.filledButtonTheme.style?.copyWith(
+                              minimumSize: const WidgetStatePropertyAll(
+                                Size(56, 56),
+                              ),
                             ),
                           ),
                         ),
