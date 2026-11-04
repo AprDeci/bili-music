@@ -75,33 +75,35 @@ class CarPlayerPanel extends ConsumerWidget {
               ),
             ],
           );
+          final double horizontalInset = ((constraints.maxWidth - 300) / 2)
+              .clamp(17.0, double.infinity);
           return Padding(
-            padding: EdgeInsets.symmetric(
-              horizontal: ((constraints.maxWidth - 300) / 2).clamp(
-                16.0,
-                double.infinity,
-              ),
-              vertical: 16,
-            ),
+            padding: const EdgeInsets.symmetric(vertical: 16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: <Widget>[
                 Expanded(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: <Widget>[
-                      Flexible(
-                        child: Padding(
-                          padding: const EdgeInsets.only(bottom: 24),
-                          child: ConstrainedBox(
-                            constraints: const BoxConstraints(maxWidth: 300),
-                            child: AspectRatio(aspectRatio: 1, child: artwork),
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(horizontal: horizontalInset),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: <Widget>[
+                        Flexible(
+                          child: Padding(
+                            padding: const EdgeInsets.only(bottom: 24),
+                            child: ConstrainedBox(
+                              constraints: const BoxConstraints(maxWidth: 300),
+                              child: AspectRatio(
+                                aspectRatio: 1,
+                                child: artwork,
+                              ),
+                            ),
                           ),
                         ),
-                      ),
-                      title,
-                    ],
+                        title,
+                      ],
+                    ),
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -109,9 +111,9 @@ class CarPlayerPanel extends ConsumerWidget {
                   tag: 'car-player-controls',
                   createRectTween: (begin, end) =>
                       RectTween(begin: begin, end: end),
-                  child: const Material(
+                  child: Material(
                     type: MaterialType.transparency,
-                    child: CarPlayerControls(),
+                    child: CarPlayerControls(horizontalInset: horizontalInset),
                   ),
                 ),
               ],
@@ -124,7 +126,9 @@ class CarPlayerPanel extends ConsumerWidget {
 }
 
 class CarPlayerControls extends ConsumerWidget {
-  const CarPlayerControls({super.key});
+  const CarPlayerControls({super.key, this.horizontalInset = 17});
+
+  final double horizontalInset;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -156,26 +160,37 @@ class CarPlayerControls extends ConsumerWidget {
             null => state.isLoading ? '正在加载' : null,
           };
 
+    const double edgeInset = (56 - 22) / 2;
+
     Widget action({
       required String tooltip,
       required Widget icon,
       required VoidCallback? onPressed,
       bool primary = false,
-      Alignment alignment = Alignment.center,
+      double iconSize = 36,
+      double edge = 0,
     }) {
-      return IconButton(
-        tooltip: tooltip,
-        onPressed: onPressed,
-        icon: icon,
-        iconSize: primary ? 44 : 36,
-        style: IconButton.styleFrom(
-          minimumSize: Size.square(primary ? 64 : 56),
-          alignment: alignment,
-          padding: EdgeInsets.zero,
-          backgroundColor: primary ? theme.colorScheme.primaryContainer : null,
-          foregroundColor: primary
-              ? theme.colorScheme.onPrimaryContainer
-              : theme.colorScheme.onSurface,
+      final double buttonSize = primary ? 64 : 56;
+      return Transform.translate(
+        offset: Offset(edge * ((buttonSize - iconSize) / 2 - edgeInset), 0),
+        child: IconButton(
+          tooltip: tooltip,
+          onPressed: onPressed,
+          icon: icon,
+          iconSize: iconSize,
+          style: IconButton.styleFrom(
+            fixedSize: Size.square(buttonSize),
+            minimumSize: Size.square(buttonSize),
+            visualDensity: VisualDensity.standard,
+            alignment: Alignment.center,
+            padding: EdgeInsets.zero,
+            backgroundColor: primary
+                ? theme.colorScheme.primaryContainer
+                : null,
+            foregroundColor: primary
+                ? theme.colorScheme.onPrimaryContainer
+                : theme.colorScheme.onSurface,
+          ),
         ),
       );
     }
@@ -204,74 +219,84 @@ class CarPlayerControls extends ConsumerWidget {
           message: '播放进度',
           child: Semantics(
             label: '播放进度',
-            child: PlayerProgressSection(
-              position: progress.position,
-              duration: progress.duration,
-              isReady: canSeek,
-              onChanged: (double value) => controller.seekFromProgressBar(
-                Duration(milliseconds: (value * milliseconds).round()),
+            child: Padding(
+              padding: EdgeInsets.symmetric(horizontal: horizontalInset),
+              child: PlayerProgressSection(
+                position: progress.position,
+                duration: progress.duration,
+                isReady: canSeek,
+                onChanged: (double value) => controller.seekFromProgressBar(
+                  Duration(milliseconds: (value * milliseconds).round()),
+                ),
               ),
             ),
           ),
         ),
         const SizedBox(height: 12),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: <Widget>[
-            action(
-              tooltip: '$modeLabel，切换播放模式',
-              icon: queueModeIcon(state.queueMode),
-              alignment: Alignment.centerLeft,
-              onPressed: state.hasQueue ? controller.toggleQueueMode : null,
-            ),
-            action(
-              tooltip: '上一首',
-              icon: const Icon(Icons.skip_previous_rounded),
-              onPressed: state.isReady && state.hasPrevious
-                  ? controller.skipToPrevious
-                  : null,
-            ),
-            action(
-              tooltip: state.hasError
-                  ? '重试播放'
-                  : state.isPlaying
-                  ? '暂停'
-                  : '播放',
-              primary: true,
-              icon: state.isLoading || state.isBuffering
-                  ? const SizedBox.square(
-                      dimension: 28,
-                      child: CircularProgressIndicator(strokeWidth: 3),
-                    )
-                  : Icon(
-                      state.hasError
-                          ? Icons.refresh_rounded
-                          : state.isPlaying
-                          ? Icons.pause_rounded
-                          : Icons.play_arrow_rounded,
-                    ),
-              onPressed: state.hasQueue && !state.isLoading
-                  ? () => state.hasError
-                        ? controller.play()
-                        : controller.togglePlayback()
-                  : null,
-            ),
-            action(
-              tooltip: '下一首',
-              icon: const Icon(Icons.skip_next_rounded),
-              onPressed: state.isReady && state.hasNext
-                  ? controller.skipToNext
-                  : null,
-            ),
-            action(
-              tooltip: '播放队列（${state.queue.length} 首）',
-              icon: const Icon(Icons.queue_music_rounded),
-              alignment: Alignment.centerRight,
-              onPressed: state.hasQueue
-                  ? () => showCarPlayerQueuePanel(context: context)
-                  : null,
-            ),
-          ],
+        Padding(
+          padding: EdgeInsets.symmetric(
+            horizontal: horizontalInset - edgeInset,
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: <Widget>[
+              action(
+                tooltip: '$modeLabel，切换播放模式',
+                icon: queueModeIcon(state.queueMode),
+                iconSize: 22,
+                edge: -1,
+                onPressed: state.hasQueue ? controller.toggleQueueMode : null,
+              ),
+              action(
+                tooltip: '上一首',
+                icon: const Icon(Icons.skip_previous_rounded),
+                onPressed: state.isReady && state.hasPrevious
+                    ? controller.skipToPrevious
+                    : null,
+              ),
+              action(
+                tooltip: state.hasError
+                    ? '重试播放'
+                    : state.isPlaying
+                    ? '暂停'
+                    : '播放',
+                primary: true,
+                iconSize: 44,
+                icon: state.isLoading || state.isBuffering
+                    ? const SizedBox.square(
+                        dimension: 28,
+                        child: CircularProgressIndicator(strokeWidth: 3),
+                      )
+                    : Icon(
+                        state.hasError
+                            ? Icons.refresh_rounded
+                            : state.isPlaying
+                            ? Icons.pause_rounded
+                            : Icons.play_arrow_rounded,
+                      ),
+                onPressed: state.hasQueue && !state.isLoading
+                    ? () => state.hasError
+                          ? controller.play()
+                          : controller.togglePlayback()
+                    : null,
+              ),
+              action(
+                tooltip: '下一首',
+                icon: const Icon(Icons.skip_next_rounded),
+                onPressed: state.isReady && state.hasNext
+                    ? controller.skipToNext
+                    : null,
+              ),
+              action(
+                tooltip: '播放队列（${state.queue.length} 首）',
+                icon: const Icon(Icons.queue_music_rounded),
+                edge: 1,
+                onPressed: state.hasQueue
+                    ? () => showCarPlayerQueuePanel(context: context)
+                    : null,
+              ),
+            ],
+          ),
         ),
       ],
     );

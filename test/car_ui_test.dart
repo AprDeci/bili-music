@@ -1329,12 +1329,9 @@ void main() {
     final artwork = tester.getRect(find.byType(PlayerArtworkFrame));
     final title = tester.getRect(find.text('旅途中的音乐'));
     final slider = tester.getRect(find.byType(Slider));
-    final controls = tester.getRect(find.byType(CarPlayerControls));
     expect(title.left, closeTo(artwork.left, 0.01));
     expect(slider.left, closeTo(artwork.left, 0.01));
     expect(slider.right, closeTo(artwork.right, 0.01));
-    expect(controls.left, closeTo(artwork.left, 0.01));
-    expect(controls.right, closeTo(artwork.right, 0.01));
     final queueButton = tester.widget<IconButton>(
       find.widgetWithIcon(IconButton, Icons.queue_music_rounded),
     );
@@ -1345,8 +1342,12 @@ void main() {
       ),
     );
     final repeatIcon = tester.getRect(find.byWidget(repeatButton.icon));
+    final repeatBounds = tester.getRect(find.byWidget(repeatButton));
+    final queueBounds = tester.getRect(find.byWidget(queueButton));
     expect(repeatIcon.left, closeTo(artwork.left, 0.01));
     expect(queueIcon.right, closeTo(artwork.right, 0.01));
+    expect(repeatIcon.center, repeatBounds.center);
+    expect(queueIcon.center, queueBounds.center);
     expect(tester.takeException(), isNull);
   });
 
@@ -1368,6 +1369,23 @@ void main() {
     );
     expect(sliderTheme.data.trackHeight, 2);
     final controls = tester.getRect(find.byType(CarPlayerControls));
+    final sliderBounds = tester.getRect(find.byType(Slider));
+    final repeatButton = tester.widget<IconButton>(
+      find.byWidgetPredicate(
+        (widget) => widget is IconButton && widget.tooltip == '顺序播放，切换播放模式',
+      ),
+    );
+    final queueButton = tester.widget<IconButton>(
+      find.widgetWithIcon(IconButton, Icons.queue_music_rounded),
+    );
+    expect(
+      tester.getRect(find.byWidget(repeatButton.icon)).left,
+      closeTo(sliderBounds.left, 0.01),
+    );
+    expect(
+      tester.getRect(find.byWidget(queueButton.icon)).right,
+      closeTo(sliderBounds.right, 0.01),
+    );
     final buttons = [
       find.byTooltip('顺序播放，切换播放模式'),
       find.byTooltip('上一首'),
@@ -1376,6 +1394,29 @@ void main() {
       find.byTooltip('播放队列（1 首）'),
     ].map(tester.getRect).toList();
     expect(buttons[2].center.dx, closeTo(controls.center.dx, 0.01));
+    for (final button in tester.widgetList<IconButton>(
+      find.descendant(
+        of: find.byType(CarPlayerControls),
+        matching: find.byType(IconButton),
+      ),
+    )) {
+      final inkWell = find.descendant(
+        of: find.byWidget(button),
+        matching: find.byType(InkWell),
+      );
+      expect(
+        tester.getCenter(find.byWidget(button.icon)),
+        tester.getCenter(inkWell),
+      );
+      expect(
+        find.byWidget(button).hitTestable(at: const Alignment(-0.9, 0)),
+        findsOneWidget,
+      );
+      expect(
+        find.byWidget(button).hitTestable(at: const Alignment(0.9, 0)),
+        findsOneWidget,
+      );
+    }
     for (int index = 1; index < buttons.length; index++) {
       expect(
         buttons[index].left,
