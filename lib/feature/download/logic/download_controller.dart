@@ -99,16 +99,6 @@ class DownloadController extends _$DownloadController {
     return true;
   }
 
-  Future<int> downloadAll(List<PlayableItem> items) async {
-    int queued = 0;
-    for (final PlayableItem item in items) {
-      if (await download(item)) {
-        queued += 1;
-      }
-    }
-    return queued;
-  }
-
   Future<void> removeTrack(DownloadedTrack track) async {
     try {
       await _repository.remove(track);

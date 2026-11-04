@@ -48,25 +48,6 @@ void main() {
     expect(await controller.download(_item()), isFalse);
   });
 
-  test('downloadAll queues each item once', () async {
-    final ProviderContainer container = await _container();
-    addTearDown(container.dispose);
-    final DownloadController controller = container.read(
-      downloadControllerProvider.notifier,
-    );
-
-    final int queued = await controller.downloadAll(<PlayableItem>[
-      _item(),
-      _item(page: 2, cid: 11),
-    ]);
-    await _waitFor(
-      () => container.read(downloadControllerProvider).tracks.length == 2,
-    );
-
-    expect(queued, 2);
-    expect(container.read(downloadControllerProvider).tracks.length, 2);
-  });
-
   test('removeTrack and clearAll update state', () async {
     final ProviderContainer container = await _container();
     addTearDown(container.dispose);
@@ -74,10 +55,11 @@ void main() {
       downloadControllerProvider.notifier,
     );
 
-    await controller.downloadAll(<PlayableItem>[
-      _item(),
-      _item(page: 2, cid: 11),
-    ]);
+    await controller.download(_item());
+    await _waitFor(
+      () => container.read(downloadControllerProvider).tracks.isNotEmpty,
+    );
+    await controller.download(_item(page: 2, cid: 11));
     await _waitFor(
       () => container.read(downloadControllerProvider).tracks.length == 2,
     );

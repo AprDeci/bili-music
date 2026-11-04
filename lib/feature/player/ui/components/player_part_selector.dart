@@ -13,7 +13,6 @@ Future<void> showPlayerPartSelector({
   required PlayableItem currentItem,
   required PlayerState state,
   required PlayerController controller,
-  VoidCallback? onDownloadAll,
 }) async {
   await showModalBottomSheet<void>(
     context: context,
@@ -25,7 +24,6 @@ Future<void> showPlayerPartSelector({
         currentItem: currentItem,
         state: state,
         controller: controller,
-        onDownloadAll: onDownloadAll,
       );
     },
   );
@@ -37,7 +35,6 @@ Future<void> showDesktopPlayerPartSelectorPanel({
   required PlayableItem currentItem,
   required PlayerState state,
   required PlayerController controller,
-  VoidCallback? onDownloadAll,
 }) async {
   await showDesktopSidePanel(
     tag: 'player_part_selector',
@@ -51,7 +48,6 @@ Future<void> showDesktopPlayerPartSelectorPanel({
           state: state,
           controller: controller,
           closeTarget: _PartSelectorCloseTarget.sidePanel,
-          onDownloadAll: onDownloadAll,
         ),
       );
     },
@@ -66,14 +62,12 @@ class _PlayerPartSelectorSheet extends StatelessWidget {
     required this.currentItem,
     required this.state,
     required this.controller,
-    this.onDownloadAll,
   });
 
   final List<PlayableItem> parts;
   final PlayableItem currentItem;
   final PlayerState state;
   final PlayerController controller;
-  final VoidCallback? onDownloadAll;
 
   @override
   Widget build(BuildContext context) {
@@ -84,7 +78,6 @@ class _PlayerPartSelectorSheet extends StatelessWidget {
         state: state,
         controller: controller,
         closeTarget: _PartSelectorCloseTarget.navigator,
-        onDownloadAll: onDownloadAll,
       ),
     );
   }
@@ -97,7 +90,6 @@ class _PlayerPartSelectorContent extends StatefulWidget {
     required this.state,
     required this.controller,
     required this.closeTarget,
-    this.onDownloadAll,
   });
 
   final List<PlayableItem> parts;
@@ -105,7 +97,6 @@ class _PlayerPartSelectorContent extends StatefulWidget {
   final PlayerState state;
   final PlayerController controller;
   final _PartSelectorCloseTarget closeTarget;
-  final VoidCallback? onDownloadAll;
 
   @override
   State<_PlayerPartSelectorContent> createState() =>
@@ -167,15 +158,6 @@ class _PlayerPartSelectorContentState
                   color: colorScheme.onSurface.withValues(alpha: 0.65),
                 ),
               ),
-              if (widget.onDownloadAll != null) ...<Widget>[
-                const SizedBox(width: 4),
-                IconButton(
-                  tooltip: '下载全部分P',
-                  visualDensity: VisualDensity.compact,
-                  onPressed: widget.onDownloadAll,
-                  icon: const Icon(Icons.download_rounded, size: 20),
-                ),
-              ],
             ],
           ),
         ),

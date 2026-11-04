@@ -12,7 +12,6 @@ Future<void> showPlayerChapterSelector({
   required Duration position,
   required bool isPlaying,
   required ValueChanged<Duration> onSeek,
-  VoidCallback? onDownload,
 }) async {
   await showModalBottomSheet<void>(
     context: context,
@@ -26,7 +25,6 @@ Future<void> showPlayerChapterSelector({
           isPlaying: isPlaying,
           onSeek: onSeek,
           closeTarget: _ChapterCloseTarget.navigator,
-          onDownload: onDownload,
         ),
       );
     },
@@ -39,7 +37,6 @@ Future<void> showDesktopPlayerChapterSelectorPanel({
   required Duration position,
   required bool isPlaying,
   required ValueChanged<Duration> onSeek,
-  VoidCallback? onDownload,
 }) async {
   await showDesktopSidePanel(
     tag: 'player_chapter_selector',
@@ -53,7 +50,6 @@ Future<void> showDesktopPlayerChapterSelectorPanel({
           isPlaying: isPlaying,
           onSeek: onSeek,
           closeTarget: _ChapterCloseTarget.sidePanel,
-          onDownload: onDownload,
         ),
       );
     },
@@ -69,7 +65,6 @@ class _PlayerChapterSelectorContent extends StatefulWidget {
     required this.isPlaying,
     required this.onSeek,
     required this.closeTarget,
-    this.onDownload,
   });
 
   final List<PlaybackChapter> chapters;
@@ -77,7 +72,6 @@ class _PlayerChapterSelectorContent extends StatefulWidget {
   final bool isPlaying;
   final ValueChanged<Duration> onSeek;
   final _ChapterCloseTarget closeTarget;
-  final VoidCallback? onDownload;
 
   @override
   State<_PlayerChapterSelectorContent> createState() =>
@@ -134,15 +128,6 @@ class _PlayerChapterSelectorContentState
                   color: colorScheme.onSurface.withValues(alpha: 0.65),
                 ),
               ),
-              if (widget.onDownload != null) ...<Widget>[
-                const SizedBox(width: 4),
-                IconButton(
-                  tooltip: '下载本视频',
-                  visualDensity: VisualDensity.compact,
-                  onPressed: widget.onDownload,
-                  icon: const Icon(Icons.download_rounded, size: 20),
-                ),
-              ],
             ],
           ),
         ),

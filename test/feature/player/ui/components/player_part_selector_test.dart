@@ -31,6 +31,8 @@ void main() {
 
     expect(find.text('分P列表'), findsOneWidget);
     expect(find.text('2 项'), findsOneWidget);
+    expect(find.byTooltip('下载全部分P'), findsNothing);
+    expect(find.byIcon(Icons.download_rounded), findsNothing);
     expect(find.byType(CircleAvatar), findsNothing);
     expect(find.byType(ListTile), findsNothing);
     expect(find.byIcon(Icons.play_arrow_rounded), findsNothing);
