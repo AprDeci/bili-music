@@ -6,6 +6,7 @@ import 'package:bilimusic/common/components/status_view.dart';
 import 'package:bilimusic/common/logger.dart';
 import 'package:bilimusic/common/util/player_util.dart';
 import 'package:bilimusic/common/util/toast_util.dart';
+import 'package:bilimusic/feature/download/logic/download_controller.dart';
 import 'package:bilimusic/feature/favorites/domain/favorite_collection.dart';
 import 'package:bilimusic/feature/favorites/domain/favorite_entry.dart';
 import 'package:bilimusic/feature/favorites/domain/favorites_state.dart';
@@ -684,6 +685,20 @@ class _FavoriteCollectionPageState
                         context: context,
                         item: playableItem,
                       );
+                    },
+                  ),
+                  _FavoriteActionTile(
+                    icon: Icons.download_rounded,
+                    title: '下载',
+                    onTap: () async {
+                      Navigator.of(sheetContext).pop();
+                      final bool queued = await ref
+                          .read(downloadControllerProvider.notifier)
+                          .download(playableItem);
+                      if (!context.mounted) {
+                        return;
+                      }
+                      ToastUtil.show(queued ? '已加入下载队列' : '已下载或正在下载');
                     },
                   ),
                   _FavoriteActionTile(

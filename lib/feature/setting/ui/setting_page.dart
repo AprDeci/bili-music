@@ -4,6 +4,7 @@ import 'package:bilimusic/common/util/toast_util.dart';
 import 'package:bilimusic/core/bili/session/bili_session.dart';
 import 'package:bilimusic/core/bili/session/bili_session_controller.dart';
 import 'package:bilimusic/core/cache/cache_util.dart';
+import 'package:bilimusic/feature/download/logic/download_controller.dart';
 import 'package:bilimusic/feature/auth/data/bili_auth_repository.dart';
 import 'package:bilimusic/feature/auth/logic/bili_auth_controller.dart';
 import 'package:flutter/material.dart';
@@ -117,6 +118,7 @@ class _SettingPageState extends ConsumerState<SettingPage> {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final BiliSession? session = ref.watch(biliSessionControllerProvider);
+    final DownloadState downloadState = ref.watch(downloadControllerProvider);
     final bool isLoggedIn = session?.isLoggedIn ?? false;
     final String accountName = isLoggedIn
         ? (session?.uname?.isNotEmpty == true ? session!.uname! : '已登录 B 站账号')
@@ -190,6 +192,19 @@ class _SettingPageState extends ConsumerState<SettingPage> {
             subtitle: Text('章节分隔样式', style: theme.textTheme.bodySmall),
             trailing: const Icon(Icons.chevron_right_rounded),
             onTap: () => context.push('/settings/progress'),
+          ),
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: const Icon(Icons.download_done_rounded),
+            title: const Text('离线下载'),
+            subtitle: Text(
+              downloadState.tracks.isEmpty
+                  ? '暂无下载'
+                  : '已下载 ${downloadState.tracks.length} 首 · ${formatBytes(downloadState.totalBytes)}',
+              style: theme.textTheme.bodySmall,
+            ),
+            trailing: const Icon(Icons.chevron_right_rounded),
+            onTap: () => context.push('/settings/downloads'),
           ),
           ListTile(
             contentPadding: EdgeInsets.zero,

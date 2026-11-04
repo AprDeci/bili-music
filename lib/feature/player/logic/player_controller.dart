@@ -7,6 +7,8 @@ import 'package:bilimusic/core/bili/session/bili_session_controller.dart';
 import 'package:bilimusic/core/hive/hive_keys.dart';
 import 'package:bilimusic/core/settings/app_settings_store.dart';
 import 'package:bilimusic/core/window/windows_taskbar_thumbnail_toolbar.dart';
+import 'package:bilimusic/feature/download/data/download_repository.dart';
+import 'package:bilimusic/feature/download/logic/downloaded_audio_source_resolver.dart';
 import 'package:bilimusic/feature/listening/logic/listening_progress_controller.dart';
 import 'package:bilimusic/feature/player/data/audio_cache_repository.dart';
 import 'package:bilimusic/feature/player/data/bili_chapter_repository.dart';
@@ -59,7 +61,21 @@ class PlayerController extends Notifier<PlayerState>
     readQualityPreference: () =>
         ref.read(playerAudioQualityPreferenceLogicProvider),
     logEvent: _logPlayerEvent,
+    downloadedSource: _downloadedAudioSource,
   );
+  late final DownloadedAudioSourceResolver? _downloadedAudioSource =
+      _buildDownloadedAudioSource();
+
+  DownloadedAudioSourceResolver? _buildDownloadedAudioSource() {
+    try {
+      return DownloadedAudioSourceResolver(
+        ref.read(downloadRepositoryProvider),
+      );
+    } on Object {
+      return null;
+    }
+  }
+
   late final PlayerQueueManager _queueManager = PlayerQueueManager();
   late final BiliChapterRepository _chapterRepository = ref.read(
     biliChapterRepositoryProvider,
