@@ -11,10 +11,13 @@ import 'package:bilimusic/feature/favorites/logic/favorites_controller.dart';
 import 'package:bilimusic/feature/player/domain/audio_stream_info.dart';
 import 'package:bilimusic/feature/player/domain/playable_item.dart';
 import 'package:bilimusic/feature/player/domain/player_display_info.dart';
+import 'package:bilimusic/feature/player/domain/player_playback_speed.dart';
 import 'package:bilimusic/feature/player/domain/player_state.dart';
 import 'package:bilimusic/feature/player/logic/player_controller.dart';
+import 'package:bilimusic/feature/player/logic/sleep_timer_controller.dart';
 import 'package:bilimusic/feature/player/logic/display/player_display_provider.dart';
 import 'package:bilimusic/feature/player/logic/lyrics/desktop_lyrics_controller.dart';
+import 'package:bilimusic/feature/player/ui/sleep_timer_page.dart';
 import 'package:bilimusic/feature/player/ui/desktop/components/quality_attach.dart';
 import 'package:bilimusic/feature/player/ui/desktop/components/play_pause_button.dart';
 import 'package:bilimusic/feature/player/ui/desktop/components/queue_mode_attach.dart';
@@ -457,6 +460,11 @@ class _ActionSection extends ConsumerWidget {
     final bool isDesktopLyricsEnabled = PlatformUtil.isDesktopLyricsSupported
         ? ref.watch(desktopLyricsControllerProvider)
         : false;
+    final bool isSleepTimerActive = ref.watch(
+      sleepTimerControllerProvider.select(
+        (SleepTimerState state) => state.isActive,
+      ),
+    );
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.end,
@@ -471,6 +479,15 @@ class _ActionSection extends ConsumerWidget {
             isActive: isDesktopLyricsEnabled,
           ),
         ],
+        const SizedBox(width: 10),
+        _PlaybackSpeedAttach(speed: state.speed),
+        const SizedBox(width: 10),
+        BarIconButton(
+          onPressed: () => _openSleepTimer(context),
+          icon: const Icon(Icons.bedtime_outlined, size: 22),
+          tooltip: isSleepTimerActive ? '睡眠定时（进行中）' : '睡眠定时',
+          isActive: isSleepTimerActive,
+        ),
         const SizedBox(width: 10),
         DesktopQualityAttach(qualities: qualities, onSelected: onSelectQuality),
         const SizedBox(width: 10),
@@ -490,6 +507,61 @@ class _ActionSection extends ConsumerWidget {
           icon: HugeIcon(icon: HugeIcons.strokeRoundedListMusic, size: 22),
         ),
       ],
+    );
+  }
+
+  void _openSleepTimer(BuildContext context) {
+    Navigator.of(context).push<void>(
+      MaterialPageRoute<void>(
+        builder: (BuildContext context) => const SleepTimerPage(),
+      ),
+    );
+  }
+}
+
+class _PlaybackSpeedAttach extends ConsumerWidget {
+  const _PlaybackSpeedAttach({required this.speed});
+
+  final double speed;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final ThemeData theme = Theme.of(context);
+    return PopupMenuButton<double>(
+      tooltip: '播放倍速',
+      initialValue: speed,
+      onSelected: (double value) {
+        ref.read(playerControllerProvider.notifier).setSpeed(value);
+      },
+      itemBuilder: (BuildContext context) => <PopupMenuEntry<double>>[
+        for (final double value in kPlayerPlaybackSpeeds)
+          PopupMenuItem<double>(
+            value: value,
+            child: Row(
+              children: <Widget>[
+                Icon(
+                  value == speed ? Icons.check_rounded : Icons.speed_rounded,
+                  size: 16,
+                  color: value == speed
+                      ? theme.colorScheme.primary
+                      : theme.colorScheme.onSurfaceVariant,
+                ),
+                const SizedBox(width: 8),
+                Text(formatPlaybackSpeed(value)),
+              ],
+            ),
+          ),
+      ],
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+        child: Text(
+          formatPlaybackSpeed(speed),
+          style: theme.textTheme.bodyMedium?.copyWith(
+            fontWeight: FontWeight.w700,
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+      ),
     );
   }
 }

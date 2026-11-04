@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'package:bilimusic/core/hive/hive_keys.dart';
+import 'package:bilimusic/core/settings/app_settings_store.dart';
 import 'package:bilimusic/feature/player/logic/player_controller.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
@@ -27,6 +29,21 @@ class SleepTimerController extends _$SleepTimerController {
   bool _isExpiring = false;
   int _generation = 0;
 
+  AppSettingsStore? _settingsCache;
+  bool _settingsResolved = false;
+
+  AppSettingsStore? get _settings {
+    if (!_settingsResolved) {
+      _settingsResolved = true;
+      try {
+        _settingsCache = ref.read(appSettingsStoreProvider);
+      } on Object {
+        _settingsCache = null;
+      }
+    }
+    return _settingsCache;
+  }
+
   @override
   SleepTimerState build() {
     ref.onDispose(() {
@@ -36,7 +53,65 @@ class SleepTimerController extends _$SleepTimerController {
       _timer = null;
     });
 
-    return const SleepTimerState.inactive();
+    return _restoreState();
+  }
+
+  SleepTimerState _restoreState() {
+    final int? expiresAtMs = _readEpoch(HiveKeys.sleepTimerExpiresAt);
+    if (expiresAtMs == null) {
+      return const SleepTimerState.inactive();
+    }
+    final DateTime expiresAt = DateTime.fromMillisecondsSinceEpoch(expiresAtMs);
+    final Duration remaining = expiresAt.difference(DateTime.now());
+    if (remaining <= Duration.zero) {
+      _clearPersisted();
+      return const SleepTimerState.inactive();
+    }
+    final int? durationMs = _readEpoch(HiveKeys.sleepTimerDuration);
+    _timer = Timer(remaining, () => _onExpired(_generation));
+    return SleepTimerState(
+      isActive: true,
+      expiresAt: expiresAt,
+      duration: durationMs == null
+          ? remaining
+          : Duration(milliseconds: durationMs),
+    );
+  }
+
+  int? _readEpoch(String key) {
+    final AppSettingsStore? settings = _settings;
+    if (settings == null) {
+      return null;
+    }
+    return int.tryParse(settings.readString(key, defaultValue: ''));
+  }
+
+  void _persist({required DateTime expiresAt, required Duration duration}) {
+    final AppSettingsStore? settings = _settings;
+    if (settings == null) {
+      return;
+    }
+    unawaited(
+      settings.writeString(
+        HiveKeys.sleepTimerExpiresAt,
+        expiresAt.millisecondsSinceEpoch.toString(),
+      ),
+    );
+    unawaited(
+      settings.writeString(
+        HiveKeys.sleepTimerDuration,
+        duration.inMilliseconds.toString(),
+      ),
+    );
+  }
+
+  void _clearPersisted() {
+    final AppSettingsStore? settings = _settings;
+    if (settings == null) {
+      return;
+    }
+    unawaited(settings.remove(HiveKeys.sleepTimerExpiresAt));
+    unawaited(settings.remove(HiveKeys.sleepTimerDuration));
   }
 
   void start(Duration duration) {
@@ -56,6 +131,7 @@ class SleepTimerController extends _$SleepTimerController {
       expiresAt: expiresAt,
       duration: effectiveDuration,
     );
+    _persist(expiresAt: expiresAt, duration: effectiveDuration);
     _timer = Timer(effectiveDuration, () => _onExpired(generation));
   }
 
@@ -65,6 +141,7 @@ class SleepTimerController extends _$SleepTimerController {
     _timer?.cancel();
     _timer = null;
     state = const SleepTimerState.inactive();
+    _clearPersisted();
   }
 
   Future<void> expireIfDue() async {
@@ -105,6 +182,7 @@ class SleepTimerController extends _$SleepTimerController {
       if (!_isDisposed && generation == _generation) {
         _isExpiring = false;
         state = const SleepTimerState.inactive();
+        _clearPersisted();
       }
     }
   }

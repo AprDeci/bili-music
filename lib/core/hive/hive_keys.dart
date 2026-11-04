@@ -21,6 +21,8 @@ class HiveKeys {
   static const String playerAudioCacheIndex = 'player.audio_cache_index';
   static const String searchHistory = 'search.history';
   static const String recentPlaybackProgress = 'recent.playback_progress';
+  static const String sleepTimerExpiresAt = 'player.sleep_timer_expires_at';
+  static const String sleepTimerDuration = 'player.sleep_timer_duration_ms';
   static const String metingDefaultServer = 'meting.default_server';
   static const String metingSourceRules = 'meting.source_rules';
   static const String updateDismissedTag = 'app.update.dismissed_tag';
