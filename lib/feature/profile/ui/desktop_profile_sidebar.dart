@@ -511,6 +511,12 @@ class _DesktopProfileSidebarState extends ConsumerState<DesktopProfileSidebar> {
                       label: '解除绑定',
                       icon: Icons.remove_circle_outline_rounded,
                     ),
+                  if (!collection.isSystem && !collection.isRemote)
+                    const CommonAttachMenuItem<_CollectionAction>(
+                      value: _CollectionAction.uploadToRemote,
+                      label: '上传到 B 站并同步',
+                      icon: Icons.cloud_upload_outlined,
+                    ),
                   if (!collection.isSystem)
                     const CommonAttachMenuItem<_CollectionAction>(
                       value: _CollectionAction.delete,
@@ -572,6 +578,13 @@ class _DesktopProfileSidebarState extends ConsumerState<DesktopProfileSidebar> {
                     case _CollectionAction.sync:
                       SmartDialog.dismiss<void>();
                       await _syncRemoteCollection(
+                        sidebarContext,
+                        ref,
+                        collection,
+                      );
+                    case _CollectionAction.uploadToRemote:
+                      SmartDialog.dismiss<void>();
+                      await _uploadCollectionToRemote(
                         sidebarContext,
                         ref,
                         collection,
@@ -757,9 +770,48 @@ class _DesktopProfileSidebarState extends ConsumerState<DesktopProfileSidebar> {
       ToastUtil.show('网络歌单同步失败，请稍后重试');
     }
   }
+
+  Future<void> _uploadCollectionToRemote(
+    BuildContext context,
+    WidgetRef ref,
+    FavoriteCollection collection,
+  ) async {
+    if (collection.isRemote) {
+      return;
+    }
+    final bool isLoggedIn =
+        ref.read(biliSessionControllerProvider)?.isLoggedIn ?? false;
+    if (!isLoggedIn) {
+      LoginPrompt.show(context, reason: '上传到 B 站需要登录 B 站账号');
+      return;
+    }
+
+    ToastUtil.show('正在上传“${collection.name}”到 B 站…');
+    try {
+      final FavoriteCollection? uploaded = await ref
+          .read(favoritesControllerProvider.notifier)
+          .uploadLocalCollectionToRemote(collection.id);
+      if (!context.mounted) {
+        return;
+      }
+      ToastUtil.show(uploaded == null ? '上传失败，请稍后重试' : '已上传到 B 站，之后增删会双向同步');
+    } on Object catch (error) {
+      if (!context.mounted) {
+        return;
+      }
+      ToastUtil.show('上传失败：$error');
+    }
+  }
 }
 
-enum _CollectionAction { rename, delete, remove, sync, changeKind }
+enum _CollectionAction {
+  rename,
+  delete,
+  remove,
+  sync,
+  changeKind,
+  uploadToRemote,
+}
 
 enum _AddAction { localCreate, remoteImport }
 

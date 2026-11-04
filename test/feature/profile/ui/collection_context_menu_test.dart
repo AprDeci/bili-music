@@ -55,6 +55,7 @@ void main() {
               collection.isRemote ? '重命名 B 站收藏夹' : '重命名',
             if (collection.isRemote) '同步',
             if (collection.isRemote) '解除绑定',
+            if (!collection.isSystem && !collection.isRemote) '上传到 B 站并同步',
             if (!collection.isSystem) '删除',
             '修改类型',
           ];
@@ -329,7 +330,7 @@ void main() {
     );
     expect(
       tester.widgetList<Text>(menuText).map((Text text) => text.data).toList(),
-      <String>['重命名', '删除', '修改类型'],
+      <String>['重命名', '上传到 B 站并同步', '删除', '修改类型'],
     );
     expect(tester.takeException(), isNull);
   });

@@ -411,6 +411,15 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
               contentPadding: EdgeInsets.zero,
             ),
           ),
+        if (!collection.isSystem && !collection.isRemote)
+          PopupMenuItem<_CollectionAction>(
+            value: _CollectionAction.uploadToRemote,
+            child: ListTile(
+              leading: Icon(Icons.cloud_upload_outlined),
+              title: Text('上传到 B 站并同步'),
+              contentPadding: EdgeInsets.zero,
+            ),
+          ),
         if (!collection.isSystem)
           PopupMenuItem<_CollectionAction>(
             value: _CollectionAction.delete,
@@ -460,6 +469,8 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
         await _showRenameCollectionDialog(collection);
       case _CollectionAction.sync:
         await _syncRemoteCollection(collection);
+      case _CollectionAction.uploadToRemote:
+        await _uploadCollectionToRemote(collection);
       case _CollectionAction.delete:
         await _showDeleteCollectionDialog(collection);
       case _CollectionAction.remove:
@@ -482,6 +493,30 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
         return;
       }
       _showMessage('同步失败，请稍后重试');
+    }
+  }
+
+  Future<void> _uploadCollectionToRemote(FavoriteCollection collection) async {
+    final bool isLoggedIn =
+        ref.read(biliSessionControllerProvider)?.isLoggedIn ?? false;
+    if (!isLoggedIn) {
+      LoginPrompt.show(context, reason: '上传到 B 站需要登录 B 站账号');
+      return;
+    }
+    _showMessage('正在上传“${collection.name}”到 B 站…');
+    try {
+      final FavoriteCollection? uploaded = await ref
+          .read(favoritesControllerProvider.notifier)
+          .uploadLocalCollectionToRemote(collection.id);
+      if (!mounted) {
+        return;
+      }
+      _showMessage(uploaded == null ? '上传失败，请稍后重试' : '已上传到 B 站，之后增删会双向同步');
+    } on Object catch (error) {
+      if (!mounted) {
+        return;
+      }
+      _showMessage('上传失败：$error');
     }
   }
 
@@ -619,7 +654,14 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
   }
 }
 
-enum _CollectionAction { rename, delete, remove, changeKind, sync }
+enum _CollectionAction {
+  rename,
+  delete,
+  remove,
+  changeKind,
+  sync,
+  uploadToRemote,
+}
 
 enum _AddAction { localCreate, remoteImport }
 

@@ -221,6 +221,66 @@ class FavoritesController extends _$FavoritesController {
     return suffixName;
   }
 
+  Future<FavoriteCollection?> uploadLocalCollectionToRemote(
+    String collectionId,
+  ) async {
+    final FavoriteCollection? local = _collectionById(collectionId);
+    if (local == null || local.isRemote || local.isSystem) {
+      return null;
+    }
+    final BiliSession session = _getSession();
+    final List<FavoriteEntry> entries = state.itemsForCollection(collectionId);
+    final FavoriteCollection created =
+        (await _remoteRepository.createCollection(
+          session: session,
+          name: local.name,
+        )).copyWith(kind: local.kind);
+    final String? remoteId = created.remoteId;
+    if (remoteId == null || remoteId.isEmpty) {
+      return null;
+    }
+
+    try {
+      for (final FavoriteEntry entry in entries) {
+        await Future<void>.delayed(
+          Duration(milliseconds: 1000 + _remoteImportRandom.nextInt(201)),
+        );
+        await _remoteRepository.addVideoToCollection(
+          session: session,
+          remoteId: remoteId,
+          item: entry.toPlayableItem(collection: local),
+        );
+      }
+    } on Object catch (error) {
+      _logger.w('upload local collection failed, rolling back: $error');
+      try {
+        await _remoteRepository.deleteCollection(
+          session: session,
+          remoteId: remoteId,
+        );
+      } on Object catch (rollbackError) {
+        _logger.w('rollback remote collection failed: $rollbackError');
+      }
+      rethrow;
+    }
+
+    final DateTime syncedAt = DateTime.now();
+    final FavoriteCollection bound = created.copyWith(
+      itemCount: entries.length,
+      lastSyncedAt: syncedAt,
+    );
+    await _remoteCache.bindCollection(bound);
+    await _remoteCache.upsertCollectionItems(collection: bound, items: entries);
+    await _remoteCache.saveWastedSnapshot(
+      collectionId: bound.id,
+      hasFullSnapshot: true,
+      ids: const <String>[],
+    );
+    await _repository.deleteCollection(collectionId);
+    state = _loadState();
+    return bound;
+  }
+
   Future<RemoteCollectionSyncResult> syncRemoteCollectionIfStale(
     String collectionId, {
     bool force = false,

@@ -397,6 +397,93 @@ void main() {
     remote.collections.add(emptyRemote);
     expect(await controller.importRemoteCollectionAsLocal(emptyRemote), isNull);
   });
+
+  test('uploads a local collection to bilibili and binds it', () async {
+    final FavoriteEntry entry = FavoriteEntry.fromPlayableItem(item, now: now);
+    local.state = FavoritesState(
+      collections: <FavoriteCollection>[
+        FavoriteCollection.liked(now: now),
+        FavoriteCollection(
+          id: 'local',
+          name: '本地歌单',
+          createdAt: now,
+          updatedAt: now,
+        ),
+      ],
+      entries: <FavoriteEntry>[entry],
+      memberships: <FavoriteMembership>[
+        FavoriteMembership.create(
+          collectionId: 'local',
+          itemId: entry.itemId,
+          addedAt: now,
+        ),
+      ],
+    );
+    await controller.reload();
+
+    final FavoriteCollection? uploaded = await controller
+        .uploadLocalCollectionToRemote('local');
+
+    expect(uploaded, isNotNull);
+    expect(uploaded!.isRemote, isTrue);
+    expect(uploaded.name, '本地歌单');
+    expect(remote.addCalls, 1);
+    expect(remote.deleteCalls, 0);
+    expect(
+      local.state.collections.any(
+        (FavoriteCollection collection) => collection.id == 'local',
+      ),
+      isFalse,
+    );
+
+    final FavoritesState state = container.read(favoritesControllerProvider);
+    expect(
+      state.collections.any(
+        (FavoriteCollection collection) => collection.id == uploaded.id,
+      ),
+      isTrue,
+    );
+    expect(state.itemCountForCollection(uploaded.id), 1);
+  });
+
+  test('rolls back the created remote collection when upload fails', () async {
+    final FavoriteEntry entry = FavoriteEntry.fromPlayableItem(item, now: now);
+    local.state = FavoritesState(
+      collections: <FavoriteCollection>[
+        FavoriteCollection.liked(now: now),
+        FavoriteCollection(
+          id: 'local',
+          name: '本地歌单',
+          createdAt: now,
+          updatedAt: now,
+        ),
+      ],
+      entries: <FavoriteEntry>[entry],
+      memberships: <FavoriteMembership>[
+        FavoriteMembership.create(
+          collectionId: 'local',
+          itemId: entry.itemId,
+          addedAt: now,
+        ),
+      ],
+    );
+    await controller.reload();
+    remote.fail = true;
+
+    await expectLater(
+      controller.uploadLocalCollectionToRemote('local'),
+      throwsA(isA<StateError>()),
+    );
+
+    expect(remote.deleteCalls, 1);
+    expect(remote.collections, isEmpty);
+    expect(
+      local.state.collections.any(
+        (FavoriteCollection collection) => collection.id == 'local',
+      ),
+      isTrue,
+    );
+  });
 }
 
 class _Session extends BiliSessionController {
@@ -470,6 +557,23 @@ class _MemoryLocalRepository implements FavoritesLocalRepository {
   }
 
   @override
+  Future<void> deleteCollection(String collectionId) async {
+    state = state.copyWith(
+      collections: state.collections
+          .where(
+            (FavoriteCollection collection) => collection.id != collectionId,
+          )
+          .toList(growable: false),
+      memberships: state.memberships
+          .where(
+            (FavoriteMembership membership) =>
+                membership.collectionId != collectionId,
+          )
+          .toList(growable: false),
+    );
+  }
+
+  @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
@@ -479,6 +583,7 @@ class _MemoryRemoteCache implements FavoritesRemoteCacheRepository {
   FavoritesState state;
   int saves = 0;
   final List<FavoriteCollection> boundCollections = <FavoriteCollection>[];
+  final Map<String, Set<String>> wastedSnapshots = <String, Set<String>>{};
 
   @override
   FavoritesState loadState() => state;
@@ -544,11 +649,53 @@ class _MemoryRemoteCache implements FavoritesRemoteCacheRepository {
   }
 
   @override
+  Future<void> upsertCollectionItems({
+    required FavoriteCollection collection,
+    required Iterable<FavoriteEntry> items,
+    bool preserveExistingAddedAt = true,
+  }) async {
+    final List<FavoriteEntry> itemList = items.toList(growable: false);
+    await upsertCollection(collection);
+    state = state.copyWith(
+      entries: <FavoriteEntry>[
+        ...state.entries.where(
+          (FavoriteEntry value) => !itemList.any(
+            (FavoriteEntry item) => item.itemId == value.itemId,
+          ),
+        ),
+        ...itemList,
+      ],
+      memberships: <FavoriteMembership>[
+        ...state.memberships.where(
+          (FavoriteMembership membership) =>
+              membership.collectionId != collection.id,
+        ),
+        for (final FavoriteEntry entry in itemList)
+          FavoriteMembership.create(
+            collectionId: collection.id,
+            itemId: entry.itemId,
+            addedAt: entry.createdAt,
+          ),
+      ],
+    );
+  }
+
+  @override
+  Future<void> saveWastedSnapshot({
+    required String collectionId,
+    required bool hasFullSnapshot,
+    required Iterable<String> ids,
+  }) async {
+    wastedSnapshots[collectionId] = ids.toSet();
+  }
+
+  @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
 class _FakeRemoteRepository implements BiliFavoritesRemoteRepository {
   int addCalls = 0;
+  int deleteCalls = 0;
   bool fail = false;
   Completer<void>? pending;
   final List<FavoriteCollection> collections = <FavoriteCollection>[];
@@ -610,6 +757,17 @@ class _FakeRemoteRepository implements BiliFavoritesRemoteRepository {
       throw StateError('remote add failed');
     }
     await pending?.future;
+  }
+
+  @override
+  Future<void> deleteCollection({
+    required BiliSession session,
+    required String remoteId,
+  }) async {
+    deleteCalls++;
+    collections.removeWhere(
+      (FavoriteCollection collection) => collection.remoteId == remoteId,
+    );
   }
 
   @override
