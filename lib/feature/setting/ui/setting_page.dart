@@ -185,6 +185,14 @@ class _SettingPageState extends ConsumerState<SettingPage> {
           ),
           ListTile(
             contentPadding: EdgeInsets.zero,
+            leading: const Icon(Icons.linear_scale_rounded),
+            title: const Text('进度条'),
+            subtitle: Text('章节分隔样式', style: theme.textTheme.bodySmall),
+            trailing: const Icon(Icons.chevron_right_rounded),
+            onTap: () => context.push('/settings/progress'),
+          ),
+          ListTile(
+            contentPadding: EdgeInsets.zero,
             leading: const Icon(Icons.import_export_rounded),
             title: const Text('数据导入导出'),
             subtitle: Text('导出或导入收藏与应用设置', style: theme.textTheme.bodySmall),

@@ -3,10 +3,13 @@ import 'dart:async';
 import 'package:bilimusic/common/components/queue_mode_icon.dart';
 import 'package:bilimusic/core/theme/theme_colors.dart';
 import 'package:bilimusic/feature/player/domain/playback_chapter.dart';
+import 'package:bilimusic/feature/player/domain/player_chapter_marker_style.dart';
 import 'package:bilimusic/feature/player/domain/player_state.dart';
+import 'package:bilimusic/feature/player/logic/display/player_chapter_marker_style_logic.dart';
 import 'package:bilimusic/feature/player/logic/player_progress_provider.dart';
 import 'package:bilimusic/feature/player/logic/utils/player_progress_ui_helpers.dart';
 import 'package:bilimusic/feature/player/logic/utils/player_ui_helpers.dart';
+import 'package:bilimusic/feature/player/ui/components/player_chapter_markers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hugeicons/hugeicons.dart';
@@ -33,6 +36,7 @@ class PlayerProgressHost extends ConsumerWidget {
       duration: progress.duration,
       isReady: progress.isReady,
       chapters: state.chapters,
+      markerStyle: ref.watch(playerChapterMarkerStyleLogicProvider),
       onChanged: onChanged,
     );
   }
@@ -46,6 +50,7 @@ class PlayerProgressSection extends StatefulWidget {
     required this.isReady,
     required this.onChanged,
     this.chapters = const <PlaybackChapter>[],
+    this.markerStyle = PlayerChapterMarkerStyle.line,
   });
 
   final Duration position;
@@ -53,6 +58,7 @@ class PlayerProgressSection extends StatefulWidget {
   final bool isReady;
   final ValueChanged<double> onChanged;
   final List<PlaybackChapter> chapters;
+  final PlayerChapterMarkerStyle markerStyle;
 
   @override
   State<PlayerProgressSection> createState() => _PlayerProgressSectionState();
@@ -106,12 +112,11 @@ class _PlayerProgressSectionState extends State<PlayerProgressSection> {
             children: <Widget>[
               Positioned.fill(
                 child: IgnorePointer(
-                  child: CustomPaint(
-                    painter: _ChapterTicksPainter(
-                      chapters: widget.chapters,
-                      total: total,
-                      color: neutralColor.withValues(alpha: 0.45),
-                    ),
+                  child: ChapterMarkers(
+                    chapters: widget.chapters,
+                    total: total,
+                    style: widget.markerStyle,
+                    color: neutralColor.withValues(alpha: 0.45),
                   ),
                 ),
               ),
@@ -210,51 +215,6 @@ class _PlayerProgressSectionState extends State<PlayerProgressSection> {
         ),
       ],
     );
-  }
-}
-
-class _ChapterTicksPainter extends CustomPainter {
-  const _ChapterTicksPainter({
-    required this.chapters,
-    required this.total,
-    required this.color,
-  });
-
-  final List<PlaybackChapter> chapters;
-  final Duration total;
-  final Color color;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final List<double> ratios = resolveChapterTickRatios(chapters, total);
-    if (ratios.isEmpty) {
-      return;
-    }
-
-    const double thumbRadius = 3;
-    final double trackWidth = size.width - thumbRadius * 2;
-    if (trackWidth <= 0) {
-      return;
-    }
-
-    final Paint paint = Paint()
-      ..color = color
-      ..strokeWidth = 1
-      ..strokeCap = StrokeCap.round;
-    final double top = size.height * 0.34;
-    final double bottom = size.height * 0.66;
-
-    for (final double ratio in ratios) {
-      final double x = thumbRadius + trackWidth * ratio;
-      canvas.drawLine(Offset(x, top), Offset(x, bottom), paint);
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant _ChapterTicksPainter oldDelegate) {
-    return oldDelegate.chapters != chapters ||
-        oldDelegate.total != total ||
-        oldDelegate.color != color;
   }
 }
 

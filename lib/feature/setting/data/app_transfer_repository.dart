@@ -51,6 +51,10 @@ class AppTransferRepository {
       defaultValue: 'auto',
     ),
     _TransferSettingKey(
+      key: HiveKeys.playerChapterMarkerStyle,
+      defaultValue: 'line',
+    ),
+    _TransferSettingKey(
       key: HiveKeys.metingDefaultServer,
       defaultValue: MetingServer.netease.apiValue,
     ),
