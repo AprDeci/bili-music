@@ -57,4 +57,46 @@ void main() {
     expect(find.text('时间轴'), findsNothing);
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets('highlights the chapter under the given position', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: Builder(
+            builder: (BuildContext context) => TextButton(
+              onPressed: () => showPlayerChapterSelector(
+                context: context,
+                chapters: chapters,
+                position: const Duration(seconds: 150),
+                isPlaying: false,
+                onSeek: (_) {},
+              ),
+              child: const Text('打开时间轴'),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('打开时间轴'));
+    await tester.pumpAndSettle();
+
+    final ColorScheme colorScheme = Theme.of(
+      tester.element(find.text('晴天')),
+    ).colorScheme;
+    expect(
+      tester.widget<Text>(find.text('晴天')).style?.color,
+      colorScheme.primary,
+    );
+    expect(
+      tester.widget<Text>(find.text('夜曲')).style?.color,
+      colorScheme.onSurface,
+    );
+    expect(
+      tester.widget<Text>(find.text('稻香')).style?.color,
+      colorScheme.onSurface,
+    );
+  });
 }

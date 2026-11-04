@@ -253,14 +253,15 @@ class _PlayerPageState extends ConsumerState<PlayerPage> {
       );
       return;
     }
-    if (state.chapters.length < 2) {
+    final PlayerState liveState = ref.read(playerControllerProvider);
+    if (liveState.chapters.length < 2) {
       return;
     }
     await showPlayerChapterSelector(
       context: context,
-      chapters: state.chapters,
-      position: state.position,
-      isPlaying: state.isPlaying,
+      chapters: liveState.chapters,
+      position: liveState.position,
+      isPlaying: liveState.isPlaying,
       onSeek: controller.seek,
     );
   }
