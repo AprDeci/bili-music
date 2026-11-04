@@ -364,9 +364,6 @@ class _CommentSectionHeader extends StatelessWidget {
     final List<CommentSort> sorts = state.supportedSorts.isEmpty
         ? const <CommentSort>[CommentSort.time, CommentSort.like]
         : state.supportedSorts;
-    final CommentSort nextSort = state.sort == sorts.first
-        ? sorts.last
-        : sorts.first;
     final bool canChangeSort = sorts.length > 1;
 
     return Row(
@@ -379,22 +376,65 @@ class _CommentSectionHeader extends StatelessWidget {
             ),
           ),
         ),
-        InkWell(
-          borderRadius: BorderRadius.circular(999),
-          onTap: canChangeSort ? () => controller.changeSort(nextSort) : null,
-          child: Padding(
+        if (canChangeSort)
+          PopupMenuButton<CommentSort>(
+            initialValue: state.sort,
+            tooltip: '评论排序',
+            onSelected: controller.changeSort,
+            itemBuilder: (BuildContext context) =>
+                <PopupMenuEntry<CommentSort>>[
+                  for (final CommentSort sort in sorts)
+                    PopupMenuItem<CommentSort>(
+                      value: sort,
+                      child: Row(
+                        children: <Widget>[
+                          Icon(
+                            sort == state.sort
+                                ? Icons.check_rounded
+                                : Icons.sort_rounded,
+                            size: 16,
+                            color: sort == state.sort
+                                ? colorScheme.primary
+                                : colorScheme.onSurfaceVariant,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(sort.label),
+                        ],
+                      ),
+                    ),
+                ],
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  Text(
+                    state.sort.label,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: colorScheme.primary,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  Icon(
+                    Icons.arrow_drop_down_rounded,
+                    size: 18,
+                    color: colorScheme.primary,
+                  ),
+                ],
+              ),
+            ),
+          )
+        else
+          Padding(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             child: Text(
               state.sort.label,
               style: theme.textTheme.bodyMedium?.copyWith(
-                color: canChangeSort
-                    ? colorScheme.primary
-                    : colorScheme.onSurfaceVariant,
+                color: colorScheme.onSurfaceVariant,
                 fontWeight: FontWeight.w700,
               ),
             ),
           ),
-        ),
       ],
     );
   }

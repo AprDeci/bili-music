@@ -20,6 +20,7 @@ class CommentController extends _$CommentController {
   );
 
   final Set<int> _likeInFlight = <int>{};
+  int _loadRequestId = 0;
 
   @override
   CommentState build(CommentTarget target) {
@@ -138,15 +139,7 @@ class CommentController extends _$CommentController {
       return;
     }
 
-    state = state.copyWith(
-      isLoading: true,
-      isRefreshing: false,
-      mainComments: state.mainComments.startingFirstPage(),
-      errorMessage: null,
-      loadMoreErrorMessage: null,
-    );
-
-    await _loadPage(resetItems: true, page: 1, preserveExistingItems: false);
+    await _reloadFirstPage(preserveExistingItems: false, refreshing: false);
   }
 
   Future<void> refresh() async {
@@ -163,14 +156,28 @@ class CommentController extends _$CommentController {
       return;
     }
 
+    await _reloadFirstPage(preserveExistingItems: true, refreshing: true);
+  }
+
+  Future<void> _reloadFirstPage({
+    required bool preserveExistingItems,
+    required bool refreshing,
+  }) async {
+    final int requestId = ++_loadRequestId;
     state = state.copyWith(
-      isRefreshing: true,
+      isLoading: !refreshing,
+      isRefreshing: refreshing,
       mainComments: state.mainComments.startingFirstPage(),
       errorMessage: null,
       loadMoreErrorMessage: null,
     );
 
-    await _loadPage(resetItems: true, page: 1, preserveExistingItems: true);
+    await _loadPage(
+      resetItems: true,
+      page: 1,
+      preserveExistingItems: preserveExistingItems,
+      requestId: requestId,
+    );
   }
 
   Future<void> loadNextPage() async {
@@ -194,6 +201,7 @@ class CommentController extends _$CommentController {
     }
 
     final int nextPage = state.currentPage + 1;
+    final int requestId = _loadRequestId;
     state = state.copyWith(
       mainComments: state.mainComments.startingNextPage(),
       loadMoreErrorMessage: null,
@@ -207,6 +215,9 @@ class CommentController extends _$CommentController {
         sort: state.sort,
         includeHot: false,
       );
+      if (requestId != _loadRequestId) {
+        return;
+      }
 
       state = state.copyWith(
         mainComments: state.mainComments.withNextPage(
@@ -239,6 +250,9 @@ class CommentController extends _$CommentController {
       );
     } on Object catch (error) {
       _logger.e('loadNextPage failed', error);
+      if (requestId != _loadRequestId) {
+        return;
+      }
       state = state.copyWith(
         mainComments: state.mainComments.failed(error),
         loadMoreErrorMessage: error.toString(),
@@ -255,13 +269,14 @@ class CommentController extends _$CommentController {
     }
 
     state = state.copyWith(sort: sort);
-    await refresh();
+    await _reloadFirstPage(preserveExistingItems: true, refreshing: true);
   }
 
   Future<void> _loadPage({
     required bool resetItems,
     required int page,
     required bool preserveExistingItems,
+    required int requestId,
   }) async {
     _logger.d(
       '_loadPage start '
@@ -280,6 +295,9 @@ class CommentController extends _$CommentController {
         sort: state.sort,
         includeHot: page == 1,
       );
+      if (requestId != _loadRequestId) {
+        return;
+      }
 
       state = state.copyWith(
         mainComments: state.mainComments.withFirstPage(
@@ -314,6 +332,9 @@ class CommentController extends _$CommentController {
       );
     } on Object catch (error) {
       _logger.e('_loadPage failed page=$page sort=${state.sort}', error);
+      if (requestId != _loadRequestId) {
+        return;
+      }
       state = state.copyWith(
         mainComments: resetItems && !preserveExistingItems
             ? const PagedState<CommentItem>()
