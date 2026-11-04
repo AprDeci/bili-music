@@ -722,25 +722,6 @@ class _ImportDestinationDialogState extends State<_ImportDestinationDialog> {
                     contentPadding: EdgeInsets.zero,
                     dense: true,
                   ),
-                  RadioListTile<FavoritesImportTarget>(
-                    value: FavoritesImportTarget.remoteNew,
-                    title: const Text('新建网络歌单'),
-                    enabled: widget.isLoggedIn,
-                    contentPadding: EdgeInsets.zero,
-                    dense: true,
-                  ),
-                  RadioListTile<FavoritesImportTarget>(
-                    value: FavoritesImportTarget.remoteExisting,
-                    title: const Text('添加到已有网络歌单'),
-                    subtitle: widget.remoteCollections.isEmpty
-                        ? const Text('暂无已绑定网络歌单')
-                        : null,
-                    enabled:
-                        widget.isLoggedIn &&
-                        widget.remoteCollections.isNotEmpty,
-                    contentPadding: EdgeInsets.zero,
-                    dense: true,
-                  ),
                 ],
               ),
             ),

@@ -4,7 +4,6 @@ import 'package:bilimusic/common/components/cached_image.dart';
 import 'package:bilimusic/common/components/login_required.dart';
 import 'package:bilimusic/common/domain/collection_kind.dart';
 import 'package:bilimusic/common/util/toast_util.dart';
-import 'package:bilimusic/core/bili/session/bili_auth_required_exception.dart';
 import 'package:bilimusic/core/bili/session/bili_session.dart';
 import 'package:bilimusic/core/bili/session/bili_session_controller.dart';
 import 'package:bilimusic/feature/favorites/domain/favorite_collection.dart';
@@ -32,7 +31,6 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
   bool _showAllCollections = false;
   bool _didRefreshRemoteCollections = false;
   bool _isRefreshingRemoteCollections = false;
-  _FavoriteListTab _selectedTab = _FavoriteListTab.remote;
 
   @override
   void initState() {
@@ -52,7 +50,8 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
       _didRefreshRemoteCollections = false;
       _refreshRemoteCollectionsOnEnter();
     });
-    ref.watch(biliSessionControllerProvider);
+    final bool isLoggedIn =
+        (ref.watch(biliSessionControllerProvider)?.isLoggedIn ?? false);
     final FavoritesState favoritesState = ref.watch(
       favoritesControllerProvider,
     );
@@ -60,25 +59,25 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
       FavoriteCollection.likedCollectionId,
     );
     final int recentCount = ref.watch(recentPlaybackControllerProvider).length;
-    final List<FavoriteCollection> remoteCollections = favoritesState
-        .collections
-        .where((FavoriteCollection collection) => collection.isRemote)
-        .toList(growable: false);
-    final List<FavoriteCollection> localCollections = favoritesState.collections
-        .where(
-          (FavoriteCollection collection) =>
-              collection.isLocal && !collection.isSystem,
-        )
-        .toList(growable: false);
-    final List<FavoriteCollection> selectedCollections = switch (_selectedTab) {
-      _FavoriteListTab.remote => remoteCollections,
-      _FavoriteListTab.local => localCollections,
-    };
-    final bool shouldCollapse = selectedCollections.length > 5;
+    final List<FavoriteCollection> collections =
+        <FavoriteCollection>[
+          ...favoritesState.collections.where(
+            (FavoriteCollection collection) =>
+                collection.isLocal && !collection.isSystem,
+          ),
+          if (isLoggedIn)
+            ...favoritesState.collections.where(
+              (FavoriteCollection collection) => collection.isRemote,
+            ),
+        ]..sort(
+          (FavoriteCollection left, FavoriteCollection right) =>
+              right.updatedAt.compareTo(left.updatedAt),
+        );
+    final bool shouldCollapse = collections.length > 5;
     final List<FavoriteCollection> visibleCollections =
         shouldCollapse && !_showAllCollections
-        ? selectedCollections.take(5).toList(growable: false)
-        : selectedCollections;
+        ? collections.take(5).toList(growable: false)
+        : collections;
 
     return Scaffold(
       body: SafeArea(
@@ -103,8 +102,6 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
             ),
             const SizedBox(height: 16),
             _ProfileSectionHeader(
-              selectedTab: _selectedTab,
-              onTabChanged: _handleTabChanged,
               onAddPressed: _handleAddPressed,
               onImportPressed: _handleImportPressed,
             ),
@@ -121,6 +118,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                 child: _PlaylistTile(
                   title: collection.name,
                   count: favoritesState.itemCountForCollection(collection.id),
+                  isRemote: collection.isRemote,
                   coverUrl: ref.watch(
                     favoriteEntryCoverUrlProvider(collection.id, latestItem),
                   ),
@@ -207,52 +205,6 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
     }
   }
 
-  Future<void> _showCreateRemoteCollectionDialog() async {
-    final String? result = await showDialog<String>(
-      context: context,
-      useRootNavigator: true,
-      builder: (BuildContext context) {
-        return const _CollectionNameDialog(
-          title: '新建网络歌单',
-          hintText: '例如：深夜循环',
-          confirmText: '创建',
-        );
-      },
-    );
-
-    if (result == null || result.trim().isEmpty) {
-      if (result != null) {
-        _showMessage('歌单名称不能为空');
-      }
-      return;
-    }
-
-    if (!mounted) return;
-    final CollectionKind? kind = await showCollectionKindDialog(
-      context: context,
-    );
-    if (!mounted || kind == null) return;
-
-    final FavoriteCollection? collection;
-    try {
-      collection = await ref
-          .read(favoritesControllerProvider.notifier)
-          .createRemoteCollection(result, kind: kind);
-    } on BiliAuthRequiredException {
-      if (mounted) {
-        LoginPrompt.show(context, reason: '网络歌单需要登录 B 站账号');
-      }
-      return;
-    }
-    if (!mounted) {
-      return;
-    }
-
-    if (collection == null) {
-      _showMessage('创建网络歌单失败');
-    }
-  }
-
   Future<void> _showRemoteImportDialog() async {
     final FavoritesController controller = ref.read(
       favoritesControllerProvider.notifier,
@@ -277,12 +229,56 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
     );
     if (!mounted || kind == null) return;
 
+    final _RemoteImportMode? mode = await showDialog<_RemoteImportMode>(
+      context: context,
+      builder: (BuildContext context) {
+        return SimpleDialog(
+          title: Text('导入“${collection.name}”'),
+          children: <Widget>[
+            SimpleDialogOption(
+              onPressed: () =>
+                  Navigator.of(context).pop(_RemoteImportMode.localCopy),
+              child: const ListTile(
+                leading: Icon(Icons.playlist_add_check_rounded),
+                title: Text('导入为本地歌单'),
+                subtitle: Text('拷贝一份到本地，之后 B 站改动不影响这里'),
+                contentPadding: EdgeInsets.zero,
+              ),
+            ),
+            SimpleDialogOption(
+              onPressed: () =>
+                  Navigator.of(context).pop(_RemoteImportMode.bindAndSync),
+              child: const ListTile(
+                leading: Icon(Icons.sync_rounded),
+                title: Text('绑定并保持同步'),
+                subtitle: Text('与 B 站收藏夹双向同步，增删会同步到 B 站'),
+                contentPadding: EdgeInsets.zero,
+              ),
+            ),
+          ],
+        );
+      },
+    );
+    if (!mounted || mode == null) return;
+
+    if (mode == _RemoteImportMode.localCopy) {
+      final FavoriteCollection? created = await controller
+          .importRemoteCollectionAsLocal(collection, kind: kind);
+      if (!mounted) {
+        return;
+      }
+      _showMessage(
+        created == null ? '导入失败，请稍后重试' : '已导入为本地歌单“${created.name}”',
+      );
+      return;
+    }
+
     await controller.bindRemoteCollection(collection.copyWith(kind: kind));
     await controller.refreshRemoteCollectionItems(collectionId: collection.id);
     if (!mounted) {
       return;
     }
-    _showMessage('已导入“${collection.name}”');
+    _showMessage('已绑定“${collection.name}”，将保持同步');
   }
 
   Future<void> _refreshRemoteCollectionsOnEnter() async {
@@ -314,32 +310,34 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
     }
   }
 
-  Future<void> _showRemoteAddOptions(BuildContext context) async {
-    final _RemoteAddAction? action = await showDialog<_RemoteAddAction>(
+  Future<void> _handleAddPressed() async {
+    final bool isLoggedIn =
+        (ref.read(biliSessionControllerProvider)?.isLoggedIn ?? false);
+    final _AddAction? action = await showModalBottomSheet<_AddAction>(
       context: context,
+      showDragHandle: true,
       builder: (BuildContext context) {
-        return SimpleDialog(
-          title: const Text('添加网络歌单'),
-          children: <Widget>[
-            SimpleDialogOption(
-              onPressed: () =>
-                  Navigator.of(context).pop(_RemoteAddAction.import),
-              child: const ListTile(
-                leading: Icon(Icons.cloud_download_outlined),
-                title: Text('导入已有收藏夹'),
-                contentPadding: EdgeInsets.zero,
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              ListTile(
+                leading: const Icon(Icons.playlist_add_rounded),
+                title: const Text('新建歌单'),
+                subtitle: const Text('只在本地保存，不同步 B 站'),
+                onTap: () => Navigator.of(context).pop(_AddAction.localCreate),
               ),
-            ),
-            SimpleDialogOption(
-              onPressed: () =>
-                  Navigator.of(context).pop(_RemoteAddAction.create),
-              child: const ListTile(
-                leading: Icon(Icons.add_rounded),
-                title: Text('新建网络歌单'),
-                contentPadding: EdgeInsets.zero,
-              ),
-            ),
-          ],
+              if (isLoggedIn)
+                ListTile(
+                  leading: const Icon(Icons.cloud_download_outlined),
+                  title: const Text('从 B站收藏夹导入'),
+                  subtitle: const Text('默认拷贝一份到本地，也可选择绑定同步'),
+                  onTap: () =>
+                      Navigator.of(context).pop(_AddAction.remoteImport),
+                ),
+              const SizedBox(height: 8),
+            ],
+          ),
         );
       },
     );
@@ -349,36 +347,14 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
     }
 
     switch (action) {
-      case _RemoteAddAction.import:
+      case _AddAction.localCreate:
+        await _showCreateCollectionDialog(context);
+      case _AddAction.remoteImport:
+        if (!isLoggedIn) {
+          LoginPrompt.show(context, reason: '导入 B站收藏夹需要登录 B 站账号');
+          return;
+        }
         await _showRemoteImportDialog();
-      case _RemoteAddAction.create:
-        if (!mounted) {
-          return;
-        }
-        await _showCreateRemoteCollectionDialog();
-    }
-  }
-
-  void _handleTabChanged(_FavoriteListTab tab) {
-    if (_selectedTab == tab) {
-      return;
-    }
-    setState(() {
-      _selectedTab = tab;
-      _showAllCollections = false;
-    });
-  }
-
-  void _handleAddPressed() {
-    switch (_selectedTab) {
-      case _FavoriteListTab.remote:
-        if (!(ref.read(biliSessionControllerProvider)?.isLoggedIn ?? false)) {
-          LoginPrompt.show(context, reason: '网络歌单需要登录 B 站账号');
-          return;
-        }
-        _showRemoteAddOptions(context);
-      case _FavoriteListTab.local:
-        _showCreateCollectionDialog(context);
     }
   }
 
@@ -411,7 +387,16 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
             value: _CollectionAction.rename,
             child: ListTile(
               leading: Icon(Icons.drive_file_rename_outline_rounded),
-              title: Text('重命名'),
+              title: Text(collection.isRemote ? '重命名 B 站收藏夹' : '重命名'),
+              contentPadding: EdgeInsets.zero,
+            ),
+          ),
+        if (collection.isRemote)
+          PopupMenuItem<_CollectionAction>(
+            value: _CollectionAction.sync,
+            child: ListTile(
+              leading: Icon(Icons.sync_rounded),
+              title: Text('同步'),
               contentPadding: EdgeInsets.zero,
             ),
           ),
@@ -420,7 +405,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
             value: _CollectionAction.remove,
             child: ListTile(
               leading: Icon(Icons.remove_circle_outline_rounded),
-              title: Text('移除'),
+              title: Text('解除绑定'),
               contentPadding: EdgeInsets.zero,
             ),
           ),
@@ -471,10 +456,30 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
         }
       case _CollectionAction.rename:
         await _showRenameCollectionDialog(collection);
+      case _CollectionAction.sync:
+        await _syncRemoteCollection(collection);
       case _CollectionAction.delete:
         await _showDeleteCollectionDialog(collection);
       case _CollectionAction.remove:
         await _showRemoveRemoteCollectionDialog(collection);
+    }
+  }
+
+  Future<void> _syncRemoteCollection(FavoriteCollection collection) async {
+    _showMessage('正在同步“${collection.name}”…');
+    try {
+      await ref
+          .read(favoritesControllerProvider.notifier)
+          .syncRemoteCollectionIfStale(collection.id, force: true);
+      if (!mounted) {
+        return;
+      }
+      _showMessage('同步完成');
+    } on Object {
+      if (!mounted) {
+        return;
+      }
+      _showMessage('同步失败，请稍后重试');
     }
   }
 
@@ -526,7 +531,11 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
       builder: (BuildContext context) {
         return AlertDialog(
           title: const Text('删除歌单'),
-          content: Text('确认删除“${collection.name}”？删除后无法恢复。'),
+          content: Text(
+            collection.isRemote
+                ? '确认删除“${collection.name}”？这会同时删除 B 站收藏夹，无法恢复。'
+                : '确认删除“${collection.name}”？删除后无法恢复。',
+          ),
           actions: <Widget>[
             TextButton(
               onPressed: () => Navigator.of(context).pop(false),
@@ -569,8 +578,10 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text('移除网络歌单'),
-          content: Text('确认从列表中移除“${collection.name}”？不会删除 B 站收藏夹。'),
+          title: const Text('解除绑定'),
+          content: Text(
+            '确认解除“${collection.name}”与 App 的绑定？只会从列表移除，不会删除 B 站收藏夹。',
+          ),
           actions: <Widget>[
             TextButton(
               onPressed: () => Navigator.of(context).pop(false),
@@ -578,7 +589,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
             ),
             FilledButton(
               onPressed: () => Navigator.of(context).pop(true),
-              child: const Text('移除'),
+              child: const Text('解除绑定'),
             ),
           ],
         );
@@ -595,7 +606,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
     if (!mounted) {
       return;
     }
-    ToastUtil.show(removed ? '已移除网络歌单' : '移除失败');
+    ToastUtil.show(removed ? '已解除绑定' : '解除绑定失败');
   }
 
   void _showMessage(String message) {
@@ -606,11 +617,11 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
   }
 }
 
-enum _CollectionAction { rename, delete, remove, changeKind }
+enum _CollectionAction { rename, delete, remove, changeKind, sync }
 
-enum _FavoriteListTab { remote, local }
+enum _AddAction { localCreate, remoteImport }
 
-enum _RemoteAddAction { import, create }
+enum _RemoteImportMode { localCopy, bindAndSync }
 
 class _CollectionNameDialog extends StatefulWidget {
   const _CollectionNameDialog({
@@ -787,41 +798,28 @@ class _ProfileQuickActionCard extends StatelessWidget {
 
 class _ProfileSectionHeader extends StatelessWidget {
   const _ProfileSectionHeader({
-    required this.selectedTab,
-    required this.onTabChanged,
     required this.onAddPressed,
     required this.onImportPressed,
   });
 
-  final _FavoriteListTab selectedTab;
-  final ValueChanged<_FavoriteListTab> onTabChanged;
   final VoidCallback onAddPressed;
   final VoidCallback onImportPressed;
 
   @override
   Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
     return Row(
       children: <Widget>[
-        Expanded(
-          child: Row(
-            children: <Widget>[
-              _PlaylistTabButton(
-                label: '网络歌单',
-                selected: selectedTab == _FavoriteListTab.remote,
-                onTap: () => onTabChanged(_FavoriteListTab.remote),
-              ),
-              const SizedBox(width: 22),
-              _PlaylistTabButton(
-                label: '本地歌单',
-                selected: selectedTab == _FavoriteListTab.local,
-                onTap: () => onTabChanged(_FavoriteListTab.local),
-              ),
-            ],
+        Text(
+          '歌单',
+          style: theme.textTheme.titleMedium?.copyWith(
+            color: theme.colorScheme.onSurface,
+            fontWeight: FontWeight.w900,
           ),
         ),
+        const Spacer(),
         InkWell(
           borderRadius: BorderRadius.circular(999),
-          // 导入外部歌单
           onTap: onImportPressed,
           child: Icon(
             BmIcons.importright,
@@ -849,44 +847,11 @@ class _ProfileSectionHeader extends StatelessWidget {
   }
 }
 
-class _PlaylistTabButton extends StatelessWidget {
-  const _PlaylistTabButton({
-    required this.label,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8),
-        child: Text(
-          label,
-          style: theme.textTheme.titleMedium?.copyWith(
-            color: selected
-                ? colorScheme.onSurface
-                : colorScheme.onSurfaceVariant,
-            fontWeight: selected ? FontWeight.w900 : FontWeight.w600,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 class _PlaylistTile extends StatelessWidget {
   const _PlaylistTile({
     required this.title,
     required this.count,
+    required this.isRemote,
     required this.coverUrl,
     required this.onTap,
     required this.onLongPressStart,
@@ -894,6 +859,7 @@ class _PlaylistTile extends StatelessWidget {
 
   final String title;
   final int count;
+  final bool isRemote;
   final String? coverUrl;
   final VoidCallback onTap;
   final ValueChanged<LongPressStartDetails> onLongPressStart;
@@ -920,14 +886,24 @@ class _PlaylistTile extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: <Widget>[
-                      Text(
-                        title,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          color: colorScheme.onSurface,
-                          fontWeight: FontWeight.w800,
-                        ),
+                      Row(
+                        children: <Widget>[
+                          Flexible(
+                            child: Text(
+                              title,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: theme.textTheme.titleMedium?.copyWith(
+                                color: colorScheme.onSurface,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                          ),
+                          if (isRemote) ...<Widget>[
+                            const SizedBox(width: 6),
+                            _RemoteSourceBadge(colorScheme: colorScheme),
+                          ],
+                        ],
                       ),
                       const SizedBox(height: 6),
                       Text(
@@ -949,6 +925,39 @@ class _PlaylistTile extends StatelessWidget {
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _RemoteSourceBadge extends StatelessWidget {
+  const _RemoteSourceBadge({required this.colorScheme});
+
+  final ColorScheme colorScheme;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+      decoration: BoxDecoration(
+        color: colorScheme.primary.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          Icon(Icons.sync_rounded, size: 10, color: colorScheme.primary),
+          const SizedBox(width: 2),
+          Text(
+            'B站',
+            style: TextStyle(
+              fontSize: 9,
+              height: 1.3,
+              color: colorScheme.primary,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
       ),
     );
   }

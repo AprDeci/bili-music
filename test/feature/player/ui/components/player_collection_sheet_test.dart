@@ -172,7 +172,7 @@ void main() {
   });
 
   for (final Brightness brightness in Brightness.values) {
-    testWidgets('cover list and tabs follow $brightness theme', (
+    testWidgets('cover list follows $brightness theme', (
       WidgetTester tester,
     ) async {
       final DateTime now = DateTime(2026);
@@ -214,18 +214,11 @@ void main() {
       );
       await tester.tap(find.text('收藏'));
       await tester.pumpAndSettle();
-      expect(find.text('暂无网络歌单'), findsOneWidget);
-      await tester.tap(find.text('本地歌单'));
-      await tester.pumpAndSettle();
 
       expect(find.text('纯音乐'), findsOneWidget);
       expect(find.text('0 首'), findsOneWidget);
       expect(find.text('多选'), findsNothing);
       expect(find.byIcon(Icons.library_music_outlined), findsOneWidget);
-      expect(
-        tester.widget<Text>(find.text('本地歌单')).style?.color,
-        theme.colorScheme.primary,
-      );
       expect(
         tester.widget<Text>(find.text('添加 1 首到歌单')).style?.color,
         theme.colorScheme.onSurfaceVariant,

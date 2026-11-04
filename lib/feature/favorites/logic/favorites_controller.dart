@@ -129,6 +129,98 @@ class FavoritesController extends _$FavoritesController {
     return true;
   }
 
+  static const int _maxImportPages = 50;
+
+  Future<FavoriteCollection?> importRemoteCollectionAsLocal(
+    FavoriteCollection remote, {
+    CollectionKind? kind,
+  }) async {
+    if (!remote.isRemote) {
+      return null;
+    }
+    final String? remoteId = remote.remoteId;
+    if (remoteId == null || remoteId.isEmpty) {
+      return null;
+    }
+
+    final BiliSession session = _getSession();
+    final List<FavoriteEntry> entries = <FavoriteEntry>[];
+    final Set<String> itemIds = <String>{};
+    bool hasMore = true;
+    for (
+      int pageNumber = 1;
+      hasMore && pageNumber <= _maxImportPages;
+      pageNumber += 1
+    ) {
+      final BiliFavoriteCollectionPage page = await _remoteRepository
+          .fetchCollectionPage(
+            session: session,
+            remoteId: remoteId,
+            pageNumber: pageNumber,
+          );
+      for (final FavoriteEntry entry in page.items) {
+        if (itemIds.add(entry.itemId)) {
+          entries.add(entry);
+        }
+      }
+      hasMore = page.hasMore;
+      if (hasMore) {
+        await _waitBetweenRemotePages();
+      }
+    }
+    if (entries.isEmpty) {
+      return null;
+    }
+
+    final DateTime now = DateTime.now();
+    final FavoriteCollection collection = FavoriteCollection(
+      id: 'custom_${now.microsecondsSinceEpoch}',
+      name: _uniqueLocalCollectionName(remote.name),
+      kind: kind ?? remote.kind,
+      coverUrl: remote.coverUrl,
+      isSystem: false,
+      createdAt: now,
+      updatedAt: now,
+    );
+    final List<FavoriteMembership> memberships = <FavoriteMembership>[
+      for (int index = 0; index < entries.length; index += 1)
+        FavoriteMembership.create(
+          collectionId: collection.id,
+          itemId: entries[index].itemId,
+          addedAt: now.subtract(Duration(seconds: index)),
+        ),
+    ];
+    await _repository.saveAll(
+      collections: <FavoriteCollection>[collection],
+      entries: entries,
+      memberships: memberships,
+    );
+    state = _loadState();
+    return collection;
+  }
+
+  String _uniqueLocalCollectionName(String name) {
+    final String base = name.trim().isEmpty ? 'B站收藏夹' : name.trim();
+    final Set<String> existingNames = state.collections
+        .where((FavoriteCollection collection) => collection.isLocal)
+        .map((FavoriteCollection collection) => collection.name)
+        .toSet();
+    if (!existingNames.contains(base)) {
+      return base;
+    }
+    final String suffixName = '$base（B站）';
+    if (!existingNames.contains(suffixName)) {
+      return suffixName;
+    }
+    for (int index = 2; index < 100; index += 1) {
+      final String candidate = '$base（B站 $index）';
+      if (!existingNames.contains(candidate)) {
+        return candidate;
+      }
+    }
+    return suffixName;
+  }
+
   Future<RemoteCollectionSyncResult> syncRemoteCollectionIfStale(
     String collectionId, {
     bool force = false,

@@ -6,7 +6,6 @@ import 'package:bilimusic/common/components/common_attach_menu.dart';
 import 'package:bilimusic/common/components/login_required.dart';
 import 'package:bilimusic/common/domain/collection_kind.dart';
 import 'package:bilimusic/common/util/toast_util.dart';
-import 'package:bilimusic/core/bili/session/bili_auth_required_exception.dart';
 import 'package:bilimusic/core/bili/session/bili_session.dart';
 import 'package:bilimusic/core/bili/session/bili_session_controller.dart';
 import 'package:bilimusic/feature/auth/data/bili_auth_repository.dart';
@@ -36,7 +35,6 @@ class DesktopProfileSidebar extends ConsumerStatefulWidget {
 }
 
 class _DesktopProfileSidebarState extends ConsumerState<DesktopProfileSidebar> {
-  _FavoriteListTab _selectedTab = _FavoriteListTab.remote;
   bool _didRefreshRemoteCollections = false;
   bool _isRefreshingRemoteCollections = false;
 
@@ -71,20 +69,22 @@ class _DesktopProfileSidebarState extends ConsumerState<DesktopProfileSidebar> {
         widget.currentLocation ==
         '/profile/favorites/${FavoriteCollection.likedCollectionId}';
     final bool isRecentSelected = widget.currentLocation == '/profile/recent';
-    final List<FavoriteCollection> remoteCollections = favoritesState
-        .collections
-        .where((FavoriteCollection collection) => collection.isRemote)
-        .toList(growable: false);
-    final List<FavoriteCollection> localCollections = favoritesState.collections
-        .where(
-          (FavoriteCollection collection) =>
-              collection.isLocal && !collection.isSystem,
-        )
-        .toList(growable: false);
-    final List<FavoriteCollection> visibleCollections = switch (_selectedTab) {
-      _FavoriteListTab.remote => remoteCollections,
-      _FavoriteListTab.local => localCollections,
-    };
+    final bool isLoggedIn =
+        (ref.watch(biliSessionControllerProvider)?.isLoggedIn ?? false);
+    final List<FavoriteCollection> visibleCollections =
+        <FavoriteCollection>[
+          ...favoritesState.collections.where(
+            (FavoriteCollection collection) =>
+                collection.isLocal && !collection.isSystem,
+          ),
+          if (isLoggedIn)
+            ...favoritesState.collections.where(
+              (FavoriteCollection collection) => collection.isRemote,
+            ),
+        ]..sort(
+          (FavoriteCollection left, FavoriteCollection right) =>
+              right.updatedAt.compareTo(left.updatedAt),
+        );
 
     return Container(
       width: 232,
@@ -160,15 +160,13 @@ class _DesktopProfileSidebarState extends ConsumerState<DesktopProfileSidebar> {
           ),
           const SizedBox(height: 22),
           _CollectionHeader(
-            selectedTab: _selectedTab,
-            onTabChanged: _handleTabChanged,
             onAddPressed: () => _handleAddPressed(context, ref),
             onImportPressed: () => _handleImportPressed(context),
           ),
           const SizedBox(height: 10),
           Expanded(
             child: visibleCollections.isEmpty
-                ? _EmptyCollectionHint(tab: _selectedTab)
+                ? const _EmptyCollectionHint()
                 : ListView.separated(
                     padding: EdgeInsets.zero,
                     itemCount: visibleCollections.length,
@@ -196,6 +194,7 @@ class _DesktopProfileSidebarState extends ConsumerState<DesktopProfileSidebar> {
                         count: favoritesState.itemCountForCollection(
                           collection.id,
                         ),
+                        isRemote: collection.isRemote,
                         isSelected:
                             widget.currentLocation ==
                             '/profile/favorites/${collection.id}',
@@ -286,54 +285,6 @@ class _DesktopProfileSidebarState extends ConsumerState<DesktopProfileSidebar> {
     }
   }
 
-  Future<void> _showCreateRemoteCollectionDialog(
-    BuildContext context,
-    WidgetRef ref,
-  ) async {
-    final String? result = await showDialog<String>(
-      context: context,
-      useRootNavigator: true,
-      builder: (BuildContext context) {
-        return const _CollectionNameDialog(
-          title: '新建网络歌单',
-          hintText: '例如：深夜循环',
-          confirmText: '创建',
-        );
-      },
-    );
-
-    if (result == null) {
-      return;
-    }
-
-    final String trimmedName = result.trim();
-    if (trimmedName.isEmpty) {
-      ToastUtil.show('歌单名称不能为空');
-      return;
-    }
-
-    if (!context.mounted) return;
-    final CollectionKind? kind = await showCollectionKindDialog(
-      context: context,
-    );
-    if (!context.mounted || kind == null) return;
-
-    final FavoriteCollection? collection;
-    try {
-      collection = await ref
-          .read(favoritesControllerProvider.notifier)
-          .createRemoteCollection(trimmedName, kind: kind);
-    } on BiliAuthRequiredException {
-      if (context.mounted) {
-        LoginPrompt.show(context, reason: '网络歌单需要登录 B 站账号');
-      }
-      return;
-    }
-    if (collection == null) {
-      ToastUtil.show('创建网络歌单失败');
-    }
-  }
-
   Future<void> _showRemoteImportDialog(
     BuildContext context,
     WidgetRef ref,
@@ -361,12 +312,56 @@ class _DesktopProfileSidebarState extends ConsumerState<DesktopProfileSidebar> {
     );
     if (!context.mounted || kind == null) return;
 
+    final _RemoteImportMode? mode = await showDialog<_RemoteImportMode>(
+      context: context,
+      builder: (BuildContext context) {
+        return SimpleDialog(
+          title: Text('导入“${collection.name}”'),
+          children: <Widget>[
+            SimpleDialogOption(
+              onPressed: () =>
+                  Navigator.of(context).pop(_RemoteImportMode.localCopy),
+              child: const ListTile(
+                leading: Icon(Icons.playlist_add_check_rounded),
+                title: Text('导入为本地歌单'),
+                subtitle: Text('拷贝一份到本地，之后 B 站改动不影响这里'),
+                contentPadding: EdgeInsets.zero,
+              ),
+            ),
+            SimpleDialogOption(
+              onPressed: () =>
+                  Navigator.of(context).pop(_RemoteImportMode.bindAndSync),
+              child: const ListTile(
+                leading: Icon(Icons.sync_rounded),
+                title: Text('绑定并保持同步'),
+                subtitle: Text('与 B 站收藏夹双向同步，增删会同步到 B 站'),
+                contentPadding: EdgeInsets.zero,
+              ),
+            ),
+          ],
+        );
+      },
+    );
+    if (!context.mounted || mode == null) return;
+
+    if (mode == _RemoteImportMode.localCopy) {
+      final FavoriteCollection? created = await controller
+          .importRemoteCollectionAsLocal(collection, kind: kind);
+      if (!context.mounted) {
+        return;
+      }
+      ToastUtil.show(
+        created == null ? '导入失败，请稍后重试' : '已导入为本地歌单“${created.name}”',
+      );
+      return;
+    }
+
     await controller.bindRemoteCollection(collection.copyWith(kind: kind));
     await controller.refreshRemoteCollectionItems(collectionId: collection.id);
     if (!context.mounted) {
       return;
     }
-    ToastUtil.show('已导入“${collection.name}”');
+    ToastUtil.show('已绑定“${collection.name}”，将保持同步');
   }
 
   Future<void> _refreshRemoteCollectionsOnEnter() async {
@@ -398,34 +393,36 @@ class _DesktopProfileSidebarState extends ConsumerState<DesktopProfileSidebar> {
     }
   }
 
-  Future<void> _showRemoteAddOptions(
-    BuildContext context,
-    WidgetRef ref,
-  ) async {
-    final _RemoteAddAction? action = await showDialog<_RemoteAddAction>(
+  Future<void> _handleAddPressed(BuildContext context, WidgetRef ref) async {
+    final bool isLoggedIn =
+        (ref.read(biliSessionControllerProvider)?.isLoggedIn ?? false);
+    final _AddAction? action = await showDialog<_AddAction>(
       context: context,
       builder: (BuildContext context) {
         return SimpleDialog(
-          title: const Text('添加网络歌单'),
+          title: const Text('添加歌单'),
           children: <Widget>[
             SimpleDialogOption(
               onPressed: () =>
-                  Navigator.of(context).pop(_RemoteAddAction.import),
+                  Navigator.of(context).pop(_AddAction.localCreate),
               child: const ListTile(
-                leading: Icon(Icons.cloud_download_outlined),
-                title: Text('导入已有收藏夹'),
+                leading: Icon(Icons.playlist_add_rounded),
+                title: Text('新建歌单'),
+                subtitle: Text('只在本地保存，不同步 B 站'),
                 contentPadding: EdgeInsets.zero,
               ),
             ),
-            SimpleDialogOption(
-              onPressed: () =>
-                  Navigator.of(context).pop(_RemoteAddAction.create),
-              child: const ListTile(
-                leading: Icon(Icons.add_rounded),
-                title: Text('新建网络歌单'),
-                contentPadding: EdgeInsets.zero,
+            if (isLoggedIn)
+              SimpleDialogOption(
+                onPressed: () =>
+                    Navigator.of(context).pop(_AddAction.remoteImport),
+                child: const ListTile(
+                  leading: Icon(Icons.cloud_download_outlined),
+                  title: Text('从 B站收藏夹导入'),
+                  subtitle: Text('默认拷贝一份到本地，也可选择绑定同步'),
+                  contentPadding: EdgeInsets.zero,
+                ),
               ),
-            ),
           ],
         );
       },
@@ -436,32 +433,14 @@ class _DesktopProfileSidebarState extends ConsumerState<DesktopProfileSidebar> {
     }
 
     switch (action) {
-      case _RemoteAddAction.import:
-        await _showRemoteImportDialog(context, ref);
-      case _RemoteAddAction.create:
-        await _showCreateRemoteCollectionDialog(context, ref);
-    }
-  }
-
-  void _handleTabChanged(_FavoriteListTab tab) {
-    if (_selectedTab == tab) {
-      return;
-    }
-    setState(() {
-      _selectedTab = tab;
-    });
-  }
-
-  void _handleAddPressed(BuildContext context, WidgetRef ref) {
-    switch (_selectedTab) {
-      case _FavoriteListTab.remote:
-        if (!(ref.read(biliSessionControllerProvider)?.isLoggedIn ?? false)) {
-          LoginPrompt.show(context, reason: '网络歌单需要登录 B 站账号');
+      case _AddAction.localCreate:
+        await _showCreateCollectionDialog(context, ref);
+      case _AddAction.remoteImport:
+        if (!isLoggedIn) {
+          LoginPrompt.show(context, reason: '导入 B站收藏夹需要登录 B 站账号');
           return;
         }
-        _showRemoteAddOptions(context, ref);
-      case _FavoriteListTab.local:
-        _showCreateCollectionDialog(context, ref);
+        await _showRemoteImportDialog(context, ref);
     }
   }
 
@@ -500,10 +479,10 @@ class _DesktopProfileSidebarState extends ConsumerState<DesktopProfileSidebar> {
                 itemHeight: 40,
                 items: <CommonAttachMenuItem<_CollectionAction>>[
                   if (!collection.isSystem)
-                    const CommonAttachMenuItem<_CollectionAction>(
+                    CommonAttachMenuItem<_CollectionAction>(
                       value: _CollectionAction.rename,
-                      label: '重命名',
-                      icon: SizedBox.shrink(),
+                      label: collection.isRemote ? '重命名 B 站收藏夹' : '重命名',
+                      icon: const SizedBox.shrink(),
                     ),
                   if (collection.isRemote)
                     const CommonAttachMenuItem<_CollectionAction>(
@@ -512,9 +491,9 @@ class _DesktopProfileSidebarState extends ConsumerState<DesktopProfileSidebar> {
                       icon: Icons.sync_rounded,
                     ),
                   if (collection.isRemote)
-                    CommonAttachMenuItem<_CollectionAction>(
+                    const CommonAttachMenuItem<_CollectionAction>(
                       value: _CollectionAction.remove,
-                      label: '移除',
+                      label: '解除绑定',
                       icon: Icons.remove_circle_outline_rounded,
                     ),
                   if (!collection.isSystem)
@@ -644,7 +623,11 @@ class _DesktopProfileSidebarState extends ConsumerState<DesktopProfileSidebar> {
       builder: (BuildContext context) {
         return AlertDialog(
           title: const Text('删除歌单'),
-          content: Text('确认删除“${collection.name}”？删除后无法恢复。'),
+          content: Text(
+            collection.isRemote
+                ? '确认删除“${collection.name}”？这会同时删除 B 站收藏夹，无法恢复。'
+                : '确认删除“${collection.name}”？删除后无法恢复。',
+          ),
           actions: <Widget>[
             TextButton(
               onPressed: () => Navigator.of(context).pop(false),
@@ -690,8 +673,10 @@ class _DesktopProfileSidebarState extends ConsumerState<DesktopProfileSidebar> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text('移除网络歌单'),
-          content: Text('确认从列表中移除“${collection.name}”？不会删除 B 站收藏夹。'),
+          title: const Text('解除绑定'),
+          content: Text(
+            '确认解除“${collection.name}”与 App 的绑定？只会从列表移除，不会删除 B 站收藏夹。',
+          ),
           actions: <Widget>[
             TextButton(
               onPressed: () => Navigator.of(context).pop(false),
@@ -699,7 +684,7 @@ class _DesktopProfileSidebarState extends ConsumerState<DesktopProfileSidebar> {
             ),
             FilledButton(
               onPressed: () => Navigator.of(context).pop(true),
-              child: const Text('移除'),
+              child: const Text('解除绑定'),
             ),
           ],
         );
@@ -721,7 +706,7 @@ class _DesktopProfileSidebarState extends ConsumerState<DesktopProfileSidebar> {
         widget.currentLocation == '/profile/favorites/${collection.id}') {
       context.go('/profile/favorites/${FavoriteCollection.likedCollectionId}');
     }
-    ToastUtil.show(removed ? '已移除网络歌单' : '移除失败');
+    ToastUtil.show(removed ? '已解除绑定' : '解除绑定失败');
   }
 
   Future<void> _syncRemoteCollection(
@@ -761,9 +746,9 @@ class _DesktopProfileSidebarState extends ConsumerState<DesktopProfileSidebar> {
 
 enum _CollectionAction { rename, delete, remove, sync, changeKind }
 
-enum _FavoriteListTab { remote, local }
+enum _AddAction { localCreate, remoteImport }
 
-enum _RemoteAddAction { import, create }
+enum _RemoteImportMode { localCopy, bindAndSync }
 
 class _SidebarAccountHeader extends ConsumerWidget {
   const _SidebarAccountHeader();
@@ -917,6 +902,7 @@ class _SidebarListItem extends StatelessWidget {
     this.onSecondaryTapDown,
     this.padding = const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
     this.showZeroCount = true,
+    this.isRemote = false,
   });
 
   final Widget leading;
@@ -927,6 +913,7 @@ class _SidebarListItem extends StatelessWidget {
   final GestureTapDownCallback? onSecondaryTapDown;
   final EdgeInsetsGeometry padding;
   final bool showZeroCount;
+  final bool isRemote;
 
   @override
   Widget build(BuildContext context) {
@@ -964,6 +951,17 @@ class _SidebarListItem extends StatelessWidget {
                   ),
                 ),
               ),
+              if (isRemote) ...<Widget>[
+                const SizedBox(width: 6),
+                Tooltip(
+                  message: 'B站收藏夹同步',
+                  child: Icon(
+                    Icons.sync_rounded,
+                    size: 12,
+                    color: colorScheme.primary.withValues(alpha: 0.8),
+                  ),
+                ),
+              ],
             ],
           ),
         ),
@@ -974,14 +972,10 @@ class _SidebarListItem extends StatelessWidget {
 
 class _CollectionHeader extends StatelessWidget {
   const _CollectionHeader({
-    required this.selectedTab,
-    required this.onTabChanged,
     required this.onAddPressed,
     required this.onImportPressed,
   });
 
-  final _FavoriteListTab selectedTab;
-  final ValueChanged<_FavoriteListTab> onTabChanged;
   final VoidCallback onAddPressed;
   final VoidCallback onImportPressed;
 
@@ -992,20 +986,12 @@ class _CollectionHeader extends StatelessWidget {
     return Row(
       children: <Widget>[
         Expanded(
-          child: Row(
-            children: <Widget>[
-              _PlaylistTabButton(
-                label: '网络歌单',
-                selected: selectedTab == _FavoriteListTab.remote,
-                onTap: () => onTabChanged(_FavoriteListTab.remote),
-              ),
-              const SizedBox(width: 14),
-              _PlaylistTabButton(
-                label: '本地歌单',
-                selected: selectedTab == _FavoriteListTab.local,
-                onTap: () => onTabChanged(_FavoriteListTab.local),
-              ),
-            ],
+          child: Text(
+            '歌单',
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: colorScheme.onSurface,
+              fontWeight: FontWeight.w800,
+            ),
           ),
         ),
         const SizedBox(width: 12),
@@ -1014,6 +1000,7 @@ class _CollectionHeader extends StatelessWidget {
           height: 28,
           child: IconButton(
             padding: EdgeInsets.zero,
+            tooltip: '导入外部歌单',
             onPressed: onImportPressed,
             icon: Icon(
               BmIcons.importright,
@@ -1027,7 +1014,7 @@ class _CollectionHeader extends StatelessWidget {
           height: 28,
           child: IconButton(
             padding: EdgeInsets.zero,
-            tooltip: '新建歌单',
+            tooltip: '添加歌单',
             onPressed: onAddPressed,
             icon: Icon(
               Icons.add_rounded,
@@ -1037,43 +1024,6 @@ class _CollectionHeader extends StatelessWidget {
           ),
         ),
       ],
-    );
-  }
-}
-
-class _PlaylistTabButton extends StatelessWidget {
-  const _PlaylistTabButton({
-    required this.label,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
-    return MouseRegion(
-      cursor: SystemMouseCursors.click,
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 6),
-          child: Text(
-            label,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: selected
-                  ? colorScheme.onSurface
-                  : colorScheme.onSurfaceVariant,
-              fontWeight: selected ? FontWeight.w800 : FontWeight.w500,
-            ),
-          ),
-        ),
-      ),
     );
   }
 }
@@ -1123,9 +1073,7 @@ class _SidebarPlaylistPlaceholder extends StatelessWidget {
 }
 
 class _EmptyCollectionHint extends StatelessWidget {
-  const _EmptyCollectionHint({required this.tab});
-
-  final _FavoriteListTab tab;
+  const _EmptyCollectionHint();
 
   @override
   Widget build(BuildContext context) {
@@ -1134,7 +1082,7 @@ class _EmptyCollectionHint extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.fromLTRB(8, 6, 8, 0),
       child: Text(
-        tab == _FavoriteListTab.remote ? '暂无网络歌单' : '暂无本地歌单',
+        '暂无歌单，点 + 新建',
         style: theme.textTheme.bodySmall?.copyWith(
           color: colorScheme.onSurfaceVariant.withValues(alpha: 0.72),
         ),

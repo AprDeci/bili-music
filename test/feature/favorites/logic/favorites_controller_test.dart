@@ -6,6 +6,7 @@ import 'package:bilimusic/core/bili/session/bili_session_controller.dart';
 import 'package:bilimusic/feature/favorites/data/bili_favorites_remote_repository.dart';
 import 'package:bilimusic/feature/favorites/data/favorites_local_repository.dart';
 import 'package:bilimusic/feature/favorites/data/favorites_remote_cache_repository.dart';
+import 'package:bilimusic/feature/favorites/domain/bili_favorite_collection_page.dart';
 import 'package:bilimusic/feature/favorites/domain/favorite_collection.dart';
 import 'package:bilimusic/feature/favorites/domain/favorite_entry.dart';
 import 'package:bilimusic/feature/favorites/domain/favorite_membership.dart';
@@ -325,6 +326,77 @@ void main() {
     expect(remote.addCalls, 2);
     expect(cache.saves, 1);
   });
+
+  test('imports a remote collection as an independent local copy', () async {
+    final FavoriteCollection remoteCollection = FavoriteCollection(
+      id: FavoriteCollection.remoteCollectionId('9'),
+      name: '远程歌单',
+      source: FavoriteCollectionSource.remote,
+      remoteId: '9',
+      kind: CollectionKind.spoken,
+      createdAt: now,
+      updatedAt: now,
+    );
+    remote.collections.add(remoteCollection);
+    remote.pageItems.add(FavoriteEntry.fromPlayableItem(item, now: now));
+
+    final FavoriteCollection? created = await controller
+        .importRemoteCollectionAsLocal(remoteCollection);
+
+    expect(created, isNotNull);
+    expect(created!.isLocal, isTrue);
+    expect(created.isRemote, isFalse);
+    expect(created.kind, CollectionKind.spoken);
+    expect(created.name, '远程歌单');
+    expect(created.coverUrl, remoteCollection.coverUrl);
+    expect(local.savedCollections.single.id, created.id);
+    expect(remote.pageCalls, 1);
+    expect(
+      container
+          .read(favoritesControllerProvider)
+          .itemsForCollection(created.id)
+          .single
+          .itemId,
+      FavoriteEntry.fromPlayableItem(item, now: now).itemId,
+    );
+  });
+
+  test('import keeps local names unique and skips non-remote input', () async {
+    final FavoriteCollection remoteCollection = FavoriteCollection(
+      id: FavoriteCollection.remoteCollectionId('9'),
+      name: 'local',
+      source: FavoriteCollectionSource.remote,
+      remoteId: '9',
+      createdAt: now,
+      updatedAt: now,
+    );
+    remote.collections.add(remoteCollection);
+    remote.pageItems.add(FavoriteEntry.fromPlayableItem(item, now: now));
+
+    final FavoriteCollection? created = await controller
+        .importRemoteCollectionAsLocal(remoteCollection);
+    expect(created, isNotNull);
+    expect(created!.name, 'local（B站）');
+
+    final FavoriteCollection localCollection = FavoriteCollection(
+      id: 'local-only',
+      name: '本地',
+      createdAt: now,
+      updatedAt: now,
+    );
+    expect(
+      await controller.importRemoteCollectionAsLocal(localCollection),
+      isNull,
+    );
+
+    remote.pageItems.clear();
+    final FavoriteCollection emptyRemote = remoteCollection.copyWith(
+      id: FavoriteCollection.remoteCollectionId('10'),
+      remoteId: '10',
+    );
+    remote.collections.add(emptyRemote);
+    expect(await controller.importRemoteCollectionAsLocal(emptyRemote), isNull);
+  });
 }
 
 class _Session extends BiliSessionController {
@@ -378,6 +450,23 @@ class _MemoryLocalRepository implements FavoritesLocalRepository {
         membership,
       ],
     );
+  }
+
+  @override
+  Future<void> saveAll({
+    required Iterable<FavoriteCollection> collections,
+    required Iterable<FavoriteEntry> entries,
+    required Iterable<FavoriteMembership> memberships,
+  }) async {
+    for (final FavoriteCollection collection in collections) {
+      await saveCollection(collection);
+    }
+    for (final FavoriteEntry entry in entries) {
+      await saveEntry(entry);
+    }
+    for (final FavoriteMembership membership in memberships) {
+      await saveMembership(membership);
+    }
   }
 
   @override
@@ -463,6 +552,26 @@ class _FakeRemoteRepository implements BiliFavoritesRemoteRepository {
   bool fail = false;
   Completer<void>? pending;
   final List<FavoriteCollection> collections = <FavoriteCollection>[];
+  final List<FavoriteEntry> pageItems = <FavoriteEntry>[];
+  int pageCalls = 0;
+
+  @override
+  Future<BiliFavoriteCollectionPage> fetchCollectionPage({
+    required BiliSession session,
+    required String remoteId,
+    int pageNumber = 1,
+    int pageSize = 20,
+  }) async {
+    pageCalls++;
+    return BiliFavoriteCollectionPage(
+      collection: collections.firstWhere(
+        (FavoriteCollection collection) => collection.remoteId == remoteId,
+      ),
+      items: pageItems,
+      hasMore: false,
+      pageNumber: pageNumber,
+    );
+  }
 
   @override
   Future<FavoriteCollection> createCollection({

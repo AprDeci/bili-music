@@ -44,14 +44,16 @@ void main() {
             tester,
             desktop: desktop,
             favorites: _Favorites(FavoritesState(collections: [collection])),
+            loggedIn: collection.isRemote,
           );
           final Finder collectionTile = find.text(
             collection.isSystem ? (desktop ? '喜欢·0' : '收藏') : collection.name,
           );
           final List<String> actions = <String>[
-            if (!collection.isSystem) '重命名',
-            if (desktop && collection.isRemote) '同步',
-            if (collection.isRemote) '移除',
+            if (!collection.isSystem)
+              collection.isRemote ? '重命名 B 站收藏夹' : '重命名',
+            if (collection.isRemote) '同步',
+            if (collection.isRemote) '解除绑定',
             if (!collection.isSystem) '删除',
             '修改类型',
           ];
@@ -212,7 +214,7 @@ void main() {
         },
       );
     }
-    for (final String flow in <String>['local', 'remote', 'import']) {
+    for (final String flow in <String>['local', 'bind', 'importLocal']) {
       for (final bool confirm in <bool>[true, false]) {
         testWidgets(
           '${desktop ? 'desktop' : 'mobile'} $flow ${confirm ? 'uses selected kind' : 'cancels before writing'}',
@@ -224,25 +226,19 @@ void main() {
               favorites: favorites,
               loggedIn: true,
             );
-            if (flow == 'local') {
-              await tester.tap(find.text('本地歌单'));
-              await tester.pumpAndSettle();
-            }
             await tester.tap(
-              desktop ? find.byTooltip('新建歌单') : find.byIcon(Icons.add_rounded),
+              desktop ? find.byTooltip('添加歌单') : find.byIcon(Icons.add_rounded),
             );
             await tester.pumpAndSettle();
-            if (flow != 'local') {
-              await tester.tap(
-                find.text(flow == 'import' ? '导入已有收藏夹' : '新建网络歌单'),
-              );
+            if (flow == 'local') {
+              await tester.tap(find.text('新建歌单'));
               await tester.pumpAndSettle();
-            }
-            if (flow == 'import') {
-              await tester.tap(find.text('待导入收藏夹'));
-            } else {
               await tester.enterText(find.byType(TextField), '新的歌单');
               await tester.tap(find.text('创建'));
+            } else {
+              await tester.tap(find.text('从 B站收藏夹导入'));
+              await tester.pumpAndSettle();
+              await tester.tap(find.text('待导入收藏夹'));
             }
             await tester.pumpAndSettle();
             expect(find.text('选择歌单类型'), findsOneWidget);
@@ -250,20 +246,11 @@ void main() {
             expect(favorites.createCalls, 0);
             expect(favorites.bindCalls, 0);
             expect(favorites.refreshCalls, 0);
+            expect(favorites.importLocalCalls, 0);
             await tester.tap(find.text('听声'));
             await tester.tap(find.text(confirm ? '确定' : '取消'));
             await tester.pumpAndSettle();
-            if (confirm) {
-              final FavoriteCollection collection = container
-                  .read(favoritesControllerProvider)
-                  .collections
-                  .single;
-              expect(collection.kind, CollectionKind.spoken);
-              expect(collection.isRemote, flow != 'local');
-              expect(favorites.createCalls, flow == 'import' ? 0 : 1);
-              expect(favorites.bindCalls, flow == 'import' ? 1 : 0);
-              expect(favorites.refreshCalls, flow == 'import' ? 1 : 0);
-            } else {
+            if (!confirm) {
               expect(
                 container.read(favoritesControllerProvider).collections,
                 isEmpty,
@@ -271,6 +258,35 @@ void main() {
               expect(favorites.createCalls, 0);
               expect(favorites.bindCalls, 0);
               expect(favorites.refreshCalls, 0);
+              expect(favorites.importLocalCalls, 0);
+              expect(find.text('选择歌单类型'), findsNothing);
+              expect(tester.takeException(), isNull);
+              await tester.pump(const Duration(seconds: 3));
+              await tester.pumpAndSettle();
+              return;
+            }
+            if (flow != 'local') {
+              await tester.tap(
+                find.text(flow == 'bind' ? '绑定并保持同步' : '导入为本地歌单'),
+              );
+              await tester.pumpAndSettle();
+            }
+            if (flow == 'local') {
+              final FavoriteCollection collection = container
+                  .read(favoritesControllerProvider)
+                  .collections
+                  .single;
+              expect(collection.kind, CollectionKind.spoken);
+              expect(collection.isRemote, isFalse);
+              expect(favorites.createCalls, 1);
+            } else if (flow == 'bind') {
+              expect(favorites.bindCalls, 1);
+              expect(favorites.refreshCalls, 1);
+              expect(favorites.importLocalCalls, 0);
+            } else {
+              expect(favorites.importLocalCalls, 1);
+              expect(favorites.lastImportKind, CollectionKind.spoken);
+              expect(favorites.bindCalls, 0);
             }
             expect(find.text('选择歌单类型'), findsNothing);
             expect(tester.takeException(), isNull);
@@ -343,12 +359,6 @@ Future<ProviderContainer> _pumpProfile(
     await tester.pumpWidget(const SizedBox.shrink());
   });
   await tester.pumpAndSettle();
-  if (favorites.initial.collections.any(
-    (collection) => collection.isLocal && !collection.isSystem,
-  )) {
-    await tester.tap(find.text('本地歌单'));
-    await tester.pumpAndSettle();
-  }
   return container;
 }
 
@@ -409,6 +419,28 @@ class _Favorites extends FavoritesController {
     createdAt: DateTime(2026),
     updatedAt: DateTime(2026),
   );
+
+  int importLocalCalls = 0;
+  CollectionKind? lastImportKind;
+
+  @override
+  Future<FavoriteCollection?> importRemoteCollectionAsLocal(
+    FavoriteCollection remote, {
+    CollectionKind? kind,
+  }) async {
+    importLocalCalls++;
+    lastImportKind = kind;
+    final DateTime now = DateTime(2026);
+    final FavoriteCollection collection = FavoriteCollection(
+      id: 'custom_imported',
+      name: remote.name,
+      kind: kind ?? remote.kind,
+      createdAt: now,
+      updatedAt: now,
+    );
+    state = state.copyWith(collections: [...state.collections, collection]);
+    return collection;
+  }
 
   @override
   Future<List<FavoriteCollection>> fetchImportableRemoteCollections() async => [

@@ -50,16 +50,12 @@ class _PlayerCollectionSheet extends ConsumerStatefulWidget {
 
 class _PlayerCollectionSheetState
     extends ConsumerState<_PlayerCollectionSheet> {
-  _CollectionListTab _selectedTab = _CollectionListTab.remote;
-
   @override
   Widget build(BuildContext context) {
     final FavoritesState favoritesState = ref.watch(
       favoritesControllerProvider,
     );
-    final List<FavoriteCollection> collections = _collectionsForSelectedTab(
-      favoritesState,
-    );
+    final List<FavoriteCollection> collections = _collections(favoritesState);
     final ThemeData theme = Theme.of(context);
 
     return DraggableScrollableSheet(
@@ -83,31 +79,14 @@ class _PlayerCollectionSheetState
                     ),
                   ),
                   const SizedBox(height: 4),
-                  Row(
-                    children: <Widget>[
-                      _CollectionTabButton(
-                        label: '网络歌单',
-                        selected: _selectedTab == _CollectionListTab.remote,
-                        onTap: () => _selectTab(_CollectionListTab.remote),
-                      ),
-                      const SizedBox(width: 22),
-                      _CollectionTabButton(
-                        label: '本地歌单',
-                        selected: _selectedTab == _CollectionListTab.local,
-                        onTap: () => _selectTab(_CollectionListTab.local),
-                      ),
-                    ],
-                  ),
                 ],
               ),
             ),
             Expanded(
               child: collections.isEmpty
-                  ? StatusView(
+                  ? const StatusView(
                       icon: Icons.queue_music_outlined,
-                      title: _selectedTab == _CollectionListTab.remote
-                          ? '暂无网络歌单'
-                          : '暂无本地歌单',
+                      title: '暂无歌单',
                     )
                   : ListView.separated(
                       controller: scrollController,
@@ -162,14 +141,11 @@ class _PlayerCollectionSheetState
     );
   }
 
-  List<FavoriteCollection> _collectionsForSelectedTab(FavoritesState state) {
+  List<FavoriteCollection> _collections(FavoritesState state) {
     final List<FavoriteCollection> collections = state.collections
         .where((FavoriteCollection collection) {
-          return switch (_selectedTab) {
-            _CollectionListTab.remote => collection.isRemote,
-            _CollectionListTab.local =>
-              collection.isLocal && !collection.isLikedCollection,
-          };
+          return collection.isRemote ||
+              (collection.isLocal && !collection.isLikedCollection);
         })
         .toList(growable: false);
     collections.sort(
@@ -177,15 +153,6 @@ class _PlayerCollectionSheetState
           b.updatedAt.compareTo(a.updatedAt),
     );
     return collections;
-  }
-
-  void _selectTab(_CollectionListTab tab) {
-    if (_selectedTab == tab) {
-      return;
-    }
-    setState(() {
-      _selectedTab = tab;
-    });
   }
 
   Future<void> _handleCollectionTap({
@@ -222,46 +189,6 @@ class _PlayerCollectionSheetState
     }
     ToastUtil.show(
       '已新增 $addedCount / ${itemsToAdd.length} 项到“${collection.name}”',
-    );
-  }
-}
-
-enum _CollectionListTab { remote, local }
-
-class _CollectionTabButton extends StatelessWidget {
-  const _CollectionTabButton({
-    required this.label,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    return Semantics(
-      selected: selected,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(4),
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(minHeight: 48),
-          child: Center(
-            child: Text(
-              label,
-              style: theme.textTheme.titleSmall?.copyWith(
-                color: selected
-                    ? theme.colorScheme.primary
-                    : theme.colorScheme.onSurfaceVariant,
-                fontWeight: selected ? FontWeight.w600 : FontWeight.normal,
-              ),
-            ),
-          ),
-        ),
-      ),
     );
   }
 }

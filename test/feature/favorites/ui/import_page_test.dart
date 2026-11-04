@@ -31,7 +31,7 @@ const FavoritesImportCandidate _candidate = FavoritesImportCandidate(
 );
 
 void main() {
-  for (final bool remote in <bool>[false, true]) {
+  for (final bool remote in <bool>[false]) {
     final String target = remote ? '网络' : '本地';
     testWidgets(
       'mobile new $target import confirms spoken kind before saving',
