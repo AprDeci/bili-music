@@ -320,6 +320,9 @@ class _FakeHost implements PlayerSessionHost {
   }
 
   @override
+  void scheduleChapterResolution() => calls.add('chapters');
+
+  @override
   void resetEnginePlaybackSnapshot({
     required PlayerEngineProcessingState processingState,
   }) {}

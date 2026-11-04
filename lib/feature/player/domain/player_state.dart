@@ -1,5 +1,6 @@
 import 'package:bilimusic/feature/player/domain/audio_stream_info.dart';
 import 'package:bilimusic/feature/player/domain/playable_item.dart';
+import 'package:bilimusic/feature/player/domain/playback_chapter.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 
 part 'player_state.freezed.dart';
@@ -20,6 +21,7 @@ abstract class PlayerState with _$PlayerState {
     PlayableItem? currentItem,
     AudioStreamInfo? audioStream,
     @Default(<PlayableItem>[]) List<PlayableItem> availableParts,
+    @Default(<PlaybackChapter>[]) List<PlaybackChapter> chapters,
     @Default(<PlayableItem>[]) List<PlayableItem> queue,
     int? currentQueueIndex,
     String? queueSourceLabel,

@@ -21,6 +21,7 @@ import 'package:bilimusic/feature/player/ui/sleep_timer_page.dart';
 import 'package:bilimusic/feature/player/ui/desktop/components/quality_attach.dart';
 import 'package:bilimusic/feature/player/ui/desktop/components/play_pause_button.dart';
 import 'package:bilimusic/feature/player/ui/desktop/components/queue_mode_attach.dart';
+import 'package:bilimusic/feature/player/ui/components/player_chapter_selector.dart';
 import 'package:bilimusic/feature/player/ui/components/player_part_selector.dart';
 import 'package:bilimusic/feature/player/ui/components/player_queue_sheet.dart';
 import 'package:bilimusic/feature/player/logic/utils/player_ui_helpers.dart';
@@ -128,15 +129,30 @@ class DesktopPlayerBar extends ConsumerWidget {
               child: _ActionSection(
                 item: item,
                 state: state,
-                onOpenParts: item == null || state.availableParts.length < 2
+                onOpenParts:
+                    item == null ||
+                        (state.availableParts.length < 2 &&
+                            state.chapters.length < 2)
                     ? null
-                    : () => showDesktopPlayerPartSelectorPanel(
-                        context: context,
-                        parts: state.availableParts,
-                        currentItem: item,
-                        state: state,
-                        controller: controller,
-                      ),
+                    : () {
+                        if (state.availableParts.length > 1) {
+                          showDesktopPlayerPartSelectorPanel(
+                            context: context,
+                            parts: state.availableParts,
+                            currentItem: item,
+                            state: state,
+                            controller: controller,
+                          );
+                          return;
+                        }
+                        showDesktopPlayerChapterSelectorPanel(
+                          context: context,
+                          chapters: state.chapters,
+                          position: state.position,
+                          isPlaying: state.isPlaying,
+                          onSeek: controller.seek,
+                        );
+                      },
                 onOpenQueue: () =>
                     showDesktopPlayerQueuePanel(context: context, state: state),
                 onSelectQuality: (int? qualityId) {
@@ -497,7 +513,11 @@ class _ActionSection extends ConsumerWidget {
             size: 22,
           ),
           badgeIcon: const Icon(BmIcons.partListWithBadge, size: 26),
-          badge: formatPartBadge(item),
+          badge: formatJumpBadge(
+            item: item,
+            chapters: state.chapters,
+            position: state.position,
+          ),
           onPressed: onOpenParts,
           tooltip: '选择分 P',
         ),

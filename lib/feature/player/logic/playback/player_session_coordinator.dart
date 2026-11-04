@@ -5,6 +5,7 @@ import 'package:bilimusic/feature/player/domain/player_audio_quality_preference.
 import 'package:bilimusic/feature/player/domain/player_event.dart';
 import 'package:bilimusic/feature/player/domain/player_state.dart';
 import 'package:bilimusic/feature/player/domain/playable_item.dart';
+import 'package:bilimusic/feature/player/domain/playback_chapter.dart';
 import 'package:bilimusic/feature/player/logic/playback/audio_source_resolver.dart';
 import 'package:bilimusic/feature/player/logic/playback/player_audio_engine.dart';
 import 'package:bilimusic/feature/player/logic/playback/player_playback_loader.dart';
@@ -30,6 +31,8 @@ abstract interface class PlayerSessionHost {
   Future<void> persistQueueSnapshot();
 
   Future<void> enqueueAvailableParts(List<PlayableItem> parts);
+
+  void scheduleChapterResolution();
 
   void resetEnginePlaybackSnapshot({
     required PlayerEngineProcessingState processingState,
@@ -146,6 +149,7 @@ class PlayerSessionCoordinator {
         isBuffering: false,
         statusHint: PlayerStatusHint.resolvingAudio,
         availableParts: const <PlayableItem>[],
+        chapters: const <PlaybackChapter>[],
         audioStream: null,
         duration: null,
         position: Duration.zero,
@@ -208,6 +212,7 @@ class PlayerSessionCoordinator {
       );
       _setState(_state.copyWith(position: startPosition));
       await _host.enqueueAvailableParts(entry.availableParts);
+      _host.scheduleChapterResolution();
       _host.beginListening(entry.item, startPosition, _state.duration);
       if (entry.cachedFile != null) {
         unawaited(
@@ -471,6 +476,7 @@ class PlayerSessionCoordinator {
         isBuffering: false,
         statusHint: PlayerStatusHint.error,
         availableParts: const <PlayableItem>[],
+        chapters: const <PlaybackChapter>[],
         audioStream: null,
         duration: null,
         errorMessage: error.toString(),
