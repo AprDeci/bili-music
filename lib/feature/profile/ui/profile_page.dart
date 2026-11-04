@@ -100,7 +100,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
               ),
               onLikedLongPressStart: (LongPressStartDetails details) =>
                   _showCollectionActionMenu(
-                    details: details,
+                    globalPosition: details.globalPosition,
                     collection: favoritesState.likedCollection,
                   ),
               onRecentTap: () => context.push('/profile/recent'),
@@ -129,7 +129,13 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                       context.push('/profile/favorites/${collection.id}'),
                   onLongPressStart: (LongPressStartDetails details) {
                     _showCollectionActionMenu(
-                      details: details,
+                      globalPosition: details.globalPosition,
+                      collection: collection,
+                    );
+                  },
+                  onMenuPressed: (Offset globalPosition) {
+                    _showCollectionActionMenu(
+                      globalPosition: globalPosition,
                       collection: collection,
                     );
                   },
@@ -362,17 +368,14 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
   }
 
   Future<void> _showCollectionActionMenu({
-    required LongPressStartDetails details,
+    required Offset globalPosition,
     required FavoriteCollection collection,
   }) async {
     final OverlayState overlay = Overlay.of(context);
     final RenderBox overlayBox =
         overlay.context.findRenderObject()! as RenderBox;
     final RelativeRect position = RelativeRect.fromRect(
-      Rect.fromPoints(
-        details.globalPosition,
-        details.globalPosition.translate(1, 1),
-      ),
+      Rect.fromPoints(globalPosition, globalPosition.translate(1, 1)),
       Offset.zero & overlayBox.size,
     );
 
@@ -838,6 +841,7 @@ class _PlaylistTile extends StatelessWidget {
     required this.coverUrl,
     required this.onTap,
     required this.onLongPressStart,
+    required this.onMenuPressed,
   });
 
   final String title;
@@ -846,6 +850,7 @@ class _PlaylistTile extends StatelessWidget {
   final String? coverUrl;
   final VoidCallback onTap;
   final ValueChanged<LongPressStartDetails> onLongPressStart;
+  final ValueChanged<Offset> onMenuPressed;
 
   @override
   Widget build(BuildContext context) {
@@ -900,9 +905,27 @@ class _PlaylistTile extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 8),
-                Icon(
-                  Icons.chevron_right_rounded,
-                  color: colorScheme.onSurfaceVariant,
+                Builder(
+                  builder: (BuildContext buttonContext) {
+                    return IconButton(
+                      tooltip: '歌单设置',
+                      visualDensity: VisualDensity.compact,
+                      onPressed: () {
+                        final RenderBox? box =
+                            buttonContext.findRenderObject() as RenderBox?;
+                        if (box == null) {
+                          return;
+                        }
+                        onMenuPressed(
+                          box.localToGlobal(box.size.center(Offset.zero)),
+                        );
+                      },
+                      icon: Icon(
+                        Icons.more_horiz_rounded,
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                    );
+                  },
                 ),
               ],
             ),

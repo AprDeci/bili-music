@@ -298,6 +298,41 @@ void main() {
       }
     }
   }
+
+  testWidgets('mobile playlist settings button opens the action menu', (
+    WidgetTester tester,
+  ) async {
+    final DateTime now = DateTime(2026);
+    final FavoriteCollection collection = FavoriteCollection(
+      id: 'local',
+      name: '测试歌单',
+      source: FavoriteCollectionSource.local,
+      createdAt: now,
+      updatedAt: now,
+    );
+    await _pumpProfile(
+      tester,
+      desktop: false,
+      favorites: _Favorites(FavoritesState(collections: [collection])),
+    );
+
+    expect(find.byTooltip('歌单设置'), findsOneWidget);
+
+    await tester.tap(find.byTooltip('歌单设置'));
+    await tester.pumpAndSettle();
+
+    final Finder menuText = find.descendant(
+      of: find.byWidgetPredicate(
+        (Widget widget) => widget is PopupMenuEntry<Object?>,
+      ),
+      matching: find.byType(Text),
+    );
+    expect(
+      tester.widgetList<Text>(menuText).map((Text text) => text.data).toList(),
+      <String>['重命名', '删除', '修改类型'],
+    );
+    expect(tester.takeException(), isNull);
+  });
 }
 
 Future<ProviderContainer> _pumpProfile(
