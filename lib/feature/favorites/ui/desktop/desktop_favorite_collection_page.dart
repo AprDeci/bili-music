@@ -19,7 +19,6 @@ import 'package:bilimusic/feature/favorites/ui/components/collection_kind_tag.da
 import 'package:bilimusic/feature/favorites/ui/components/favorite_collection_search_field.dart';
 import 'package:bilimusic/feature/favorites/ui/components/desktop/desktop_favorite_collection_items_list.dart';
 import 'package:bilimusic/feature/favorites/ui/components/favorite_entry_subtitle.dart';
-import 'package:bilimusic/feature/favorites/ui/components/favorited_seasons_list.dart';
 import 'package:bilimusic/feature/favorites/ui/components/favorites_metadata_toolbar_buttons.dart';
 import 'package:bilimusic/feature/favorites/ui/components/remote_collection_sync_status_bar.dart';
 import 'package:bilimusic/feature/player/domain/playable_item.dart';
@@ -428,7 +427,7 @@ class _DesktopFavoriteCollectionPageState
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
           DesktopTabSwitcher(
-            labels: const <String>['歌曲', '合集', 'UP主'],
+            labels: const <String>['歌曲', 'UP主'],
             selectedIndex: _selectedSection,
             onChanged: (int index) {
               setState(() {
@@ -438,8 +437,7 @@ class _DesktopFavoriteCollectionPageState
           ),
           Expanded(
             child: switch (_selectedSection) {
-              1 => const FavoritedSeasonsList(),
-              2 => const FavoriteUpList(),
+              1 => const FavoriteUpList(),
               _ => songsBody,
             },
           ),

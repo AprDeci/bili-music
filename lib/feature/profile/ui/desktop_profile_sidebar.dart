@@ -137,7 +137,7 @@ class _DesktopProfileSidebarState extends ConsumerState<DesktopProfileSidebar> {
                   ? Colors.black
                   : colorScheme.onSurfaceVariant,
             ),
-            title: '喜欢',
+            title: '我喜欢',
             count: likedCount,
             isSelected: isLikedSelected,
             onTap: () => context.go(

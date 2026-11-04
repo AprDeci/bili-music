@@ -715,7 +715,7 @@ class _ProfileQuickActions extends StatelessWidget {
         Expanded(
           child: _ProfileQuickActionCard(
             icon: Icons.favorite_rounded,
-            title: '收藏',
+            title: '我喜欢',
             count: likedCount,
             onTap: onLikedTap,
             onLongPressStart: onLikedLongPressStart,

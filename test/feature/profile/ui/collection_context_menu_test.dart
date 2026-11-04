@@ -48,7 +48,7 @@ void main() {
             loggedIn: collection.isRemote,
           );
           final Finder collectionTile = find.text(
-            collection.isSystem ? (desktop ? '喜欢·0' : '收藏') : collection.name,
+            collection.isSystem ? (desktop ? '我喜欢·0' : '我喜欢') : collection.name,
           );
           final List<String> actions = <String>[
             if (!collection.isSystem)
@@ -149,7 +149,7 @@ void main() {
           favorites: favorites,
         );
         for (final String action in ['取消', '确定']) {
-          final Finder tile = find.text(desktop ? '喜欢·0' : '收藏');
+          final Finder tile = find.text(desktop ? '我喜欢·0' : '我喜欢');
           if (desktop) {
             await tester.tap(
               tile,
@@ -187,7 +187,7 @@ void main() {
               throwsOnSave: throwsOnSave,
             ),
           );
-          final Finder collectionTile = find.text(desktop ? '喜欢·0' : '收藏');
+          final Finder collectionTile = find.text(desktop ? '我喜欢·0' : '我喜欢');
           if (desktop) {
             await tester.tap(
               collectionTile,

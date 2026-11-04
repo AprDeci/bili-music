@@ -19,7 +19,6 @@ import 'package:bilimusic/feature/favorites/ui/components/collection_kind_tag.da
 import 'package:bilimusic/feature/favorites/ui/components/favorite_collection_items_list.dart';
 import 'package:bilimusic/feature/favorites/ui/components/favorite_collection_search_field.dart';
 import 'package:bilimusic/feature/favorites/ui/components/favorite_entry_subtitle.dart';
-import 'package:bilimusic/feature/favorites/ui/components/favorited_seasons_list.dart';
 import 'package:bilimusic/feature/favorites/ui/components/favorites_metadata_toolbar_buttons.dart';
 import 'package:bilimusic/feature/favorites/ui/components/remote_collection_sync_status_bar.dart';
 import 'package:bilimusic/feature/player/domain/playable_item.dart';
@@ -319,7 +318,7 @@ class _FavoriteCollectionPageState
     final bool showLikedTabs = collection.isLikedCollection;
 
     return DefaultTabController(
-      length: showLikedTabs ? 3 : 1,
+      length: showLikedTabs ? 2 : 1,
       child: Scaffold(
         appBar: AppBar(
           title: Row(
@@ -340,7 +339,6 @@ class _FavoriteCollectionPageState
               ? const TabBar(
                   tabs: <Widget>[
                     Tab(text: '歌曲'),
-                    Tab(text: '合集'),
                     Tab(text: 'UP主'),
                   ],
                 )
@@ -350,7 +348,6 @@ class _FavoriteCollectionPageState
             ? TabBarView(
                 children: <Widget>[
                   _buildSongsBody(collection, items, visibleItems, queueItems),
-                  const FavoritedSeasonsList(),
                   const FavoriteUpList(),
                 ],
               )
