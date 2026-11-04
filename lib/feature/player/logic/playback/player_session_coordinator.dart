@@ -29,6 +29,8 @@ abstract interface class PlayerSessionHost {
 
   Future<void> persistQueueSnapshot();
 
+  Future<void> enqueueAvailableParts(List<PlayableItem> parts);
+
   void resetEnginePlaybackSnapshot({
     required PlayerEngineProcessingState processingState,
   });
@@ -205,6 +207,7 @@ class PlayerSessionCoordinator {
         durationOverride: loadedDuration,
       );
       _setState(_state.copyWith(position: startPosition));
+      await _host.enqueueAvailableParts(entry.availableParts);
       _host.beginListening(entry.item, startPosition, _state.duration);
       if (entry.cachedFile != null) {
         unawaited(
@@ -538,6 +541,7 @@ class PlayerSessionCoordinator {
         audioStream: completed.audioStream,
       ),
     );
+    await _host.enqueueAvailableParts(completed.availableParts);
     _host.publishPlaybackState();
     unawaited(_host.persistQueueSnapshot());
   }

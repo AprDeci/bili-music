@@ -210,6 +210,49 @@ void main() {
     expect(container.read(playerControllerProvider).currentItem, _second);
     await player.shutdown();
   });
+
+  test(
+    'enqueueAvailableParts inserts missing parts after current item',
+    () async {
+      final _PlaybackEngine engine = _PlaybackEngine();
+      final ProviderContainer container = _playbackContainer(engine);
+      addTearDown(container.dispose);
+      final PlayerController player = container.read(
+        playerControllerProvider.notifier,
+      );
+      final PlayableItem thirdPart = _first.copyWith(cid: 900);
+
+      await player.enqueueAvailableParts(<PlayableItem>[
+        _first,
+        thirdPart,
+        _second,
+      ]);
+
+      final PlayerState state = container.read(playerControllerProvider);
+      expect(
+        state.queue.map((PlayableItem item) => item.stableId).toList(),
+        <String>[_first.stableId, thirdPart.stableId, _second.stableId],
+      );
+      expect(state.currentQueueIndex, 0);
+      expect(state.currentItem, _first);
+      await player.shutdown();
+    },
+  );
+
+  test('enqueueAvailableParts ignores single part videos', () async {
+    final _PlaybackEngine engine = _PlaybackEngine();
+    final ProviderContainer container = _playbackContainer(engine);
+    addTearDown(container.dispose);
+    final PlayerController player = container.read(
+      playerControllerProvider.notifier,
+    );
+
+    await player.enqueueAvailableParts(<PlayableItem>[_first]);
+
+    final PlayerState state = container.read(playerControllerProvider);
+    expect(state.queue.length, 2);
+    await player.shutdown();
+  });
 }
 
 class _PendingResume extends ListeningProgressController {

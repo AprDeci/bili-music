@@ -513,6 +513,42 @@ class PlayerController extends Notifier<PlayerState>
     await _persistQueueSnapshot();
   }
 
+  @override
+  Future<void> enqueueAvailableParts(List<PlayableItem> parts) async {
+    if (parts.length < 2) {
+      return;
+    }
+
+    final Set<String> queuedIds = state.queue
+        .map((PlayableItem item) => item.stableId)
+        .toSet();
+    final List<PlayableItem> missing = parts
+        .where((PlayableItem part) => !queuedIds.contains(part.stableId))
+        .toList(growable: false);
+    if (missing.isEmpty) {
+      return;
+    }
+
+    final int? currentIndex = state.currentQueueIndex;
+    final List<PlayableItem> queue = List<PlayableItem>.of(state.queue);
+    if (currentIndex == null) {
+      queue.addAll(missing);
+    } else {
+      queue.insertAll(currentIndex + 1, missing);
+    }
+
+    state = state.copyWith(queue: List<PlayableItem>.unmodifiable(queue));
+    _logPlayerEvent(
+      'enqueueAvailableParts',
+      details: <String, Object?>{
+        'added': missing.length,
+        'queueLength': queue.length,
+      },
+    );
+    _publishPlaybackState();
+    await _persistQueueSnapshot();
+  }
+
   Future<void> playNext(PlayableItem item) async {
     final int existingIndex = state.queue.indexWhere(
       (PlayableItem queuedItem) => queuedItem.stableId == item.stableId,

@@ -172,6 +172,27 @@ void main() {
     expect(host.calls, isNot(contains('seek:0')));
   });
 
+  test('load 成功后自动把全部分P加入队列', () async {
+    final PlayableItem first = _item();
+    final PlayableItem second = _item(cid: 333);
+    final _FakeHost host = _FakeHost(
+      state: PlayerState(queue: <PlayableItem>[first]),
+    );
+    final _ScriptedRepository repository = _ScriptedRepository(<Object>[
+      _okWithParts(first, <PlayableItem>[first, second]),
+    ]);
+    final PlayerSessionCoordinator coordinator = _coordinator(host, repository);
+
+    final bool loaded = await coordinator.load(
+      0,
+      autoplay: false,
+      initialPosition: Duration.zero,
+    );
+
+    expect(loaded, isTrue);
+    expect(host.calls, contains('enqueueParts:2'));
+  });
+
   test('队列推进中忽略完成回调', () async {
     final _FakeHost host = _FakeHost(
       state: PlayerState(queue: <PlayableItem>[_item()], currentQueueIndex: 0),
@@ -221,6 +242,14 @@ PlayerLoadResult _ok(PlayableItem item) {
       qualityLabel: '192K',
       availableQualities: <AudioQualityOption>[],
     ),
+  );
+}
+
+PlayerLoadResult _okWithParts(PlayableItem item, List<PlayableItem> parts) {
+  return PlayerLoadResult(
+    item: item,
+    availableParts: parts,
+    audioStream: _ok(item).audioStream,
   );
 }
 
@@ -284,6 +313,11 @@ class _FakeHost implements PlayerSessionHost {
 
   @override
   Future<void> persistQueueSnapshot() async => calls.add('persist');
+
+  @override
+  Future<void> enqueueAvailableParts(List<PlayableItem> parts) async {
+    calls.add('enqueueParts:${parts.length}');
+  }
 
   @override
   void resetEnginePlaybackSnapshot({
