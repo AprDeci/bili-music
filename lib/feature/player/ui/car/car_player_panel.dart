@@ -234,7 +234,7 @@ class CarPlayerControls extends ConsumerWidget {
                     : state.isPlaying
                     ? '暂停'
                     : '播放',
-                primary: true,
+                primary: false,
                 iconSize: 44,
                 icon: state.isLoading || state.isBuffering
                     ? const SizedBox.square(
