@@ -244,17 +244,32 @@ class _CarPlayerPageState extends ConsumerState<CarPlayerPage> {
                   child: SizedBox(
                     height: height,
                     child: Padding(
-                      padding: EdgeInsets.fromLTRB(
-                        horizontalInset,
-                        24,
-                        horizontalInset,
-                        bottomInset,
+                      padding: EdgeInsets.symmetric(
+                        horizontal: horizontalInset,
                       ),
                       child: Row(
                         children: <Widget>[
-                          Expanded(flex: 6, child: lyricsAndControls),
+                          Expanded(
+                            flex: 6,
+                            child: Padding(
+                              padding: const EdgeInsets.only(
+                                top: 8,
+                                bottom: 24,
+                              ),
+                              child: lyricsAndControls,
+                            ),
+                          ),
                           SizedBox(width: horizontalInset),
-                          Expanded(flex: 4, child: artwork),
+                          Expanded(
+                            flex: 4,
+                            child: Padding(
+                              padding: EdgeInsets.only(
+                                top: 24,
+                                bottom: bottomInset,
+                              ),
+                              child: artwork,
+                            ),
+                          ),
                         ],
                       ),
                     ),

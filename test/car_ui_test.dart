@@ -1277,6 +1277,17 @@ void main() {
         tester.element(find.byType(CarPlayerPage)),
       );
       expect(container.read(playerControllerProvider).queue, [_item]);
+      final Finder lyricPanel = find.byType(PlayerLyricPanel);
+      final Rect leftPanel = tester.getRect(
+        find.ancestor(of: lyricPanel, matching: find.byType(Column)).first,
+      );
+      final Finder layout = find
+          .ancestor(of: lyricPanel, matching: find.byType(LayoutBuilder))
+          .first;
+      final Rect content = tester.getRect(layout);
+      final double scale = content.height / tester.getSize(layout).height;
+      expect(leftPanel.top - content.top, closeTo(8 * scale, 0.01));
+      expect(content.bottom - leftPanel.bottom, closeTo(24 * scale, 0.01));
       final Rect progress = tester.getRect(find.byTooltip('播放进度'));
       for (final label in ['手动匹配歌词', '歌词偏移']) {
         final Finder button = find.byTooltip(label);
