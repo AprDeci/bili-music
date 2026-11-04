@@ -149,16 +149,7 @@ class CarPlayerControls extends ConsumerWidget {
       PlayerQueueMode.singleRepeat => '单曲循环',
       PlayerQueueMode.shuffle => '随机播放',
     };
-    final String? status = state.hasError
-        ? state.errorMessage
-        : switch (state.statusHint) {
-            PlayerStatusHint.resolvingAudio => '正在解析音频',
-            PlayerStatusHint.connectingStream => '正在连接音频',
-            PlayerStatusHint.loadingCache => '正在加载缓存',
-            PlayerStatusHint.buffering => '正在缓冲',
-            PlayerStatusHint.error => '播放失败，请重试',
-            null => state.isLoading ? '正在加载' : null,
-          };
+
 
     const double edgeInset = (56 - 22) / 2;
 
@@ -198,23 +189,6 @@ class CarPlayerControls extends ConsumerWidget {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: <Widget>[
-        if (status != null)
-          Semantics(
-            liveRegion: true,
-            child: Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: Text(
-                status,
-                maxLines: 3,
-                overflow: TextOverflow.ellipsis,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: state.hasError
-                      ? theme.colorScheme.error
-                      : theme.colorScheme.onSurfaceVariant,
-                ),
-              ),
-            ),
-          ),
         Tooltip(
           message: '播放进度',
           child: Semantics(
