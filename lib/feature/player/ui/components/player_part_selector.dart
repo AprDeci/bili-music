@@ -1,5 +1,4 @@
 import 'package:bilimusic/common/components/desktop/desktop_side_panel.dart';
-import 'package:bilimusic/common/util/toast_util.dart';
 import 'package:bilimusic/feature/player/domain/playable_item.dart';
 import 'package:bilimusic/feature/player/domain/player_state.dart';
 import 'package:bilimusic/feature/player/logic/player_controller.dart';
@@ -138,13 +137,6 @@ class _PlayerPartSelectorContentState
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
-    final Set<String> queuedIds = widget.state.queue
-        .map((PlayableItem item) => item.stableId)
-        .toSet();
-    final List<PlayableItem> partsToEnqueue = widget.parts
-        .where((PlayableItem part) => part != widget.currentItem)
-        .where((PlayableItem part) => !queuedIds.contains(part.stableId))
-        .toList();
     _focusInitialItem();
 
     return Column(
@@ -152,39 +144,21 @@ class _PlayerPartSelectorContentState
         Padding(
           padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
           child: Row(
+            crossAxisAlignment: CrossAxisAlignment.baseline,
+            textBaseline: TextBaseline.alphabetic,
             children: <Widget>[
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    Text(
-                      '分P列表',
-                      style: theme.textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      '${widget.parts.length} 项',
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: colorScheme.onSurface.withValues(alpha: 0.65),
-                      ),
-                    ),
-                  ],
+              Text(
+                '分P列表',
+                style: theme.textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.w800,
                 ),
               ),
-              TextButton(
-                onPressed: partsToEnqueue.isEmpty
-                    ? null
-                    : () async {
-                        await _close(context);
-                        await widget.controller.enqueue(partsToEnqueue);
-                        if (!context.mounted) {
-                          return;
-                        }
-                        ToastUtil.show('已将 ${partsToEnqueue.length} 个分P加入队列');
-                      },
-                child: const Text('全部加入队列'),
+              const Spacer(),
+              Text(
+                '${widget.parts.length} 项',
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: colorScheme.onSurface.withValues(alpha: 0.65),
+                ),
               ),
             ],
           ),
@@ -212,9 +186,18 @@ class _PlayerPartSelectorContentState
                     child: InkWell(
                       onTap: () async {
                         await _close(context);
-                        if (!isSelected) {
-                          widget.controller.replaceCurrentQueueItem(part);
+                        if (isSelected) {
+                          return;
                         }
+                        final int queuedIndex = widget.state.queue.indexWhere(
+                          (PlayableItem queuedItem) =>
+                              queuedItem.stableId == part.stableId,
+                        );
+                        if (queuedIndex >= 0) {
+                          await widget.controller.skipToQueueIndex(queuedIndex);
+                          return;
+                        }
+                        await widget.controller.replaceCurrentQueueItem(part);
                       },
                       child: ConstrainedBox(
                         constraints: const BoxConstraints(minHeight: 56),

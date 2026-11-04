@@ -77,31 +77,20 @@ void main() {
     expect(find.text('分P列表'), findsNothing);
   });
 
-  testWidgets('add all stays in the header and disables when already queued', (
-    WidgetTester tester,
-  ) async {
-    final _RecordingController controller = _RecordingController();
-    await _open(tester, controller);
-    expect(
-      tester
-          .widget<TextButton>(find.widgetWithText(TextButton, '全部加入队列'))
-          .onPressed,
-      isNotNull,
-    );
-    await tester.tap(find.text('P1 · 第一首'));
-    await tester.pumpAndSettle();
+  testWidgets(
+    'tapping a part already in the queue jumps instead of replacing',
+    (WidgetTester tester) async {
+      final _RecordingController controller = _RecordingController();
+      await _open(tester, controller, queue: <PlayableItem>[_first, _second]);
 
-    await _open(tester, controller, queue: [_first, _second]);
-    expect(
-      tester
-          .widget<TextButton>(find.widgetWithText(TextButton, '全部加入队列'))
-          .onPressed,
-      isNull,
-    );
-    await tester.tap(find.text('P1 · 第一首'));
-    await tester.pumpAndSettle();
-    expect(tester.takeException(), isNull);
-  });
+      await tester.tap(find.text('P2 · 第二首'));
+      await tester.pumpAndSettle();
+
+      expect(controller.skippedIndex, 1);
+      expect(controller.replaced, isNull);
+      expect(tester.takeException(), isNull);
+    },
+  );
 
   testWidgets(
     'initial scroll finds a distant selected part without hiding header',
@@ -121,7 +110,8 @@ void main() {
         currentItem: parts[60],
       );
       expect(find.text('P61 · 歌曲 61').hitTestable(), findsOneWidget);
-      expect(find.text('全部加入队列').hitTestable(), findsOneWidget);
+      expect(find.text('分P列表').hitTestable(), findsOneWidget);
+      expect(find.text('全部加入队列'), findsNothing);
       await tester.tap(find.text('P61 · 歌曲 61'));
       await tester.pumpAndSettle();
       expect(tester.takeException(), isNull);
@@ -148,7 +138,7 @@ Future<void> _open(
               currentItem: currentItem,
               state: PlayerState(
                 currentItem: currentItem,
-                queue: queue ?? [currentItem],
+                queue: queue ?? <PlayableItem>[currentItem],
                 isPlaying: isPlaying,
               ),
               controller: controller,
@@ -171,6 +161,7 @@ Future<void> _open(
 
 class _RecordingController extends PlayerController {
   PlayableItem? replaced;
+  int? skippedIndex;
 
   @override
   Future<void> replaceCurrentQueueItem(
@@ -178,5 +169,10 @@ class _RecordingController extends PlayerController {
     bool autoplay = true,
   }) async {
     replaced = item;
+  }
+
+  @override
+  Future<void> skipToQueueIndex(int index, {bool autoplay = true}) async {
+    skippedIndex = index;
   }
 }
