@@ -21,6 +21,14 @@ final class AppTheme {
       textTheme: _textTheme(Brightness.light),
       colorScheme: colorScheme,
       scaffoldBackgroundColor: definition.lightScaffoldBackgroundColor,
+      filledButtonTheme: FilledButtonThemeData(
+        style: FilledButton.styleFrom(
+          backgroundColor: Colors.grey.shade200,
+          foregroundColor: Colors.black,
+          disabledBackgroundColor: Colors.grey.shade200,
+          disabledForegroundColor: Colors.black38,
+        ),
+      ),
       appBarTheme: AppBarTheme(
         backgroundColor: Colors.transparent,
         foregroundColor: colorScheme.onSurface,
@@ -59,6 +67,14 @@ final class AppTheme {
       textTheme: _textTheme(Brightness.dark),
       colorScheme: colorScheme,
       scaffoldBackgroundColor: definition.darkScaffoldBackgroundColor,
+      filledButtonTheme: FilledButtonThemeData(
+        style: FilledButton.styleFrom(
+          backgroundColor: const Color(0xFF20242C),
+          foregroundColor: const Color(0xFFF1F3F4),
+          disabledBackgroundColor: const Color(0xFF20242C),
+          disabledForegroundColor: Colors.white38,
+        ),
+      ),
       appBarTheme: AppBarTheme(
         backgroundColor: Colors.transparent,
         foregroundColor: colorScheme.onSurface,

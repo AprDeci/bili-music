@@ -68,12 +68,6 @@ ThemeData carDarkTheme() {
     bottomSheetTheme: base.bottomSheetTheme.copyWith(
       backgroundColor: colors.surface,
     ),
-    filledButtonTheme: FilledButtonThemeData(
-      style: FilledButton.styleFrom(
-        backgroundColor: const Color(0xFF00854A),
-        foregroundColor: Colors.white,
-      ),
-    ),
   );
 }
 
@@ -87,12 +81,6 @@ ThemeData _carTheme(ThemeData base, ColorScheme colors) {
     ),
     iconTheme: base.iconTheme.copyWith(color: colors.onSurface),
     appBarTheme: base.appBarTheme.copyWith(foregroundColor: colors.onSurface),
-    filledButtonTheme: FilledButtonThemeData(
-      style: FilledButton.styleFrom(
-        backgroundColor: colors.primary,
-        foregroundColor: colors.onPrimary,
-      ),
-    ),
     sliderTheme: base.sliderTheme.copyWith(
       activeTrackColor: colors.onSurfaceVariant,
       inactiveTrackColor: colors.surfaceContainerHighest,

@@ -14,6 +14,84 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 
 void main() {
+  testWidgets('filled buttons stay neutral in light and dark themes', (
+    tester,
+  ) async {
+    for (final definition in themeCatalog) {
+      for (final brightness in Brightness.values) {
+        final bool dark = brightness == Brightness.dark;
+        final Color background = dark
+            ? const Color(0xFF20242C)
+            : Colors.grey.shade200;
+        final Color foreground = dark ? const Color(0xFFF1F3F4) : Colors.black;
+        for (final theme in [
+          dark
+              ? AppTheme.darkTheme(definition.id)
+              : AppTheme.lightTheme(definition.id),
+          dark ? carDarkTheme() : carLightTheme(),
+        ]) {
+          final style = theme.filledButtonTheme.style!;
+          expect(style.backgroundColor!.resolve({}), background);
+          expect(style.foregroundColor!.resolve({}), foreground);
+          expect(
+            style.backgroundColor!.resolve({WidgetState.disabled}),
+            background,
+          );
+          expect(
+            style.foregroundColor!.resolve({WidgetState.disabled}),
+            dark ? Colors.white38 : Colors.black38,
+          );
+          expect(_contrast(foreground, background), greaterThanOrEqualTo(7));
+          await tester.pumpWidget(
+            MaterialApp(
+              theme: theme,
+              home: Scaffold(
+                body: Column(
+                  children: [
+                    FilledButton(onPressed: () {}, child: const Text('filled')),
+                    FilledButton.tonal(
+                      onPressed: () {},
+                      child: const Text('tonal'),
+                    ),
+                    const FilledButton(
+                      onPressed: null,
+                      child: Text('disabled'),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+          await tester.pumpAndSettle();
+          for (final button in tester.widgetList<FilledButton>(
+            find.byType(FilledButton),
+          )) {
+            final finder = find.byWidget(button);
+            final material = tester.widget<Material>(
+              find.descendant(of: finder, matching: find.byType(Material)),
+            );
+            expect(material.color, background);
+            expect(
+              tester
+                  .widget<RichText>(
+                    find.descendant(
+                      of: finder,
+                      matching: find.byType(RichText),
+                    ),
+                  )
+                  .text
+                  .style!
+                  .color,
+              button.onPressed == null
+                  ? (dark ? Colors.white38 : Colors.black38)
+                  : foreground,
+            );
+          }
+        }
+      }
+    }
+  });
+
   test('car light palette is neutral with accessible green accents', () {
     final ThemeData theme = carLightTheme();
     final ColorScheme colors = theme.colorScheme;
@@ -42,9 +120,8 @@ void main() {
       greaterThanOrEqualTo(4.5),
     );
     final ButtonStyle button = theme.filledButtonTheme.style!;
-    expect(button.foregroundColor!.resolve({}), colors.onPrimary);
-    expect(button.foregroundColor!.resolve({}), Colors.white);
-    expect(button.backgroundColor!.resolve({}), colors.primary);
+    expect(button.foregroundColor!.resolve({}), Colors.black);
+    expect(button.backgroundColor!.resolve({}), Colors.grey.shade200);
     expect(
       _contrast(
         button.foregroundColor!.resolve({})!,
@@ -92,7 +169,8 @@ void main() {
       greaterThanOrEqualTo(7),
     );
     final ButtonStyle button = theme.filledButtonTheme.style!;
-    expect(button.foregroundColor!.resolve({}), Colors.white);
+    expect(button.foregroundColor!.resolve({}), const Color(0xFFF1F3F4));
+    expect(button.backgroundColor!.resolve({}), const Color(0xFF20242C));
     expect(
       _contrast(
         button.foregroundColor!.resolve({})!,
