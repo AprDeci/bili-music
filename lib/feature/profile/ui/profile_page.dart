@@ -2,7 +2,6 @@ import 'package:bilimusic/common/bm_icons.dart';
 import 'package:bilimusic/common/components/bottom_page_spacer.dart';
 import 'package:bilimusic/common/components/cached_image.dart';
 import 'package:bilimusic/common/components/login_required.dart';
-import 'package:bilimusic/common/components/search_bar.dart';
 import 'package:bilimusic/common/domain/collection_kind.dart';
 import 'package:bilimusic/common/util/toast_util.dart';
 import 'package:bilimusic/core/bili/session/bili_auth_required_exception.dart';
@@ -86,9 +85,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
     return Scaffold(
       appBar: AppBar(
         toolbarHeight: 48,
-        title: CommonSearchBar(
-          onTap: () => context.push('/search?from=/profile'),
-        ),
+        title: const Text('我的'),
         actions: <Widget>[
           IconButton(
             icon: const Icon(Icons.settings),
