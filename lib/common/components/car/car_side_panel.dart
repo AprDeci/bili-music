@@ -3,6 +3,10 @@ import 'package:flutter/material.dart';
 Future<T?> showCarSidePanel<T>({
   required BuildContext context,
   required WidgetBuilder builder,
+  double? width,
+  double? height,
+  Alignment alignment = Alignment.centerLeft,
+  Offset slideFrom = const Offset(-1, 0),
 }) {
   final CapturedThemes themes = InheritedTheme.capture(
     from: context,
@@ -18,14 +22,18 @@ Future<T?> showCarSidePanel<T>({
       SafeArea(
         minimum: const EdgeInsets.all(24),
         child: Align(
-          alignment: Alignment.centerLeft,
-          child: CarSidePanel(child: Builder(builder: builder)),
+          alignment: alignment,
+          child: CarSidePanel(
+            width: width,
+            height: height,
+            child: Builder(builder: builder),
+          ),
         ),
       ),
     ),
     transitionBuilder: (context, animation, _, child) => SlideTransition(
       position: Tween<Offset>(
-        begin: const Offset(-1, 0),
+        begin: slideFrom,
         end: Offset.zero,
       ).animate(CurveTween(curve: Curves.easeOutCubic).animate(animation)),
       child: child,
@@ -34,18 +42,22 @@ Future<T?> showCarSidePanel<T>({
 }
 
 class CarSidePanel extends StatelessWidget {
-  const CarSidePanel({super.key, required this.child});
+  const CarSidePanel({super.key, required this.child, this.width, this.height})
+    : assert(width == null || (width >= 0 && width < double.infinity)),
+      assert(height == null || (height >= 0 && height < double.infinity));
 
   final Widget child;
+  final double? width;
+  final double? height;
 
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) => SizedBox(
-        width: (constraints.maxWidth * 0.6)
-            .clamp(480.0, 760.0)
-            .clamp(0.0, constraints.maxWidth),
-        height: constraints.maxHeight,
+        width: constraints.constrainWidth(
+          width ?? (constraints.maxWidth * 0.6).clamp(480.0, 760.0),
+        ),
+        height: constraints.constrainHeight(height ?? constraints.maxHeight),
         child: Material(
           color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(24),
