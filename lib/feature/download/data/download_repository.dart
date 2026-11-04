@@ -18,9 +18,15 @@ const String downloadedTracksBoxName = 'downloaded_tracks';
 
 @riverpod
 DownloadRepository downloadRepository(Ref ref) {
-  return DownloadRepository(
-    HiveDownloadIndexStore(Hive.box<String>(downloadedTracksBoxName)),
-  );
+  return DownloadRepository(_openIndexStore());
+}
+
+DownloadIndexStore _openIndexStore() {
+  try {
+    return HiveDownloadIndexStore(Hive.box<String>(downloadedTracksBoxName));
+  } on Object {
+    return _MemoryDownloadIndexStore();
+  }
 }
 
 abstract interface class DownloadIndexStore {
@@ -31,6 +37,28 @@ abstract interface class DownloadIndexStore {
   Future<void> remove(String contentId);
 
   Future<void> clear();
+}
+
+class _MemoryDownloadIndexStore implements DownloadIndexStore {
+  final Map<String, String> _values = <String, String>{};
+
+  @override
+  Map<String, String> loadAll() => Map<String, String>.of(_values);
+
+  @override
+  Future<void> put(String contentId, String json) async {
+    _values[contentId] = json;
+  }
+
+  @override
+  Future<void> remove(String contentId) async {
+    _values.remove(contentId);
+  }
+
+  @override
+  Future<void> clear() async {
+    _values.clear();
+  }
 }
 
 class HiveDownloadIndexStore implements DownloadIndexStore {

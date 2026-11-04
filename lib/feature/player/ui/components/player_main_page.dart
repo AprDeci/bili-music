@@ -1,5 +1,7 @@
 import 'package:bilimusic/common/bm_icons.dart';
 import 'package:bilimusic/common/components/badged_icon_button.dart';
+import 'package:bilimusic/feature/download/logic/download_controller.dart';
+import 'package:bilimusic/feature/download/ui/track_download_action.dart';
 import 'package:bilimusic/feature/player/domain/audio_stream_info.dart';
 import 'package:bilimusic/feature/player/domain/playable_item.dart';
 import 'package:bilimusic/feature/player/domain/player_display_info.dart';
@@ -334,6 +336,7 @@ class _PlayerToolBar extends StatelessWidget {
           isEnabled: hasItem,
           onTap: onOpenCollectionSheet,
         ),
+        _PlayerDownloadToolButton(item: item, isEnabled: hasItem),
         _PlayerQualityToolButton(
           qualities: availableQualities,
           isEnabled: hasItem && availableQualities.isNotEmpty,
@@ -474,6 +477,51 @@ class _PlayerPartToolButton extends ConsumerWidget {
       badgeIcon: const Icon(BmIcons.partListWithBadge, size: 26),
       badge: badge,
       onPressed: isEnabled ? onTap : null,
+    );
+  }
+}
+
+class _PlayerDownloadToolButton extends ConsumerWidget {
+  const _PlayerDownloadToolButton({
+    required this.item,
+    required this.isEnabled,
+  });
+
+  final PlayableItem? item;
+  final bool isEnabled;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final PlayableItem? currentItem = item;
+    final DownloadState downloadState = ref.watch(downloadControllerProvider);
+    final bool isDownloaded =
+        currentItem != null && downloadState.contains(currentItem.contentId);
+    final bool isDownloading =
+        currentItem != null &&
+        (downloadState.taskFor(currentItem.contentId)?.isActive ?? false);
+    final String tooltip = isDownloaded
+        ? '已下载'
+        : isDownloading
+        ? '下载中'
+        : '下载';
+    final IconData icon = isDownloaded
+        ? Icons.download_done_rounded
+        : isDownloading
+        ? Icons.downloading_rounded
+        : Icons.download_rounded;
+
+    return Tooltip(
+      message: tooltip,
+      child: IconButton(
+        key: const Key('playerDownloadButton'),
+        onPressed: isEnabled && currentItem != null
+            ? () => requestTrackDownload(ref, currentItem)
+            : null,
+        icon: Icon(
+          icon,
+          color: isDownloaded ? Theme.of(context).colorScheme.primary : null,
+        ),
+      ),
     );
   }
 }

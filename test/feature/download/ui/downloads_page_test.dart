@@ -43,9 +43,7 @@ void main() {
     expect(find.text('还没有下载的歌曲'), findsOneWidget);
   });
 
-  testWidgets('lists downloaded tracks', (
-    WidgetTester tester,
-  ) async {
+  testWidgets('lists downloaded tracks', (WidgetTester tester) async {
     final Directory? directory = await tester.runAsync(
       () => Directory.systemTemp.createTemp('dl_'),
     );
@@ -102,7 +100,7 @@ void main() {
     );
     await tester.pump();
 
-    expect(find.text('已下载 1 首'), findsOneWidget);
+    expect(find.textContaining('已下载'), findsNothing);
     expect(find.text('夜曲'), findsOneWidget);
     expect(find.textContaining('周杰伦'), findsOneWidget);
     expect(find.byIcon(Icons.delete_outline_rounded), findsOneWidget);

@@ -2,9 +2,12 @@ import 'package:bilimusic/common/util/platform_util.dart';
 import 'package:bilimusic/core/theme/theme_catalog.dart';
 import 'package:bilimusic/core/theme/theme_logic.dart';
 import 'package:bilimusic/core/theme/theme_ui_model.dart';
+import 'package:bilimusic/feature/player/domain/player_chapter_marker_style.dart';
+import 'package:bilimusic/feature/player/logic/display/player_chapter_marker_style_logic.dart';
 import 'package:bilimusic/feature/setting/logic/appearance_setting_logic.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 class ThemeSettingsPage extends ConsumerWidget {
   const ThemeSettingsPage({super.key});
@@ -14,6 +17,9 @@ class ThemeSettingsPage extends ConsumerWidget {
     final ThemeData theme = Theme.of(context);
     final ThemeUiModel themeState = ref.watch(themeLogicProvider);
     final bool useGlassBar = ref.watch(appearanceSettingLogicProvider);
+    final PlayerChapterMarkerStyle markerStyle = ref.watch(
+      playerChapterMarkerStyleLogicProvider,
+    );
 
     return Scaffold(
       appBar: AppBar(title: const Text('外观设置')),
@@ -85,6 +91,20 @@ class ThemeSettingsPage extends ConsumerWidget {
                     })
                     .toList(growable: false),
               ),
+            ),
+          ),
+          const SizedBox(height: 24),
+          Text('进度条', style: theme.textTheme.titleMedium),
+          const SizedBox(height: 8),
+          Card(
+            margin: EdgeInsets.zero,
+            clipBehavior: Clip.antiAlias,
+            child: ListTile(
+              leading: const Icon(Icons.linear_scale_rounded),
+              title: const Text('章节分隔样式'),
+              subtitle: Text('当前：${markerStyle.label}'),
+              trailing: const Icon(Icons.chevron_right_rounded),
+              onTap: () => context.push('/settings/progress'),
             ),
           ),
         ],

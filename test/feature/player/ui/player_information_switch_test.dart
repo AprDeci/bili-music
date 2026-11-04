@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:bilimusic/common/components/badged_icon_button.dart';
+import 'package:bilimusic/feature/download/logic/download_controller.dart';
 import 'package:bilimusic/feature/favorites/domain/favorites_state.dart';
 import 'package:bilimusic/feature/favorites/logic/favorites_controller.dart';
 import 'package:bilimusic/feature/metadata/domain/metadata.dart';
@@ -29,6 +30,7 @@ import 'package:bilimusic/feature/player/ui/components/player_dynamic_backdrop.d
 import 'package:bilimusic/feature/player/ui/components/player_landscape_page.dart';
 import 'package:bilimusic/feature/player/ui/components/player_landscape_controls.dart';
 import 'package:bilimusic/feature/player/ui/components/player_main_page.dart';
+import 'package:bilimusic/feature/player/ui/components/player_quality_badge.dart';
 import 'package:bilimusic/feature/player/ui/components/player_shared.dart';
 import 'package:bilimusic/feature/player/ui/components/player_top_bar.dart';
 import 'package:bilimusic/feature/player/ui/lyrics/player_lyric_page.dart';
@@ -39,6 +41,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_lyric/flutter_lyric.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:hugeicons/hugeicons.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 
 const PlayableItem _item = PlayableItem(
@@ -1298,6 +1301,28 @@ void main() {
       colorScheme.onSurface,
     );
   });
+  testWidgets('toolbar keeps download between collection and quality', (
+    WidgetTester tester,
+  ) async {
+    await _pumpPlayer(tester, _metadata);
+    final Finder collection = find.byWidgetPredicate(
+      (Widget widget) =>
+          widget is HugeIcon && widget.icon == HugeIcons.strokeRoundedFolderAdd,
+    );
+    final Finder download = find.byKey(const Key('playerDownloadButton'));
+    final Finder quality = find.byType(PlayerQualityBadge);
+    expect(collection, findsOneWidget);
+    expect(download, findsOneWidget);
+    expect(quality, findsOneWidget);
+    expect(
+      tester.getCenter(download).dx,
+      greaterThan(tester.getCenter(collection).dx),
+    );
+    expect(
+      tester.getCenter(download).dx,
+      lessThan(tester.getCenter(quality).dx),
+    );
+  });
 }
 
 Future<ProviderContainer> _pumpPlayer(
@@ -1332,6 +1357,7 @@ Future<ProviderContainer> _pumpPlayer(
         ),
         playerDisplaySettingsLogicProvider.overrideWithValue(true),
         desktopLyricsControllerProvider.overrideWithValue(false),
+        downloadControllerProvider.overrideWith(_FakeDownloads.new),
       ],
       child: MaterialApp(
         theme: theme,
@@ -1527,4 +1553,9 @@ class _FakeLyricSettingsLogic extends PlayerLyricSettingsLogic {
 class _FakeOnlineAudienceController extends PlayerOnlineAudienceController {
   @override
   PlayerOnlineAudience? build() => null;
+}
+
+class _FakeDownloads extends DownloadController {
+  @override
+  DownloadState build() => const DownloadState();
 }

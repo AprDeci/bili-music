@@ -41,25 +41,15 @@ class DownloadsPage extends ConsumerWidget {
           : ListView(
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
               children: <Widget>[
-                _SummaryHeader(
-                  trackCount: state.tracks.length,
-                  totalBytes: state.totalBytes,
-                ),
-                if (activeTasks.isNotEmpty) ...<Widget>[
-                  const SizedBox(height: 12),
-                  for (final DownloadTask task in activeTasks)
-                    _DownloadingTile(task: task),
-                ],
-                if (state.tracks.isNotEmpty) ...<Widget>[
-                  const SizedBox(height: 8),
-                  for (int index = 0; index < state.tracks.length; index += 1)
-                    _DownloadedTrackTile(
-                      track: state.tracks[index],
-                      onPlay: () => _playFrom(context, ref, state, index),
-                      onDelete: () =>
-                          _deleteTrack(context, ref, state.tracks[index]),
-                    ),
-                ],
+                for (final DownloadTask task in activeTasks)
+                  _DownloadingTile(task: task),
+                for (int index = 0; index < state.tracks.length; index += 1)
+                  _DownloadedTrackTile(
+                    track: state.tracks[index],
+                    onPlay: () => _playFrom(context, ref, state, index),
+                    onDelete: () =>
+                        _deleteTrack(context, ref, state.tracks[index]),
+                  ),
               ],
             ),
     );
@@ -127,53 +117,6 @@ class DownloadsPage extends ConsumerWidget {
       return;
     }
     ToastUtil.show('已清空下载');
-  }
-}
-
-class _SummaryHeader extends StatelessWidget {
-  const _SummaryHeader({required this.trackCount, required this.totalBytes});
-
-  final int trackCount;
-  final int totalBytes;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
-
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: colorScheme.primary.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Row(
-        children: <Widget>[
-          Icon(Icons.download_done_rounded, color: colorScheme.primary),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Text(
-                  '已下载 $trackCount 首',
-                  style: theme.textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  '共 ${formatBytes(totalBytes)}，离线也能播放',
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: colorScheme.onSurfaceVariant,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
   }
 }
 
