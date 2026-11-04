@@ -40,7 +40,10 @@ void main() {
     );
 
     controller.updateQuery('洛天依');
-    await Future<void>.delayed(Duration.zero);
+    await Future<void>.delayed(
+      SearchPageController.suggestionDebounce +
+          const Duration(milliseconds: 100),
+    );
 
     final state = container.read(searchPageControllerProvider);
     expect(state.query, '洛天依');
@@ -405,8 +408,9 @@ void main() {
       searchPageControllerProvider.notifier,
     );
 
-    controller.updateQuery('洛');
     controller.updateQuery('洛天依');
+    controller.loadSuggestions('洛');
+    controller.loadSuggestions('洛天依');
 
     repository.complete('洛天依', <String>['洛天依', '洛天依演唱会']);
     await Future<void>.delayed(Duration.zero);
@@ -418,6 +422,97 @@ void main() {
     expect(state.query, '洛天依');
     expect(state.suggestions, <String>['洛天依', '洛天依演唱会']);
   });
+
+  test('debounces suggestion requests while typing', () async {
+    final _FakeBiliSearchRepository repository = _FakeBiliSearchRepository();
+    final ProviderContainer container = ProviderContainer(
+      overrides: [
+        biliSearchRepositoryProvider.overrideWithValue(repository),
+        searchHistoryStoreProvider.overrideWithValue(_FakeSearchHistoryStore()),
+      ],
+    );
+    addTearDown(container.dispose);
+    final ProviderSubscription<SearchState> subscription = container.listen(
+      searchPageControllerProvider,
+      (_, _) {},
+      fireImmediately: true,
+    );
+    addTearDown(subscription.close);
+    final SearchPageController controller = container.read(
+      searchPageControllerProvider.notifier,
+    );
+
+    controller.updateQuery('洛');
+    controller.updateQuery('洛天');
+    controller.updateQuery('洛天依');
+
+    expect(repository.suggestionRequests, isEmpty);
+    await Future<void>.delayed(
+      SearchPageController.suggestionDebounce +
+          const Duration(milliseconds: 100),
+    );
+
+    expect(repository.suggestionRequests, <String>['洛天依']);
+  });
+
+  test('discards stale first page result after newer search', () async {
+    final _DeferredSearchRepository repository = _DeferredSearchRepository();
+    final ProviderContainer container = ProviderContainer(
+      overrides: [
+        biliSearchRepositoryProvider.overrideWithValue(repository),
+        searchHistoryStoreProvider.overrideWithValue(_FakeSearchHistoryStore()),
+      ],
+    );
+    addTearDown(container.dispose);
+    final ProviderSubscription<SearchState> subscription = container.listen(
+      searchPageControllerProvider,
+      (_, _) {},
+      fireImmediately: true,
+    );
+    addTearDown(subscription.close);
+    final SearchPageController controller = container.read(
+      searchPageControllerProvider.notifier,
+    );
+
+    final Future<void> older = controller.submitSearch('旧');
+    final Future<void> newer = controller.submitSearch('新');
+
+    repository.complete(
+      '新',
+      SearchPageResult(items: <SearchResultItem>[_result('新结果')]),
+    );
+    await newer;
+    repository.complete(
+      '旧',
+      SearchPageResult(
+        items: <SearchResultItem>[_result('旧结果1'), _result('旧结果2')],
+      ),
+    );
+    await older;
+
+    final SearchState state = container.read(searchPageControllerProvider);
+    expect(state.submittedQuery, '新');
+    expect(state.results.map((SearchResultItem item) => item.title), <String>[
+      '新结果',
+    ]);
+    expect(state.isLoading, isFalse);
+  });
+}
+
+SearchResultItem _result(String title) {
+  return SearchResultItem(
+    aid: 1,
+    bvid: 'BV1',
+    typeId: 1,
+    title: title,
+    author: 'UP',
+    coverUrl: '',
+    duration: '03:00',
+    playCountText: '1万',
+    danmakuCountText: '100',
+    publishTimeText: '2026-01-01',
+    tagText: '音乐',
+  );
 }
 
 class _FakeSearchHistoryStore implements SearchHistoryStore {
@@ -464,6 +559,7 @@ class _FakeBiliSearchRepository implements BiliSearchRepository {
   final List<String> userSearchRequests = <String>[];
   final List<int> userSearchPages = <int>[];
   Object? searchError;
+  final List<String> suggestionRequests = <String>[];
 
   @override
   Future<SearchPageResult> searchVideos(
@@ -506,7 +602,30 @@ class _FakeBiliSearchRepository implements BiliSearchRepository {
 
   @override
   Future<List<String>> fetchSuggestions(String term) async {
+    suggestionRequests.add(term);
     return suggestionsByTerm[term] ?? <String>[];
+  }
+}
+
+class _DeferredSearchRepository extends _FakeBiliSearchRepository {
+  final Map<String, Completer<SearchPageResult>> _completers =
+      <String, Completer<SearchPageResult>>{};
+
+  @override
+  Future<SearchPageResult> searchVideos(
+    String keyword, {
+    int page = 1,
+    SearchSort sort = SearchSort.comprehensive,
+  }) {
+    return (_completers[keyword] ??= Completer<SearchPageResult>()).future;
+  }
+
+  void complete(String keyword, SearchPageResult result) {
+    final Completer<SearchPageResult> completer = _completers[keyword] ??=
+        Completer<SearchPageResult>();
+    if (!completer.isCompleted) {
+      completer.complete(result);
+    }
   }
 }
 
