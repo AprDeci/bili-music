@@ -3,7 +3,6 @@ import 'package:bilimusic/common/components/search_bar.dart';
 import 'package:bilimusic/common/util/platform_util.dart';
 import 'package:bilimusic/feature/home/logic/music_ranking_controller.dart';
 import 'package:bilimusic/feature/home/ui/components/music_ranking_section.dart';
-import 'package:bilimusic/feature/recent/ui/components/recent_playback_section.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -31,8 +30,6 @@ class HomePage extends ConsumerWidget {
               ? const EdgeInsets.symmetric(horizontal: 0)
               : const EdgeInsets.fromLTRB(16, 20, 16, 0),
           children: <Widget>[
-            const RecentPlaybackSection(),
-            const SizedBox(height: 30),
             const MusicRankingSection(),
             const BottomPageSpacer(),
           ],

@@ -6,9 +6,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 class UserCard extends ConsumerWidget {
-  const UserCard({super.key, this.onLogoutPressed});
+  const UserCard({super.key, this.onSettingsPressed});
 
-  final VoidCallback? onLogoutPressed;
+  final VoidCallback? onSettingsPressed;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -75,25 +75,29 @@ class UserCard extends ConsumerWidget {
                 ),
               ),
 
-              if (isLoggedIn)
-                TextButton(
-                  onPressed: onLogoutPressed,
-                  style: TextButton.styleFrom(
-                    padding: const EdgeInsets.all(8),
-                    minimumSize: const Size(36, 36),
-                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(999),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  if (!isLoggedIn)
+                    Icon(Icons.chevron_right_rounded, color: themeColor),
+                  TextButton(
+                    onPressed: onSettingsPressed,
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.all(8),
+                      minimumSize: const Size(36, 36),
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                    ),
+                    child: Icon(
+                      Icons.settings_rounded,
+                      size: 20,
+                      color: themeColor,
                     ),
                   ),
-                  child: Icon(
-                    Icons.logout_rounded,
-                    size: 20,
-                    color: themeColor,
-                  ),
-                )
-              else
-                Icon(Icons.chevron_right_rounded, color: themeColor),
+                ],
+              ),
             ],
           ),
         ),

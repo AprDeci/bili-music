@@ -1,17 +1,23 @@
-import 'package:bilimusic/core/cache/cache_util.dart';
-import 'package:bilimusic/common/util/platform_util.dart';
 import 'package:bilimusic/common/util/format_util.dart';
+import 'package:bilimusic/common/util/platform_util.dart';
+import 'package:bilimusic/common/util/toast_util.dart';
+import 'package:bilimusic/core/bili/session/bili_session.dart';
+import 'package:bilimusic/core/bili/session/bili_session_controller.dart';
+import 'package:bilimusic/core/cache/cache_util.dart';
+import 'package:bilimusic/feature/auth/data/bili_auth_repository.dart';
+import 'package:bilimusic/feature/auth/logic/bili_auth_controller.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-class SettingPage extends StatefulWidget {
+class SettingPage extends ConsumerStatefulWidget {
   const SettingPage({super.key});
 
   @override
-  State<SettingPage> createState() => _SettingPageState();
+  ConsumerState<SettingPage> createState() => _SettingPageState();
 }
 
-class _SettingPageState extends State<SettingPage> {
+class _SettingPageState extends ConsumerState<SettingPage> {
   late Future<int> _cacheSizeFuture;
 
   @override
@@ -26,15 +32,141 @@ class _SettingPageState extends State<SettingPage> {
     });
   }
 
+  Future<bool> _confirm({
+    required String title,
+    required String content,
+    required String confirmText,
+  }) async {
+    final bool? confirmed = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text(title),
+          content: Text(content),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('取消'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: Text(confirmText),
+            ),
+          ],
+        );
+      },
+    );
+    return confirmed ?? false;
+  }
+
+  String _logoutMessage(LogoutResult result) {
+    if (result.remoteLoggedOut) {
+      return '已退出登录';
+    }
+    return result.message?.isNotEmpty == true
+        ? '服务端退出失败，已清除本地登录状态'
+        : '已清除本地登录状态';
+  }
+
+  Future<void> _handleLogoutPressed() async {
+    final bool confirmed = await _confirm(
+      title: '退出登录',
+      content: '确认退出当前 B 站账号吗？',
+      confirmText: '退出',
+    );
+    if (!confirmed || !mounted) {
+      return;
+    }
+
+    final LogoutResult result = await ref
+        .read(biliAuthControllerProvider.notifier)
+        .logout();
+    if (!mounted) {
+      return;
+    }
+    ToastUtil.show(_logoutMessage(result));
+  }
+
+  Future<void> _handleSwitchAccount() async {
+    final BiliSession? session = ref.read(biliSessionControllerProvider);
+    final String accountName = session?.uname?.isNotEmpty == true
+        ? session!.uname!
+        : '当前账号';
+    final bool confirmed = await _confirm(
+      title: '切换账号',
+      content: '将退出「$accountName」，随后使用新账号扫码登录。',
+      confirmText: '继续',
+    );
+    if (!confirmed || !mounted) {
+      return;
+    }
+
+    final LogoutResult result = await ref
+        .read(biliAuthControllerProvider.notifier)
+        .logout();
+    if (!mounted) {
+      return;
+    }
+    ToastUtil.show(
+      result.remoteLoggedOut ? '已退出当前账号，请登录新账号' : '已清除本地登录状态，请登录新账号',
+    );
+    await context.push('/auth');
+  }
+
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
+    final BiliSession? session = ref.watch(biliSessionControllerProvider);
+    final bool isLoggedIn = session?.isLoggedIn ?? false;
+    final String accountName = isLoggedIn
+        ? (session?.uname?.isNotEmpty == true ? session!.uname! : '已登录 B 站账号')
+        : '未登录';
 
     return Scaffold(
       appBar: AppBar(title: const Text('设置')),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
         children: <Widget>[
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: const Icon(Icons.account_circle_outlined),
+            title: Text(accountName),
+            subtitle: Text(
+              isLoggedIn ? 'mid: ${session?.mid ?? '-'}' : '登录后可同步收藏与歌单',
+              style: theme.textTheme.bodySmall,
+            ),
+            trailing: isLoggedIn
+                ? null
+                : const Icon(Icons.chevron_right_rounded),
+            onTap: isLoggedIn ? null : () => context.push('/auth'),
+          ),
+          if (isLoggedIn)
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.swap_horiz_rounded),
+              title: const Text('切换账号'),
+              subtitle: Text(
+                '退出当前账号并使用新账号登录',
+                style: theme.textTheme.bodySmall,
+              ),
+              trailing: const Icon(Icons.chevron_right_rounded),
+              onTap: _handleSwitchAccount,
+            ),
+          if (isLoggedIn)
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: Icon(
+                Icons.logout_rounded,
+                color: theme.colorScheme.error,
+              ),
+              title: Text(
+                '退出登录',
+                style: TextStyle(color: theme.colorScheme.error),
+              ),
+              subtitle: Text('清除本地登录状态', style: theme.textTheme.bodySmall),
+              onTap: _handleLogoutPressed,
+            ),
+          const Divider(height: 24),
           ListTile(
             contentPadding: EdgeInsets.zero,
             leading: const Icon(Icons.palette_outlined),

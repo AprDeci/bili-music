@@ -7,8 +7,6 @@ import 'package:bilimusic/common/util/toast_util.dart';
 import 'package:bilimusic/core/bili/session/bili_auth_required_exception.dart';
 import 'package:bilimusic/core/bili/session/bili_session.dart';
 import 'package:bilimusic/core/bili/session/bili_session_controller.dart';
-import 'package:bilimusic/feature/auth/data/bili_auth_repository.dart';
-import 'package:bilimusic/feature/auth/logic/bili_auth_controller.dart';
 import 'package:bilimusic/feature/favorites/domain/favorite_collection.dart';
 import 'package:bilimusic/feature/favorites/domain/favorite_entry.dart';
 import 'package:bilimusic/feature/favorites/domain/favorites_state.dart';
@@ -83,95 +81,86 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
         : selectedCollections;
 
     return Scaffold(
-      appBar: AppBar(
-        toolbarHeight: 48,
-        title: const Text('我的'),
-        actions: <Widget>[
-          IconButton(
-            icon: const Icon(Icons.settings),
-            onPressed: () => context.push('/settings'),
-          ),
-        ],
-      ),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
-        children: <Widget>[
-          UserCard(onLogoutPressed: _handleLogoutPressed),
-          const SizedBox(height: 18),
-          _ProfileQuickActions(
-            likedCount: likedCount,
-            recentCount: recentCount,
-            onLikedTap: () => context.push(
-              '/profile/favorites/${FavoriteCollection.likedCollectionId}',
-            ),
-            onLikedLongPressStart: (LongPressStartDetails details) =>
-                _showCollectionActionMenu(
-                  details: details,
-                  collection: favoritesState.likedCollection,
-                ),
-            onRecentTap: () => context.push('/profile/recent'),
-          ),
-          const SizedBox(height: 16),
-          _ProfileSectionHeader(
-            selectedTab: _selectedTab,
-            onTabChanged: _handleTabChanged,
-            onAddPressed: _handleAddPressed,
-            onImportPressed: _handleImportPressed,
-          ),
-          if (visibleCollections.isNotEmpty) const SizedBox(height: 14),
-          ...visibleCollections.map((FavoriteCollection collection) {
-            final List<FavoriteEntry> items = favoritesState.itemsForCollection(
-              collection.id,
-            );
-            final FavoriteEntry? latestItem = items.isEmpty
-                ? null
-                : items.first;
-
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: _PlaylistTile(
-                title: collection.name,
-                count: favoritesState.itemCountForCollection(collection.id),
-                coverUrl: ref.watch(
-                  favoriteEntryCoverUrlProvider(collection.id, latestItem),
-                ),
-                onTap: () =>
-                    context.push('/profile/favorites/${collection.id}'),
-                onLongPressStart: (LongPressStartDetails details) {
+      body: SafeArea(
+        bottom: false,
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+          children: <Widget>[
+            UserCard(onSettingsPressed: () => context.push('/settings')),
+            const SizedBox(height: 18),
+            _ProfileQuickActions(
+              likedCount: likedCount,
+              recentCount: recentCount,
+              onLikedTap: () => context.push(
+                '/profile/favorites/${FavoriteCollection.likedCollectionId}',
+              ),
+              onLikedLongPressStart: (LongPressStartDetails details) =>
                   _showCollectionActionMenu(
                     details: details,
-                    collection: collection,
-                  );
-                },
-              ),
-            );
-          }),
-          if (shouldCollapse)
-            Center(
-              child: TextButton.icon(
-                onPressed: () {
-                  setState(() {
-                    _showAllCollections = !_showAllCollections;
-                  });
-                },
-                iconAlignment: IconAlignment.end,
-                icon: Icon(
-                  _showAllCollections
-                      ? Icons.keyboard_arrow_up_rounded
-                      : Icons.keyboard_arrow_down_rounded,
-                  size: 22,
+                    collection: favoritesState.likedCollection,
+                  ),
+              onRecentTap: () => context.push('/profile/recent'),
+            ),
+            const SizedBox(height: 16),
+            _ProfileSectionHeader(
+              selectedTab: _selectedTab,
+              onTabChanged: _handleTabChanged,
+              onAddPressed: _handleAddPressed,
+              onImportPressed: _handleImportPressed,
+            ),
+            if (visibleCollections.isNotEmpty) const SizedBox(height: 14),
+            ...visibleCollections.map((FavoriteCollection collection) {
+              final List<FavoriteEntry> items = favoritesState
+                  .itemsForCollection(collection.id);
+              final FavoriteEntry? latestItem = items.isEmpty
+                  ? null
+                  : items.first;
+
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: _PlaylistTile(
+                  title: collection.name,
+                  count: favoritesState.itemCountForCollection(collection.id),
+                  coverUrl: ref.watch(
+                    favoriteEntryCoverUrlProvider(collection.id, latestItem),
+                  ),
+                  onTap: () =>
+                      context.push('/profile/favorites/${collection.id}'),
+                  onLongPressStart: (LongPressStartDetails details) {
+                    _showCollectionActionMenu(
+                      details: details,
+                      collection: collection,
+                    );
+                  },
                 ),
-                label: Text(_showAllCollections ? '收起歌单' : '展开全部歌单'),
-                style: TextButton.styleFrom(
-                  foregroundColor: const Color(0xFF7A8598),
-                  textStyle: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w500,
+              );
+            }),
+            if (shouldCollapse)
+              Center(
+                child: TextButton.icon(
+                  onPressed: () {
+                    setState(() {
+                      _showAllCollections = !_showAllCollections;
+                    });
+                  },
+                  iconAlignment: IconAlignment.end,
+                  icon: Icon(
+                    _showAllCollections
+                        ? Icons.keyboard_arrow_up_rounded
+                        : Icons.keyboard_arrow_down_rounded,
+                    size: 22,
+                  ),
+                  label: Text(_showAllCollections ? '收起歌单' : '展开全部歌单'),
+                  style: TextButton.styleFrom(
+                    foregroundColor: const Color(0xFF7A8598),
+                    textStyle: Theme.of(context).textTheme.titleMedium
+                        ?.copyWith(fontWeight: FontWeight.w500),
                   ),
                 ),
               ),
-            ),
-          const BottomPageSpacer(),
-        ],
+            const BottomPageSpacer(),
+          ],
+        ),
       ),
     );
   }
@@ -527,46 +516,6 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
     }
 
     _showMessage(renamed ? '已重命名歌单' : '歌单名称已存在');
-  }
-
-  Future<void> _handleLogoutPressed() async {
-    final bool? confirmed = await showDialog<bool>(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('退出登录'),
-          content: const Text('确认退出当前 B 站账号吗？'),
-          actions: <Widget>[
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(false),
-              child: const Text('取消'),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.of(context).pop(true),
-              child: const Text('退出'),
-            ),
-          ],
-        );
-      },
-    );
-
-    if (confirmed != true) {
-      return;
-    }
-
-    final LogoutResult result = await ref
-        .read(biliAuthControllerProvider.notifier)
-        .logout();
-    if (!mounted) {
-      return;
-    }
-
-    final String message = result.remoteLoggedOut
-        ? '已退出登录'
-        : (result.message?.isNotEmpty == true
-              ? '服务端退出失败，已清除本地登录状态'
-              : '已清除本地登录状态');
-    ToastUtil.show(message);
   }
 
   Future<void> _showDeleteCollectionDialog(
