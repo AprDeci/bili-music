@@ -32,19 +32,6 @@ class BiliSearchRepository {
     );
   }
 
-  Future<SearchPageResult> searchVideosAnonymously(
-    String keyword, {
-    int page = 1,
-    SearchSort sort = SearchSort.comprehensive,
-  }) async {
-    return _searchVideos(
-      keyword,
-      page: page,
-      sort: sort,
-      mode: BiliRequestMode.anonymous,
-    );
-  }
-
   Future<SearchUserPageResult> searchUsers(
     String keyword, {
     int page = 1,

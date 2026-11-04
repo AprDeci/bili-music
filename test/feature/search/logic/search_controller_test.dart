@@ -389,15 +389,6 @@ class _FakeBiliSearchRepository implements BiliSearchRepository {
   }
 
   @override
-  Future<SearchPageResult> searchVideosAnonymously(
-    String keyword, {
-    int page = 1,
-    SearchSort sort = SearchSort.comprehensive,
-  }) async {
-    return searchVideos(keyword, page: page, sort: sort);
-  }
-
-  @override
   Future<SearchUserPageResult> searchUsers(
     String keyword, {
     int page = 1,

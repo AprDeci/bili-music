@@ -1,4 +1,3 @@
-import 'package:bilimusic/common/bm_icons.dart';
 import 'package:bilimusic/common/components/bar_icon_button.dart';
 import 'package:bilimusic/common/components/cached_avatar.dart';
 import 'package:bilimusic/common/components/cached_image.dart';
@@ -182,7 +181,6 @@ class _DesktopProfileSidebarState extends ConsumerState<DesktopProfileSidebar> {
           const SizedBox(height: 22),
           _CollectionHeader(
             onAddPressed: () => _handleAddPressed(context, ref),
-            onImportPressed: () => _handleImportPressed(context),
           ),
           const SizedBox(height: 10),
           Expanded(
@@ -463,10 +461,6 @@ class _DesktopProfileSidebarState extends ConsumerState<DesktopProfileSidebar> {
         }
         await _showRemoteImportDialog(context, ref);
     }
-  }
-
-  void _handleImportPressed(BuildContext context) {
-    context.push('/profile/import');
   }
 
   void _showCollectionContextMenu({
@@ -992,13 +986,9 @@ class _SidebarListItem extends StatelessWidget {
 }
 
 class _CollectionHeader extends StatelessWidget {
-  const _CollectionHeader({
-    required this.onAddPressed,
-    required this.onImportPressed,
-  });
+  const _CollectionHeader({required this.onAddPressed});
 
   final VoidCallback onAddPressed;
-  final VoidCallback onImportPressed;
 
   @override
   Widget build(BuildContext context) {
@@ -1016,20 +1006,6 @@ class _CollectionHeader extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 12),
-        SizedBox(
-          width: 28,
-          height: 28,
-          child: IconButton(
-            padding: EdgeInsets.zero,
-            tooltip: '导入外部歌单',
-            onPressed: onImportPressed,
-            icon: Icon(
-              BmIcons.importright,
-              color: colorScheme.onSurfaceVariant,
-              size: 18,
-            ),
-          ),
-        ),
         SizedBox(
           width: 28,
           height: 28,

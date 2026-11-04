@@ -38,8 +38,7 @@ class MobileChromeConfig {
       return fullScreen;
     }
 
-    if (path == '/profile/import' ||
-        path.startsWith('/profile/favorites/') ||
+    if (path.startsWith('/profile/favorites/') ||
         path == '/profile/downloads' ||
         path == '/profile/recent') {
       return detail;

@@ -1,4 +1,3 @@
-import 'package:bilimusic/common/bm_icons.dart';
 import 'package:bilimusic/common/components/bottom_page_spacer.dart';
 import 'package:bilimusic/common/components/cached_image.dart';
 import 'package:bilimusic/common/components/login_required.dart';
@@ -108,10 +107,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
               onDownloadTap: () => context.push('/profile/downloads'),
             ),
             const SizedBox(height: 16),
-            _ProfileSectionHeader(
-              onAddPressed: _handleAddPressed,
-              onImportPressed: _handleImportPressed,
-            ),
+            _ProfileSectionHeader(onAddPressed: _handleAddPressed),
             if (visibleCollections.isNotEmpty) const SizedBox(height: 14),
             ...visibleCollections.map((FavoriteCollection collection) {
               final List<FavoriteEntry> items = favoritesState
@@ -363,10 +359,6 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
         }
         await _showRemoteImportDialog();
     }
-  }
-
-  void _handleImportPressed() {
-    context.push('/profile/import');
   }
 
   Future<void> _showCollectionActionMenu({
@@ -801,13 +793,9 @@ class _ProfileQuickActionCard extends StatelessWidget {
 }
 
 class _ProfileSectionHeader extends StatelessWidget {
-  const _ProfileSectionHeader({
-    required this.onAddPressed,
-    required this.onImportPressed,
-  });
+  const _ProfileSectionHeader({required this.onAddPressed});
 
   final VoidCallback onAddPressed;
-  final VoidCallback onImportPressed;
 
   @override
   Widget build(BuildContext context) {
@@ -822,15 +810,6 @@ class _ProfileSectionHeader extends StatelessWidget {
           ),
         ),
         const Spacer(),
-        InkWell(
-          borderRadius: BorderRadius.circular(999),
-          onTap: onImportPressed,
-          child: Icon(
-            BmIcons.importright,
-            size: 20,
-            color: Colors.grey.withValues(alpha: 0.9),
-          ),
-        ),
         Material(
           color: Colors.transparent,
           child: InkWell(
