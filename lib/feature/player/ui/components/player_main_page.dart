@@ -493,6 +493,7 @@ class _PlayerDownloadToolButton extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final PlayableItem? currentItem = item;
+    final ColorScheme colorScheme = Theme.of(context).colorScheme;
     final DownloadState downloadState = ref.watch(downloadControllerProvider);
     final bool isDownloaded =
         currentItem != null && downloadState.contains(currentItem.contentId);
@@ -504,11 +505,13 @@ class _PlayerDownloadToolButton extends ConsumerWidget {
         : isDownloading
         ? '下载中'
         : '下载';
-    final IconData icon = isDownloaded
-        ? Icons.download_done_rounded
+    final Color iconColor = !isEnabled
+        ? colorScheme.onSurface.withValues(alpha: 0.38)
+        : isDownloaded
+        ? colorScheme.primary
         : isDownloading
-        ? Icons.downloading_rounded
-        : Icons.download_rounded;
+        ? colorScheme.primary.withValues(alpha: 0.6)
+        : colorScheme.onSurface;
 
     return Tooltip(
       message: tooltip,
@@ -517,10 +520,7 @@ class _PlayerDownloadToolButton extends ConsumerWidget {
         onPressed: isEnabled && currentItem != null
             ? () => requestTrackDownload(ref, currentItem)
             : null,
-        icon: Icon(
-          icon,
-          color: isDownloaded ? Theme.of(context).colorScheme.primary : null,
-        ),
+        icon: Icon(Icons.download_rounded, color: iconColor),
       ),
     );
   }

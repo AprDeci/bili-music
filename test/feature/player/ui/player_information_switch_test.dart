@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:bilimusic/common/components/badged_icon_button.dart';
+import 'package:bilimusic/feature/download/domain/downloaded_track.dart';
 import 'package:bilimusic/feature/download/logic/download_controller.dart';
 import 'package:bilimusic/feature/favorites/domain/favorites_state.dart';
 import 'package:bilimusic/feature/favorites/logic/favorites_controller.dart';
@@ -1323,6 +1324,49 @@ void main() {
       lessThan(tester.getCenter(quality).dx),
     );
   });
+
+  testWidgets('download button keeps the download icon once downloaded', (
+    WidgetTester tester,
+  ) async {
+    await _pumpPlayer(
+      tester,
+      _metadata,
+      downloads: <DownloadedTrack>[_downloadedTrack(_item)],
+    );
+    final Finder download = find.byKey(const Key('playerDownloadButton'));
+    expect(download, findsOneWidget);
+    expect(find.byTooltip('已下载'), findsOneWidget);
+    expect(
+      find.descendant(
+        of: download,
+        matching: find.byIcon(Icons.download_rounded),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(
+        of: download,
+        matching: find.byIcon(Icons.download_done_rounded),
+      ),
+      findsNothing,
+    );
+  });
+}
+
+DownloadedTrack _downloadedTrack(PlayableItem item) {
+  return DownloadedTrack(
+    contentId: item.contentId,
+    aid: item.aid,
+    bvid: item.bvid,
+    cid: 1,
+    page: 1,
+    title: item.title,
+    author: item.author,
+    coverUrl: item.coverUrl,
+    filePath: '/tmp/track.m4a',
+    byteLength: 1024,
+    downloadedAtMs: 1,
+  );
 }
 
 Future<ProviderContainer> _pumpPlayer(
@@ -1331,6 +1375,7 @@ Future<ProviderContainer> _pumpPlayer(
   Size size = const Size(420, 900),
   Widget? home,
   EdgeInsets padding = EdgeInsets.zero,
+  List<DownloadedTrack> downloads = const <DownloadedTrack>[],
   TextScaler textScaler = TextScaler.noScaling,
   ThemeData? theme,
 }) async {
@@ -1357,7 +1402,9 @@ Future<ProviderContainer> _pumpPlayer(
         ),
         playerDisplaySettingsLogicProvider.overrideWithValue(true),
         desktopLyricsControllerProvider.overrideWithValue(false),
-        downloadControllerProvider.overrideWith(_FakeDownloads.new),
+        downloadControllerProvider.overrideWith(
+          () => _FakeDownloads(downloads),
+        ),
       ],
       child: MaterialApp(
         theme: theme,
@@ -1556,6 +1603,10 @@ class _FakeOnlineAudienceController extends PlayerOnlineAudienceController {
 }
 
 class _FakeDownloads extends DownloadController {
+  _FakeDownloads(this.tracks);
+
+  final List<DownloadedTrack> tracks;
+
   @override
-  DownloadState build() => const DownloadState();
+  DownloadState build() => DownloadState(tracks: tracks);
 }
