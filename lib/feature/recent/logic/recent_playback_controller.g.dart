@@ -43,7 +43,7 @@ final class RecentPlaybackControllerProvider
 }
 
 String _$recentPlaybackControllerHash() =>
-    r'48ebd890974965e170c32340b0f58df75cff3e32';
+    r'cbaec52278ed83ef8b2bdbae7b064218f0676a9d';
 
 abstract class _$RecentPlaybackController
     extends $Notifier<List<RecentPlaybackEntry>> {

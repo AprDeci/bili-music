@@ -14,7 +14,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$UpPageState {
 
- UpProfile? get profile; List<UpVideoItem> get videos; int get videoPage; bool get hasMoreVideos; bool get isLoadingVideosMore; List<UpCollection> get collections; int get collectionPage; bool get hasMoreCollections; bool get isLoadingCollectionsMore; UpPageTab get selectedTab; bool get isRefreshing; String? get profileError; String? get videoError; String? get collectionError; String? get videoLoadMoreError; String? get collectionLoadMoreError;
+ UpProfile? get profile; PagedState<UpVideoItem> get videoFeed; PagedState<UpCollection> get collectionFeed; UpPageTab get selectedTab; bool get isRefreshing; String? get profileError; String? get videoError; String? get collectionError; String? get videoLoadMoreError; String? get collectionLoadMoreError;
 /// Create a copy of UpPageState
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -25,16 +25,16 @@ $UpPageStateCopyWith<UpPageState> get copyWith => _$UpPageStateCopyWithImpl<UpPa
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is UpPageState&&(identical(other.profile, profile) || other.profile == profile)&&const DeepCollectionEquality().equals(other.videos, videos)&&(identical(other.videoPage, videoPage) || other.videoPage == videoPage)&&(identical(other.hasMoreVideos, hasMoreVideos) || other.hasMoreVideos == hasMoreVideos)&&(identical(other.isLoadingVideosMore, isLoadingVideosMore) || other.isLoadingVideosMore == isLoadingVideosMore)&&const DeepCollectionEquality().equals(other.collections, collections)&&(identical(other.collectionPage, collectionPage) || other.collectionPage == collectionPage)&&(identical(other.hasMoreCollections, hasMoreCollections) || other.hasMoreCollections == hasMoreCollections)&&(identical(other.isLoadingCollectionsMore, isLoadingCollectionsMore) || other.isLoadingCollectionsMore == isLoadingCollectionsMore)&&(identical(other.selectedTab, selectedTab) || other.selectedTab == selectedTab)&&(identical(other.isRefreshing, isRefreshing) || other.isRefreshing == isRefreshing)&&(identical(other.profileError, profileError) || other.profileError == profileError)&&(identical(other.videoError, videoError) || other.videoError == videoError)&&(identical(other.collectionError, collectionError) || other.collectionError == collectionError)&&(identical(other.videoLoadMoreError, videoLoadMoreError) || other.videoLoadMoreError == videoLoadMoreError)&&(identical(other.collectionLoadMoreError, collectionLoadMoreError) || other.collectionLoadMoreError == collectionLoadMoreError));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is UpPageState&&(identical(other.profile, profile) || other.profile == profile)&&(identical(other.videoFeed, videoFeed) || other.videoFeed == videoFeed)&&(identical(other.collectionFeed, collectionFeed) || other.collectionFeed == collectionFeed)&&(identical(other.selectedTab, selectedTab) || other.selectedTab == selectedTab)&&(identical(other.isRefreshing, isRefreshing) || other.isRefreshing == isRefreshing)&&(identical(other.profileError, profileError) || other.profileError == profileError)&&(identical(other.videoError, videoError) || other.videoError == videoError)&&(identical(other.collectionError, collectionError) || other.collectionError == collectionError)&&(identical(other.videoLoadMoreError, videoLoadMoreError) || other.videoLoadMoreError == videoLoadMoreError)&&(identical(other.collectionLoadMoreError, collectionLoadMoreError) || other.collectionLoadMoreError == collectionLoadMoreError));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,profile,const DeepCollectionEquality().hash(videos),videoPage,hasMoreVideos,isLoadingVideosMore,const DeepCollectionEquality().hash(collections),collectionPage,hasMoreCollections,isLoadingCollectionsMore,selectedTab,isRefreshing,profileError,videoError,collectionError,videoLoadMoreError,collectionLoadMoreError);
+int get hashCode => Object.hash(runtimeType,profile,videoFeed,collectionFeed,selectedTab,isRefreshing,profileError,videoError,collectionError,videoLoadMoreError,collectionLoadMoreError);
 
 @override
 String toString() {
-  return 'UpPageState(profile: $profile, videos: $videos, videoPage: $videoPage, hasMoreVideos: $hasMoreVideos, isLoadingVideosMore: $isLoadingVideosMore, collections: $collections, collectionPage: $collectionPage, hasMoreCollections: $hasMoreCollections, isLoadingCollectionsMore: $isLoadingCollectionsMore, selectedTab: $selectedTab, isRefreshing: $isRefreshing, profileError: $profileError, videoError: $videoError, collectionError: $collectionError, videoLoadMoreError: $videoLoadMoreError, collectionLoadMoreError: $collectionLoadMoreError)';
+  return 'UpPageState(profile: $profile, videoFeed: $videoFeed, collectionFeed: $collectionFeed, selectedTab: $selectedTab, isRefreshing: $isRefreshing, profileError: $profileError, videoError: $videoError, collectionError: $collectionError, videoLoadMoreError: $videoLoadMoreError, collectionLoadMoreError: $collectionLoadMoreError)';
 }
 
 
@@ -45,7 +45,7 @@ abstract mixin class $UpPageStateCopyWith<$Res>  {
   factory $UpPageStateCopyWith(UpPageState value, $Res Function(UpPageState) _then) = _$UpPageStateCopyWithImpl;
 @useResult
 $Res call({
- UpProfile? profile, List<UpVideoItem> videos, int videoPage, bool hasMoreVideos, bool isLoadingVideosMore, List<UpCollection> collections, int collectionPage, bool hasMoreCollections, bool isLoadingCollectionsMore, UpPageTab selectedTab, bool isRefreshing, String? profileError, String? videoError, String? collectionError, String? videoLoadMoreError, String? collectionLoadMoreError
+ UpProfile? profile, PagedState<UpVideoItem> videoFeed, PagedState<UpCollection> collectionFeed, UpPageTab selectedTab, bool isRefreshing, String? profileError, String? videoError, String? collectionError, String? videoLoadMoreError, String? collectionLoadMoreError
 });
 
 
@@ -62,18 +62,12 @@ class _$UpPageStateCopyWithImpl<$Res>
 
 /// Create a copy of UpPageState
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? profile = freezed,Object? videos = null,Object? videoPage = null,Object? hasMoreVideos = null,Object? isLoadingVideosMore = null,Object? collections = null,Object? collectionPage = null,Object? hasMoreCollections = null,Object? isLoadingCollectionsMore = null,Object? selectedTab = null,Object? isRefreshing = null,Object? profileError = freezed,Object? videoError = freezed,Object? collectionError = freezed,Object? videoLoadMoreError = freezed,Object? collectionLoadMoreError = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? profile = freezed,Object? videoFeed = null,Object? collectionFeed = null,Object? selectedTab = null,Object? isRefreshing = null,Object? profileError = freezed,Object? videoError = freezed,Object? collectionError = freezed,Object? videoLoadMoreError = freezed,Object? collectionLoadMoreError = freezed,}) {
   return _then(_self.copyWith(
 profile: freezed == profile ? _self.profile : profile // ignore: cast_nullable_to_non_nullable
-as UpProfile?,videos: null == videos ? _self.videos : videos // ignore: cast_nullable_to_non_nullable
-as List<UpVideoItem>,videoPage: null == videoPage ? _self.videoPage : videoPage // ignore: cast_nullable_to_non_nullable
-as int,hasMoreVideos: null == hasMoreVideos ? _self.hasMoreVideos : hasMoreVideos // ignore: cast_nullable_to_non_nullable
-as bool,isLoadingVideosMore: null == isLoadingVideosMore ? _self.isLoadingVideosMore : isLoadingVideosMore // ignore: cast_nullable_to_non_nullable
-as bool,collections: null == collections ? _self.collections : collections // ignore: cast_nullable_to_non_nullable
-as List<UpCollection>,collectionPage: null == collectionPage ? _self.collectionPage : collectionPage // ignore: cast_nullable_to_non_nullable
-as int,hasMoreCollections: null == hasMoreCollections ? _self.hasMoreCollections : hasMoreCollections // ignore: cast_nullable_to_non_nullable
-as bool,isLoadingCollectionsMore: null == isLoadingCollectionsMore ? _self.isLoadingCollectionsMore : isLoadingCollectionsMore // ignore: cast_nullable_to_non_nullable
-as bool,selectedTab: null == selectedTab ? _self.selectedTab : selectedTab // ignore: cast_nullable_to_non_nullable
+as UpProfile?,videoFeed: null == videoFeed ? _self.videoFeed : videoFeed // ignore: cast_nullable_to_non_nullable
+as PagedState<UpVideoItem>,collectionFeed: null == collectionFeed ? _self.collectionFeed : collectionFeed // ignore: cast_nullable_to_non_nullable
+as PagedState<UpCollection>,selectedTab: null == selectedTab ? _self.selectedTab : selectedTab // ignore: cast_nullable_to_non_nullable
 as UpPageTab,isRefreshing: null == isRefreshing ? _self.isRefreshing : isRefreshing // ignore: cast_nullable_to_non_nullable
 as bool,profileError: freezed == profileError ? _self.profileError : profileError // ignore: cast_nullable_to_non_nullable
 as String?,videoError: freezed == videoError ? _self.videoError : videoError // ignore: cast_nullable_to_non_nullable
@@ -177,10 +171,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( UpProfile? profile,  List<UpVideoItem> videos,  int videoPage,  bool hasMoreVideos,  bool isLoadingVideosMore,  List<UpCollection> collections,  int collectionPage,  bool hasMoreCollections,  bool isLoadingCollectionsMore,  UpPageTab selectedTab,  bool isRefreshing,  String? profileError,  String? videoError,  String? collectionError,  String? videoLoadMoreError,  String? collectionLoadMoreError)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( UpProfile? profile,  PagedState<UpVideoItem> videoFeed,  PagedState<UpCollection> collectionFeed,  UpPageTab selectedTab,  bool isRefreshing,  String? profileError,  String? videoError,  String? collectionError,  String? videoLoadMoreError,  String? collectionLoadMoreError)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _UpPageState() when $default != null:
-return $default(_that.profile,_that.videos,_that.videoPage,_that.hasMoreVideos,_that.isLoadingVideosMore,_that.collections,_that.collectionPage,_that.hasMoreCollections,_that.isLoadingCollectionsMore,_that.selectedTab,_that.isRefreshing,_that.profileError,_that.videoError,_that.collectionError,_that.videoLoadMoreError,_that.collectionLoadMoreError);case _:
+return $default(_that.profile,_that.videoFeed,_that.collectionFeed,_that.selectedTab,_that.isRefreshing,_that.profileError,_that.videoError,_that.collectionError,_that.videoLoadMoreError,_that.collectionLoadMoreError);case _:
   return orElse();
 
 }
@@ -198,10 +192,10 @@ return $default(_that.profile,_that.videos,_that.videoPage,_that.hasMoreVideos,_
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( UpProfile? profile,  List<UpVideoItem> videos,  int videoPage,  bool hasMoreVideos,  bool isLoadingVideosMore,  List<UpCollection> collections,  int collectionPage,  bool hasMoreCollections,  bool isLoadingCollectionsMore,  UpPageTab selectedTab,  bool isRefreshing,  String? profileError,  String? videoError,  String? collectionError,  String? videoLoadMoreError,  String? collectionLoadMoreError)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( UpProfile? profile,  PagedState<UpVideoItem> videoFeed,  PagedState<UpCollection> collectionFeed,  UpPageTab selectedTab,  bool isRefreshing,  String? profileError,  String? videoError,  String? collectionError,  String? videoLoadMoreError,  String? collectionLoadMoreError)  $default,) {final _that = this;
 switch (_that) {
 case _UpPageState():
-return $default(_that.profile,_that.videos,_that.videoPage,_that.hasMoreVideos,_that.isLoadingVideosMore,_that.collections,_that.collectionPage,_that.hasMoreCollections,_that.isLoadingCollectionsMore,_that.selectedTab,_that.isRefreshing,_that.profileError,_that.videoError,_that.collectionError,_that.videoLoadMoreError,_that.collectionLoadMoreError);case _:
+return $default(_that.profile,_that.videoFeed,_that.collectionFeed,_that.selectedTab,_that.isRefreshing,_that.profileError,_that.videoError,_that.collectionError,_that.videoLoadMoreError,_that.collectionLoadMoreError);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -218,10 +212,10 @@ return $default(_that.profile,_that.videos,_that.videoPage,_that.hasMoreVideos,_
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( UpProfile? profile,  List<UpVideoItem> videos,  int videoPage,  bool hasMoreVideos,  bool isLoadingVideosMore,  List<UpCollection> collections,  int collectionPage,  bool hasMoreCollections,  bool isLoadingCollectionsMore,  UpPageTab selectedTab,  bool isRefreshing,  String? profileError,  String? videoError,  String? collectionError,  String? videoLoadMoreError,  String? collectionLoadMoreError)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( UpProfile? profile,  PagedState<UpVideoItem> videoFeed,  PagedState<UpCollection> collectionFeed,  UpPageTab selectedTab,  bool isRefreshing,  String? profileError,  String? videoError,  String? collectionError,  String? videoLoadMoreError,  String? collectionLoadMoreError)?  $default,) {final _that = this;
 switch (_that) {
 case _UpPageState() when $default != null:
-return $default(_that.profile,_that.videos,_that.videoPage,_that.hasMoreVideos,_that.isLoadingVideosMore,_that.collections,_that.collectionPage,_that.hasMoreCollections,_that.isLoadingCollectionsMore,_that.selectedTab,_that.isRefreshing,_that.profileError,_that.videoError,_that.collectionError,_that.videoLoadMoreError,_that.collectionLoadMoreError);case _:
+return $default(_that.profile,_that.videoFeed,_that.collectionFeed,_that.selectedTab,_that.isRefreshing,_that.profileError,_that.videoError,_that.collectionError,_that.videoLoadMoreError,_that.collectionLoadMoreError);case _:
   return null;
 
 }
@@ -232,31 +226,13 @@ return $default(_that.profile,_that.videos,_that.videoPage,_that.hasMoreVideos,_
 /// @nodoc
 
 
-class _UpPageState implements UpPageState {
-  const _UpPageState({this.profile, final  List<UpVideoItem> videos = const <UpVideoItem>[], this.videoPage = 0, this.hasMoreVideos = false, this.isLoadingVideosMore = false, final  List<UpCollection> collections = const <UpCollection>[], this.collectionPage = 0, this.hasMoreCollections = false, this.isLoadingCollectionsMore = false, this.selectedTab = UpPageTab.videos, this.isRefreshing = false, this.profileError, this.videoError, this.collectionError, this.videoLoadMoreError, this.collectionLoadMoreError}): _videos = videos,_collections = collections;
+class _UpPageState extends UpPageState {
+  const _UpPageState({this.profile, this.videoFeed = const PagedState<UpVideoItem>(), this.collectionFeed = const PagedState<UpCollection>(), this.selectedTab = UpPageTab.videos, this.isRefreshing = false, this.profileError, this.videoError, this.collectionError, this.videoLoadMoreError, this.collectionLoadMoreError}): super._();
   
 
 @override final  UpProfile? profile;
- final  List<UpVideoItem> _videos;
-@override@JsonKey() List<UpVideoItem> get videos {
-  if (_videos is EqualUnmodifiableListView) return _videos;
-  // ignore: implicit_dynamic_type
-  return EqualUnmodifiableListView(_videos);
-}
-
-@override@JsonKey() final  int videoPage;
-@override@JsonKey() final  bool hasMoreVideos;
-@override@JsonKey() final  bool isLoadingVideosMore;
- final  List<UpCollection> _collections;
-@override@JsonKey() List<UpCollection> get collections {
-  if (_collections is EqualUnmodifiableListView) return _collections;
-  // ignore: implicit_dynamic_type
-  return EqualUnmodifiableListView(_collections);
-}
-
-@override@JsonKey() final  int collectionPage;
-@override@JsonKey() final  bool hasMoreCollections;
-@override@JsonKey() final  bool isLoadingCollectionsMore;
+@override@JsonKey() final  PagedState<UpVideoItem> videoFeed;
+@override@JsonKey() final  PagedState<UpCollection> collectionFeed;
 @override@JsonKey() final  UpPageTab selectedTab;
 @override@JsonKey() final  bool isRefreshing;
 @override final  String? profileError;
@@ -275,16 +251,16 @@ _$UpPageStateCopyWith<_UpPageState> get copyWith => __$UpPageStateCopyWithImpl<_
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _UpPageState&&(identical(other.profile, profile) || other.profile == profile)&&const DeepCollectionEquality().equals(other._videos, _videos)&&(identical(other.videoPage, videoPage) || other.videoPage == videoPage)&&(identical(other.hasMoreVideos, hasMoreVideos) || other.hasMoreVideos == hasMoreVideos)&&(identical(other.isLoadingVideosMore, isLoadingVideosMore) || other.isLoadingVideosMore == isLoadingVideosMore)&&const DeepCollectionEquality().equals(other._collections, _collections)&&(identical(other.collectionPage, collectionPage) || other.collectionPage == collectionPage)&&(identical(other.hasMoreCollections, hasMoreCollections) || other.hasMoreCollections == hasMoreCollections)&&(identical(other.isLoadingCollectionsMore, isLoadingCollectionsMore) || other.isLoadingCollectionsMore == isLoadingCollectionsMore)&&(identical(other.selectedTab, selectedTab) || other.selectedTab == selectedTab)&&(identical(other.isRefreshing, isRefreshing) || other.isRefreshing == isRefreshing)&&(identical(other.profileError, profileError) || other.profileError == profileError)&&(identical(other.videoError, videoError) || other.videoError == videoError)&&(identical(other.collectionError, collectionError) || other.collectionError == collectionError)&&(identical(other.videoLoadMoreError, videoLoadMoreError) || other.videoLoadMoreError == videoLoadMoreError)&&(identical(other.collectionLoadMoreError, collectionLoadMoreError) || other.collectionLoadMoreError == collectionLoadMoreError));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _UpPageState&&(identical(other.profile, profile) || other.profile == profile)&&(identical(other.videoFeed, videoFeed) || other.videoFeed == videoFeed)&&(identical(other.collectionFeed, collectionFeed) || other.collectionFeed == collectionFeed)&&(identical(other.selectedTab, selectedTab) || other.selectedTab == selectedTab)&&(identical(other.isRefreshing, isRefreshing) || other.isRefreshing == isRefreshing)&&(identical(other.profileError, profileError) || other.profileError == profileError)&&(identical(other.videoError, videoError) || other.videoError == videoError)&&(identical(other.collectionError, collectionError) || other.collectionError == collectionError)&&(identical(other.videoLoadMoreError, videoLoadMoreError) || other.videoLoadMoreError == videoLoadMoreError)&&(identical(other.collectionLoadMoreError, collectionLoadMoreError) || other.collectionLoadMoreError == collectionLoadMoreError));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,profile,const DeepCollectionEquality().hash(_videos),videoPage,hasMoreVideos,isLoadingVideosMore,const DeepCollectionEquality().hash(_collections),collectionPage,hasMoreCollections,isLoadingCollectionsMore,selectedTab,isRefreshing,profileError,videoError,collectionError,videoLoadMoreError,collectionLoadMoreError);
+int get hashCode => Object.hash(runtimeType,profile,videoFeed,collectionFeed,selectedTab,isRefreshing,profileError,videoError,collectionError,videoLoadMoreError,collectionLoadMoreError);
 
 @override
 String toString() {
-  return 'UpPageState(profile: $profile, videos: $videos, videoPage: $videoPage, hasMoreVideos: $hasMoreVideos, isLoadingVideosMore: $isLoadingVideosMore, collections: $collections, collectionPage: $collectionPage, hasMoreCollections: $hasMoreCollections, isLoadingCollectionsMore: $isLoadingCollectionsMore, selectedTab: $selectedTab, isRefreshing: $isRefreshing, profileError: $profileError, videoError: $videoError, collectionError: $collectionError, videoLoadMoreError: $videoLoadMoreError, collectionLoadMoreError: $collectionLoadMoreError)';
+  return 'UpPageState(profile: $profile, videoFeed: $videoFeed, collectionFeed: $collectionFeed, selectedTab: $selectedTab, isRefreshing: $isRefreshing, profileError: $profileError, videoError: $videoError, collectionError: $collectionError, videoLoadMoreError: $videoLoadMoreError, collectionLoadMoreError: $collectionLoadMoreError)';
 }
 
 
@@ -295,7 +271,7 @@ abstract mixin class _$UpPageStateCopyWith<$Res> implements $UpPageStateCopyWith
   factory _$UpPageStateCopyWith(_UpPageState value, $Res Function(_UpPageState) _then) = __$UpPageStateCopyWithImpl;
 @override @useResult
 $Res call({
- UpProfile? profile, List<UpVideoItem> videos, int videoPage, bool hasMoreVideos, bool isLoadingVideosMore, List<UpCollection> collections, int collectionPage, bool hasMoreCollections, bool isLoadingCollectionsMore, UpPageTab selectedTab, bool isRefreshing, String? profileError, String? videoError, String? collectionError, String? videoLoadMoreError, String? collectionLoadMoreError
+ UpProfile? profile, PagedState<UpVideoItem> videoFeed, PagedState<UpCollection> collectionFeed, UpPageTab selectedTab, bool isRefreshing, String? profileError, String? videoError, String? collectionError, String? videoLoadMoreError, String? collectionLoadMoreError
 });
 
 
@@ -312,18 +288,12 @@ class __$UpPageStateCopyWithImpl<$Res>
 
 /// Create a copy of UpPageState
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? profile = freezed,Object? videos = null,Object? videoPage = null,Object? hasMoreVideos = null,Object? isLoadingVideosMore = null,Object? collections = null,Object? collectionPage = null,Object? hasMoreCollections = null,Object? isLoadingCollectionsMore = null,Object? selectedTab = null,Object? isRefreshing = null,Object? profileError = freezed,Object? videoError = freezed,Object? collectionError = freezed,Object? videoLoadMoreError = freezed,Object? collectionLoadMoreError = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? profile = freezed,Object? videoFeed = null,Object? collectionFeed = null,Object? selectedTab = null,Object? isRefreshing = null,Object? profileError = freezed,Object? videoError = freezed,Object? collectionError = freezed,Object? videoLoadMoreError = freezed,Object? collectionLoadMoreError = freezed,}) {
   return _then(_UpPageState(
 profile: freezed == profile ? _self.profile : profile // ignore: cast_nullable_to_non_nullable
-as UpProfile?,videos: null == videos ? _self._videos : videos // ignore: cast_nullable_to_non_nullable
-as List<UpVideoItem>,videoPage: null == videoPage ? _self.videoPage : videoPage // ignore: cast_nullable_to_non_nullable
-as int,hasMoreVideos: null == hasMoreVideos ? _self.hasMoreVideos : hasMoreVideos // ignore: cast_nullable_to_non_nullable
-as bool,isLoadingVideosMore: null == isLoadingVideosMore ? _self.isLoadingVideosMore : isLoadingVideosMore // ignore: cast_nullable_to_non_nullable
-as bool,collections: null == collections ? _self._collections : collections // ignore: cast_nullable_to_non_nullable
-as List<UpCollection>,collectionPage: null == collectionPage ? _self.collectionPage : collectionPage // ignore: cast_nullable_to_non_nullable
-as int,hasMoreCollections: null == hasMoreCollections ? _self.hasMoreCollections : hasMoreCollections // ignore: cast_nullable_to_non_nullable
-as bool,isLoadingCollectionsMore: null == isLoadingCollectionsMore ? _self.isLoadingCollectionsMore : isLoadingCollectionsMore // ignore: cast_nullable_to_non_nullable
-as bool,selectedTab: null == selectedTab ? _self.selectedTab : selectedTab // ignore: cast_nullable_to_non_nullable
+as UpProfile?,videoFeed: null == videoFeed ? _self.videoFeed : videoFeed // ignore: cast_nullable_to_non_nullable
+as PagedState<UpVideoItem>,collectionFeed: null == collectionFeed ? _self.collectionFeed : collectionFeed // ignore: cast_nullable_to_non_nullable
+as PagedState<UpCollection>,selectedTab: null == selectedTab ? _self.selectedTab : selectedTab // ignore: cast_nullable_to_non_nullable
 as UpPageTab,isRefreshing: null == isRefreshing ? _self.isRefreshing : isRefreshing // ignore: cast_nullable_to_non_nullable
 as bool,profileError: freezed == profileError ? _self.profileError : profileError // ignore: cast_nullable_to_non_nullable
 as String?,videoError: freezed == videoError ? _self.videoError : videoError // ignore: cast_nullable_to_non_nullable

@@ -16,6 +16,13 @@ class RecentPlaybackController extends _$RecentPlaybackController {
     return _repository.load();
   }
 
+  Future<void> removeEntries(Set<String> stableIds) async {
+    await _repository.removeEntries(stableIds);
+    if (ref.mounted) {
+      state = _repository.load();
+    }
+  }
+
   Future<void> recordItem(PlayableItem item) async {
     final RecentPlaybackEntry entry = RecentPlaybackEntry.fromPlayableItem(
       item,

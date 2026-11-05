@@ -9,6 +9,7 @@ import 'package:bilimusic/feature/player/domain/audio_stream_info.dart';
 import 'package:bilimusic/feature/player/domain/player_audio_quality_preference.dart';
 import 'package:bilimusic/feature/player/domain/playable_item.dart';
 import 'package:bilimusic/feature/player/domain/player_state.dart';
+import 'package:bilimusic/feature/player/logic/playback/audio_source_resolver.dart';
 import 'package:bilimusic/feature/player/logic/playback/player_audio_engine.dart';
 import 'package:dio/dio.dart';
 
@@ -25,8 +26,10 @@ class PlayerPlaybackLoader {
     required this._logEvent,
     Future<List<PlayableItem>> Function(PlayableItem item)? resolveAllParts,
     Future<bool> Function()? isOffline,
+    List<AudioSourceResolver> extraSources = const <AudioSourceResolver>[],
   }) : _resolveAllParts = resolveAllParts ?? _repository.resolveAllParts,
-       _isOffline = isOffline ?? NetUtil.isOffline;
+       _isOffline = isOffline ?? NetUtil.isOffline,
+       _extraSources = List<AudioSourceResolver>.unmodifiable(extraSources);
 
   final BiliPlayerRepository _repository;
   final PlayerAudioCacheRepository _audioCacheRepository;
@@ -36,15 +39,24 @@ class PlayerPlaybackLoader {
   final PlayerControllerLogger _logEvent;
   final Future<List<PlayableItem>> Function(PlayableItem item) _resolveAllParts;
   final Future<bool> Function() _isOffline;
+  final List<AudioSourceResolver> _extraSources;
 
-  final Map<String, ResolvedQueueEntry> _resolvedEntries =
-      <String, ResolvedQueueEntry>{};
+  late final CachedAudioSourceResolver _cachedSource =
+      CachedAudioSourceResolver(_audioCacheRepository);
+  late final MemoryAudioSourceResolver _memorySource =
+      MemoryAudioSourceResolver();
+  late final BiliDashAudioSourceResolver _dashSource =
+      BiliDashAudioSourceResolver(
+        repository: _repository,
+        audioCacheRepository: _audioCacheRepository,
+        readSession: _readSession,
+      );
+  late final AudioSourceChain _onlineSourceChain = AudioSourceChain(
+    <AudioSourceResolver>[..._extraSources, _dashSource],
+  );
 
   void removeResolvedEntryCachesForItem(PlayableItem item) {
-    final String prefix = '${item.stableId}:';
-    _resolvedEntries.removeWhere(
-      (String key, ResolvedQueueEntry _) => key.startsWith(prefix),
-    );
+    _memorySource.removeForItem(item);
   }
 
   void clearResolvedEntryCache({
@@ -52,12 +64,13 @@ class PlayerPlaybackLoader {
     required PlayerAudioQualityPreference preference,
     int? preferredQualityId,
   }) {
-    final String cacheKey = resolvedEntryCacheKey(
-      item,
-      preference: preference,
-      preferredQualityId: preferredQualityId,
+    _memorySource.remove(
+      resolvedEntryCacheKey(
+        item,
+        preference: preference,
+        preferredQualityId: preferredQualityId,
+      ),
     );
-    _resolvedEntries.remove(cacheKey);
   }
 
   String resolvedEntryCacheKey(
@@ -65,11 +78,11 @@ class PlayerPlaybackLoader {
     required PlayerAudioQualityPreference preference,
     int? preferredQualityId,
   }) {
-    final String overrideKey = preferredQualityId?.toString() ?? 'default';
-    final String partKey = item.cid == null || item.cid! <= 0
-        ? ':page:${item.page ?? 1}'
-        : '';
-    return '${item.stableId}$partKey:${preference.storageValue}:$overrideKey:${item.kind.name}:${item.collectionId ?? ''}';
+    return audioSourceCacheKey(
+      item,
+      preference: preference,
+      preferredQualityId: preferredQualityId,
+    );
   }
 
   Future<ResolvedQueueEntry> resolveQueueEntry(
@@ -84,60 +97,43 @@ class PlayerPlaybackLoader {
     PlayableItem item, {
     int? preferredQualityId,
   }) async {
-    final PlayerAudioQualityPreference qualityPreference =
-        _readQualityPreference();
-    final String cacheKey = resolvedEntryCacheKey(
-      item,
-      preference: qualityPreference,
-      preferredQualityId: preferredQualityId,
-    );
     if (!item.hasIdentity) {
       throw const BiliPlayerException('当前搜索结果缺少可播放的视频标识。');
     }
-
-    final ResolvedQueueEntry? diskCache = await _resolveCachedEntry(
-      item,
-      preference: qualityPreference,
+    final AudioResolutionRequest request = AudioResolutionRequest(
+      item: item,
+      qualityPreference: _readQualityPreference(),
       preferredQualityId: preferredQualityId,
     );
+
+    final ResolvedQueueEntry? diskCache = await _cachedSource.resolve(request);
     if (diskCache != null) {
       return diskCache;
     }
 
     if (await _isOffline()) {
-      return await _resolveCachedEntry(
-            item,
-            preference: qualityPreference,
-            preferredQualityId: preferredQualityId,
-            allowQualityFallback: true,
-          ) ??
+      return await _cachedSource.resolve(request.withQualityFallback()) ??
           (throw const BiliPlayerException('设备处于离线状态，且没有可用的音频缓存。'));
     }
 
-    final ResolvedQueueEntry? cached = _resolvedEntries[cacheKey];
+    final ResolvedQueueEntry? cached = await _memorySource.resolve(request);
     if (cached != null) {
       return cached;
     }
 
-    late final PlayerLoadResult loadResult;
     try {
-      loadResult = await _repository.resolveAudioStream(
-        item,
-        session: _readSession(),
-        qualityPreference: qualityPreference,
-        preferredQualityId: preferredQualityId,
+      final ResolvedQueueEntry? resolved = await _onlineSourceChain.resolve(
+        request,
       );
+      if (resolved != null) {
+        _memorySource.store(request, resolved);
+        return resolved;
+      }
+      throw const BiliPlayerException('未能解析出可播放的音频源。');
     } on Object catch (error, stackTrace) {
-      if (error is SocketException ||
-          error is TimeoutException ||
-          (error is DioException &&
-              error.type != DioExceptionType.badResponse &&
-              error.type != DioExceptionType.cancel)) {
-        final ResolvedQueueEntry? fallback = await _resolveCachedEntry(
-          item,
-          preference: qualityPreference,
-          preferredQualityId: preferredQualityId,
-          allowQualityFallback: true,
+      if (_isRetryableNetworkError(error)) {
+        final ResolvedQueueEntry? fallback = await _cachedSource.resolve(
+          request.withQualityFallback(),
         );
         if (fallback != null) {
           return fallback;
@@ -145,76 +141,14 @@ class PlayerPlaybackLoader {
       }
       Error.throwWithStackTrace(error, stackTrace);
     }
-    final ResolvedQueueEntry entry = ResolvedQueueEntry(
-      item: loadResult.item,
-      availableParts: List<PlayableItem>.unmodifiable(
-        loadResult.availableParts,
-      ),
-      audioStream: loadResult.audioStream,
-      cachedFile: await _audioCacheRepository.getCachedFile(
-        item: loadResult.item,
-        audioStream: loadResult.audioStream,
-      ),
-    );
-    _resolvedEntries[cacheKey] = entry;
-    _resolvedEntries[resolvedEntryCacheKey(
-          loadResult.item,
-          preference: qualityPreference,
-          preferredQualityId: preferredQualityId,
-        )] =
-        entry;
-    return entry;
   }
 
-  Future<ResolvedQueueEntry?> _resolveCachedEntry(
-    PlayableItem item, {
-    required PlayerAudioQualityPreference preference,
-    int? preferredQualityId,
-    bool allowQualityFallback = false,
-  }) async {
-    final CachedAudio? diskCache = await _audioCacheRepository
-        .lookupCachedAudio(
-          item: item,
-          preference: preference,
-          preferredQualityId: preferredQualityId,
-          allowQualityFallback: allowQualityFallback,
-        );
-    if (diskCache == null) {
-      return null;
-    }
-    final AudioCacheMetadata metadata = diskCache.metadata;
-    return ResolvedQueueEntry(
-      item: item.copyWith(
-        cid: metadata.cid,
-        page: metadata.page ?? item.page,
-        pageTitle: (item.pageTitle?.trim().isNotEmpty ?? false)
-            ? item.pageTitle
-            : metadata.pageTitle,
-      ),
-      availableParts: const <PlayableItem>[],
-      audioStream: AudioStreamInfo(
-        streamUrl: '',
-        backupUrls: const <String>[],
-        headers: const <String, String>{},
-        cid: metadata.cid,
-        duration: metadata.durationMs == null
-            ? null
-            : Duration(milliseconds: metadata.durationMs!),
-        bandwidth: metadata.bandwidth,
-        availableQualities: <AudioQualityOption>[
-          AudioQualityOption(
-            qualityId: metadata.qualityId,
-            bandwidth: metadata.bandwidth,
-            label: metadata.qualityLabel ?? '本地缓存',
-            isSelected: true,
-          ),
-        ],
-        pageTitle: metadata.pageTitle,
-        qualityId: metadata.qualityId,
-        qualityLabel: metadata.qualityLabel,
-      ),
-      cachedFile: diskCache.file,
-    );
+  bool _isRetryableNetworkError(Object error) {
+    return error is SocketException ||
+        error is TimeoutException ||
+        (error is DioException &&
+            error.type != DioExceptionType.badResponse &&
+            error.type != DioExceptionType.cancel);
   }
 
   Future<ResolvedQueueEntry?> resolveCachedEntryParts(
@@ -424,18 +358,4 @@ class PlayerPlaybackLoader {
     nextQueue[index] = item;
     return List<PlayableItem>.unmodifiable(nextQueue);
   }
-}
-
-class ResolvedQueueEntry {
-  const ResolvedQueueEntry({
-    required this.item,
-    required this.availableParts,
-    required this.audioStream,
-    this.cachedFile,
-  });
-
-  final PlayableItem item;
-  final List<PlayableItem> availableParts;
-  final AudioStreamInfo audioStream;
-  final File? cachedFile;
 }

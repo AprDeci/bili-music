@@ -21,10 +21,6 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'favorites_controller.g.dart';
 
-int remoteFavoriteSyncBatchLimit(int itemCount) {
-  return max(1, ((itemCount + 19) ~/ 20) + 2);
-}
-
 enum RemoteCollectionSyncResult { skipped, completed, incomplete }
 
 @Riverpod(keepAlive: true)
@@ -51,6 +47,12 @@ class FavoritesController extends _$FavoritesController {
   }
 
   Future<void> initialize() async {
+    final int migratedItems =
+        await _repository.normalizeItemIds() +
+        await _remoteCache.normalizeItemIds();
+    if (migratedItems > 0) {
+      _logger.d('favorite item ids normalized: $migratedItems');
+    }
     final FavoritesState nextState = await _repository.initialize();
     state = _mergeStates(
       localState: nextState,
@@ -917,10 +919,6 @@ class FavoritesController extends _$FavoritesController {
     final Set<String> supported = <String>{
       for (final FavoriteRemoteResource resource in resources)
         resource.stableId,
-      for (final FavoriteRemoteResource resource in resources)
-        if (resource.aid > 0) 'aid:${resource.aid}',
-      for (final FavoriteRemoteResource resource in resources)
-        if (resource.bvid.isNotEmpty) resource.bvid,
     };
     for (final FavoriteEntry entry in state.itemsForCollection(collectionId)) {
       if (resources.any(
@@ -928,12 +926,6 @@ class FavoritesController extends _$FavoritesController {
             _resourceMatchesEntry(resource, entry),
       )) {
         supported.add(entry.itemId);
-        if (entry.aid > 0) {
-          supported.add('aid:${entry.aid}');
-        }
-        if (entry.bvid.isNotEmpty) {
-          supported.add(entry.bvid);
-        }
       }
     }
     return supported;

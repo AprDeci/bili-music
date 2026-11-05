@@ -1,3 +1,4 @@
+import 'package:bilimusic/common/domain/paged_state.dart';
 import 'package:bilimusic/feature/comment/domain/comment_item.dart';
 import 'package:bilimusic/feature/comment/domain/comment_sort.dart';
 import 'package:bilimusic/feature/comment/domain/comment_target.dart';
@@ -7,18 +8,17 @@ part 'comment_state.freezed.dart';
 
 @freezed
 abstract class CommentState with _$CommentState {
+  const CommentState._();
+
   const factory CommentState({
     required CommentTarget target,
     @Default(CommentSort.time) CommentSort sort,
-    @Default(<CommentItem>[]) List<CommentItem> items,
+    @Default(PagedState<CommentItem>()) PagedState<CommentItem> mainComments,
     @Default(<CommentItem>[]) List<CommentItem> hotItems,
     @Default(<CommentSort>[]) List<CommentSort> supportedSorts,
     CommentItem? topItem,
     @Default(false) bool isLoading,
     @Default(false) bool isRefreshing,
-    @Default(false) bool isLoadingMore,
-    @Default(0) int currentPage,
-    @Default(false) bool hasMore,
     @Default(0) int total,
     String? nextOffset,
     String? sortTitle,
@@ -30,4 +30,12 @@ abstract class CommentState with _$CommentState {
     String? errorMessage,
     String? loadMoreErrorMessage,
   }) = _CommentState;
+
+  List<CommentItem> get items => mainComments.items;
+
+  bool get isLoadingMore => mainComments.isLoadingMore;
+
+  int get currentPage => mainComments.page;
+
+  bool get hasMore => mainComments.hasMore;
 }

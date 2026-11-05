@@ -9,6 +9,7 @@ import 'package:bilimusic/feature/player/domain/audio_stream_info.dart';
 import 'package:bilimusic/feature/player/domain/player_audio_quality_preference.dart';
 import 'package:bilimusic/feature/player/domain/playable_item.dart';
 import 'package:bilimusic/feature/player/domain/player_state.dart';
+import 'package:bilimusic/feature/player/logic/playback/audio_source_resolver.dart';
 import 'package:bilimusic/feature/player/logic/playback/player_playback_loader.dart';
 import 'package:bilimusic/feature/player/logic/playback/player_audio_engine.dart';
 import 'package:flutter_test/flutter_test.dart';

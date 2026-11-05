@@ -1,3 +1,4 @@
+import 'package:bilimusic/feature/favorites/data/favorites_item_id_migration.dart';
 import 'package:bilimusic/feature/favorites/domain/favorite_collection.dart';
 import 'package:bilimusic/feature/favorites/domain/favorite_entry.dart';
 import 'package:bilimusic/feature/favorites/domain/favorite_membership.dart';
@@ -133,6 +134,13 @@ class FavoritesLocalRepository {
       await _membershipsBox.deleteAll(membershipIds);
     }
     await pruneOrphanEntries();
+  }
+
+  Future<int> normalizeItemIds() {
+    return migrateFavoriteItemIds(
+      entriesBox: _entriesBox,
+      membershipsBox: _membershipsBox,
+    );
   }
 
   Future<void> pruneOrphanEntries() async {

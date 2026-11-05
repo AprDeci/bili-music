@@ -2,6 +2,15 @@ import 'dart:io';
 
 import 'package:bilimusic/common/domain/collection_kind.dart';
 import 'package:bilimusic/core/hive/hive_adapters.dart';
+import 'package:bilimusic/core/bili/session/bili_session.dart';
+import 'package:bilimusic/core/bili/session/bili_session_controller.dart';
+import 'package:bilimusic/feature/favorites/data/bili_favorites_remote_repository.dart';
+import 'package:bilimusic/feature/favorites/data/favorites_local_repository.dart';
+import 'package:bilimusic/feature/favorites/domain/bili_favorite_collection_page.dart';
+import 'package:bilimusic/feature/favorites/domain/favorites_state.dart';
+import 'package:bilimusic/feature/favorites/logic/favorites_controller.dart';
+import 'package:bilimusic/feature/favorites/logic/remote_favorites_repositories.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:bilimusic/feature/favorites/data/favorites_remote_cache_repository.dart';
 import 'package:bilimusic/feature/favorites/domain/favorite_collection.dart';
 import 'package:bilimusic/feature/favorites/domain/favorite_entry.dart';
@@ -184,6 +193,94 @@ void main() {
     expect(repository.loadWastedIds('remote:1'), <String>{'aid:2'});
   });
 
+  test('page refresh preserves resolved part identity and metadata', () async {
+    final FavoriteCollection collection = _collection('remote:1');
+    final FavoriteEntry resolved = _entry('aid:1').copyWith(
+      itemId: 'bvid:BV1:cid:10',
+      bvid: 'BV1',
+      cid: 10,
+      page: 2,
+      pageTitle: 'Part 2',
+      durationText: '03:00',
+    );
+    await repository.saveEntryToCollection(
+      collectionId: collection.id,
+      entry: resolved,
+      addedAt: resolved.createdAt,
+    );
+    await repository.upsertCollectionItems(
+      collection: collection,
+      items: <FavoriteEntry>[
+        _entry('aid:1').copyWith(
+          itemId: 'bvid:BV1',
+          bvid: 'BV1',
+          page: 1,
+          title: 'Refreshed title',
+          durationText: '10:00',
+        ),
+      ],
+    );
+
+    final FavoriteEntry stored = entriesBox.values.single;
+    expect(stored.itemId, resolved.itemId);
+    expect(stored.toPlayableItem().stableId, stored.itemId);
+    expect(stored.cid, 10);
+    expect(stored.page, 2);
+    expect(stored.pageTitle, 'Part 2');
+    expect(stored.durationText, '03:00');
+    expect(stored.title, 'Refreshed title');
+    expect(membershipsBox.values.single.itemId, stored.itemId);
+    expect(await repository.normalizeItemIds(), 0);
+  });
+
+  for (final bool hasCid in <bool>[true, false]) {
+    test('full sync retains existing cid key when hasCid=$hasCid', () async {
+      final FavoriteCollection collection = _collection('remote:1');
+      await repository.bindCollection(collection);
+      final FavoriteEntry saved = _entry('aid:1').copyWith(
+        itemId: 'bvid:BV1:cid:10',
+        bvid: 'BV1',
+        cid: hasCid ? 10 : null,
+        page: 2,
+      );
+      await repository.saveEntryToCollection(
+        collectionId: collection.id,
+        entry: saved,
+        addedAt: saved.createdAt,
+      );
+      final ProviderContainer container = ProviderContainer(
+        overrides: [
+          favoritesLocalRepositoryProvider.overrideWithValue(_EmptyLocal()),
+          favoritesRemoteCacheRepositoryProvider.overrideWithValue(repository),
+          biliFavoritesRemoteRepositoryProvider.overrideWithValue(
+            _RemoteRepository(
+              collection,
+              saved.copyWith(itemId: 'bvid:BV1', cid: null, page: 1),
+            ),
+          ),
+          biliSessionControllerProvider.overrideWith(_Session.new),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      expect(
+        await container
+            .read(favoritesControllerProvider.notifier)
+            .syncRemoteCollectionIfStale(collection.id, force: true),
+        RemoteCollectionSyncResult.completed,
+      );
+      expect(
+        container
+            .read(favoritesControllerProvider)
+            .itemsForCollection(collection.id)
+            .single
+            .itemId,
+        saved.itemId,
+      );
+      expect(entriesBox.get(saved.itemId), isNotNull);
+    });
+  }
+
   test('upsert preserves an existing membership timestamp', () async {
     final FavoriteCollection collection = _collection('remote:1');
     final DateTime original = DateTime(2020);
@@ -235,6 +332,56 @@ void main() {
       );
     },
   );
+}
+
+class _EmptyLocal implements FavoritesLocalRepository {
+  @override
+  FavoritesState loadState() => const FavoritesState();
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+class _Session extends BiliSessionController {
+  @override
+  BiliSession? build() => const BiliSession(
+    sessData: 'test',
+    biliJct: 'test',
+    dedeUserId: '1',
+    refreshToken: '',
+    cookie: '',
+  );
+}
+
+class _RemoteRepository implements BiliFavoritesRemoteRepository {
+  _RemoteRepository(this.collection, this.entry);
+
+  final FavoriteCollection collection;
+  final FavoriteEntry entry;
+
+  @override
+  Future<List<FavoriteRemoteResource>> fetchCollectionItemManifest({
+    required BiliSession session,
+    required String remoteId,
+  }) async => <FavoriteRemoteResource>[
+    FavoriteRemoteResource(stableId: 'bvid:BV1', aid: 1, bvid: 'BV1'),
+  ];
+
+  @override
+  Future<BiliFavoriteCollectionPage> fetchCollectionPage({
+    required BiliSession session,
+    required String remoteId,
+    int pageNumber = 1,
+    int pageSize = 20,
+  }) async => BiliFavoriteCollectionPage(
+    collection: collection,
+    items: <FavoriteEntry>[entry],
+    hasMore: false,
+    pageNumber: pageNumber,
+  );
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
 FavoriteCollection _collection(String id) {

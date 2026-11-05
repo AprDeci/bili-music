@@ -34,6 +34,13 @@ class RecentPlaybackLocalRepository {
     return entries.take(maxEntries).toList(growable: false);
   }
 
+  Future<void> removeEntries(Set<String> stableIds) {
+    final List<dynamic> keys = _box.keys
+        .where((key) => stableIds.contains(_box.get(key)?.stableId))
+        .toList(growable: false);
+    return _box.deleteAll(keys);
+  }
+
   Future<List<RecentPlaybackEntry>> saveEntry(RecentPlaybackEntry entry) async {
     final List<RecentPlaybackEntry> nextEntries = <RecentPlaybackEntry>[
       entry,

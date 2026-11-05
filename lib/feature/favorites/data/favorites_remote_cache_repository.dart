@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:bilimusic/common/domain/collection_kind.dart';
 import 'package:bilimusic/common/logger.dart';
+import 'package:bilimusic/feature/favorites/data/favorites_item_id_migration.dart';
 import 'package:bilimusic/feature/favorites/domain/favorite_collection.dart';
 import 'package:bilimusic/feature/favorites/domain/favorite_entry.dart';
 import 'package:bilimusic/feature/favorites/domain/favorite_membership.dart';
@@ -26,6 +27,13 @@ class FavoritesRemoteCacheRepository {
   final Box<FavoriteEntry> entriesBox;
   final Box<FavoriteMembership> membershipsBox;
   final Box<String>? wastedResourceIdsBox;
+
+  Future<int> normalizeItemIds() {
+    return migrateFavoriteItemIds(
+      entriesBox: entriesBox,
+      membershipsBox: membershipsBox,
+    );
+  }
 
   ({bool hasFullSnapshot, Set<String> ids}) loadWastedSnapshot(
     String collectionId,
@@ -175,9 +183,18 @@ class FavoritesRemoteCacheRepository {
         }
       }
       final String itemId = existingMembership?.itemId ?? entry.itemId;
-      final FavoriteEntry storedEntry = entry.itemId == itemId
-          ? entry
-          : entry.copyWith(itemId: itemId);
+      final FavoriteEntry? existingEntry = entriesBox.get(itemId);
+      final bool preservePart =
+          entry.cid == null && (existingEntry?.cid ?? 0) > 0;
+      final FavoriteEntry storedEntry = entry.copyWith(
+        itemId: itemId,
+        cid: preservePart ? existingEntry!.cid : entry.cid,
+        page: preservePart ? existingEntry!.page : entry.page,
+        pageTitle: preservePart ? existingEntry!.pageTitle : entry.pageTitle,
+        durationText: preservePart
+            ? existingEntry!.durationText
+            : entry.durationText,
+      );
       entryMap[itemId] = storedEntry;
       final FavoriteMembership membership = FavoriteMembership.create(
         collectionId: collection.id,

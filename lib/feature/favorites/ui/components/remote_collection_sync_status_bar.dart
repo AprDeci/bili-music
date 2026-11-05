@@ -1,6 +1,5 @@
+import 'package:bilimusic/feature/favorites/domain/remote_collection_sync_state.dart';
 import 'package:flutter/material.dart';
-
-enum RemoteCollectionSyncStatus { syncing, success, failure }
 
 class RemoteCollectionSyncStatusBar extends StatelessWidget {
   const RemoteCollectionSyncStatusBar({super.key, required this.status});
