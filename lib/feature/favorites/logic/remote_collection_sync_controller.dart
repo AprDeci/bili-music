@@ -14,7 +14,6 @@ part 'remote_collection_sync_controller.g.dart';
 class RemoteCollectionSyncController extends _$RemoteCollectionSyncController {
   static const Duration _staleThreshold = Duration(minutes: 5);
   static const Duration _successStatusDuration = Duration(milliseconds: 350);
-  static const Duration _failureStatusDuration = Duration(milliseconds: 2500);
 
   final AppLogger _logger = AppLogger('RemoteCollectionSyncController');
 
@@ -59,6 +58,9 @@ class RemoteCollectionSyncController extends _$RemoteCollectionSyncController {
             collectionId: collection.id,
             pageNumber: pageNumber,
           );
+      if (!ref.mounted) {
+        return;
+      }
       if (page == null) {
         state = state.copyWith(isLoadingMore: false, hasMoreRemotePages: false);
         return;
@@ -69,6 +71,9 @@ class RemoteCollectionSyncController extends _$RemoteCollectionSyncController {
         nextPage: pageNumber + 1,
       );
     } on Object catch (error, stackTrace) {
+      if (!ref.mounted) {
+        return;
+      }
       _logger.w(
         'Failed to load more remote collection items',
         error,
@@ -98,28 +103,35 @@ class RemoteCollectionSyncController extends _$RemoteCollectionSyncController {
       final RemoteCollectionSyncResult result = await ref
           .read(favoritesControllerProvider.notifier)
           .syncRemoteCollectionIfStale(collection.id, force: force);
+      if (!ref.mounted) {
+        return;
+      }
       switch (result) {
         case RemoteCollectionSyncResult.skipped:
           state = state.copyWith(status: null);
         case RemoteCollectionSyncResult.incomplete:
           state = state.copyWith(status: RemoteCollectionSyncStatus.failure);
           ToastUtil.show('同步未完成，已使用本地数据');
-          _clearStatusAfter(_failureStatusDuration);
         case RemoteCollectionSyncResult.completed:
           state = state.copyWith(status: RemoteCollectionSyncStatus.success);
           _clearStatusAfter(_successStatusDuration);
       }
     } on Object catch (error, stackTrace) {
+      if (!ref.mounted) {
+        return;
+      }
       _logger.w('Failed to sync remote collection', error, stackTrace);
       state = state.copyWith(status: RemoteCollectionSyncStatus.failure);
       ToastUtil.show('网络歌单同步失败，请稍后重试');
-      _clearStatusAfter(_failureStatusDuration);
     }
   }
 
   void _clearStatusAfter(Duration duration) {
     _statusTimer?.cancel();
     _statusTimer = Timer(duration, () {
+      if (!ref.mounted) {
+        return;
+      }
       state = state.copyWith(status: null);
     });
   }
