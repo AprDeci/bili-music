@@ -79,6 +79,37 @@ void main() {
     expect(titleOnly.artistUpMid, item.ownerMid);
   });
 
+  test('single part items keep the video cover instead of matched artwork', () {
+    final PlayerDisplayInfo result = resolvePlayerDisplayInfo(
+      item: item,
+      metadata: metadata,
+      source: PlayerDisplaySource.metadata,
+      preferVideoCover: true,
+    );
+    expect(result.title, 'Song title');
+    expect(result.artist, 'Artist');
+    expect(result.coverUrl, item.coverUrl);
+    expect(result.canToggleSource, isTrue);
+
+    final PlayerDisplayInfo original = resolvePlayerDisplayInfo(
+      item: item,
+      metadata: metadata,
+      source: PlayerDisplaySource.bilibili,
+      preferVideoCover: true,
+    );
+    expect(original.coverUrl, item.coverUrl);
+  });
+
+  test('chaptered and multi part items keep the matched artwork', () {
+    final PlayerDisplayInfo result = resolvePlayerDisplayInfo(
+      item: item,
+      metadata: metadata,
+      source: PlayerDisplaySource.metadata,
+      preferVideoCover: false,
+    );
+    expect(result.coverUrl, 'https://example.com/album.jpg');
+  });
+
   test('unavailable and lyric-only metadata cannot toggle display', () {
     for (final Metadata? value in <Metadata?>[
       null,

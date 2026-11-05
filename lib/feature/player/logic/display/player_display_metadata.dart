@@ -7,6 +7,7 @@ PlayerDisplayInfo resolvePlayerDisplayInfo({
   required PlayableItem? item,
   required Metadata? metadata,
   required PlayerDisplaySource source,
+  bool preferVideoCover = false,
 }) {
   if (item == null) {
     return PlayerDisplayInfo(source: source);
@@ -21,7 +22,8 @@ PlayerDisplayInfo resolvePlayerDisplayInfo({
   final String coverUrl = matchedMetadata?.albumArtUrl?.trim() ?? '';
   final bool useMetadata = source == PlayerDisplaySource.metadata;
   final bool useMetadataArtist = useMetadata && artist.isNotEmpty;
-  final String selectedCover = useMetadata && coverUrl.isNotEmpty
+  final String selectedCover =
+      useMetadata && coverUrl.isNotEmpty && !preferVideoCover
       ? coverUrl
       : item.coverUrl.trim();
 

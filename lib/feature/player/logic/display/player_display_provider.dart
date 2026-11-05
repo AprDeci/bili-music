@@ -35,10 +35,16 @@ PlayerDisplayInfo playerDisplay(Ref ref) {
       (ref.watch(playerDisplaySettingsLogicProvider)
           ? PlayerDisplaySource.metadata
           : PlayerDisplaySource.bilibili);
+  final bool preferVideoCover = ref.watch(
+    playerControllerProvider.select(
+      (state) => state.availableParts.length <= 1 && state.chapters.isEmpty,
+    ),
+  );
   return resolvePlayerDisplayInfo(
     item: item,
     metadata: metadata.stableId == item?.stableId ? metadata.metadata : null,
     source: source,
+    preferVideoCover: preferVideoCover,
   );
 }
 

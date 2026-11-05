@@ -5,9 +5,11 @@ import 'package:bilimusic/core/bili/session/bili_session.dart';
 import 'package:bilimusic/core/bili/session/bili_session_controller.dart';
 import 'package:bilimusic/feature/player/data/bili_subtitle_repository.dart';
 import 'package:bilimusic/feature/player/domain/bili_subtitle.dart';
+import 'package:bilimusic/feature/player/domain/playback_chapter.dart';
 import 'package:bilimusic/feature/player/domain/playable_item.dart';
 import 'package:bilimusic/feature/player/domain/player_state.dart';
 import 'package:bilimusic/feature/player/domain/player_subtitle_state.dart';
+import 'package:bilimusic/feature/player/logic/lyrics/ai_lyrics_preference_logic.dart';
 import 'package:bilimusic/feature/player/logic/lyrics/player_subtitle_controller.dart';
 import 'package:bilimusic/feature/player/logic/player_controller.dart';
 import 'package:dio/dio.dart';
@@ -19,6 +21,14 @@ const _item = PlayableItem(
   bvid: 'BV1',
   cid: 10,
   title: 'Song',
+  author: 'Artist',
+  coverUrl: '',
+);
+const _otherItem = PlayableItem(
+  aid: 2,
+  bvid: 'BV2',
+  cid: 20,
+  title: 'Other Song',
   author: 'Artist',
   coverUrl: '',
 );
@@ -91,6 +101,62 @@ void main() {
     expect(fixture.value.lines, _lines);
     expect(fixture.value.usesSubtitles, isTrue);
   });
+
+  test('single-part music prefers AI subtitles when enabled', () async {
+    final fixture = _Fixture(preferAiLyrics: true);
+    expect(fixture.value.selectedTrackId, isNull);
+    await fixture.discover();
+    expect(fixture.repository.loadedTracks, ['zh']);
+    expect(fixture.value.selectedTrackId, 'zh');
+    expect(fixture.value.pendingTrackId, isNull);
+    expect(fixture.value.lines, _lines);
+    expect(fixture.value.usesSubtitles, isTrue);
+  });
+
+  test(
+    'single-part music stays on Meting when AI lyrics are disabled',
+    () async {
+      final fixture = _Fixture();
+      await fixture.discover();
+      expect(fixture.value.tracks, _tracks);
+      expect(fixture.repository.loadedTracks, isEmpty);
+      expect(fixture.value.selectedTrackId, isNull);
+      expect(fixture.value.usesSubtitles, isFalse);
+    },
+  );
+
+  test(
+    'chaptered videos stay on Meting even when AI lyrics are enabled',
+    () async {
+      final fixture = _Fixture(
+        preferAiLyrics: true,
+        chapters: const [
+          PlaybackChapter(start: Duration.zero, title: 'A'),
+          PlaybackChapter(start: Duration(minutes: 3), title: 'B'),
+        ],
+      );
+      await fixture.discover();
+      expect(fixture.value.tracks, _tracks);
+      expect(fixture.repository.loadedTracks, isEmpty);
+      expect(fixture.value.selectedTrackId, isNull);
+      expect(fixture.value.usesSubtitles, isFalse);
+    },
+  );
+
+  test(
+    'multi-part videos stay on Meting even when AI lyrics are enabled',
+    () async {
+      final fixture = _Fixture(
+        preferAiLyrics: true,
+        parts: const [_item, _otherItem],
+      );
+      await fixture.discover();
+      expect(fixture.value.tracks, _tracks);
+      expect(fixture.repository.loadedTracks, isEmpty);
+      expect(fixture.value.selectedTrackId, isNull);
+      expect(fixture.value.usesSubtitles, isFalse);
+    },
+  );
 
   for (final allTranslated in [false, true]) {
     test(
@@ -552,14 +618,21 @@ void main() {
 }
 
 class _Fixture {
-  _Fixture({PlayableItem? item = _item, BiliSession? session = _session})
-    : player = _PlayerController(item),
-      session = _SessionController(session) {
+  _Fixture({
+    PlayableItem? item = _item,
+    BiliSession? session = _session,
+    bool preferAiLyrics = false,
+    List<PlaybackChapter> chapters = const [],
+    List<PlayableItem> parts = const [],
+  }) : player = _PlayerController(item, chapters: chapters, parts: parts),
+       session = _SessionController(session),
+       aiLyrics = _AiLyricsPreference(preferAiLyrics) {
     container = ProviderContainer(
       overrides: [
         playerControllerProvider.overrideWith(() => player),
         biliSessionControllerProvider.overrideWith(() => this.session),
         biliSubtitleRepositoryProvider.overrideWithValue(repository),
+        aiLyricsPreferenceLogicProvider.overrideWith(() => aiLyrics),
       ],
     );
     addTearDown(container.dispose);
@@ -568,6 +641,7 @@ class _Fixture {
 
   final _PlayerController player;
   final _SessionController session;
+  final _AiLyricsPreference aiLyrics;
   final _SubtitleRepository repository = _SubtitleRepository();
   late final ProviderContainer container;
   PlayerSubtitleState get value =>
@@ -582,10 +656,17 @@ class _Fixture {
 }
 
 class _PlayerController extends PlayerController {
-  _PlayerController(this.item);
+  _PlayerController(
+    this.item, {
+    this.chapters = const [],
+    this.parts = const [],
+  });
   final PlayableItem? item;
+  final List<PlaybackChapter> chapters;
+  final List<PlayableItem> parts;
   @override
-  PlayerState build() => PlayerState(currentItem: item);
+  PlayerState build() =>
+      PlayerState(currentItem: item, chapters: chapters, availableParts: parts);
   void setItem(PlayableItem item) => state = state.copyWith(currentItem: item);
 }
 
@@ -595,6 +676,13 @@ class _SessionController extends BiliSessionController {
   @override
   BiliSession? build() => initial;
   void setValue(BiliSession? value) => state = value;
+}
+
+class _AiLyricsPreference extends AiLyricsPreferenceLogic {
+  _AiLyricsPreference(this.initial);
+  final bool initial;
+  @override
+  bool build() => initial;
 }
 
 class _SubtitleRepository implements BiliSubtitleRepository {

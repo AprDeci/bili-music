@@ -5,7 +5,9 @@ import 'package:bilimusic/core/net/bili_client.dart';
 import 'package:bilimusic/feature/player/data/bili_subtitle_repository.dart';
 import 'package:bilimusic/feature/player/domain/bili_subtitle.dart';
 import 'package:bilimusic/feature/player/domain/playable_item.dart';
+import 'package:bilimusic/feature/player/domain/player_state.dart';
 import 'package:bilimusic/feature/player/domain/player_subtitle_state.dart';
+import 'package:bilimusic/feature/player/logic/lyrics/ai_lyrics_preference_logic.dart';
 import 'package:bilimusic/feature/player/logic/player_controller.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -28,9 +30,15 @@ class PlayerSubtitleController extends _$PlayerSubtitleController {
   PlayerSubtitleState build() {
     ref.watch(
       playerControllerProvider.select(
-        (value) => (value.currentItem?.stableId, value.currentItem?.kind),
+        (value) => (
+          value.currentItem?.stableId,
+          value.currentItem?.kind,
+          value.availableParts.length,
+          value.chapters.length,
+        ),
       ),
     );
+    final bool preferAiLyrics = ref.watch(aiLyricsPreferenceLogicProvider);
     final PlayableItem? item = ref.read(playerControllerProvider).currentItem;
     final String? account = item != null && (item.cid ?? 0) > 0
         ? ref.watch(
@@ -46,7 +54,11 @@ class PlayerSubtitleController extends _$PlayerSubtitleController {
     final bool canDiscover =
         item != null && (item.cid ?? 0) > 0 && account != null;
     if (canDiscover) {
-      unawaited(Future<void>.microtask(() => _discover(item, generation)));
+      unawaited(
+        Future<void>.microtask(
+          () => _discover(item, generation, preferAiLyrics: preferAiLyrics),
+        ),
+      );
     }
     return PlayerSubtitleState(
       stableId: item?.stableId,
@@ -60,7 +72,11 @@ class PlayerSubtitleController extends _$PlayerSubtitleController {
     return generation == _discoveryGeneration && current.stableId == stableId;
   }
 
-  Future<void> _discover(PlayableItem item, int generation) async {
+  Future<void> _discover(
+    PlayableItem item,
+    int generation, {
+    required bool preferAiLyrics,
+  }) async {
     if (!_isCurrent(generation, item.stableId)) return;
     final int selection = _selectionGeneration;
     try {
@@ -69,9 +85,9 @@ class PlayerSubtitleController extends _$PlayerSubtitleController {
           .fetchTracks(item);
       if (!_isCurrent(generation, item.stableId)) return;
       state = state.copyWith(tracks: tracks, isDiscovering: false);
-      if (item.isSpoken &&
-          tracks.isNotEmpty &&
-          selection == _selectionGeneration) {
+      if (tracks.isNotEmpty &&
+          selection == _selectionGeneration &&
+          _prefersSubtitles(item, preferAiLyrics: preferAiLyrics)) {
         final BiliSubtitleTrack track =
             tracks.where((value) => !value.isTranslated).firstOrNull ??
             tracks.first;
@@ -81,6 +97,21 @@ class PlayerSubtitleController extends _$PlayerSubtitleController {
       if (!_isCurrent(generation, item.stableId)) return;
       state = state.copyWith(isDiscovering: false, errorMessage: '字幕列表获取失败');
     }
+  }
+
+  bool _prefersSubtitles(PlayableItem item, {required bool preferAiLyrics}) {
+    if (item.isSpoken) {
+      return true;
+    }
+    if (!preferAiLyrics) {
+      return false;
+    }
+    final PlayerState playerState = ref.read(playerControllerProvider);
+    if (playerState.currentItem?.stableId != item.stableId) {
+      return false;
+    }
+    return playerState.availableParts.length <= 1 &&
+        playerState.chapters.isEmpty;
   }
 
   void useMeting() {

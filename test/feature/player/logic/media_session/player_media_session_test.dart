@@ -178,7 +178,7 @@ void main() {
       session.expectCurrent(
         _metadata.title!,
         _metadata.artist!,
-        _metadata.albumArtUrl!,
+        _item.coverUrl,
       );
       expect(session.handler.queue.value.last.title, _nextItem.title);
 
@@ -216,7 +216,7 @@ void main() {
       session.expectCurrent(
         _metadata.title!,
         _metadata.artist!,
-        _metadata.albumArtUrl!,
+        _item.coverUrl,
       );
       expect(session.handler.playbackState.value, same(paused));
     },
@@ -270,11 +270,7 @@ void main() {
           ),
         );
         await session.container.pump();
-        session.expectCurrent(
-          'Next song',
-          'Next artist',
-          _metadata.albumArtUrl!,
-        );
+        session.expectCurrent('Next song', 'Next artist', _item.coverUrl);
         session.container
             .read(playerDisplaySourceLogicProvider.notifier)
             .toggle();
@@ -306,7 +302,7 @@ void main() {
       session.expectCurrent(
         _metadata.title!,
         _metadata.artist!,
-        _metadata.albumArtUrl!,
+        _item.coverUrl,
       );
       expect(session.handler.playbackState.value, same(loading));
 
@@ -314,11 +310,7 @@ void main() {
         _metadata.copyWith(title: 'Manual match', artist: 'Manual artist'),
       );
       await session.container.pump();
-      session.expectCurrent(
-        'Manual match',
-        'Manual artist',
-        _metadata.albumArtUrl!,
-      );
+      session.expectCurrent('Manual match', 'Manual artist', _item.coverUrl);
       expect(session.handler.playbackState.value, same(loading));
 
       session.player.show(_playingItem());
@@ -327,11 +319,7 @@ void main() {
         session.handler.mediaItem.value?.displayDescription,
         'Part title · 192K',
       );
-      session.expectCurrent(
-        'Manual match',
-        'Manual artist',
-        _metadata.albumArtUrl!,
-      );
+      session.expectCurrent('Manual match', 'Manual artist', _item.coverUrl);
     },
   );
 
@@ -373,7 +361,7 @@ void main() {
       session.expectCurrent(
         _metadata.title!,
         _metadata.artist!,
-        _metadata.albumArtUrl!,
+        _item.coverUrl,
       );
 
       session.player.show(const PlayerState());
