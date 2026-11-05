@@ -88,14 +88,22 @@ Future<int> migrateFavoriteItemIds({
     return 0;
   }
 
-  if (entriesChanged) {
-    await entriesBox.clear();
-    await entriesBox.putAll(normalizedEntries);
-  }
-  if (membershipsChanged) {
-    await membershipsBox.clear();
-    await membershipsBox.putAll(normalizedMemberships);
-  }
+  final List<String> obsoleteMembershipKeys = membershipsBox.keys
+      .whereType<String>()
+      .where((String key) => !normalizedMemberships.containsKey(key))
+      .toList(growable: false);
+  final List<String> obsoleteEntryKeys = sourceEntries.keys
+      .where((String key) => !normalizedEntries.containsKey(key))
+      .toList(growable: false);
+
+  await entriesBox.putAll(normalizedEntries);
+  await entriesBox.flush();
+  await membershipsBox.putAll(normalizedMemberships);
+  await membershipsBox.flush();
+  await membershipsBox.deleteAll(obsoleteMembershipKeys);
+  await membershipsBox.flush();
+  await entriesBox.deleteAll(obsoleteEntryKeys);
+  await entriesBox.flush();
   return normalizedEntries.length + normalizedMemberships.length;
 }
 
