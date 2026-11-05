@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:bilimusic/common/util/display_text.dart';
 import 'package:bilimusic/common/util/json_util.dart';
+import 'package:bilimusic/feature/home/domain/music_chart.dart';
 import 'package:bilimusic/feature/home/domain/music_chart_platform.dart';
 import 'package:bilimusic/feature/home/domain/music_chart_track.dart';
 import 'package:bilimusic/feature/meting/domain/meting_server.dart';
@@ -12,6 +13,8 @@ typedef MusicChartPlaylistRequest =
     Future<Object?> Function(MetingServer server, String chartId);
 typedef MusicChartCoverRequest =
     Future<String> Function(MetingServer server, String pictureId);
+typedef MusicChartToplistRequest = Future<Object?> Function(String topId);
+typedef MusicChartRankSongRequest = Future<Object?> Function(String rankId);
 
 class MusicChartException implements Exception {
   const MusicChartException(this.message);
@@ -27,40 +30,48 @@ class MusicChartRepository {
     Dio? dio,
     MusicChartPlaylistRequest? playlistRequest,
     MusicChartCoverRequest? coverRequest,
-  }) : _dio = dio ?? Dio(),
-       _playlistRequest = playlistRequest ?? _defaultPlaylistRequest,
-       _coverRequest = coverRequest ?? _defaultCoverRequest;
+    MusicChartToplistRequest? toplistRequest,
+    MusicChartRankSongRequest? rankSongRequest,
+  }) : _dio = dio ?? Dio() {
+    _playlistRequest = playlistRequest ?? _defaultPlaylistRequest;
+    _coverRequest = coverRequest ?? _defaultCoverRequest;
+    _toplistRequest = toplistRequest ?? _defaultToplistRequest;
+    _rankSongRequest = rankSongRequest ?? _defaultRankSongRequest;
+  }
 
   static const int maxTrackCount = 30;
   static const Duration cacheTtl = Duration(minutes: 10);
+  static const String _toplistUrl =
+      'https://c.y.qq.com/v8/fcg-bin/fcg_v8_toplist_cp.fcg';
   static const String _kugouRankUrl =
       'https://mobiles.kugou.com/api/v3/rank/song';
 
   final Dio _dio;
-  final MusicChartPlaylistRequest _playlistRequest;
-  final MusicChartCoverRequest _coverRequest;
-  final Map<MusicChartPlatform, _CachedChart> _cache =
-      <MusicChartPlatform, _CachedChart>{};
+  late final MusicChartPlaylistRequest _playlistRequest;
+  late final MusicChartCoverRequest _coverRequest;
+  late final MusicChartToplistRequest _toplistRequest;
+  late final MusicChartRankSongRequest _rankSongRequest;
+  final Map<String, _CachedChart> _cache = <String, _CachedChart>{};
 
-  Future<List<MusicChartTrack>> fetchTracks(MusicChartPlatform platform) async {
-    final _CachedChart? cached = _cache[platform];
+  Future<List<MusicChartTrack>> fetchTracks(MusicChart chart) async {
+    final _CachedChart? cached = _cache[chart.key];
     if (cached != null && !cached.isExpired) {
       return cached.tracks;
     }
 
-    final List<MusicChartTrack> tracks = platform == MusicChartPlatform.kugou
-        ? await _fetchKugou(platform)
-        : await _fetchMeting(platform);
-    _cache[platform] = _CachedChart(tracks: tracks, fetchedAt: DateTime.now());
+    final List<MusicChartTrack> tracks = switch (chart.platform) {
+      MusicChartPlatform.netease => await _fetchMetingPlaylist(chart),
+      MusicChartPlatform.tencent => await _fetchTencentToplist(chart),
+      MusicChartPlatform.kugou => await _fetchKugouRank(chart),
+    };
+    _cache[chart.key] = _CachedChart(tracks: tracks, fetchedAt: DateTime.now());
     return tracks;
   }
 
-  Future<List<MusicChartTrack>> _fetchMeting(
-    MusicChartPlatform platform,
-  ) async {
+  Future<List<MusicChartTrack>> _fetchMetingPlaylist(MusicChart chart) async {
     final Object? response = await _playlistRequest(
-      platform.server,
-      platform.chartId,
+      chart.platform.server,
+      chart.chartId,
     );
     final List<dynamic> rawItems = _decodeList(response);
     final List<MusicChartTrack> tracks = <MusicChartTrack>[];
@@ -78,14 +89,14 @@ class MusicChartRepository {
       String coverUrl = '';
       if (pictureId.isNotEmpty) {
         try {
-          coverUrl = await _coverRequest(platform.server, pictureId);
+          coverUrl = await _coverRequest(chart.platform.server, pictureId);
         } on Object {
           coverUrl = '';
         }
       }
       tracks.add(
         MusicChartTrack(
-          platform: platform,
+          chart: chart,
           rank: 0,
           title: normalizeDisplayText(title),
           artist: normalizeDisplayText(artist),
@@ -98,31 +109,68 @@ class MusicChartRepository {
     return _finalizeTracks(tracks);
   }
 
-  Future<List<MusicChartTrack>> _fetchKugou(MusicChartPlatform platform) async {
-    final Response<dynamic> response = await _dio.get<dynamic>(
-      _kugouRankUrl,
-      queryParameters: <String, dynamic>{
-        'rankid': platform.chartId,
-        'page': 1,
-        'pagesize': maxTrackCount,
-        'plat': 2,
-        'version': 8990,
-      },
-      options: Options(responseType: ResponseType.json),
-    );
-    return parseKugouRank(response.data, platform);
+  Future<List<MusicChartTrack>> _fetchTencentToplist(MusicChart chart) async {
+    final Object? response = await _toplistRequest(chart.chartId);
+    return parseTencentToplist(response, chart);
+  }
+
+  static List<MusicChartTrack> parseTencentToplist(
+    Object? payload,
+    MusicChart chart,
+  ) {
+    final Object? decoded = payload is String ? _tryDecode(payload) : payload;
+    final Map<String, dynamic>? root = _asMap(decoded);
+    if (root == null) {
+      throw const MusicChartException('QQ音乐榜单数据异常');
+    }
+    final Object? code = root['code'];
+    if (code is num && code.toInt() != 0) {
+      throw const MusicChartException('QQ音乐榜单加载失败');
+    }
+    final List<MusicChartTrack> tracks = <MusicChartTrack>[];
+    for (final Map<String, dynamic> item in _asListOfMaps(root['songlist'])) {
+      final Map<String, dynamic> data =
+          _asMap(item['data']) ?? <String, dynamic>{};
+      final String title = _readString(data['songname'] ?? data['title']);
+      if (title.isEmpty) {
+        continue;
+      }
+      tracks.add(
+        MusicChartTrack(
+          chart: chart,
+          rank: 0,
+          title: normalizeDisplayText(title),
+          artist: normalizeDisplayText(_readTencentSingers(data['singer'])),
+          coverUrl: _tencentCoverUrl(data['albummid']),
+          durationSeconds: _readDurationSeconds(data['interval']),
+        ),
+      );
+    }
+    return _finalizeTracks(tracks);
+  }
+
+  Future<List<MusicChartTrack>> _fetchKugouRank(MusicChart chart) async {
+    final Object? response = await _rankSongRequest(chart.chartId);
+    return parseKugouRank(response, chart);
   }
 
   static List<MusicChartTrack> parseKugouRank(
     Object? payload,
-    MusicChartPlatform platform,
+    MusicChart chart,
   ) {
     final Object? decoded = payload is String ? _tryDecode(payload) : payload;
     final Map<String, dynamic>? root = _asMap(decoded);
+    if (root == null) {
+      throw const MusicChartException('酷狗榜单数据异常');
+    }
+    final Object? status = root['status'];
+    if (status is num && status.toInt() != 1) {
+      throw const MusicChartException('酷狗榜单加载失败');
+    }
     final Map<String, dynamic> data =
-        _asMap(root?['data']) ?? <String, dynamic>{};
+        _asMap(root['data']) ?? <String, dynamic>{};
     final List<MusicChartTrack> tracks = <MusicChartTrack>[];
-    for (final dynamic rawItem in asListOfMaps(data['info'])) {
+    for (final dynamic rawItem in _asListOfMaps(data['info'])) {
       final Map<String, dynamic> json = rawItem;
       final String rawName = _readString(json['songname']);
       String artist = '';
@@ -148,7 +196,7 @@ class MusicChartRepository {
       }
       tracks.add(
         MusicChartTrack(
-          platform: platform,
+          chart: chart,
           rank: 0,
           title: normalizeDisplayText(rawName),
           artist: normalizeDisplayText(artist),
@@ -158,6 +206,22 @@ class MusicChartRepository {
       );
     }
     return _finalizeTracks(tracks);
+  }
+
+  static String _readTencentSingers(Object? value) {
+    final List<Map<String, dynamic>> singers = _asListOfMaps(value);
+    return singers
+        .map((Map<String, dynamic> singer) => _readString(singer['name']))
+        .where((String name) => name.isNotEmpty)
+        .join(' / ');
+  }
+
+  static String _tencentCoverUrl(Object? albumMid) {
+    final String mid = _readString(albumMid);
+    if (mid.isEmpty) {
+      return '';
+    }
+    return 'https://y.gtimg.cn/music/photo_new/T002R300x300M000$mid.jpg';
   }
 
   static String _kugouCoverUrl(Map<String, dynamic> json) {
@@ -211,6 +275,40 @@ class MusicChartRepository {
     return meting.pic(pictureId, size: 300);
   }
 
+  Future<Object?> _defaultToplistRequest(String topId) async {
+    final Response<dynamic> response = await _dio.get<dynamic>(
+      _toplistUrl,
+      queryParameters: <String, dynamic>{
+        'topid': topId,
+        'page': 'detail',
+        'type': 'top',
+        'song_begin': 0,
+        'song_num': maxTrackCount,
+        'format': 'json',
+      },
+      options: Options(
+        responseType: ResponseType.json,
+        headers: <String, String>{'Referer': 'https://y.qq.com/'},
+      ),
+    );
+    return response.data;
+  }
+
+  Future<Object?> _defaultRankSongRequest(String rankId) async {
+    final Response<dynamic> response = await _dio.get<dynamic>(
+      _kugouRankUrl,
+      queryParameters: <String, dynamic>{
+        'rankid': rankId,
+        'page': 1,
+        'pagesize': maxTrackCount,
+        'plat': 2,
+        'version': 8990,
+      },
+      options: Options(responseType: ResponseType.json),
+    );
+    return response.data;
+  }
+
   static Object? _tryDecode(String value) {
     try {
       return jsonDecode(value);
@@ -228,6 +326,13 @@ class MusicChartRepository {
 
   static Map<String, dynamic>? _asMap(Object? value) {
     return asNullableStringKeyedMap(value);
+  }
+
+  static List<Map<String, dynamic>> _asListOfMaps(Object? value) {
+    if (value is! List) {
+      return const <Map<String, dynamic>>[];
+    }
+    return asListOfMaps(value);
   }
 
   static String _readString(Object? value) {

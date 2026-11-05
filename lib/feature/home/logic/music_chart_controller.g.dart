@@ -90,7 +90,7 @@ final class MusicChartControllerProvider
 }
 
 String _$musicChartControllerHash() =>
-    r'e3835c99f71bdc52b8b925fc79d87b26d91820ee';
+    r'46a38355ce663e0f1f0697f4db652375dd1642ff';
 
 abstract class _$MusicChartController extends $Notifier<MusicChartState> {
   MusicChartState build();

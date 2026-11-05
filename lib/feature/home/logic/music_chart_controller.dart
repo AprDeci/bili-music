@@ -1,6 +1,8 @@
 import 'dart:async';
 
 import 'package:bilimusic/feature/home/data/music_chart_repository.dart';
+import 'package:bilimusic/feature/home/domain/music_chart.dart';
+import 'package:bilimusic/feature/home/domain/music_chart_catalog.dart';
 import 'package:bilimusic/feature/home/domain/music_chart_platform.dart';
 import 'package:bilimusic/feature/home/domain/music_chart_state.dart';
 import 'package:bilimusic/feature/home/domain/music_chart_track.dart';
@@ -26,11 +28,18 @@ class MusicChartController extends _$MusicChartController {
   Future<void> refresh() => _load();
 
   Future<void> selectPlatform(MusicChartPlatform platform) async {
-    if (state.platform == platform) {
+    if (state.chart.platform == platform) {
+      return;
+    }
+    await selectChart(MusicChartCatalog.defaultChartOf(platform));
+  }
+
+  Future<void> selectChart(MusicChart chart) async {
+    if (state.chart == chart && state.tracks.isNotEmpty && !state.hasError) {
       return;
     }
     state = state.copyWith(
-      platform: platform,
+      chart: chart,
       tracks: const <MusicChartTrack>[],
       isLoading: true,
       errorMessage: null,
@@ -40,17 +49,15 @@ class MusicChartController extends _$MusicChartController {
 
   Future<void> _load() async {
     final int requestId = ++_requestId;
-    final MusicChartPlatform platform = state.platform;
+    final MusicChart chart = state.chart;
     if (!state.isLoading) {
       state = state.copyWith(isLoading: true, errorMessage: null);
     }
     try {
       final List<MusicChartTrack> tracks = await ref
           .read(musicChartRepositoryProvider)
-          .fetchTracks(platform);
-      if (!ref.mounted ||
-          requestId != _requestId ||
-          state.platform != platform) {
+          .fetchTracks(chart);
+      if (!ref.mounted || requestId != _requestId || state.chart != chart) {
         return;
       }
       state = state.copyWith(
@@ -59,9 +66,7 @@ class MusicChartController extends _$MusicChartController {
         errorMessage: null,
       );
     } on Object catch (error) {
-      if (!ref.mounted ||
-          requestId != _requestId ||
-          state.platform != platform) {
+      if (!ref.mounted || requestId != _requestId || state.chart != chart) {
         return;
       }
       state = state.copyWith(

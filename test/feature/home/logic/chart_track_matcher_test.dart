@@ -1,11 +1,11 @@
-import 'package:bilimusic/feature/home/domain/music_chart_platform.dart';
+import 'package:bilimusic/feature/home/domain/music_chart_catalog.dart';
 import 'package:bilimusic/feature/home/domain/music_chart_track.dart';
 import 'package:bilimusic/feature/home/logic/chart_track_matcher.dart';
 import 'package:bilimusic/feature/search/domain/search_result_item.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 const MusicChartTrack _track = MusicChartTrack(
-  platform: MusicChartPlatform.netease,
+  chart: MusicChartCatalog.defaultChart,
   rank: 1,
   title: '晴天',
   artist: '周杰伦',

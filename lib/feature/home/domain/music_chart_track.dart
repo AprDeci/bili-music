@@ -1,4 +1,4 @@
-import 'package:bilimusic/feature/home/domain/music_chart_platform.dart';
+import 'package:bilimusic/feature/home/domain/music_chart.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 
 part 'music_chart_track.freezed.dart';
@@ -6,7 +6,7 @@ part 'music_chart_track.freezed.dart';
 @freezed
 abstract class MusicChartTrack with _$MusicChartTrack {
   const factory MusicChartTrack({
-    required MusicChartPlatform platform,
+    required MusicChart chart,
     required int rank,
     required String title,
     required String artist,
@@ -16,7 +16,7 @@ abstract class MusicChartTrack with _$MusicChartTrack {
 
   const MusicChartTrack._();
 
-  String get key => '${platform.name}:$rank:$title:$artist';
+  String get key => '${chart.key}:$rank:$title:$artist';
 
   String get searchKeyword => '$title $artist'.trim();
 

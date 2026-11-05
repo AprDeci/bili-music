@@ -14,7 +14,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$MusicChartState {
 
- MusicChartPlatform get platform; List<MusicChartTrack> get tracks; bool get isLoading; String? get errorMessage;
+ MusicChart get chart; List<MusicChartTrack> get tracks; bool get isLoading; String? get errorMessage;
 /// Create a copy of MusicChartState
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -25,16 +25,16 @@ $MusicChartStateCopyWith<MusicChartState> get copyWith => _$MusicChartStateCopyW
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is MusicChartState&&(identical(other.platform, platform) || other.platform == platform)&&const DeepCollectionEquality().equals(other.tracks, tracks)&&(identical(other.isLoading, isLoading) || other.isLoading == isLoading)&&(identical(other.errorMessage, errorMessage) || other.errorMessage == errorMessage));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is MusicChartState&&(identical(other.chart, chart) || other.chart == chart)&&const DeepCollectionEquality().equals(other.tracks, tracks)&&(identical(other.isLoading, isLoading) || other.isLoading == isLoading)&&(identical(other.errorMessage, errorMessage) || other.errorMessage == errorMessage));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,platform,const DeepCollectionEquality().hash(tracks),isLoading,errorMessage);
+int get hashCode => Object.hash(runtimeType,chart,const DeepCollectionEquality().hash(tracks),isLoading,errorMessage);
 
 @override
 String toString() {
-  return 'MusicChartState(platform: $platform, tracks: $tracks, isLoading: $isLoading, errorMessage: $errorMessage)';
+  return 'MusicChartState(chart: $chart, tracks: $tracks, isLoading: $isLoading, errorMessage: $errorMessage)';
 }
 
 
@@ -45,11 +45,11 @@ abstract mixin class $MusicChartStateCopyWith<$Res>  {
   factory $MusicChartStateCopyWith(MusicChartState value, $Res Function(MusicChartState) _then) = _$MusicChartStateCopyWithImpl;
 @useResult
 $Res call({
- MusicChartPlatform platform, List<MusicChartTrack> tracks, bool isLoading, String? errorMessage
+ MusicChart chart, List<MusicChartTrack> tracks, bool isLoading, String? errorMessage
 });
 
 
-
+$MusicChartCopyWith<$Res> get chart;
 
 }
 /// @nodoc
@@ -62,16 +62,25 @@ class _$MusicChartStateCopyWithImpl<$Res>
 
 /// Create a copy of MusicChartState
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? platform = null,Object? tracks = null,Object? isLoading = null,Object? errorMessage = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? chart = null,Object? tracks = null,Object? isLoading = null,Object? errorMessage = freezed,}) {
   return _then(_self.copyWith(
-platform: null == platform ? _self.platform : platform // ignore: cast_nullable_to_non_nullable
-as MusicChartPlatform,tracks: null == tracks ? _self.tracks : tracks // ignore: cast_nullable_to_non_nullable
+chart: null == chart ? _self.chart : chart // ignore: cast_nullable_to_non_nullable
+as MusicChart,tracks: null == tracks ? _self.tracks : tracks // ignore: cast_nullable_to_non_nullable
 as List<MusicChartTrack>,isLoading: null == isLoading ? _self.isLoading : isLoading // ignore: cast_nullable_to_non_nullable
 as bool,errorMessage: freezed == errorMessage ? _self.errorMessage : errorMessage // ignore: cast_nullable_to_non_nullable
 as String?,
   ));
 }
-
+/// Create a copy of MusicChartState
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$MusicChartCopyWith<$Res> get chart {
+  
+  return $MusicChartCopyWith<$Res>(_self.chart, (value) {
+    return _then(_self.copyWith(chart: value));
+  });
+}
 }
 
 
@@ -153,10 +162,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( MusicChartPlatform platform,  List<MusicChartTrack> tracks,  bool isLoading,  String? errorMessage)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( MusicChart chart,  List<MusicChartTrack> tracks,  bool isLoading,  String? errorMessage)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _MusicChartState() when $default != null:
-return $default(_that.platform,_that.tracks,_that.isLoading,_that.errorMessage);case _:
+return $default(_that.chart,_that.tracks,_that.isLoading,_that.errorMessage);case _:
   return orElse();
 
 }
@@ -174,10 +183,10 @@ return $default(_that.platform,_that.tracks,_that.isLoading,_that.errorMessage);
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( MusicChartPlatform platform,  List<MusicChartTrack> tracks,  bool isLoading,  String? errorMessage)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( MusicChart chart,  List<MusicChartTrack> tracks,  bool isLoading,  String? errorMessage)  $default,) {final _that = this;
 switch (_that) {
 case _MusicChartState():
-return $default(_that.platform,_that.tracks,_that.isLoading,_that.errorMessage);case _:
+return $default(_that.chart,_that.tracks,_that.isLoading,_that.errorMessage);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -194,10 +203,10 @@ return $default(_that.platform,_that.tracks,_that.isLoading,_that.errorMessage);
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( MusicChartPlatform platform,  List<MusicChartTrack> tracks,  bool isLoading,  String? errorMessage)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( MusicChart chart,  List<MusicChartTrack> tracks,  bool isLoading,  String? errorMessage)?  $default,) {final _that = this;
 switch (_that) {
 case _MusicChartState() when $default != null:
-return $default(_that.platform,_that.tracks,_that.isLoading,_that.errorMessage);case _:
+return $default(_that.chart,_that.tracks,_that.isLoading,_that.errorMessage);case _:
   return null;
 
 }
@@ -209,10 +218,10 @@ return $default(_that.platform,_that.tracks,_that.isLoading,_that.errorMessage);
 
 
 class _MusicChartState extends MusicChartState {
-  const _MusicChartState({this.platform = MusicChartPlatform.netease, final  List<MusicChartTrack> tracks = const <MusicChartTrack>[], this.isLoading = false, this.errorMessage}): _tracks = tracks,super._();
+  const _MusicChartState({this.chart = MusicChartCatalog.defaultChart, final  List<MusicChartTrack> tracks = const <MusicChartTrack>[], this.isLoading = false, this.errorMessage}): _tracks = tracks,super._();
   
 
-@override@JsonKey() final  MusicChartPlatform platform;
+@override@JsonKey() final  MusicChart chart;
  final  List<MusicChartTrack> _tracks;
 @override@JsonKey() List<MusicChartTrack> get tracks {
   if (_tracks is EqualUnmodifiableListView) return _tracks;
@@ -233,16 +242,16 @@ _$MusicChartStateCopyWith<_MusicChartState> get copyWith => __$MusicChartStateCo
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _MusicChartState&&(identical(other.platform, platform) || other.platform == platform)&&const DeepCollectionEquality().equals(other._tracks, _tracks)&&(identical(other.isLoading, isLoading) || other.isLoading == isLoading)&&(identical(other.errorMessage, errorMessage) || other.errorMessage == errorMessage));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _MusicChartState&&(identical(other.chart, chart) || other.chart == chart)&&const DeepCollectionEquality().equals(other._tracks, _tracks)&&(identical(other.isLoading, isLoading) || other.isLoading == isLoading)&&(identical(other.errorMessage, errorMessage) || other.errorMessage == errorMessage));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,platform,const DeepCollectionEquality().hash(_tracks),isLoading,errorMessage);
+int get hashCode => Object.hash(runtimeType,chart,const DeepCollectionEquality().hash(_tracks),isLoading,errorMessage);
 
 @override
 String toString() {
-  return 'MusicChartState(platform: $platform, tracks: $tracks, isLoading: $isLoading, errorMessage: $errorMessage)';
+  return 'MusicChartState(chart: $chart, tracks: $tracks, isLoading: $isLoading, errorMessage: $errorMessage)';
 }
 
 
@@ -253,11 +262,11 @@ abstract mixin class _$MusicChartStateCopyWith<$Res> implements $MusicChartState
   factory _$MusicChartStateCopyWith(_MusicChartState value, $Res Function(_MusicChartState) _then) = __$MusicChartStateCopyWithImpl;
 @override @useResult
 $Res call({
- MusicChartPlatform platform, List<MusicChartTrack> tracks, bool isLoading, String? errorMessage
+ MusicChart chart, List<MusicChartTrack> tracks, bool isLoading, String? errorMessage
 });
 
 
-
+@override $MusicChartCopyWith<$Res> get chart;
 
 }
 /// @nodoc
@@ -270,17 +279,26 @@ class __$MusicChartStateCopyWithImpl<$Res>
 
 /// Create a copy of MusicChartState
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? platform = null,Object? tracks = null,Object? isLoading = null,Object? errorMessage = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? chart = null,Object? tracks = null,Object? isLoading = null,Object? errorMessage = freezed,}) {
   return _then(_MusicChartState(
-platform: null == platform ? _self.platform : platform // ignore: cast_nullable_to_non_nullable
-as MusicChartPlatform,tracks: null == tracks ? _self._tracks : tracks // ignore: cast_nullable_to_non_nullable
+chart: null == chart ? _self.chart : chart // ignore: cast_nullable_to_non_nullable
+as MusicChart,tracks: null == tracks ? _self._tracks : tracks // ignore: cast_nullable_to_non_nullable
 as List<MusicChartTrack>,isLoading: null == isLoading ? _self.isLoading : isLoading // ignore: cast_nullable_to_non_nullable
 as bool,errorMessage: freezed == errorMessage ? _self.errorMessage : errorMessage // ignore: cast_nullable_to_non_nullable
 as String?,
   ));
 }
 
-
+/// Create a copy of MusicChartState
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$MusicChartCopyWith<$Res> get chart {
+  
+  return $MusicChartCopyWith<$Res>(_self.chart, (value) {
+    return _then(_self.copyWith(chart: value));
+  });
+}
 }
 
 // dart format on

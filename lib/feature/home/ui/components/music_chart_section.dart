@@ -3,6 +3,7 @@ import 'package:bilimusic/common/components/status_view.dart';
 import 'package:bilimusic/common/util/platform_util.dart';
 import 'package:bilimusic/common/util/player_util.dart';
 import 'package:bilimusic/common/util/toast_util.dart';
+import 'package:bilimusic/feature/home/domain/music_chart.dart';
 import 'package:bilimusic/feature/home/domain/music_chart_platform.dart';
 import 'package:bilimusic/feature/home/domain/music_chart_state.dart';
 import 'package:bilimusic/feature/home/domain/music_chart_track.dart';
@@ -52,6 +53,16 @@ class _MusicChartSectionState extends ConsumerState<MusicChartSection> {
                   .selectPlatform(platform);
             },
           ),
+          const SizedBox(height: 10),
+          _ChartNameBar(
+            charts: state.charts,
+            selected: state.chart,
+            onSelected: (MusicChart chart) {
+              ref
+                  .read(musicChartControllerProvider.notifier)
+                  .selectChart(chart);
+            },
+          ),
           const SizedBox(height: 16),
           if (state.isLoading)
             const _MusicChartLoading()
@@ -95,7 +106,7 @@ class _MusicChartSectionState extends ConsumerState<MusicChartSection> {
         context,
         ref,
         item: item,
-        sourceLabel: track.platform.title,
+        sourceLabel: track.chart.displayTitle,
       );
     } on Object {
       if (mounted) {
@@ -124,7 +135,7 @@ class _ChartPlatformBar extends StatelessWidget {
       runSpacing: 8,
       children: <Widget>[
         for (final MusicChartPlatform platform in MusicChartPlatform.values)
-          _ChartPlatformChip(
+          _ChartChip(
             label: platform.label,
             selected: platform == selected,
             colorScheme: colorScheme,
@@ -135,17 +146,59 @@ class _ChartPlatformBar extends StatelessWidget {
   }
 }
 
-class _ChartPlatformChip extends StatelessWidget {
-  const _ChartPlatformChip({
+class _ChartNameBar extends StatelessWidget {
+  const _ChartNameBar({
+    required this.charts,
+    required this.selected,
+    required this.onSelected,
+  });
+
+  final List<MusicChart> charts;
+  final MusicChart selected;
+  final ValueChanged<MusicChart> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    final ColorScheme colorScheme = Theme.of(context).colorScheme;
+
+    return SizedBox(
+      height: 28,
+      child: SingleChildScrollView(
+        key: ValueKey<String>(selected.platform.name),
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          children: <Widget>[
+            for (final MusicChart chart in charts)
+              Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: _ChartChip(
+                  label: chart.name,
+                  selected: chart == selected,
+                  colorScheme: colorScheme,
+                  compact: true,
+                  onTap: () => onSelected(chart),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ChartChip extends StatelessWidget {
+  const _ChartChip({
     required this.label,
     required this.selected,
     required this.colorScheme,
     required this.onTap,
+    this.compact = false,
   });
 
   final String label;
   final bool selected;
   final ColorScheme colorScheme;
+  final bool compact;
   final VoidCallback onTap;
 
   @override
@@ -159,11 +212,13 @@ class _ChartPlatformChip extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(999),
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+          padding: compact
+              ? const EdgeInsets.symmetric(horizontal: 12, vertical: 5)
+              : const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
           child: Text(
             label,
             style: TextStyle(
-              fontSize: 12,
+              fontSize: compact ? 11 : 12,
               fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
               color: selected
                   ? colorScheme.primary
@@ -315,9 +370,7 @@ class _MusicChartTrackTile extends StatelessWidget {
                       ),
                       const SizedBox(height: 6),
                       Text(
-                        track.artist.isEmpty
-                            ? track.platform.label
-                            : track.artist,
+                        track.artist.isEmpty ? track.chart.name : track.artist,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: theme.textTheme.bodySmall?.copyWith(
