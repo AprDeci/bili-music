@@ -1479,7 +1479,18 @@ void main() {
             target,
           );
           expect(comments.loadCount, 1);
-          await tester.binding.handlePopRoute();
+          final panel = find.byType(CarSidePanel);
+          expect(panel, findsOneWidget);
+          expect(
+            tester.getRect(panel),
+            rectMoreOrLessEquals(const Rect.fromLTWH(516.8, 24, 739.2, 672)),
+          );
+          expect(
+            tester.getRect(find.byType(CommentPage)),
+            tester.getRect(panel),
+          );
+          expect(find.byType(BottomSheet), findsNothing);
+          await tester.tap(find.byType(BackButton));
       }
       await tester.pumpAndSettle();
       expect(find.byType(CarSidePanel), findsNothing);

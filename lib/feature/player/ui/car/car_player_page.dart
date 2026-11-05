@@ -264,15 +264,16 @@ class _CarPlayerPageState extends ConsumerState<CarPlayerPage> {
         );
       case _CarPlayerMenuAction.comments:
         if (item == null || item.aid <= 0) return;
-        await Navigator.of(context).push<void>(
-          MaterialPageRoute<void>(
-            builder: (_) => CommentPage(
-              target: CommentTarget.video(
-                aid: item.aid,
-                bvid: item.bvid,
-                title: item.title,
-                coverUrl: item.coverUrl,
-              ),
+        await showCarSidePanel<void>(
+          context: context,
+          alignment: Alignment.centerRight,
+          slideFrom: const Offset(1, 0),
+          builder: (_) => CommentPage(
+            target: CommentTarget.video(
+              aid: item.aid,
+              bvid: item.bvid,
+              title: item.title,
+              coverUrl: item.coverUrl,
             ),
           ),
         );
