@@ -97,6 +97,37 @@ void main() {
     expect(oldItem.page, isNull);
   });
 
+  test(
+    'removeEntries deletes selected ids across legacy and stable keys',
+    () async {
+      final first = _entry(aid: 1, cid: 11, title: 'first', playedAt: 3);
+      final second = _entry(aid: 2, cid: 22, title: 'second', playedAt: 2);
+      final third = _entry(aid: 3, cid: 33, title: 'third', playedAt: 1);
+      await box.add(first);
+      await box.put(first.stableId, first);
+      await box.put(second.stableId, second);
+      await box.add(third);
+
+      await repository.removeEntries(<String>{});
+      expect(box.length, 4);
+      await repository.removeEntries(<String>{
+        first.stableId,
+        second.stableId,
+        'missing',
+      });
+      expect(repository.load(), <RecentPlaybackEntry>[third]);
+      expect(box.length, 1);
+
+      await box.close();
+      box = await Hive.openBox<RecentPlaybackEntry>(recentPlaybackBoxName);
+      repository = RecentPlaybackLocalRepository(box);
+      expect(repository.load(), <RecentPlaybackEntry>[third]);
+      await repository.removeEntries(<String>{third.stableId});
+      expect(repository.load(), isEmpty);
+      expect(box.isEmpty, isTrue);
+    },
+  );
+
   test('saveEntry truncates to maxEntries items', () async {
     const int overflow = 2;
     final int count = RecentPlaybackLocalRepository.maxEntries + overflow;
