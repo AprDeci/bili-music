@@ -498,6 +498,10 @@ class PlayerController extends Notifier<PlayerState>
     );
   }
 
+  @override
+  Future<void> enqueueAvailableParts(List<PlayableItem> parts) =>
+      enqueue(parts);
+
   Future<void> enqueue(List<PlayableItem> items) async {
     if (items.isEmpty) {
       return;
