@@ -56,19 +56,87 @@ class BiliChapterRepository {
     Duration? duration,
   ) async {
     final List<PlaybackChapter> fromViewPoints = await _fetchViewPoints(item);
-    if (fromViewPoints.length >= PlaybackChapterParser.minimumChapterCount) {
-      return fromViewPoints;
-    }
-
     final List<PlaybackChapter> fromDescription = PlaybackChapterParser.parse(
       item.description,
       duration: duration,
     );
-    if (fromDescription.length >= PlaybackChapterParser.minimumChapterCount) {
-      return fromDescription;
+
+    List<PlaybackChapter> base = _chooseFiner(
+      base: fromViewPoints,
+      candidate: fromDescription,
+    );
+    if (base.length > _refinementChapterLimit) {
+      return base;
     }
 
-    return _fetchPinnedCommentChapters(item, duration);
+    final List<PlaybackChapter> fromComment = await _fetchPinnedCommentChapters(
+      item,
+      duration,
+    );
+    final List<PlaybackChapter> result = _chooseFiner(
+      base: base,
+      candidate: fromComment,
+    );
+    if (result.length < PlaybackChapterParser.minimumChapterCount) {
+      return const <PlaybackChapter>[];
+    }
+    return result;
+  }
+
+  static const int _refinementChapterLimit = 10;
+  static const Duration _wholeVideoStartTolerance = Duration(minutes: 1);
+
+  List<PlaybackChapter> _chooseFiner({
+    required List<PlaybackChapter> base,
+    required List<PlaybackChapter> candidate,
+  }) {
+    if (candidate.length < PlaybackChapterParser.minimumChapterCount) {
+      return base;
+    }
+    if (base.isEmpty) {
+      return candidate;
+    }
+    if (candidate.length <= base.length) {
+      return base;
+    }
+
+    final bool candidateStartsEarly =
+        candidate.first.start <= _wholeVideoStartTolerance;
+    final bool baseStartsEarly = base.first.start <= _wholeVideoStartTolerance;
+    if (candidateStartsEarly || !baseStartsEarly) {
+      return candidate;
+    }
+
+    final List<PlaybackChapter> refined = _refineWithinChapters(
+      base: base,
+      finer: candidate,
+    );
+    return refined.length > base.length ? refined : base;
+  }
+
+  List<PlaybackChapter> _refineWithinChapters({
+    required List<PlaybackChapter> base,
+    required List<PlaybackChapter> finer,
+  }) {
+    final List<PlaybackChapter> result = <PlaybackChapter>[];
+    for (int index = 0; index < base.length; index += 1) {
+      final PlaybackChapter chapter = base[index];
+      final Duration end =
+          chapter.end ??
+          (index + 1 < base.length
+              ? base[index + 1].start
+              : const Duration(days: 365));
+      final List<PlaybackChapter> nested = <PlaybackChapter>[
+        for (final PlaybackChapter entry in finer)
+          if (entry.start >= chapter.start && entry.start < end) entry,
+      ];
+      if (nested.length >= PlaybackChapterParser.minimumChapterCount) {
+        result.addAll(nested);
+      } else {
+        result.add(chapter);
+      }
+    }
+    return PlaybackChapterParser.normalize(result);
   }
 
   Future<List<PlaybackChapter>> _fetchViewPoints(PlayableItem item) async {
@@ -140,20 +208,20 @@ class BiliChapterRepository {
         if (result.topItem != null) result.topItem!,
         ...result.items,
       ];
+      List<PlaybackChapter> best = const <PlaybackChapter>[];
       for (final CommentItem comment in candidates) {
         final List<PlaybackChapter> chapters = PlaybackChapterParser.parse(
           comment.message,
           duration: duration,
         );
-        if (chapters.length >= PlaybackChapterParser.minimumChapterCount) {
-          return chapters;
+        if (chapters.length > best.length) {
+          best = chapters;
         }
       }
+      return best;
     } on Object {
       return const <PlaybackChapter>[];
     }
-
-    return const <PlaybackChapter>[];
   }
 
   List<PlaybackChapter> _resolveWithinDuration(

@@ -78,6 +78,28 @@ void main() {
     expect(chapters.last.end, isNull);
   });
 
+  test('parses titles that end with the timestamp', () {
+    final List<PlaybackChapter> chapters = PlaybackChapterParser.parse(
+      '第一首 03:00\n第二首 06:30\n第三首 10:00',
+    );
+
+    expect(chapters.length, 3);
+    expect(chapters[0].title, '第一首');
+    expect(chapters[0].start, const Duration(minutes: 3));
+    expect(chapters[2].title, '第三首');
+    expect(chapters[2].start, const Duration(minutes: 10));
+  });
+
+  test('drops numbered list prefixes from trailing timestamps', () {
+    final List<PlaybackChapter> chapters = PlaybackChapterParser.parse(
+      '01. 第一首 03:00\n02. 第二首 09:30',
+    );
+
+    expect(chapters.length, 2);
+    expect(chapters[0].title, '第一首');
+    expect(chapters[1].title, '第二首');
+  });
+
   test('supports full-width and dash separators', () {
     final List<PlaybackChapter> chapters = PlaybackChapterParser.parse(
       '00:00 —— 开场\n'

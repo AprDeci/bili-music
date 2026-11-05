@@ -9,12 +9,16 @@ class PlaybackChapterParser {
   static final RegExp _timestampPattern = RegExp(
     r'(?:^|[^\d:/])(?:(\d{1,2}):)?(\d{1,3}):([0-5]\d)(?![\d:])',
   );
+  static final RegExp _trailingTimestampOnlyPattern = RegExp(
+    r'[\(（\[【]?(?:(\d{1,2}):)?(\d{1,3}):([0-5]\d)[\)）\]】]?\s*$',
+  );
   static final RegExp _trailingTimestampPattern = RegExp(
     r'\s*[\(（\[【]?\d{1,3}:\d{2}(?::\d{2})?[\)）\]】]?\s*$',
   );
   static final RegExp _leadingNoisePattern = RegExp(
     r'^[\s\-–—:：~～,，、.)）\]】】）]+',
   );
+  static final RegExp _leadingIndexPattern = RegExp(r'^\d{1,3}[.、,，)\]】]\s*');
   static final RegExp _trailingNoisePattern = RegExp(
     r'[\s\-–—:：~～,，、(（\[【|｜]+$',
   );
@@ -105,33 +109,44 @@ class PlaybackChapterParser {
       return null;
     }
 
-    final RegExpMatch? match = _timestampPattern.firstMatch(segment);
-    if (match == null) {
-      return null;
+    final RegExpMatch? leading = _timestampPattern.firstMatch(segment);
+    if (leading != null) {
+      final Duration? start = _startOf(leading);
+      final String title = _cleanTitle(segment.substring(leading.end));
+      if (start != null && title.isNotEmpty) {
+        return PlaybackChapter(start: start, title: title);
+      }
     }
 
-    final String title = _cleanTitle(segment.substring(match.end));
-    if (title.isEmpty) {
+    final RegExpMatch? trailing = _trailingTimestampOnlyPattern.firstMatch(
+      segment,
+    );
+    if (trailing == null) {
       return null;
     }
+    final Duration? start = _startOf(trailing);
+    final String title = _cleanTitle(segment.substring(0, trailing.start));
+    if (start == null || title.isEmpty) {
+      return null;
+    }
+    return PlaybackChapter(start: start, title: title);
+  }
 
-    final int? hours = match.group(1) == null
-        ? null
-        : int.tryParse(match.group(1)!);
+  static Duration? _startOf(RegExpMatch match) {
+    final String? hoursText = match.group(1);
     final int? minutes = int.tryParse(match.group(2)!);
     final int? seconds = int.tryParse(match.group(3)!);
     if (minutes == null || seconds == null) {
       return null;
     }
+    final int? hours = hoursText == null ? null : int.tryParse(hoursText);
+    if (hoursText != null && hours == null) {
+      return null;
+    }
     if (hours != null && minutes >= 60) {
       return null;
     }
-
-    final int totalSeconds = (hours ?? 0) * 3600 + minutes * 60 + seconds;
-    return PlaybackChapter(
-      start: Duration(seconds: totalSeconds),
-      title: title,
-    );
+    return Duration(seconds: (hours ?? 0) * 3600 + minutes * 60 + seconds);
   }
 
   static String _cleanTitle(String rawTitle) {
@@ -142,6 +157,7 @@ class PlaybackChapterParser {
 
     title = title.replaceFirst(_trailingTimestampPattern, '');
     title = title.replaceFirst(_leadingNoisePattern, '');
+    title = title.replaceFirst(_leadingIndexPattern, '');
     title = title.replaceFirst(_trailingNoisePattern, '');
     return title.trim();
   }

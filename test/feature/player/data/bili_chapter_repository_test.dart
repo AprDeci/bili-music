@@ -13,6 +13,14 @@ import 'package:flutter_test/flutter_test.dart';
 
 const String _playerPath = '/x/player/wbi/v2';
 
+const BiliSession _session = BiliSession(
+  sessData: 'sess',
+  biliJct: 'jct',
+  dedeUserId: '42',
+  refreshToken: '',
+  cookie: '',
+);
+
 void main() {
   test('maps bilibili view points into chapters', () async {
     final _FakeClient client = _FakeClient(
@@ -137,6 +145,166 @@ void main() {
     expect(await repository.fetchChapters(_item()), isEmpty);
     expect(comments.calls, 0);
   });
+
+  test(
+    'prefers the pinned comment when it splits coarser view points',
+    () async {
+      final _FakeClient client = _FakeClient(
+        session: _session,
+        responses: <String, Map<String, dynamic>>{
+          _playerPath: <String, dynamic>{
+            'code': 0,
+            'data': <String, dynamic>{
+              'view_points': <Map<String, dynamic>>[
+                <String, dynamic>{'from': 0, 'to': 60, 'content': '开场'},
+                <String, dynamic>{'from': 60, 'to': 3600, 'content': '七首'},
+              ],
+            },
+          },
+        },
+      );
+      final _FakeCommentRepository comments = _FakeCommentRepository(
+        CommentPageResult(
+          topItem: _comment('42:10 第一首\n45:00 第二首\n48:30 第三首'),
+          page: 1,
+          pageSize: 20,
+          totalCount: 1,
+          hasMore: false,
+        ),
+      );
+      final BiliChapterRepository repository = BiliChapterRepository(
+        client,
+        comments,
+      );
+
+      final List<PlaybackChapter> chapters = await repository.fetchChapters(
+        _item(),
+      );
+
+      expect(
+        chapters.map((PlaybackChapter chapter) => chapter.title).toList(),
+        <String>['开场', '第一首', '第二首', '第三首'],
+      );
+      expect(chapters[1].start, const Duration(minutes: 42, seconds: 10));
+    },
+  );
+
+  test('uses a finer whole-video comment list directly', () async {
+    final _FakeClient client = _FakeClient(
+      session: _session,
+      responses: <String, Map<String, dynamic>>{
+        _playerPath: <String, dynamic>{
+          'code': 0,
+          'data': <String, dynamic>{
+            'view_points': <Map<String, dynamic>>[
+              <String, dynamic>{'from': 0, 'to': 60, 'content': '上'},
+              <String, dynamic>{'from': 60, 'to': 3600, 'content': '下'},
+            ],
+          },
+        },
+      },
+    );
+    final _FakeCommentRepository comments = _FakeCommentRepository(
+      CommentPageResult(
+        topItem: _comment('0:00 第一首\n10:00 第二首\n20:00 第三首'),
+        page: 1,
+        pageSize: 20,
+        totalCount: 1,
+        hasMore: false,
+      ),
+    );
+    final BiliChapterRepository repository = BiliChapterRepository(
+      client,
+      comments,
+    );
+
+    final List<PlaybackChapter> chapters = await repository.fetchChapters(
+      _item(),
+    );
+
+    expect(chapters, hasLength(3));
+    expect(chapters.first.title, '第一首');
+  });
+
+  test('keeps view points when the comment is coarser', () async {
+    final _FakeClient client = _FakeClient(
+      session: _session,
+      responses: <String, Map<String, dynamic>>{
+        _playerPath: <String, dynamic>{
+          'code': 0,
+          'data': <String, dynamic>{
+            'view_points': <Map<String, dynamic>>[
+              <String, dynamic>{'from': 0, 'to': 60, 'content': '第一首'},
+              <String, dynamic>{'from': 60, 'to': 120, 'content': '第二首'},
+              <String, dynamic>{'from': 120, 'to': 180, 'content': '第三首'},
+            ],
+          },
+        },
+      },
+    );
+    final _FakeCommentRepository comments = _FakeCommentRepository(
+      CommentPageResult(
+        topItem: _comment('0:00 上\n1:00 下'),
+        page: 1,
+        pageSize: 20,
+        totalCount: 1,
+        hasMore: false,
+      ),
+    );
+    final BiliChapterRepository repository = BiliChapterRepository(
+      client,
+      comments,
+    );
+
+    final List<PlaybackChapter> chapters = await repository.fetchChapters(
+      _item(),
+    );
+
+    expect(
+      chapters.map((PlaybackChapter chapter) => chapter.title).toList(),
+      <String>['第一首', '第二首', '第三首'],
+    );
+  });
+
+  test(
+    'skips the comment request when view points are already detailed',
+    () async {
+      final _FakeClient client = _FakeClient(
+        session: _session,
+        responses: <String, Map<String, dynamic>>{
+          _playerPath: <String, dynamic>{
+            'code': 0,
+            'data': <String, dynamic>{
+              'view_points': <Map<String, dynamic>>[
+                for (int index = 0; index < 12; index += 1)
+                  <String, dynamic>{
+                    'from': index * 60,
+                    'to': (index + 1) * 60,
+                    'content': '第 $index 首',
+                  },
+              ],
+            },
+          },
+        },
+      );
+      final _FakeCommentRepository comments = _FakeCommentRepository(
+        CommentPageResult(
+          topItem: _comment('0:00 第一首\n5:00 第二首'),
+          page: 1,
+          pageSize: 20,
+          totalCount: 1,
+          hasMore: false,
+        ),
+      );
+      final BiliChapterRepository repository = BiliChapterRepository(
+        client,
+        comments,
+      );
+
+      expect(await repository.fetchChapters(_item()), hasLength(12));
+      expect(comments.calls, 0);
+    },
+  );
 
   test('caches resolved chapters per content', () async {
     final _FakeClient client = _FakeClient(
