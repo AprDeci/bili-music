@@ -1,3 +1,4 @@
+import 'package:bilimusic/common/util/display_text.dart';
 import 'package:bilimusic/feature/player/domain/playback_chapter.dart';
 
 class PlaybackChapterParser {
@@ -159,6 +160,6 @@ class PlaybackChapterParser {
     title = title.replaceFirst(_leadingNoisePattern, '');
     title = title.replaceFirst(_leadingIndexPattern, '');
     title = title.replaceFirst(_trailingNoisePattern, '');
-    return title.trim();
+    return normalizeDisplayText(title.trim());
   }
 }

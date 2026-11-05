@@ -2,6 +2,7 @@ import 'package:bilimusic/common/bm_icons.dart';
 import 'package:bilimusic/common/components/cached_image.dart';
 import 'package:bilimusic/common/components/selectable_auto_scroll_list_view.dart';
 import 'package:bilimusic/common/components/tag.dart';
+import 'package:bilimusic/common/util/display_text.dart';
 import 'package:bilimusic/feature/favorites/domain/favorite_entry.dart';
 import 'package:bilimusic/feature/favorites/ui/components/favorite_entry_subtitle.dart';
 import 'package:bilimusic/feature/statistics/logic/statistics_tracker.dart';
@@ -130,7 +131,7 @@ class DesktopFavoriteCollectionItemsList extends ConsumerWidget {
     SelectableListItemState<FavoriteEntry, String> state,
   ) {
     return Text(
-      item.title,
+      normalizeDisplayText(item.title),
       maxLines: 1,
       overflow: TextOverflow.ellipsis,
       style: Theme.of(

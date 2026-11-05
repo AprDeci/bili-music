@@ -1,5 +1,6 @@
 import 'package:bilimusic/common/components/status_view.dart';
 import 'package:bilimusic/common/components/video_card.dart';
+import 'package:bilimusic/common/util/display_text.dart';
 import 'package:bilimusic/common/util/toast_util.dart';
 import 'package:bilimusic/feature/favorites/logic/favorites_controller.dart';
 import 'package:bilimusic/feature/player/data/bili_player_repository.dart';
@@ -113,7 +114,7 @@ class SearchVideoResults extends StatelessWidget {
 
               return VideoCard(
                 data: VideoCardData(
-                  title: item.title,
+                  title: normalizeDisplayText(item.title),
                   coverUrl: item.coverUrl,
                   primaryMeta: '${item.author} · ${item.publishTimeText}',
                   secondaryMeta:

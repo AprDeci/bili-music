@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:bilimusic/common/util/display_text.dart';
 import 'package:bilimusic/common/util/json_util.dart';
 import 'package:bilimusic/feature/home/domain/music_chart_platform.dart';
 import 'package:bilimusic/feature/home/domain/music_chart_track.dart';
@@ -86,8 +87,8 @@ class MusicChartRepository {
         MusicChartTrack(
           platform: platform,
           rank: 0,
-          title: title,
-          artist: artist,
+          title: normalizeDisplayText(title),
+          artist: normalizeDisplayText(artist),
           coverUrl: coverUrl,
           durationSeconds: _readDurationSeconds(json['duration']),
         ),
@@ -149,8 +150,8 @@ class MusicChartRepository {
         MusicChartTrack(
           platform: platform,
           rank: 0,
-          title: rawName,
-          artist: artist,
+          title: normalizeDisplayText(rawName),
+          artist: normalizeDisplayText(artist),
           coverUrl: _kugouCoverUrl(json),
           durationSeconds: _readKugouDuration(json['duration']),
         ),

@@ -1,4 +1,5 @@
 import 'package:bilimusic/common/domain/meta_lyrics.dart';
+import 'package:bilimusic/common/util/display_text.dart';
 import 'package:bilimusic/feature/metadata/domain/metadata.dart';
 import 'package:bilimusic/feature/player/domain/playable_item.dart';
 import 'package:bilimusic/feature/player/domain/player_display_info.dart';
@@ -27,8 +28,10 @@ PlayerDisplayInfo resolvePlayerDisplayInfo({
 
   return PlayerDisplayInfo(
     stableId: item.stableId,
-    title: useMetadata && title.isNotEmpty ? title : item.title,
-    artist: useMetadataArtist ? artist : item.author,
+    title: normalizeDisplayText(
+      useMetadata && title.isNotEmpty ? title : item.title,
+    ),
+    artist: normalizeDisplayText(useMetadataArtist ? artist : item.author),
     coverUrl: selectedCover.isEmpty ? null : selectedCover,
     source: source,
     canToggleSource:

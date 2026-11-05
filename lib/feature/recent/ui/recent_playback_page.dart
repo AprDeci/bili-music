@@ -2,6 +2,7 @@ import 'package:bilimusic/common/bm_icons.dart';
 import 'package:bilimusic/common/components/bottom_page_spacer.dart';
 import 'package:bilimusic/common/components/cached_image.dart';
 import 'package:bilimusic/common/components/status_view.dart';
+import 'package:bilimusic/common/util/display_text.dart';
 import 'package:bilimusic/common/util/player_util.dart';
 import 'package:bilimusic/feature/player/domain/playable_item.dart';
 import 'package:bilimusic/feature/recent/domain/recent_playback_entry.dart';
@@ -79,7 +80,7 @@ class RecentPlaybackPage extends ConsumerWidget {
                       backgroundColor: primary.withValues(alpha: 0.14),
                     ),
                     title: Text(
-                      item.title,
+                      normalizeDisplayText(item.title),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: theme.textTheme.titleSmall?.copyWith(

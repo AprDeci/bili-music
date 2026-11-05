@@ -1,11 +1,14 @@
+import 'package:bilimusic/common/util/display_text.dart';
 import 'package:bilimusic/feature/favorites/domain/favorite_entry.dart';
 
 const int _maxPartTitleChars = 13;
 
 String buildFavoriteEntrySubtitle(FavoriteEntry item) {
-  final List<String> segments = <String>[item.author];
+  final List<String> segments = <String>[normalizeDisplayText(item.author)];
   final int? page = item.page == 1 ? null : item.page;
-  final String pageTitle = page != null ? item.pageTitle?.trim() ?? '' : '';
+  final String pageTitle = page != null
+      ? normalizeDisplayText(item.pageTitle?.trim() ?? '')
+      : '';
 
   if (page != null && page > 0) {
     segments.add('P$page');
@@ -24,10 +27,10 @@ String buildFavoriteEntrySubtitle(FavoriteEntry item) {
 String buildFavoriteTileSubtitle(FavoriteEntry item) {
   final int? page = item.page == 1 ? null : item.page;
   if (page == null || page <= 0) {
-    return item.author;
+    return normalizeDisplayText(item.author);
   }
   final List<String> segments = <String>['P$page'];
-  final String pageTitle = item.pageTitle?.trim() ?? '';
+  final String pageTitle = normalizeDisplayText(item.pageTitle?.trim() ?? '');
   if (pageTitle.isNotEmpty) {
     segments.add(
       pageTitle.length > _maxPartTitleChars
