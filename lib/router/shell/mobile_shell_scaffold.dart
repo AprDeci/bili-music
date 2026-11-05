@@ -4,7 +4,6 @@ import 'package:bilimusic/feature/player/logic/player_controller.dart';
 import 'package:bilimusic/feature/player/ui/mini/mini_player_bar.dart';
 import 'package:bilimusic/feature/player/ui/mini/mini_player_glass_bar.dart';
 import 'package:bilimusic/feature/setting/logic/appearance_setting_logic.dart';
-import 'package:bilimusic/feature/updater/logic/update_checker.dart';
 import 'package:bilimusic/router/util/mobile_branch_navigator_keys.dart';
 import 'package:bilimusic/router/util/mobile_chrome_config.dart';
 import 'package:bilimusic/router/util/player_navigation.dart';
@@ -37,12 +36,6 @@ class _MobileShellScaffoldState extends ConsumerState<MobileShellScaffold> {
 
   static const double _bottomBarCornerRadius = 40;
   static const double _bottomBarHeight = 52;
-
-  @override
-  void initState() {
-    super.initState();
-    UpdateChecker.scheduleStartupCheck(context);
-  }
 
   @override
   Widget build(BuildContext context) {
