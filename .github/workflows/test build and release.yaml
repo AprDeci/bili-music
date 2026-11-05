@@ -69,7 +69,7 @@ jobs:
 
       - name: Rename Android APKs
         run: |
-          VERSION=${GITHUB_REF_NAME:-Test-Build}
+          VERSION="Test-Build"
           mkdir -p build/artifacts
           cp build/app/outputs/flutter-apk/app-armeabi-v7a-production-release.apk "build/artifacts/bili-music-${VERSION}-armeabi-v7a.apk"
           cp build/app/outputs/flutter-apk/app-arm64-v8a-production-release.apk "build/artifacts/bili-music-${VERSION}-arm64-v8a.apk"
