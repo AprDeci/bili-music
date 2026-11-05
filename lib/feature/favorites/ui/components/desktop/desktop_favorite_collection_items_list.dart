@@ -3,9 +3,7 @@ import 'package:bilimusic/common/components/cached_image.dart';
 import 'package:bilimusic/common/components/selectable_auto_scroll_list_view.dart';
 import 'package:bilimusic/common/components/tag.dart';
 import 'package:bilimusic/feature/favorites/domain/favorite_entry.dart';
-import 'package:bilimusic/feature/favorites/logic/favorites_view_mode_logic.dart';
 import 'package:bilimusic/feature/favorites/ui/components/favorite_entry_subtitle.dart';
-import 'package:bilimusic/feature/favorites/ui/components/favorite_metadata_tile.dart';
 import 'package:bilimusic/feature/statistics/logic/statistics_tracker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -27,7 +25,6 @@ class DesktopFavoriteCollectionItemsList extends ConsumerWidget {
     required this.onTapItem,
     required this.onPlayItem,
     required this.onMoreItem,
-    this.viewMode = FavoriteListViewMode.video,
   });
 
   final List<FavoriteEntry> items;
@@ -40,7 +37,6 @@ class DesktopFavoriteCollectionItemsList extends ConsumerWidget {
   final DesktopFavoriteCollectionItemCallback onTapItem;
   final DesktopFavoriteCollectionItemCallback onPlayItem;
   final DesktopFavoriteCollectionItemCallback onMoreItem;
-  final FavoriteListViewMode viewMode;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -77,9 +73,7 @@ class DesktopFavoriteCollectionItemsList extends ConsumerWidget {
                     Theme.of(context).colorScheme.surface,
                   ),
           ),
-          child: viewMode == FavoriteListViewMode.metadata
-              ? _buildMetadataItem(context, item, state)
-              : _buildNormalItem(context, item, state, tracker),
+          child: _buildNormalItem(context, item, state, tracker),
         ),
         titleBuilder: _buildTitle,
         subtitleBuilder: (context, item, state) =>
@@ -108,32 +102,6 @@ class DesktopFavoriteCollectionItemsList extends ConsumerWidget {
         onTap: state.handleTap,
         onLongPress: state.enterMultiSelectAndToggle,
       ),
-    );
-  }
-
-  Widget _buildMetadataItem(
-    BuildContext context,
-    FavoriteEntry item,
-    SelectableListItemState<FavoriteEntry, String> state,
-  ) {
-    final int index = items.indexOf(item);
-    return FavoriteMetadataTile(
-      entry: item,
-      selected: state.selected,
-      coverRadius: 14,
-      titleWeight: FontWeight.w700,
-      onTap: state.handleTap,
-      onLongPress: state.enterMultiSelectAndToggle,
-      onPlay: () {
-        if (index >= 0) {
-          onPlayItem(index, item);
-        }
-      },
-      onMore: () {
-        if (index >= 0) {
-          onMoreItem(index, item);
-        }
-      },
     );
   }
 

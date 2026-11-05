@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:bilimusic/feature/favorites/logic/favorites_view_mode_logic.dart';
 import 'package:bilimusic/feature/metadata/domain/metadata_backfill_state.dart';
 import 'package:bilimusic/feature/metadata/logic/metadata_backfill_controller.dart';
 import 'package:bilimusic/feature/player/domain/playable_item.dart';
@@ -13,38 +12,6 @@ const double _scanPopupWidth = 268;
 
 // popover 锁在 0.4.0：0.5+ 需要 Dart 3.13 / Flutter 3.47（material_ui 拆分）。
 // ponytail: 待 Flutter 升到 3.47 后迁 0.5（API 改为 style: PopoverStyle(...)）。
-
-class MetadataViewModeButton extends StatelessWidget {
-  const MetadataViewModeButton({
-    super.key,
-    required this.viewMode,
-    required this.onPressed,
-  });
-
-  final FavoriteListViewMode viewMode;
-  final VoidCallback onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    final bool isMetadata = viewMode == FavoriteListViewMode.metadata;
-    return Tooltip(
-      message: isMetadata ? '切换到视频视图' : '切换到元信息视图',
-      child: IconButton(
-        onPressed: onPressed,
-        padding: EdgeInsets.zero,
-        visualDensity: VisualDensity.compact,
-        constraints: const BoxConstraints.tightFor(width: 32, height: 32),
-        icon: HugeIcon(
-          icon: isMetadata
-              ? HugeIcons.strokeRoundedMusicNoteSquare01
-              : HugeIcons.strokeRoundedPlaySquare,
-          size: 22,
-          strokeWidth: 1.8,
-        ),
-      ),
-    );
-  }
-}
 
 class MetadataBackfillButton extends ConsumerWidget {
   const MetadataBackfillButton({super.key, required this.items});

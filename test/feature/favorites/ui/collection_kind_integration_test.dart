@@ -6,11 +6,9 @@ import 'package:bilimusic/feature/favorites/domain/favorites_state.dart';
 import 'package:bilimusic/feature/favorites/domain/favorited_season.dart';
 import 'package:bilimusic/feature/favorites/logic/favorite_entry_metadata.dart';
 import 'package:bilimusic/feature/favorites/logic/favorites_controller.dart';
-import 'package:bilimusic/feature/favorites/logic/favorites_view_mode_logic.dart';
 import 'package:bilimusic/feature/favorites/logic/favorited_season_controller.dart';
 import 'package:bilimusic/feature/favorites/ui/components/collection_kind_tag.dart';
 import 'package:bilimusic/feature/favorites/ui/components/desktop/desktop_favorite_collection_items_list.dart';
-import 'package:bilimusic/feature/favorites/ui/components/favorite_collection_items_list.dart';
 import 'package:bilimusic/feature/favorites/ui/components/favorite_collection_kind_selector.dart';
 import 'package:bilimusic/feature/favorites/ui/components/favorite_collection_search_field.dart';
 import 'package:bilimusic/feature/favorites/ui/components/favorites_metadata_toolbar_buttons.dart';
@@ -88,9 +86,6 @@ void main() {
                     ),
                   ),
                 ),
-                favoritesViewModeLogicProvider(
-                  id,
-                ).overrideWithValue(FavoriteListViewMode.metadata),
                 favoriteEntryMetadataProvider(
                   entry.contentId,
                 ).overrideWith((ref) async => null),
@@ -133,25 +128,12 @@ void main() {
               find.byType(FavoriteCollectionSearchField),
               empty ? findsNothing : findsOneWidget,
             );
-            expect(find.byType(MetadataViewModeButton), findsNothing);
             expect(find.byType(MetadataBackfillButton), findsNothing);
             if (id == FavoriteCollection.likedCollectionId) {
               expect(find.text('歌曲'), findsOneWidget);
               expect(find.text('听声'), findsOneWidget);
             }
             if (!empty) {
-              final FavoriteListViewMode mode = desktop
-                  ? tester
-                        .widget<DesktopFavoriteCollectionItemsList>(
-                          find.byType(DesktopFavoriteCollectionItemsList),
-                        )
-                        .viewMode
-                  : tester
-                        .widget<FavoriteCollectionItemsList>(
-                          find.byType(FavoriteCollectionItemsList),
-                        )
-                        .viewMode;
-              expect(mode, FavoriteListViewMode.video);
               if (desktop) {
                 final list = tester.widget<DesktopFavoriteCollectionItemsList>(
                   find.byType(DesktopFavoriteCollectionItemsList),
@@ -182,10 +164,6 @@ void main() {
                   .kind,
               CollectionKind.music,
             );
-            expect(
-              container.read(favoritesViewModeLogicProvider(id)),
-              FavoriteListViewMode.metadata,
-            );
             expect(find.byType(FavoriteCollectionKindSelector), findsNothing);
             expect(find.byType(ListeningContinueButton), findsNothing);
             expect(find.byType(CollectionKindTag), findsOneWidget);
@@ -200,10 +178,6 @@ void main() {
                   .kind,
             );
             expect(
-              find.byType(MetadataViewModeButton),
-              empty ? findsNothing : findsOneWidget,
-            );
-            expect(
               find.byType(MetadataBackfillButton),
               empty ? findsNothing : findsOneWidget,
             );
@@ -211,19 +185,13 @@ void main() {
               final Rect search = tester.getRect(
                 find.byType(FavoriteCollectionSearchField),
               );
-              final Rect view = tester.getRect(
-                find.byType(MetadataViewModeButton),
-              );
               final Rect backfill = tester.getRect(
                 find.byType(MetadataBackfillButton),
               );
-              expect(search.center.dy, view.center.dy);
-              expect(view.center.dy, backfill.center.dy);
-              expect(view.left - search.right, desktop ? 8 : 6);
-              expect(backfill.left - view.right, desktop ? 8 : 2);
+              expect(search.center.dy, backfill.center.dy);
+              expect(backfill.left - search.right, desktop ? 8 : 6);
               await tester.enterText(find.byType(TextField), 'no match');
               await tester.pumpAndSettle();
-              expect(find.byType(MetadataViewModeButton), findsOneWidget);
               expect(find.byType(MetadataBackfillButton), findsOneWidget);
             }
             expect(tester.takeException(), isNull);

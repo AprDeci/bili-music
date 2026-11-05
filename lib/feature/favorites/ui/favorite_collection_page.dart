@@ -14,7 +14,6 @@ import 'package:bilimusic/feature/favorites/logic/favorite_entry_search.dart';
 import 'package:bilimusic/feature/favorites/domain/remote_collection_sync_state.dart';
 import 'package:bilimusic/feature/favorites/logic/remote_collection_sync_controller.dart';
 import 'package:bilimusic/feature/favorites/logic/favorites_controller.dart';
-import 'package:bilimusic/feature/favorites/logic/favorites_view_mode_logic.dart';
 import 'package:bilimusic/feature/favorites/ui/components/collection_kind_tag.dart';
 import 'package:bilimusic/feature/favorites/ui/components/favorite_collection_items_list.dart';
 import 'package:bilimusic/feature/favorites/ui/components/favorite_collection_search_field.dart';
@@ -444,15 +443,6 @@ class _FavoriteCollectionPageState
           ),
           if (!isSpoken) ...<Widget>[
             const SizedBox(width: 6),
-            MetadataViewModeButton(
-              viewMode: ref.watch(
-                favoritesViewModeLogicProvider(collection.id),
-              ),
-              onPressed: () => ref
-                  .read(favoritesViewModeLogicProvider(collection.id).notifier)
-                  .toggle(),
-            ),
-            const SizedBox(width: 2),
             MetadataBackfillButton(items: queueItems),
           ],
         ],
@@ -473,7 +463,6 @@ class _FavoriteCollectionPageState
       selectionMode: _selectionMode,
       onSelectionModeChanged: _setSelectionMode,
       onSelectionChanged: _setSelectedItemIds,
-      viewMode: ref.watch(effectiveFavoritesViewModeProvider(collection.id)),
       onRefresh: collection.isRemote ? _forceSync : null,
       onTapItem: (int itemIndex, FavoriteEntry item) async {
         await _playCollectionItem(
