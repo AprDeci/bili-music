@@ -7,7 +7,6 @@ import 'package:bilimusic/core/bili/session/bili_auth_required_exception.dart';
 import 'package:bilimusic/core/bili/session/bili_session.dart';
 import 'package:bilimusic/core/bili/session/bili_session_controller.dart';
 import 'package:bilimusic/feature/favorites/data/bili_favorites_remote_repository.dart';
-import 'package:bilimusic/feature/favorites/data/favorites_item_id_migration.dart';
 import 'package:bilimusic/feature/favorites/data/favorites_local_repository.dart';
 import 'package:bilimusic/feature/favorites/data/favorites_remote_cache_repository.dart';
 import 'package:bilimusic/feature/favorites/domain/bili_favorite_collection_page.dart';
@@ -926,13 +925,7 @@ class FavoritesController extends _$FavoritesController {
         (FavoriteRemoteResource resource) =>
             _resourceMatchesEntry(resource, entry),
       )) {
-        supported.add(
-          canonicalFavoriteItemId(
-            aid: entry.aid,
-            bvid: entry.bvid,
-            cid: entry.cid,
-          ),
-        );
+        supported.add(entry.itemId);
       }
     }
     return supported;

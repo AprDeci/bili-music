@@ -183,9 +183,18 @@ class FavoritesRemoteCacheRepository {
         }
       }
       final String itemId = existingMembership?.itemId ?? entry.itemId;
-      final FavoriteEntry storedEntry = entry.itemId == itemId
-          ? entry
-          : entry.copyWith(itemId: itemId);
+      final FavoriteEntry? existingEntry = entriesBox.get(itemId);
+      final bool preservePart =
+          entry.cid == null && (existingEntry?.cid ?? 0) > 0;
+      final FavoriteEntry storedEntry = entry.copyWith(
+        itemId: itemId,
+        cid: preservePart ? existingEntry!.cid : entry.cid,
+        page: preservePart ? existingEntry!.page : entry.page,
+        pageTitle: preservePart ? existingEntry!.pageTitle : entry.pageTitle,
+        durationText: preservePart
+            ? existingEntry!.durationText
+            : entry.durationText,
+      );
       entryMap[itemId] = storedEntry;
       final FavoriteMembership membership = FavoriteMembership.create(
         collectionId: collection.id,
