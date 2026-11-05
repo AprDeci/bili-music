@@ -8,7 +8,6 @@ import 'package:bilimusic/core/settings/app_settings_store.dart';
 import 'package:bilimusic/feature/metadata/domain/metadata.dart';
 import 'package:bilimusic/feature/metadata/domain/metadata_state.dart';
 import 'package:bilimusic/feature/metadata/logic/metadata_controller.dart';
-import 'package:bilimusic/feature/player/domain/playback_chapter.dart';
 import 'package:bilimusic/feature/player/domain/playable_item.dart';
 import 'package:bilimusic/feature/player/domain/player_display_info.dart';
 import 'package:bilimusic/feature/player/domain/player_state.dart';
@@ -267,8 +266,54 @@ void main() {
     expect(preview.canToggleSource, isFalse);
   });
 
+  test('single part playback shows the Bilibili display by default', () async {
+    container.listen(playerDisplayProvider, (_, _) {}, fireImmediately: true);
+    final _FakePlayerController player =
+        container.read(playerControllerProvider.notifier)
+            as _FakePlayerController;
+    final _FakeMetadataController metadata =
+        container.read(metadataControllerProvider.notifier)
+            as _FakeMetadataController;
+    final PlayableItem video = _item.copyWith(
+      coverUrl: 'https://example.com/video.jpg',
+    );
+    metadata.show(
+      MetadataState(
+        stableId: video.stableId,
+        metadata: _metadata.copyWith(
+          albumArtUrl: 'https://example.com/album.jpg',
+        ),
+        hasSearched: true,
+      ),
+    );
+    player.showState(PlayerState(currentItem: video));
+    await container.pump();
+
+    final PlayerDisplayInfo single = container.read(playerDisplayProvider);
+    expect(single.title, video.title);
+    expect(single.artist, video.author);
+    expect(single.coverUrl, 'https://example.com/video.jpg');
+    expect(single.source, PlayerDisplaySource.bilibili);
+
+    player.showState(
+      PlayerState(
+        currentItem: video,
+        availableParts: <PlayableItem>[
+          video,
+          video.copyWith(cid: 123, page: 2),
+        ],
+      ),
+    );
+    await container.pump();
+    final PlayerDisplayInfo multi = container.read(playerDisplayProvider);
+    expect(multi.title, 'Song title');
+    expect(multi.artist, 'Song artist');
+    expect(multi.coverUrl, 'https://example.com/album.jpg');
+    expect(multi.source, PlayerDisplaySource.metadata);
+  });
+
   test(
-    'single part playback keeps the video cover over matched artwork',
+    'manual match restores the metadata display for single part items',
     () async {
       container.listen(playerDisplayProvider, (_, _) {}, fireImmediately: true);
       final _FakePlayerController player =
@@ -285,45 +330,18 @@ void main() {
           stableId: video.stableId,
           metadata: _metadata.copyWith(
             albumArtUrl: 'https://example.com/album.jpg',
+            isManualMatch: true,
           ),
           hasSearched: true,
         ),
       );
-      player.show(video);
+      player.showState(PlayerState(currentItem: video));
       await container.pump();
-      expect(
-        container.read(playerDisplayProvider).coverUrl,
-        'https://example.com/video.jpg',
-      );
 
-      player.showState(
-        player.state.copyWith(
-          chapters: const <PlaybackChapter>[
-            PlaybackChapter(start: Duration.zero, title: 'A'),
-            PlaybackChapter(start: Duration(minutes: 2), title: 'B'),
-          ],
-        ),
-      );
-      await container.pump();
-      expect(
-        container.read(playerDisplayProvider).coverUrl,
-        'https://example.com/album.jpg',
-      );
-
-      player.showState(
-        player.state.copyWith(
-          chapters: const <PlaybackChapter>[],
-          availableParts: <PlayableItem>[
-            video,
-            video.copyWith(cid: 123, page: 2),
-          ],
-        ),
-      );
-      await container.pump();
-      expect(
-        container.read(playerDisplayProvider).coverUrl,
-        'https://example.com/album.jpg',
-      );
+      final PlayerDisplayInfo display = container.read(playerDisplayProvider);
+      expect(display.title, 'Song title');
+      expect(display.coverUrl, 'https://example.com/album.jpg');
+      expect(display.source, PlayerDisplaySource.metadata);
     },
   );
 
@@ -347,7 +365,10 @@ void main() {
 
 class _FakePlayerController extends PlayerController {
   @override
-  PlayerState build() => const PlayerState(currentItem: _item);
+  PlayerState build() => PlayerState(
+    currentItem: _item,
+    availableParts: <PlayableItem>[_item, _item.copyWith(cid: 123, page: 2)],
+  );
 
   void show(PlayableItem? item) => state = state.copyWith(currentItem: item);
 

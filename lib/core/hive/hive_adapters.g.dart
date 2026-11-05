@@ -515,6 +515,8 @@ class MetadataAdapter extends TypeAdapter<Metadata> {
       albumArtUrl: fields[5] as String?,
       lyricBaseOffsetMs: fields[8] == null ? 0 : (fields[8] as num).toInt(),
       lyricOffsetMs: fields[6] == null ? 0 : (fields[6] as num).toInt(),
+      isInstrumental: fields[9] == null ? false : fields[9] as bool,
+      isManualMatch: fields[10] == null ? false : fields[10] as bool,
       updatedAt: fields[7] as DateTime?,
     );
   }
@@ -522,7 +524,7 @@ class MetadataAdapter extends TypeAdapter<Metadata> {
   @override
   void write(BinaryWriter writer, Metadata obj) {
     writer
-      ..writeByte(9)
+      ..writeByte(11)
       ..writeByte(0)
       ..write(obj.stableId)
       ..writeByte(1)
@@ -540,7 +542,11 @@ class MetadataAdapter extends TypeAdapter<Metadata> {
       ..writeByte(7)
       ..write(obj.updatedAt)
       ..writeByte(8)
-      ..write(obj.lyricBaseOffsetMs);
+      ..write(obj.lyricBaseOffsetMs)
+      ..writeByte(9)
+      ..write(obj.isInstrumental)
+      ..writeByte(10)
+      ..write(obj.isManualMatch);
   }
 
   @override

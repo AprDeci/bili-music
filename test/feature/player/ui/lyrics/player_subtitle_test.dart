@@ -588,9 +588,10 @@ class _PlayerController extends PlayerController {
   @override
   PlayerState build() => PlayerState(
     currentItem: item,
+    availableParts: <PlayableItem>[item, item.copyWith(cid: 123, page: 2)],
     isReady: true,
-    position: Duration(milliseconds: 1500),
-    duration: Duration(seconds: 15),
+    position: const Duration(milliseconds: 1500),
+    duration: const Duration(seconds: 15),
   );
   void setItem(PlayableItem item) => state = state.copyWith(currentItem: item);
   void setPosition(Duration position) =>

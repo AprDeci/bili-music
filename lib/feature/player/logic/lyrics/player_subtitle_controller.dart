@@ -33,8 +33,7 @@ class PlayerSubtitleController extends _$PlayerSubtitleController {
         (value) => (
           value.currentItem?.stableId,
           value.currentItem?.kind,
-          value.availableParts.length,
-          value.chapters.length,
+          value.isSinglePart,
         ),
       ),
     );
@@ -110,8 +109,7 @@ class PlayerSubtitleController extends _$PlayerSubtitleController {
     if (playerState.currentItem?.stableId != item.stableId) {
       return false;
     }
-    return playerState.availableParts.length <= 1 &&
-        playerState.chapters.isEmpty;
+    return playerState.isSinglePart;
   }
 
   void useMeting() {

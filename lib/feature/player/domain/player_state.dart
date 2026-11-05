@@ -43,6 +43,7 @@ abstract class PlayerState with _$PlayerState {
 
   bool get hasItem => currentItem != null;
   bool get hasError => errorMessage != null && errorMessage!.isNotEmpty;
+  bool get isSinglePart => availableParts.length <= 1 && chapters.isEmpty;
   bool get hasQueue => queue.isNotEmpty;
   bool get hasActiveQueueIndex =>
       currentQueueIndex != null &&

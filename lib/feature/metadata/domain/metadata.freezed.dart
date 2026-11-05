@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$Metadata {
 
- String get stableId; String? get artist; String? get title; String? get lyrics; MetaLyrics? get metaLyrics; String? get albumArtUrl; int get lyricBaseOffsetMs; int get lyricOffsetMs; DateTime? get updatedAt;
+ String get stableId; String? get artist; String? get title; String? get lyrics; MetaLyrics? get metaLyrics; String? get albumArtUrl; int get lyricBaseOffsetMs; int get lyricOffsetMs; bool get isInstrumental; bool get isManualMatch; DateTime? get updatedAt;
 /// Create a copy of Metadata
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -28,16 +28,16 @@ $MetadataCopyWith<Metadata> get copyWith => _$MetadataCopyWithImpl<Metadata>(thi
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is Metadata&&(identical(other.stableId, stableId) || other.stableId == stableId)&&(identical(other.artist, artist) || other.artist == artist)&&(identical(other.title, title) || other.title == title)&&(identical(other.lyrics, lyrics) || other.lyrics == lyrics)&&(identical(other.metaLyrics, metaLyrics) || other.metaLyrics == metaLyrics)&&(identical(other.albumArtUrl, albumArtUrl) || other.albumArtUrl == albumArtUrl)&&(identical(other.lyricBaseOffsetMs, lyricBaseOffsetMs) || other.lyricBaseOffsetMs == lyricBaseOffsetMs)&&(identical(other.lyricOffsetMs, lyricOffsetMs) || other.lyricOffsetMs == lyricOffsetMs)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is Metadata&&(identical(other.stableId, stableId) || other.stableId == stableId)&&(identical(other.artist, artist) || other.artist == artist)&&(identical(other.title, title) || other.title == title)&&(identical(other.lyrics, lyrics) || other.lyrics == lyrics)&&(identical(other.metaLyrics, metaLyrics) || other.metaLyrics == metaLyrics)&&(identical(other.albumArtUrl, albumArtUrl) || other.albumArtUrl == albumArtUrl)&&(identical(other.lyricBaseOffsetMs, lyricBaseOffsetMs) || other.lyricBaseOffsetMs == lyricBaseOffsetMs)&&(identical(other.lyricOffsetMs, lyricOffsetMs) || other.lyricOffsetMs == lyricOffsetMs)&&(identical(other.isInstrumental, isInstrumental) || other.isInstrumental == isInstrumental)&&(identical(other.isManualMatch, isManualMatch) || other.isManualMatch == isManualMatch)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,stableId,artist,title,lyrics,metaLyrics,albumArtUrl,lyricBaseOffsetMs,lyricOffsetMs,updatedAt);
+int get hashCode => Object.hash(runtimeType,stableId,artist,title,lyrics,metaLyrics,albumArtUrl,lyricBaseOffsetMs,lyricOffsetMs,isInstrumental,isManualMatch,updatedAt);
 
 @override
 String toString() {
-  return 'Metadata(stableId: $stableId, artist: $artist, title: $title, lyrics: $lyrics, metaLyrics: $metaLyrics, albumArtUrl: $albumArtUrl, lyricBaseOffsetMs: $lyricBaseOffsetMs, lyricOffsetMs: $lyricOffsetMs, updatedAt: $updatedAt)';
+  return 'Metadata(stableId: $stableId, artist: $artist, title: $title, lyrics: $lyrics, metaLyrics: $metaLyrics, albumArtUrl: $albumArtUrl, lyricBaseOffsetMs: $lyricBaseOffsetMs, lyricOffsetMs: $lyricOffsetMs, isInstrumental: $isInstrumental, isManualMatch: $isManualMatch, updatedAt: $updatedAt)';
 }
 
 
@@ -48,7 +48,7 @@ abstract mixin class $MetadataCopyWith<$Res>  {
   factory $MetadataCopyWith(Metadata value, $Res Function(Metadata) _then) = _$MetadataCopyWithImpl;
 @useResult
 $Res call({
- String stableId, String? artist, String? title, String? lyrics, MetaLyrics? metaLyrics, String? albumArtUrl, int lyricBaseOffsetMs, int lyricOffsetMs, DateTime? updatedAt
+ String stableId, String? artist, String? title, String? lyrics, MetaLyrics? metaLyrics, String? albumArtUrl, int lyricBaseOffsetMs, int lyricOffsetMs, bool isInstrumental, bool isManualMatch, DateTime? updatedAt
 });
 
 
@@ -65,7 +65,7 @@ class _$MetadataCopyWithImpl<$Res>
 
 /// Create a copy of Metadata
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? stableId = null,Object? artist = freezed,Object? title = freezed,Object? lyrics = freezed,Object? metaLyrics = freezed,Object? albumArtUrl = freezed,Object? lyricBaseOffsetMs = null,Object? lyricOffsetMs = null,Object? updatedAt = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? stableId = null,Object? artist = freezed,Object? title = freezed,Object? lyrics = freezed,Object? metaLyrics = freezed,Object? albumArtUrl = freezed,Object? lyricBaseOffsetMs = null,Object? lyricOffsetMs = null,Object? isInstrumental = null,Object? isManualMatch = null,Object? updatedAt = freezed,}) {
   return _then(_self.copyWith(
 stableId: null == stableId ? _self.stableId : stableId // ignore: cast_nullable_to_non_nullable
 as String,artist: freezed == artist ? _self.artist : artist // ignore: cast_nullable_to_non_nullable
@@ -75,7 +75,9 @@ as String?,metaLyrics: freezed == metaLyrics ? _self.metaLyrics : metaLyrics // 
 as MetaLyrics?,albumArtUrl: freezed == albumArtUrl ? _self.albumArtUrl : albumArtUrl // ignore: cast_nullable_to_non_nullable
 as String?,lyricBaseOffsetMs: null == lyricBaseOffsetMs ? _self.lyricBaseOffsetMs : lyricBaseOffsetMs // ignore: cast_nullable_to_non_nullable
 as int,lyricOffsetMs: null == lyricOffsetMs ? _self.lyricOffsetMs : lyricOffsetMs // ignore: cast_nullable_to_non_nullable
-as int,updatedAt: freezed == updatedAt ? _self.updatedAt : updatedAt // ignore: cast_nullable_to_non_nullable
+as int,isInstrumental: null == isInstrumental ? _self.isInstrumental : isInstrumental // ignore: cast_nullable_to_non_nullable
+as bool,isManualMatch: null == isManualMatch ? _self.isManualMatch : isManualMatch // ignore: cast_nullable_to_non_nullable
+as bool,updatedAt: freezed == updatedAt ? _self.updatedAt : updatedAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,
   ));
 }
@@ -173,10 +175,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String stableId,  String? artist,  String? title,  String? lyrics,  MetaLyrics? metaLyrics,  String? albumArtUrl,  int lyricBaseOffsetMs,  int lyricOffsetMs,  DateTime? updatedAt)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String stableId,  String? artist,  String? title,  String? lyrics,  MetaLyrics? metaLyrics,  String? albumArtUrl,  int lyricBaseOffsetMs,  int lyricOffsetMs,  bool isInstrumental,  bool isManualMatch,  DateTime? updatedAt)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _Metadata() when $default != null:
-return $default(_that.stableId,_that.artist,_that.title,_that.lyrics,_that.metaLyrics,_that.albumArtUrl,_that.lyricBaseOffsetMs,_that.lyricOffsetMs,_that.updatedAt);case _:
+return $default(_that.stableId,_that.artist,_that.title,_that.lyrics,_that.metaLyrics,_that.albumArtUrl,_that.lyricBaseOffsetMs,_that.lyricOffsetMs,_that.isInstrumental,_that.isManualMatch,_that.updatedAt);case _:
   return orElse();
 
 }
@@ -194,10 +196,10 @@ return $default(_that.stableId,_that.artist,_that.title,_that.lyrics,_that.metaL
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String stableId,  String? artist,  String? title,  String? lyrics,  MetaLyrics? metaLyrics,  String? albumArtUrl,  int lyricBaseOffsetMs,  int lyricOffsetMs,  DateTime? updatedAt)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String stableId,  String? artist,  String? title,  String? lyrics,  MetaLyrics? metaLyrics,  String? albumArtUrl,  int lyricBaseOffsetMs,  int lyricOffsetMs,  bool isInstrumental,  bool isManualMatch,  DateTime? updatedAt)  $default,) {final _that = this;
 switch (_that) {
 case _Metadata():
-return $default(_that.stableId,_that.artist,_that.title,_that.lyrics,_that.metaLyrics,_that.albumArtUrl,_that.lyricBaseOffsetMs,_that.lyricOffsetMs,_that.updatedAt);case _:
+return $default(_that.stableId,_that.artist,_that.title,_that.lyrics,_that.metaLyrics,_that.albumArtUrl,_that.lyricBaseOffsetMs,_that.lyricOffsetMs,_that.isInstrumental,_that.isManualMatch,_that.updatedAt);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -214,10 +216,10 @@ return $default(_that.stableId,_that.artist,_that.title,_that.lyrics,_that.metaL
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String stableId,  String? artist,  String? title,  String? lyrics,  MetaLyrics? metaLyrics,  String? albumArtUrl,  int lyricBaseOffsetMs,  int lyricOffsetMs,  DateTime? updatedAt)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String stableId,  String? artist,  String? title,  String? lyrics,  MetaLyrics? metaLyrics,  String? albumArtUrl,  int lyricBaseOffsetMs,  int lyricOffsetMs,  bool isInstrumental,  bool isManualMatch,  DateTime? updatedAt)?  $default,) {final _that = this;
 switch (_that) {
 case _Metadata() when $default != null:
-return $default(_that.stableId,_that.artist,_that.title,_that.lyrics,_that.metaLyrics,_that.albumArtUrl,_that.lyricBaseOffsetMs,_that.lyricOffsetMs,_that.updatedAt);case _:
+return $default(_that.stableId,_that.artist,_that.title,_that.lyrics,_that.metaLyrics,_that.albumArtUrl,_that.lyricBaseOffsetMs,_that.lyricOffsetMs,_that.isInstrumental,_that.isManualMatch,_that.updatedAt);case _:
   return null;
 
 }
@@ -229,7 +231,7 @@ return $default(_that.stableId,_that.artist,_that.title,_that.lyrics,_that.metaL
 @JsonSerializable()
 
 class _Metadata extends Metadata {
-  const _Metadata({required this.stableId, this.artist, this.title, this.lyrics, this.metaLyrics, this.albumArtUrl, this.lyricBaseOffsetMs = 0, this.lyricOffsetMs = 0, this.updatedAt}): super._();
+  const _Metadata({required this.stableId, this.artist, this.title, this.lyrics, this.metaLyrics, this.albumArtUrl, this.lyricBaseOffsetMs = 0, this.lyricOffsetMs = 0, this.isInstrumental = false, this.isManualMatch = false, this.updatedAt}): super._();
   factory _Metadata.fromJson(Map<String, dynamic> json) => _$MetadataFromJson(json);
 
 @override final  String stableId;
@@ -240,6 +242,8 @@ class _Metadata extends Metadata {
 @override final  String? albumArtUrl;
 @override@JsonKey() final  int lyricBaseOffsetMs;
 @override@JsonKey() final  int lyricOffsetMs;
+@override@JsonKey() final  bool isInstrumental;
+@override@JsonKey() final  bool isManualMatch;
 @override final  DateTime? updatedAt;
 
 /// Create a copy of Metadata
@@ -255,16 +259,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Metadata&&(identical(other.stableId, stableId) || other.stableId == stableId)&&(identical(other.artist, artist) || other.artist == artist)&&(identical(other.title, title) || other.title == title)&&(identical(other.lyrics, lyrics) || other.lyrics == lyrics)&&(identical(other.metaLyrics, metaLyrics) || other.metaLyrics == metaLyrics)&&(identical(other.albumArtUrl, albumArtUrl) || other.albumArtUrl == albumArtUrl)&&(identical(other.lyricBaseOffsetMs, lyricBaseOffsetMs) || other.lyricBaseOffsetMs == lyricBaseOffsetMs)&&(identical(other.lyricOffsetMs, lyricOffsetMs) || other.lyricOffsetMs == lyricOffsetMs)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Metadata&&(identical(other.stableId, stableId) || other.stableId == stableId)&&(identical(other.artist, artist) || other.artist == artist)&&(identical(other.title, title) || other.title == title)&&(identical(other.lyrics, lyrics) || other.lyrics == lyrics)&&(identical(other.metaLyrics, metaLyrics) || other.metaLyrics == metaLyrics)&&(identical(other.albumArtUrl, albumArtUrl) || other.albumArtUrl == albumArtUrl)&&(identical(other.lyricBaseOffsetMs, lyricBaseOffsetMs) || other.lyricBaseOffsetMs == lyricBaseOffsetMs)&&(identical(other.lyricOffsetMs, lyricOffsetMs) || other.lyricOffsetMs == lyricOffsetMs)&&(identical(other.isInstrumental, isInstrumental) || other.isInstrumental == isInstrumental)&&(identical(other.isManualMatch, isManualMatch) || other.isManualMatch == isManualMatch)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,stableId,artist,title,lyrics,metaLyrics,albumArtUrl,lyricBaseOffsetMs,lyricOffsetMs,updatedAt);
+int get hashCode => Object.hash(runtimeType,stableId,artist,title,lyrics,metaLyrics,albumArtUrl,lyricBaseOffsetMs,lyricOffsetMs,isInstrumental,isManualMatch,updatedAt);
 
 @override
 String toString() {
-  return 'Metadata(stableId: $stableId, artist: $artist, title: $title, lyrics: $lyrics, metaLyrics: $metaLyrics, albumArtUrl: $albumArtUrl, lyricBaseOffsetMs: $lyricBaseOffsetMs, lyricOffsetMs: $lyricOffsetMs, updatedAt: $updatedAt)';
+  return 'Metadata(stableId: $stableId, artist: $artist, title: $title, lyrics: $lyrics, metaLyrics: $metaLyrics, albumArtUrl: $albumArtUrl, lyricBaseOffsetMs: $lyricBaseOffsetMs, lyricOffsetMs: $lyricOffsetMs, isInstrumental: $isInstrumental, isManualMatch: $isManualMatch, updatedAt: $updatedAt)';
 }
 
 
@@ -275,7 +279,7 @@ abstract mixin class _$MetadataCopyWith<$Res> implements $MetadataCopyWith<$Res>
   factory _$MetadataCopyWith(_Metadata value, $Res Function(_Metadata) _then) = __$MetadataCopyWithImpl;
 @override @useResult
 $Res call({
- String stableId, String? artist, String? title, String? lyrics, MetaLyrics? metaLyrics, String? albumArtUrl, int lyricBaseOffsetMs, int lyricOffsetMs, DateTime? updatedAt
+ String stableId, String? artist, String? title, String? lyrics, MetaLyrics? metaLyrics, String? albumArtUrl, int lyricBaseOffsetMs, int lyricOffsetMs, bool isInstrumental, bool isManualMatch, DateTime? updatedAt
 });
 
 
@@ -292,7 +296,7 @@ class __$MetadataCopyWithImpl<$Res>
 
 /// Create a copy of Metadata
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? stableId = null,Object? artist = freezed,Object? title = freezed,Object? lyrics = freezed,Object? metaLyrics = freezed,Object? albumArtUrl = freezed,Object? lyricBaseOffsetMs = null,Object? lyricOffsetMs = null,Object? updatedAt = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? stableId = null,Object? artist = freezed,Object? title = freezed,Object? lyrics = freezed,Object? metaLyrics = freezed,Object? albumArtUrl = freezed,Object? lyricBaseOffsetMs = null,Object? lyricOffsetMs = null,Object? isInstrumental = null,Object? isManualMatch = null,Object? updatedAt = freezed,}) {
   return _then(_Metadata(
 stableId: null == stableId ? _self.stableId : stableId // ignore: cast_nullable_to_non_nullable
 as String,artist: freezed == artist ? _self.artist : artist // ignore: cast_nullable_to_non_nullable
@@ -302,7 +306,9 @@ as String?,metaLyrics: freezed == metaLyrics ? _self.metaLyrics : metaLyrics // 
 as MetaLyrics?,albumArtUrl: freezed == albumArtUrl ? _self.albumArtUrl : albumArtUrl // ignore: cast_nullable_to_non_nullable
 as String?,lyricBaseOffsetMs: null == lyricBaseOffsetMs ? _self.lyricBaseOffsetMs : lyricBaseOffsetMs // ignore: cast_nullable_to_non_nullable
 as int,lyricOffsetMs: null == lyricOffsetMs ? _self.lyricOffsetMs : lyricOffsetMs // ignore: cast_nullable_to_non_nullable
-as int,updatedAt: freezed == updatedAt ? _self.updatedAt : updatedAt // ignore: cast_nullable_to_non_nullable
+as int,isInstrumental: null == isInstrumental ? _self.isInstrumental : isInstrumental // ignore: cast_nullable_to_non_nullable
+as bool,isManualMatch: null == isManualMatch ? _self.isManualMatch : isManualMatch // ignore: cast_nullable_to_non_nullable
+as bool,updatedAt: freezed == updatedAt ? _self.updatedAt : updatedAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,
   ));
 }

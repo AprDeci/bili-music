@@ -30,21 +30,23 @@ PlayerDisplayInfo playerDisplay(Ref ref) {
       (state) => (stableId: state.stableId, metadata: state.metadata),
     ),
   );
+  final Metadata? matched = metadata.stableId == item?.stableId
+      ? metadata.metadata
+      : null;
+  final bool singlePart = ref.watch(
+    playerControllerProvider.select((state) => state.isSinglePart),
+  );
+  final bool preferMetadata =
+      !singlePart && ref.watch(playerDisplaySettingsLogicProvider);
   final PlayerDisplaySource source =
       ref.watch(playerDisplaySourceLogicProvider) ??
-      (ref.watch(playerDisplaySettingsLogicProvider)
+      ((matched?.isManualMatch ?? false) || preferMetadata
           ? PlayerDisplaySource.metadata
           : PlayerDisplaySource.bilibili);
-  final bool preferVideoCover = ref.watch(
-    playerControllerProvider.select(
-      (state) => state.availableParts.length <= 1 && state.chapters.isEmpty,
-    ),
-  );
   return resolvePlayerDisplayInfo(
     item: item,
-    metadata: metadata.stableId == item?.stableId ? metadata.metadata : null,
+    metadata: matched,
     source: source,
-    preferVideoCover: preferVideoCover,
   );
 }
 

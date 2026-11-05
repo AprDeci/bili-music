@@ -10,6 +10,7 @@ import 'package:bilimusic/feature/player/ui/lyrics/player_subtitle_document.dart
 import 'package:bilimusic/feature/player/ui/lyrics/player_subtitle_sheet.dart';
 import 'package:bilimusic/feature/player/domain/playable_item.dart';
 import 'package:bilimusic/feature/player/domain/player_state.dart';
+import 'package:bilimusic/feature/player/logic/lyrics/lyric_source_policy.dart';
 import 'package:bilimusic/feature/player/logic/lyrics/player_lyric_settings_logic.dart';
 import 'package:bilimusic/feature/player/logic/display/player_display_metadata.dart';
 import 'package:bilimusic/feature/player/ui/lyrics/player_lyric_style.dart';
@@ -170,6 +171,64 @@ class _PlayerLyricPanelState extends ConsumerState<PlayerLyricPanel> {
 
     if (!item.isSpoken &&
         !useSubtitles &&
+        !_allowsMetingLyrics(item, metadataState, subtitles)) {
+      if (subtitleLoading) {
+        return _PlayerLyricPanelStatus(
+          key: ValueKey<String>('subtitle-loading-$itemKey'),
+          variant: widget.variant,
+          title: '正在加载字幕',
+          message: '正在获取当前视频的 AI 字幕。',
+          icon: Icons.subtitles_outlined,
+          isLoading: true,
+        );
+      }
+      if (subtitleError != null) {
+        return _PlayerLyricPanelStatus(
+          key: ValueKey<String>('subtitle-error-$itemKey'),
+          variant: widget.variant,
+          title: '字幕加载失败',
+          message: subtitleError,
+          icon: Icons.error_outline_rounded,
+          actionLabel: subtitles.hasTracks ? '选择字幕' : '重试',
+          onAction: () => _retrySubtitles(context, itemKey),
+        );
+      }
+      if (metadataState.stableId == item.stableId && metadataState.isLoading) {
+        return _PlayerLyricPanelStatus(
+          key: ValueKey<String>('loading-single-part-$itemKey'),
+          variant: widget.variant,
+          title: '正在确认歌词',
+          message: '正在检查当前视频是否有可用字幕与歌词。',
+          icon: Icons.lyrics_outlined,
+          isLoading: true,
+        );
+      }
+      final bool instrumental =
+          (metadataState.metadata?.isInstrumental ?? false) ||
+          looksLikeInstrumental(
+            title: item.title,
+            description: item.description,
+          );
+      if (instrumental) {
+        return _PlayerLyricPanelStatus(
+          key: ValueKey<String>('instrumental-$itemKey'),
+          variant: widget.variant,
+          title: '纯音乐，请欣赏',
+          message: '当前视频没有字幕，匹配到的歌曲也没有歌词。',
+          icon: Icons.music_note_outlined,
+        );
+      }
+      return _PlayerLyricPanelStatus(
+        key: ValueKey<String>('no-subtitle-lyrics-$itemKey'),
+        variant: widget.variant,
+        title: '未找到对应的歌词',
+        message: '可试试「手动匹配歌词」，或稍后重试。',
+        icon: Icons.lyrics_outlined,
+      );
+    }
+
+    if (!item.isSpoken &&
+        !useSubtitles &&
         metadataState.stableId != item.stableId) {
       return _PlayerLyricPanelStatus(
         key: ValueKey<String>('preparing-$itemKey'),
@@ -264,6 +323,19 @@ class _PlayerLyricPanelState extends ConsumerState<PlayerLyricPanel> {
       title: '当前视频没有可用歌词|字幕',
       message: '可稍后重试或切换播放内容。',
       icon: Icons.lyrics_outlined,
+    );
+  }
+
+  bool _allowsMetingLyrics(
+    PlayableItem item,
+    MetadataState metadataState,
+    PlayerSubtitleState subtitles,
+  ) {
+    return allowsMetingLyrics(
+      singlePart: widget.state.isSinglePart,
+      hasSubtitleTracks:
+          subtitles.stableId == item.stableId && subtitles.hasTracks,
+      manualMatch: metadataState.metadata?.isManualMatch ?? false,
     );
   }
 

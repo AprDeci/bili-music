@@ -1501,12 +1501,13 @@ class _FakePlayerController extends PlayerController {
   final List<Duration> lyricSeeks = <Duration>[];
 
   @override
-  PlayerState build() => const PlayerState(
+  PlayerState build() => PlayerState(
     currentItem: _item,
+    availableParts: <PlayableItem>[_item, _item.copyWith(cid: 123, page: 2)],
     queue: <PlayableItem>[_item],
     currentQueueIndex: 0,
     isReady: true,
-    duration: Duration(minutes: 3),
+    duration: const Duration(minutes: 3),
   );
 
   void show(PlayerState value) => state = value;

@@ -15,6 +15,8 @@ abstract class Metadata with _$Metadata {
     String? albumArtUrl,
     @Default(0) int lyricBaseOffsetMs,
     @Default(0) int lyricOffsetMs,
+    @Default(false) bool isInstrumental,
+    @Default(false) bool isManualMatch,
     DateTime? updatedAt,
   }) = _Metadata;
 

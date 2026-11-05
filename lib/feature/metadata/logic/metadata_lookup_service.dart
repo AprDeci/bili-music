@@ -61,11 +61,14 @@ class MetadataLookupService {
       server: resolveServer(keyword),
     );
     checkActive();
+    MetingSearchItem? instrumentalItem;
     for (final MetingSearchItem result in results) {
       checkActive();
-      final MetaLyrics? metaLyrics = normalizeMetaLyrics(
-        await _fetchLyricsOrNull(result),
-      );
+      final MetaLyrics? rawLyrics = await _fetchLyricsOrNull(result);
+      final bool instrumental = isInstrumentalLyrics(rawLyrics?.lyric);
+      final MetaLyrics? metaLyrics = instrumental
+          ? null
+          : normalizeMetaLyrics(rawLyrics);
       checkActive();
       if (metaLyrics != null && metaLyrics.hasRenderableMainLyric) {
         return MetadataLookupResult(
@@ -79,6 +82,23 @@ class MetadataLookupService {
           searchResults: results,
         );
       }
+      if (instrumental) {
+        instrumentalItem ??= result;
+      }
+    }
+
+    if (instrumentalItem != null) {
+      final Metadata metadata = await buildMetadata(
+        item: item,
+        searchItem: instrumentalItem,
+        metaLyrics: null,
+        isActive: isActive,
+      );
+      return MetadataLookupResult(
+        metadata: metadata.copyWith(isInstrumental: true),
+        searchKeyword: fallbackKeyword,
+        searchResults: results,
+      );
     }
 
     return MetadataLookupResult(
@@ -86,6 +106,14 @@ class MetadataLookupService {
       searchKeyword: fallbackKeyword,
       searchResults: const <MetingSearchItem>[],
     );
+  }
+
+  bool isInstrumentalLyrics(String? lyric) {
+    final String text = lyric?.trim() ?? '';
+    if (text.isEmpty || text.contains('[')) {
+      return false;
+    }
+    return text.contains('纯音乐');
   }
 
   Future<Metadata> buildMetadataFromSearchItem({

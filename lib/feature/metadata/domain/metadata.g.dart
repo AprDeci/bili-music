@@ -17,6 +17,8 @@ _Metadata _$MetadataFromJson(Map<String, dynamic> json) => _Metadata(
   albumArtUrl: json['albumArtUrl'] as String?,
   lyricBaseOffsetMs: (json['lyricBaseOffsetMs'] as num?)?.toInt() ?? 0,
   lyricOffsetMs: (json['lyricOffsetMs'] as num?)?.toInt() ?? 0,
+  isInstrumental: json['isInstrumental'] as bool? ?? false,
+  isManualMatch: json['isManualMatch'] as bool? ?? false,
   updatedAt: json['updatedAt'] == null
       ? null
       : DateTime.parse(json['updatedAt'] as String),
@@ -31,5 +33,7 @@ Map<String, dynamic> _$MetadataToJson(_Metadata instance) => <String, dynamic>{
   'albumArtUrl': instance.albumArtUrl,
   'lyricBaseOffsetMs': instance.lyricBaseOffsetMs,
   'lyricOffsetMs': instance.lyricOffsetMs,
+  'isInstrumental': instance.isInstrumental,
+  'isManualMatch': instance.isManualMatch,
   'updatedAt': instance.updatedAt?.toIso8601String(),
 };

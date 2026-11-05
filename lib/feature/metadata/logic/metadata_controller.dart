@@ -204,7 +204,10 @@ class MetadataController extends _$MetadataController {
       if (!_isActiveRequest(requestGeneration, currentItem, context)) {
         return;
       }
-      final Metadata withOffset = _withChapterOffset(metadata, context);
+      final Metadata withOffset = _withChapterOffset(
+        metadata.copyWith(isManualMatch: true),
+        context,
+      );
       state = state.copyWith(
         metadata: withOffset,
         errorMessage: null,

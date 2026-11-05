@@ -50,6 +50,10 @@ const AudioStreamInfo _stream = AudioStreamInfo(
 PlayerState _playingItem({bool hasStream = true}) => PlayerState(
   currentItem: _item,
   audioStream: hasStream ? _stream : null,
+  availableParts: <PlayableItem>[
+    _item,
+    _item.copyWith(cid: 1, page: 2, title: 'Second part'),
+  ],
   queue: <PlayableItem>[_item, _nextItem],
   currentQueueIndex: 0,
   queueSourceLabel: 'Favorites',
@@ -95,6 +99,20 @@ void main() {
       expect(items.last.displayDescription, 'Part title · 192K');
     }
   });
+
+  test(
+    'single part playback keeps the Bilibili display for the session',
+    () async {
+      final _SessionHarness session = _SessionHarness();
+      addTearDown(session.container.dispose);
+      session.metadata.show(_metadata);
+      session.player.show(
+        _playingItem().copyWith(availableParts: const <PlayableItem>[]),
+      );
+      await session.container.pump();
+      session.expectCurrent(_item.title, _item.author, _item.coverUrl);
+    },
+  );
 
   test('both mappings reject another track display and keep duration', () {
     final PlayerDisplayInfo staleDisplay = resolvePlayerDisplayInfo(
@@ -178,7 +196,7 @@ void main() {
       session.expectCurrent(
         _metadata.title!,
         _metadata.artist!,
-        _item.coverUrl,
+        _metadata.albumArtUrl!,
       );
       expect(session.handler.queue.value.last.title, _nextItem.title);
 
@@ -216,7 +234,7 @@ void main() {
       session.expectCurrent(
         _metadata.title!,
         _metadata.artist!,
-        _item.coverUrl,
+        _metadata.albumArtUrl!,
       );
       expect(session.handler.playbackState.value, same(paused));
     },
@@ -270,7 +288,11 @@ void main() {
           ),
         );
         await session.container.pump();
-        session.expectCurrent('Next song', 'Next artist', _item.coverUrl);
+        session.expectCurrent(
+          'Next song',
+          'Next artist',
+          _metadata.albumArtUrl!,
+        );
         session.container
             .read(playerDisplaySourceLogicProvider.notifier)
             .toggle();
@@ -302,7 +324,7 @@ void main() {
       session.expectCurrent(
         _metadata.title!,
         _metadata.artist!,
-        _item.coverUrl,
+        _metadata.albumArtUrl!,
       );
       expect(session.handler.playbackState.value, same(loading));
 
@@ -310,7 +332,11 @@ void main() {
         _metadata.copyWith(title: 'Manual match', artist: 'Manual artist'),
       );
       await session.container.pump();
-      session.expectCurrent('Manual match', 'Manual artist', _item.coverUrl);
+      session.expectCurrent(
+        'Manual match',
+        'Manual artist',
+        _metadata.albumArtUrl!,
+      );
       expect(session.handler.playbackState.value, same(loading));
 
       session.player.show(_playingItem());
@@ -319,7 +345,11 @@ void main() {
         session.handler.mediaItem.value?.displayDescription,
         'Part title · 192K',
       );
-      session.expectCurrent('Manual match', 'Manual artist', _item.coverUrl);
+      session.expectCurrent(
+        'Manual match',
+        'Manual artist',
+        _metadata.albumArtUrl!,
+      );
     },
   );
 
@@ -361,7 +391,7 @@ void main() {
       session.expectCurrent(
         _metadata.title!,
         _metadata.artist!,
-        _item.coverUrl,
+        _metadata.albumArtUrl!,
       );
 
       session.player.show(const PlayerState());

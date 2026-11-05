@@ -184,6 +184,17 @@ void main() {
     },
   );
 
+  test('manual match marks the metadata for the lyric policy', () async {
+    final fixture = _Fixture(_music);
+    fixture.controller;
+    await fixture.flush();
+    fixture.lookup.manual = (_) async => _metadata;
+    await fixture.controller.applyManualResult(_searchItem);
+    final state = fixture.container.read(metadataControllerProvider);
+    expect(state.metadata?.isManualMatch, isTrue);
+    expect(state.metadata?.title, 'Music title');
+  });
+
   test(
     'backfill skips spoken before cache reads and only queues music',
     () async {

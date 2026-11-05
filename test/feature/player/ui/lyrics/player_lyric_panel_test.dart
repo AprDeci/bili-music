@@ -444,7 +444,13 @@ void main() {
             body: ValueListenableBuilder<bool>(
               valueListenable: active,
               builder: (context, isActive, _) => PlayerLyricPage(
-                state: const PlayerState(isReady: true),
+                state: PlayerState(
+                  availableParts: <PlayableItem>[
+                    _item,
+                    _item.copyWith(cid: 123, page: 2),
+                  ],
+                  isReady: true,
+                ),
                 item: _item,
                 isActive: isActive,
                 onSeek: (_) {},
@@ -805,6 +811,82 @@ void main() {
     expect(controller.document, isNull);
     expect(find.text('当前视频没有可用歌词|字幕'), findsOneWidget);
   });
+
+  testWidgets(
+    'single part music without subtitles does not fall back to Meting',
+    (tester) async {
+      await _pumpPanel(tester, singlePart: true);
+      expect(find.byType(LyricView), findsNothing);
+      expect(find.text('未找到对应的歌词'), findsOneWidget);
+    },
+  );
+
+  testWidgets('single part instrumental music shows the instrumental status', (
+    tester,
+  ) async {
+    await _pumpPanel(tester, singlePart: true);
+    final ProviderContainer container = ProviderScope.containerOf(
+      tester.element(find.byType(PlayerLyricPanel)),
+    );
+    (container.read(metadataControllerProvider.notifier) as _MetadataController)
+        .show(Metadata(stableId: _item.stableId, isInstrumental: true));
+    await tester.pump();
+    expect(find.byType(LyricView), findsNothing);
+    expect(find.text('纯音乐，请欣赏'), findsOneWidget);
+  });
+
+  testWidgets('single part pure music titles show the instrumental status', (
+    tester,
+  ) async {
+    await _pumpPanel(
+      tester,
+      singlePart: true,
+      item: _item.copyWith(title: '助眠纯音乐合集'),
+    );
+    expect(find.text('纯音乐，请欣赏'), findsOneWidget);
+    expect(find.text('未找到对应的歌词'), findsNothing);
+  });
+
+  testWidgets('single part music still shows a manually matched lyric', (
+    tester,
+  ) async {
+    await _pumpPanel(tester, singlePart: true);
+    final ProviderContainer container = ProviderScope.containerOf(
+      tester.element(find.byType(PlayerLyricPanel)),
+    );
+    (container.read(metadataControllerProvider.notifier) as _MetadataController)
+        .show(
+          Metadata(
+            stableId: _item.stableId,
+            isManualMatch: true,
+            metaLyrics: const MetaLyrics(lyric: _lyrics),
+          ),
+        );
+    await tester.pump();
+    expect(find.text('未找到对应的歌词'), findsNothing);
+    expect(find.byType(LyricView), findsOneWidget);
+  });
+
+  testWidgets('single part music keeps Meting when the video has subtitles', (
+    tester,
+  ) async {
+    await _pumpPanel(tester, singlePart: true);
+    final ProviderContainer container = ProviderScope.containerOf(
+      tester.element(find.byType(PlayerLyricPanel)),
+    );
+    final _NoSubtitles subtitles =
+        container.read(playerSubtitleControllerProvider.notifier)
+            as _NoSubtitles;
+    subtitles.setSubtitles(
+      PlayerSubtitleState(
+        stableId: _item.stableId,
+        tracks: const <BiliSubtitleTrack>[_subtitleTrack],
+      ),
+    );
+    await tester.pump();
+    expect(find.byType(LyricView), findsOneWidget);
+    expect(find.text('未找到对应的歌词'), findsNothing);
+  });
 }
 
 Future<void> _pumpPanel(
@@ -814,6 +896,7 @@ Future<void> _pumpPanel(
   Duration position = const Duration(seconds: 2),
   bool showTranslation = true,
   bool useAiSubtitles = false,
+  bool singlePart = false,
   bool isActive = true,
   bool isPlaying = false,
   bool isBuffering = false,
@@ -850,6 +933,12 @@ Future<void> _pumpPanel(
                   height: 500,
                   child: PlayerLyricPanel(
                     state: PlayerState(
+                      availableParts: singlePart
+                          ? const <PlayableItem>[]
+                          : <PlayableItem>[
+                              _item,
+                              _item.copyWith(cid: 123, page: 2),
+                            ],
                       position: position,
                       duration: const Duration(seconds: 15),
                       isReady: true,
@@ -933,6 +1022,12 @@ class _MetadataController extends MetadataController {
   );
 
   void clearLyrics() => state = MetadataState(stableId: _item.stableId);
+
+  void show(Metadata value) => state = MetadataState(
+    stableId: _item.stableId,
+    metadata: value,
+    hasSearched: true,
+  );
 
   void failLyrics() => state = MetadataState(
     stableId: _item.stableId,

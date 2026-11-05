@@ -79,6 +79,80 @@ void main() {
       expect(result.metadata.hasContent, isFalse);
     });
 
+    test('marks an instrumental match when no lyric is renderable', () async {
+      final MetadataLookupService service = _service(
+        searchRequest:
+            ({
+              required MetingServer server,
+              required String keyword,
+              required Map<String, dynamic> option,
+            }) async {
+              return jsonEncode(<Map<String, dynamic>>[
+                <String, dynamic>{
+                  'id': '1',
+                  'name': 'Piano',
+                  'artist': <String>['Someone'],
+                  'lyric_id': '1',
+                },
+              ]);
+            },
+        lyricRequest:
+            ({required MetingServer server, required String id}) async {
+              return jsonEncode(<String, dynamic>{'lyric': '纯音乐，请欣赏'});
+            },
+      );
+
+      final MetadataLookupResult result = await service.lookup(
+        item: _item(),
+        title: 'Piano',
+      );
+
+      expect(result.metadata.isInstrumental, isTrue);
+      expect(result.metadata.hasLyrics, isFalse);
+      expect(result.metadata.title, 'Piano');
+    });
+
+    test('ignores the instrumental marker once a real lyric exists', () async {
+      final MetadataLookupService service = _service(
+        searchRequest:
+            ({
+              required MetingServer server,
+              required String keyword,
+              required Map<String, dynamic> option,
+            }) async {
+              return jsonEncode(<Map<String, dynamic>>[
+                <String, dynamic>{
+                  'id': '1',
+                  'name': 'Piano',
+                  'artist': <String>['Someone'],
+                  'lyric_id': '1',
+                },
+                <String, dynamic>{
+                  'id': '2',
+                  'name': 'Song',
+                  'artist': <String>['Singer'],
+                  'lyric_id': '2',
+                },
+              ]);
+            },
+        lyricRequest:
+            ({required MetingServer server, required String id}) async {
+              return jsonEncode(<String, dynamic>{
+                'lyric': id == '1' ? '纯音乐，请欣赏' : '[00:00.000] lyric line',
+              });
+            },
+      );
+
+      final MetadataLookupResult result = await service.lookup(
+        item: _item(),
+        title: 'Piano',
+      );
+
+      expect(result.metadata.isInstrumental, isFalse);
+      expect(result.metadata.hasLyrics, isTrue);
+      expect(result.metadata.title, 'Song');
+    });
+
     test('inactive search does not start lyrics or picture fetches', () async {
       final pending = Completer<Object?>();
       int lyricCalls = 0;
