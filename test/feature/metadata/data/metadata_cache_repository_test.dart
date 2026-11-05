@@ -42,6 +42,16 @@ void main() {
     );
   });
 
+  test('chapter metadata uses a chapter scoped cache key', () {
+    final PlayableItem item = _item(cid: 10, page: null);
+
+    expect(
+      repository.buildCacheKey(item: item, chapterStartMs: 120000),
+      'metadata:bvid:BV1:page:1:chapter@120000',
+    );
+    expect(repository.buildCacheKey(item: item), 'metadata:bvid:BV1:page:1');
+  });
+
   test('reads metadata after cid is lost and normalizes stable id', () async {
     final PlayableItem withCid = _item(cid: 10, page: null);
     final PlayableItem withoutCid = _item(cid: null, page: 1);

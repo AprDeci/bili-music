@@ -56,5 +56,8 @@ String? resolveDisplayTranslationLyrics(Metadata? metadata) {
 }
 
 int resolveDisplayLyricOffsetMs(Metadata? metadata) {
-  return metadata?.lyricOffsetMs ?? 0;
+  if (metadata == null) {
+    return 0;
+  }
+  return metadata.lyricBaseOffsetMs + metadata.lyricOffsetMs;
 }

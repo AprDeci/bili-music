@@ -17,20 +17,30 @@ class MetadataCacheRepository {
 
   final LazyBox<Metadata> _box;
 
-  String buildCacheKey({required PlayableItem item}) {
-    return buildContentCacheKey(item.contentId);
+  String buildCacheKey({required PlayableItem item, int? chapterStartMs}) {
+    return buildContentCacheKey(item.contentId, chapterStartMs: chapterStartMs);
   }
 
-  String buildContentCacheKey(String contentId) {
-    return 'metadata:$contentId';
+  String buildContentCacheKey(String contentId, {int? chapterStartMs}) {
+    final String base = 'metadata:$contentId';
+    if (chapterStartMs == null) {
+      return base;
+    }
+    return '$base:chapter@$chapterStartMs';
   }
 
   Future<Metadata?> getCachedMetadataByContentId(String contentId) {
     return _box.get(buildContentCacheKey(contentId));
   }
 
-  Future<Metadata?> getCachedMetadata({required PlayableItem item}) async {
-    final String key = buildCacheKey(item: item);
+  Future<Metadata?> getCachedMetadata({
+    required PlayableItem item,
+    int? chapterStartMs,
+  }) async {
+    final String key = buildCacheKey(
+      item: item,
+      chapterStartMs: chapterStartMs,
+    );
     final Metadata? metadata = await _box.get(key);
     if (metadata == null) {
       return null;
@@ -42,9 +52,10 @@ class MetadataCacheRepository {
   Future<void> putCachedMetadata({
     required PlayableItem item,
     required Metadata metadata,
+    int? chapterStartMs,
   }) async {
     await _box.put(
-      buildCacheKey(item: item),
+      buildCacheKey(item: item, chapterStartMs: chapterStartMs),
       metadata.copyWith(
         stableId: item.stableId,
         updatedAt: metadata.updatedAt ?? DateTime.now(),
@@ -52,8 +63,13 @@ class MetadataCacheRepository {
     );
   }
 
-  Future<void> removeCachedMetadata({required PlayableItem item}) {
-    return _box.delete(buildCacheKey(item: item));
+  Future<void> removeCachedMetadata({
+    required PlayableItem item,
+    int? chapterStartMs,
+  }) {
+    return _box.delete(
+      buildCacheKey(item: item, chapterStartMs: chapterStartMs),
+    );
   }
 
   Future<void> clear() {

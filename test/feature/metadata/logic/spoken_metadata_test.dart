@@ -265,7 +265,10 @@ class _Cache implements MetadataCacheRepository {
   final List<PlayableItem> writes = [];
   Future<Metadata?> Function(PlayableItem) load = (_) async => null;
   @override
-  Future<Metadata?> getCachedMetadata({required PlayableItem item}) {
+  Future<Metadata?> getCachedMetadata({
+    required PlayableItem item,
+    int? chapterStartMs,
+  }) {
     reads.add(item);
     return load(item);
   }
@@ -280,6 +283,7 @@ class _Cache implements MetadataCacheRepository {
   Future<void> putCachedMetadata({
     required PlayableItem item,
     required Metadata metadata,
+    int? chapterStartMs,
   }) async {
     writes.add(item);
   }
@@ -303,6 +307,7 @@ class _Lookup extends MetadataLookupService {
   Future<MetadataLookupResult> lookup({
     required PlayableItem item,
     required String title,
+    bool normalizeKeyword = true,
     bool Function()? isActive,
   }) {
     lookups.add(item);

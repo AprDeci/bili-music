@@ -42,7 +42,7 @@ final class MetadataControllerProvider
 }
 
 String _$metadataControllerHash() =>
-    r'e0e09be80d6f7f8bbbca119cb7d203d08b721c0b';
+    r'676886cca4fb7097933484b6abeb4e7e22da6eaf';
 
 abstract class _$MetadataController extends $Notifier<MetadataState> {
   MetadataState build();
