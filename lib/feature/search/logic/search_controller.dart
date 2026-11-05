@@ -365,7 +365,8 @@ class SearchPageController extends _$SearchPageController {
       videoResults: videoResults,
       userResultsPage: userResultsPage,
       isLoading: false,
-      errorMessage: error.toString(),
+      errorMessage: resetPage ? error.toString() : null,
+      loadMoreErrorMessage: resetPage ? null : error.toString(),
     );
   }
 
