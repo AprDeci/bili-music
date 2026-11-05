@@ -1,5 +1,7 @@
 import 'package:bilimusic/common/components/cached_image.dart';
+import 'package:bilimusic/common/components/car/car_side_panel.dart';
 import 'package:bilimusic/common/components/status_view.dart';
+import 'package:bilimusic/core/layout/app_layout.dart';
 import 'package:bilimusic/feature/metadata/domain/metadata_state.dart';
 import 'package:bilimusic/feature/metadata/logic/metadata_controller.dart';
 import 'package:bilimusic/feature/meting/data/meting_repository.dart';
@@ -51,6 +53,17 @@ Future<void> showManualLyricSearchSheet({
   required String initialKeyword,
   VoidCallback? onApplied,
 }) async {
+  if (AppLayoutScope.of(context) == AppLayout.car) {
+    await showCarSidePanel<void>(
+      context: context,
+      builder: (_) => _LyricSearchSheet(
+        initialKeyword: initialKeyword,
+        onApplied: onApplied,
+        carStyle: true,
+      ),
+    );
+    return;
+  }
   await showModalBottomSheet<void>(
     context: context,
     isScrollControlled: true,
@@ -67,10 +80,15 @@ Future<void> showManualLyricSearchSheet({
 }
 
 class _LyricSearchSheet extends ConsumerStatefulWidget {
-  const _LyricSearchSheet({required this.initialKeyword, this.onApplied});
+  const _LyricSearchSheet({
+    required this.initialKeyword,
+    this.onApplied,
+    this.carStyle = false,
+  });
 
   final String initialKeyword;
   final VoidCallback? onApplied;
+  final bool carStyle;
 
   @override
   ConsumerState<_LyricSearchSheet> createState() => _LyricSearchSheetState();
@@ -124,7 +142,7 @@ class _LyricSearchSheetState extends ConsumerState<_LyricSearchSheet> {
       child: Padding(
         padding: EdgeInsets.fromLTRB(16, 16, 16, insets.bottom + 16),
         child: SizedBox(
-          height: 420,
+          height: widget.carStyle ? null : 420,
           child: Column(
             children: <Widget>[
               Row(
