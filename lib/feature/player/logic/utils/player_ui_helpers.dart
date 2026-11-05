@@ -103,6 +103,13 @@ String? resolveCurrentChapterTitle(
   List<PlaybackChapter> chapters,
   Duration position,
 ) {
+  return resolveCurrentChapter(chapters, position)?.title;
+}
+
+PlaybackChapter? resolveCurrentChapter(
+  List<PlaybackChapter> chapters,
+  Duration position,
+) {
   if (chapters.length < 2) {
     return null;
   }
@@ -110,5 +117,5 @@ String? resolveCurrentChapterTitle(
   if (index == null) {
     return null;
   }
-  return chapters[index].title;
+  return chapters[index];
 }

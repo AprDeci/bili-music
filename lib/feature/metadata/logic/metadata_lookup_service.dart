@@ -40,6 +40,7 @@ class MetadataLookupService {
   Future<MetadataLookupResult> lookup({
     required PlayableItem item,
     required String title,
+    bool normalizeKeyword = true,
     bool Function()? isActive,
   }) async {
     void checkActive() {
@@ -49,13 +50,15 @@ class MetadataLookupService {
     }
 
     checkActive();
-    final String keyword = (await resolveSearchKeyword(title)).trim();
+    final String keyword = normalizeKeyword
+        ? (await resolveSearchKeyword(title)).trim()
+        : extractSearchKeyword(title).trim();
     checkActive();
     final String? fallbackKeyword = keyword.isNotEmpty ? keyword : null;
 
     final List<MetingSearchItem> results = await metingRepository.search(
       keyword: keyword,
-      server: resolveServer(item.lyricSearchTitles.join(' ')),
+      server: resolveServer(keyword),
     );
     checkActive();
     for (final MetingSearchItem result in results) {

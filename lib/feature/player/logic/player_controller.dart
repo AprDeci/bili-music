@@ -119,6 +119,7 @@ class PlayerController extends Notifier<PlayerState>
   double _lastAudibleVolume = 1.0;
   int _operationGeneration = 0;
   Duration _lastPersistedProgress = Duration.zero;
+  Duration? _pendingSeekTarget;
 
   static const Duration _persistProgressStep = Duration(seconds: 10);
 
@@ -323,9 +324,20 @@ class PlayerController extends Notifier<PlayerState>
   }
 
   @override
-  Future<void> seek(Duration position) {
+  Future<void> seek(Duration position) async {
     _emitPlayerEvent(PlayerEventType.seek, position: position);
-    return _audioEngine.seek(position);
+    final Duration target = position < Duration.zero ? Duration.zero : position;
+    _pendingSeekTarget = target;
+    state = state.copyWith(position: target);
+    try {
+      await _audioEngine.seek(target);
+    } finally {
+      Future<void>.delayed(const Duration(milliseconds: 600), () {
+        if (_pendingSeekTarget == target) {
+          _pendingSeekTarget = null;
+        }
+      });
+    }
   }
 
   // seek即播放
@@ -889,6 +901,15 @@ class PlayerController extends Notifier<PlayerState>
   }
 
   void _onEnginePositionChanged(Duration position) {
+    final Duration? seekTarget = _pendingSeekTarget;
+    if (seekTarget != null) {
+      final bool reachedTarget =
+          (position - seekTarget).abs() <= const Duration(milliseconds: 1500);
+      if (!reachedTarget) {
+        return;
+      }
+      _pendingSeekTarget = null;
+    }
     _applyEnginePlaybackChange(
       _EnginePlaybackChange.position,
       _enginePlaybackSnapshot.copyWith(position: position),

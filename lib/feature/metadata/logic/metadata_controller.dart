@@ -7,6 +7,7 @@ import 'package:bilimusic/feature/metadata/data/metadata_resolver.dart';
 import 'package:bilimusic/feature/metadata/domain/metadata.dart';
 import 'package:bilimusic/feature/metadata/domain/metadata_state.dart';
 import 'package:bilimusic/feature/metadata/logic/metadata_lookup_service.dart';
+import 'package:bilimusic/feature/metadata/logic/metadata_query_context.dart';
 import 'package:bilimusic/feature/meting/data/meting_repository.dart';
 import 'package:bilimusic/feature/meting/domain/meting_search_item.dart';
 import 'package:bilimusic/feature/meting/domain/meting_search_response.dart';
@@ -35,20 +36,22 @@ class MetadataController extends _$MetadataController {
       PlayerState? previous,
       PlayerState next,
     ) {
-      final String? previousTitle = previous == null
-          ? null
-          : _metadataTitleFromState(previous);
-      final String? nextTitle = _metadataTitleFromState(next);
-      if (previous?.currentItem?.stableId == next.currentItem?.stableId &&
-          previous?.currentItem?.kind == next.currentItem?.kind &&
-          previous?.currentItem?.collectionId ==
-              next.currentItem?.collectionId &&
-          previousTitle == nextTitle) {
+      final MetadataQueryContext? previousContext = _queryContextOf(previous);
+      final MetadataQueryContext? nextContext = _queryContextOf(next);
+      if (previousContext == null || nextContext == null) {
+        if (previousContext == null && nextContext == null) {
+          return;
+        }
+        unawaited(_loadCurrentItemMetadata());
+        return;
+      }
+      if (previousContext.matches(nextContext)) {
         return;
       }
       unawaited(_loadCurrentItemMetadata());
     });
-    final PlayableItem? item = ref.read(playerControllerProvider).currentItem;
+    final PlayerState playerState = ref.read(playerControllerProvider);
+    final PlayableItem? item = playerState.currentItem;
     if (item != null && !item.isSpoken) {
       final int generation = _generation;
       unawaited(
@@ -66,12 +69,13 @@ class MetadataController extends _$MetadataController {
   }
 
   Future<void> retryCurrent() async {
-    final PlayableItem? item = ref.read(playerControllerProvider).currentItem;
-    await _loadForItem(item, ignoreCache: true);
+    final PlayerState playerState = ref.read(playerControllerProvider);
+    await _loadForItem(playerState.currentItem, ignoreCache: true);
   }
 
   Future<void> adjustOffset(int deltaMs) async {
-    final PlayableItem? item = ref.read(playerControllerProvider).currentItem;
+    final PlayerState playerState = ref.read(playerControllerProvider);
+    final PlayableItem? item = playerState.currentItem;
     final String? stableId = item?.stableId;
     final Metadata? metadata = state.metadata;
     if (item == null || item.isSpoken || state.stableId != stableId) {
@@ -86,11 +90,16 @@ class MetadataController extends _$MetadataController {
       updatedAt: DateTime.now(),
     );
     state = state.copyWith(metadata: updatedMetadata);
-    await _saveCacheIfEligible(item: item, metadata: updatedMetadata);
+    await _saveCacheIfEligible(
+      item: item,
+      metadata: updatedMetadata,
+      context: _activeContext,
+    );
   }
 
   Future<void> resetOffset() async {
-    final PlayableItem? item = ref.read(playerControllerProvider).currentItem;
+    final PlayerState playerState = ref.read(playerControllerProvider);
+    final PlayableItem? item = playerState.currentItem;
     final String? stableId = item?.stableId;
     final Metadata? metadata = state.metadata;
     if (item == null || item.isSpoken || state.stableId != stableId) {
@@ -105,11 +114,16 @@ class MetadataController extends _$MetadataController {
       updatedAt: DateTime.now(),
     );
     state = state.copyWith(metadata: updatedMetadata);
-    await _saveCacheIfEligible(item: item, metadata: updatedMetadata);
+    await _saveCacheIfEligible(
+      item: item,
+      metadata: updatedMetadata,
+      context: _activeContext,
+    );
   }
 
   Future<void> searchManual(String keyword, {MetingServer? server}) async {
-    final PlayableItem? item = ref.read(playerControllerProvider).currentItem;
+    final PlayerState playerState = ref.read(playerControllerProvider);
+    final PlayableItem? item = playerState.currentItem;
     final String? stableId = item?.stableId;
     if (item == null || item.isSpoken || state.stableId != stableId) {
       return;
@@ -128,7 +142,7 @@ class MetadataController extends _$MetadataController {
         keyword: trimmedKeyword,
         server: server,
       );
-      if (!_isActiveRequest(requestGeneration, item)) {
+      if (!_isActiveRequest(requestGeneration, item, _contextFor(item))) {
         return;
       }
       state = state.copyWith(
@@ -138,7 +152,7 @@ class MetadataController extends _$MetadataController {
         isSearching: false,
       );
     } on MetingException catch (error) {
-      if (!_isActiveRequest(requestGeneration, item)) {
+      if (!_isActiveRequest(requestGeneration, item, _contextFor(item))) {
         return;
       }
       state = state.copyWith(
@@ -148,7 +162,7 @@ class MetadataController extends _$MetadataController {
         isSearching: false,
       );
     } on Object catch (error) {
-      if (!_isActiveRequest(requestGeneration, item)) {
+      if (!_isActiveRequest(requestGeneration, item, _contextFor(item))) {
         return;
       }
       _logger.e('manual metadata search failed', error);
@@ -162,15 +176,15 @@ class MetadataController extends _$MetadataController {
   }
 
   Future<void> applyManualResult(MetingSearchItem item) async {
-    final PlayableItem? currentItem = ref
-        .read(playerControllerProvider)
-        .currentItem;
+    final PlayerState playerState = ref.read(playerControllerProvider);
+    final PlayableItem? currentItem = playerState.currentItem;
     final String? stableId = currentItem?.stableId;
     if (currentItem == null ||
         currentItem.isSpoken ||
         state.stableId != stableId) {
       return;
     }
+    final MetadataQueryContext context = _contextFor(currentItem);
 
     final int requestGeneration = ++_generation;
     state = state.copyWith(
@@ -184,21 +198,27 @@ class MetadataController extends _$MetadataController {
           .buildMetadataFromSearchItem(
             item: currentItem,
             searchItem: item,
-            isActive: () => _isActiveRequest(requestGeneration, currentItem),
+            isActive: () =>
+                _isActiveRequest(requestGeneration, currentItem, context),
           );
-      if (!_isActiveRequest(requestGeneration, currentItem)) {
+      if (!_isActiveRequest(requestGeneration, currentItem, context)) {
         return;
       }
+      final Metadata withOffset = _withChapterOffset(metadata, context);
       state = state.copyWith(
-        metadata: metadata,
+        metadata: withOffset,
         errorMessage: null,
         manualSearchError: null,
         isSearching: false,
         hasSearched: true,
       );
-      await _saveCacheIfEligible(item: currentItem, metadata: metadata);
+      await _saveCacheIfEligible(
+        item: currentItem,
+        metadata: withOffset,
+        context: context,
+      );
     } on MetingException catch (error) {
-      if (!_isActiveRequest(requestGeneration, currentItem)) {
+      if (!_isActiveRequest(requestGeneration, currentItem, context)) {
         return;
       }
       state = state.copyWith(
@@ -206,7 +226,7 @@ class MetadataController extends _$MetadataController {
         isSearching: false,
       );
     } on Object catch (error) {
-      if (!_isActiveRequest(requestGeneration, currentItem)) {
+      if (!_isActiveRequest(requestGeneration, currentItem, context)) {
         return;
       }
       _logger.e('apply manual metadata result failed', error);
@@ -218,8 +238,8 @@ class MetadataController extends _$MetadataController {
   }
 
   Future<void> _loadCurrentItemMetadata() async {
-    final PlayableItem? item = ref.read(playerControllerProvider).currentItem;
-    await _loadForItem(item);
+    final PlayerState playerState = ref.read(playerControllerProvider);
+    await _loadForItem(playerState.currentItem);
   }
 
   Future<void> _loadForItem(
@@ -233,19 +253,24 @@ class MetadataController extends _$MetadataController {
     }
 
     final String stableId = item.stableId;
+    final MetadataQueryContext context = _contextFor(item);
+    _activeContext = context;
     state = MetadataState(stableId: stableId, isLoading: true);
 
     if (!ignoreCache) {
       final Metadata? cached = await ref
           .read(metadataCacheRepositoryProvider)
-          .getCachedMetadata(item: item);
-      if (!_isActiveRequest(requestGeneration, item)) {
+          .getCachedMetadata(
+            item: item,
+            chapterStartMs: context.chapterStartMs,
+          );
+      if (!_isActiveRequest(requestGeneration, item, context)) {
         return;
       }
       if (cached != null) {
         state = MetadataState(
           stableId: stableId,
-          metadata: cached,
+          metadata: _withChapterOffset(cached, context),
           hasSearched: true,
         );
         return;
@@ -255,62 +280,118 @@ class MetadataController extends _$MetadataController {
     try {
       final MetadataLookupResult lookupResult = await _resolve(
         item,
+        context,
         requestGeneration,
       );
-      if (!_isActiveRequest(requestGeneration, item)) {
+      if (!_isActiveRequest(requestGeneration, item, context)) {
         return;
       }
 
+      final Metadata metadata = _withChapterOffset(
+        lookupResult.metadata,
+        context,
+      );
       state = MetadataState(
         stableId: stableId,
-        metadata: lookupResult.metadata,
+        metadata: metadata,
         searchKeyword: lookupResult.searchKeyword,
         searchResults: lookupResult.searchResults,
         hasSearched: true,
       );
-      await _saveCacheIfEligible(item: item, metadata: lookupResult.metadata);
+      await _saveCacheIfEligible(
+        item: item,
+        metadata: metadata,
+        context: context,
+      );
     } on MetingException catch (error) {
-      if (!_isActiveRequest(requestGeneration, item)) {
+      if (!_isActiveRequest(requestGeneration, item, context)) {
         return;
       }
       state = MetadataState(
         stableId: stableId,
         errorMessage: error.message,
-        searchKeyword: _lookupService.defaultSearchKeyword(item),
+        searchKeyword: context.defaultKeyword,
         hasSearched: true,
       );
     } on Object catch (error) {
-      if (!_isActiveRequest(requestGeneration, item)) {
+      if (!_isActiveRequest(requestGeneration, item, context)) {
         return;
       }
       _logger.e('load metadata failed', error);
       state = MetadataState(
         stableId: stableId,
         errorMessage: '元信息查询失败：$error',
-        searchKeyword: _lookupService.defaultSearchKeyword(item),
+        searchKeyword: context.defaultKeyword,
         hasSearched: true,
       );
     }
   }
 
-  bool _isActiveRequest(int requestGeneration, PlayableItem item) {
+  MetadataQueryContext? _activeContext;
+
+  MetadataQueryContext _contextFor(PlayableItem item) {
+    final PlayerState playerState = ref.read(playerControllerProvider);
+    if (playerState.currentItem?.stableId != item.stableId) {
+      return MetadataQueryContext(
+        stableId: item.stableId,
+        titles: <String>[
+          if (item.pageTitle?.trim().isNotEmpty ?? false)
+            item.pageTitle!.trim(),
+          if (item.title.trim().isNotEmpty) item.title.trim(),
+        ],
+        chapterStartMs: null,
+      );
+    }
+    return MetadataQueryContext.fromState(item: item, state: playerState);
+  }
+
+  MetadataQueryContext? _queryContextOf(PlayerState? playerState) {
+    if (playerState == null) {
+      return null;
+    }
+    final PlayableItem? item = playerState.currentItem;
+    if (item == null || item.isSpoken) {
+      return null;
+    }
+    return MetadataQueryContext.fromState(item: item, state: playerState);
+  }
+
+  Metadata _withChapterOffset(Metadata metadata, MetadataQueryContext context) {
+    if (!context.hasChapter) {
+      return metadata;
+    }
+    return metadata.copyWith(lyricBaseOffsetMs: context.lyricBaseOffsetMs);
+  }
+
+  bool _isActiveRequest(
+    int requestGeneration,
+    PlayableItem item,
+    MetadataQueryContext context,
+  ) {
     if (!ref.mounted || requestGeneration != _generation) {
       return false;
     }
-    final PlayableItem? currentItem = ref
-        .read(playerControllerProvider)
-        .currentItem;
-    return currentItem != null &&
-        !currentItem.isSpoken &&
-        currentItem.stableId == item.stableId &&
-        currentItem.kind == item.kind &&
-        currentItem.collectionId == item.collectionId &&
-        state.stableId == item.stableId;
+    final PlayerState playerState = ref.read(playerControllerProvider);
+    final PlayableItem? currentItem = playerState.currentItem;
+    if (currentItem == null || currentItem.isSpoken) {
+      return false;
+    }
+    if (currentItem.stableId != item.stableId ||
+        currentItem.kind != item.kind ||
+        currentItem.collectionId != item.collectionId ||
+        state.stableId != item.stableId) {
+      return false;
+    }
+    return MetadataQueryContext.fromState(
+      item: currentItem,
+      state: playerState,
+    ).matches(context);
   }
 
   Future<void> _saveCacheIfEligible({
     required PlayableItem item,
     required Metadata metadata,
+    MetadataQueryContext? context,
   }) async {
     if (!_shouldCacheMetadata(item)) {
       return;
@@ -318,7 +399,11 @@ class MetadataController extends _$MetadataController {
 
     await ref
         .read(metadataCacheRepositoryProvider)
-        .putCachedMetadata(item: item, metadata: metadata);
+        .putCachedMetadata(
+          item: item,
+          metadata: metadata,
+          chapterStartMs: context?.chapterStartMs,
+        );
   }
 
   bool _shouldCacheMetadata(PlayableItem item) {
@@ -329,6 +414,10 @@ class MetadataController extends _$MetadataController {
         .read(favoritesControllerProvider)
         .collectionsForItem(item)
         .isNotEmpty;
+  }
+
+  MetingServer _resolveServer(String text) {
+    return ref.read(metingSourcePreferenceLogicProvider).resolve(text);
   }
 
   Future<MetingSearchResponse> _searchManually({
@@ -350,53 +439,39 @@ class MetadataController extends _$MetadataController {
 
   Future<MetadataLookupResult> _resolve(
     PlayableItem item,
+    MetadataQueryContext context,
     int requestGeneration,
-  ) {
-    return _lookupService.lookup(
-      item: item,
-      title: _preferredMetadataTitle(item),
-      isActive: () => _isActiveRequest(requestGeneration, item),
-    );
-  }
-
-  String _preferredMetadataTitle(PlayableItem item) {
-    final PlayerState playerState = ref.read(playerControllerProvider);
-    final bool hasMultipleParts =
-        playerState.currentItem?.stableId == item.stableId &&
-        playerState.availableParts.length > 1;
-
-    return _metadataTitleForItem(item, hasMultipleParts: hasMultipleParts);
-  }
-
-  String? _metadataTitleFromState(PlayerState playerState) {
-    final PlayableItem? item = playerState.currentItem;
-    if (item == null) {
-      return null;
+  ) async {
+    final List<String> titles = context.titles.isEmpty
+        ? <String>[item.title.trim()]
+        : context.titles;
+    MetadataLookupResult? best;
+    for (final String title in titles) {
+      if (title.trim().isEmpty) {
+        continue;
+      }
+      final MetadataLookupResult result = await _lookupService.lookup(
+        item: item,
+        title: title,
+        normalizeKeyword: !context.hasChapter,
+        isActive: () => _isActiveRequest(requestGeneration, item, context),
+      );
+      if (result.metadata.hasLyrics) {
+        return result;
+      }
+      if (best == null ||
+          (result.metadata.albumArtUrl?.trim().isNotEmpty ?? false)) {
+        best = result;
+      }
     }
-
-    return _metadataTitleForItem(
-      item,
-      hasMultipleParts: playerState.availableParts.length > 1,
-    );
-  }
-
-  String _metadataTitleForItem(
-    PlayableItem item, {
-    required bool hasMultipleParts,
-  }) {
-    if (!hasMultipleParts) {
-      return item.title.trim();
-    }
-
-    final String pageTitle = item.pageTitle?.trim() ?? '';
-    if (pageTitle.isNotEmpty) {
-      return pageTitle;
-    }
-
-    return item.title.trim();
-  }
-
-  MetingServer _resolveServer(String text) {
-    return ref.read(metingSourcePreferenceLogicProvider).resolve(text);
+    return best ??
+        MetadataLookupResult(
+          metadata: Metadata(
+            stableId: item.stableId,
+            updatedAt: DateTime.now(),
+          ),
+          searchKeyword: context.defaultKeyword,
+          searchResults: const <MetingSearchItem>[],
+        );
   }
 }
