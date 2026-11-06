@@ -7,6 +7,7 @@ import 'package:bilimusic/core/hive/hive.dart';
 import 'package:bilimusic/core/theme/desktop_chinese_font.dart';
 import 'package:bilimusic/core/window/desktop_app_lifecycle.dart';
 import 'package:bilimusic/core/window/desktop_hotkey_controller.dart';
+import 'package:bilimusic/feature/download/logic/download_controller.dart';
 import 'package:bilimusic/feature/favorites/logic/favorites_controller.dart';
 import 'package:bilimusic/feature/player/logic/media_session/app_audio_handler.dart';
 import 'package:bilimusic/feature/player/logic/lyrics/desktop_lyrics_controller.dart';
@@ -102,6 +103,7 @@ class _AppBootstrapState extends ConsumerState<_AppBootstrap>
       await ref.read(favoriteUpControllerProvider.notifier).initialize();
       await ref.read(favoritedSeasonControllerProvider.notifier).initialize();
       await ref.read(biliSessionControllerProvider.notifier).bootstrap();
+      await ref.read(downloadControllerProvider.notifier).initialize();
       await ref
           .read(playerControllerProvider.notifier)
           .restoreFromPersistence();

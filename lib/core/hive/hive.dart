@@ -64,4 +64,5 @@ Future<void> initHive() async {
   await Hive.openLazyBox<Metadata>(metadataCacheBoxName);
   await Hive.openBox<String>(chapterCacheBoxName);
   await Hive.openBox<String>(downloadedTracksBoxName);
+  await Hive.openBox<String>(downloadTasksBoxName);
 }

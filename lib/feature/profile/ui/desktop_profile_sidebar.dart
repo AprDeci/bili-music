@@ -81,7 +81,8 @@ class _DesktopProfileSidebarState extends ConsumerState<DesktopProfileSidebar> {
         widget.currentLocation == '/profile/favorite-ups';
     final bool isRecentSelected = widget.currentLocation == '/profile/recent';
     final bool isDownloadsSelected =
-        widget.currentLocation == '/profile/downloads';
+        widget.currentLocation == '/profile/downloads' ||
+        widget.currentLocation.startsWith('/profile/downloads/');
     final List<FavoriteCollection> remoteCollections = favoritesState
         .collections
         .where((FavoriteCollection collection) => collection.isRemote)

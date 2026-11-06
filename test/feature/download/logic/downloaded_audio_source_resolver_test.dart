@@ -7,6 +7,7 @@ import 'package:bilimusic/feature/player/domain/audio_stream_info.dart';
 import 'package:bilimusic/feature/player/domain/playable_item.dart';
 import 'package:bilimusic/feature/player/domain/player_audio_quality_preference.dart';
 import 'package:bilimusic/feature/player/logic/playback/audio_source_resolver.dart';
+import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -24,9 +25,13 @@ void main() {
       fetcher:
           ({
             required String url,
+            required String savePath,
             required Map<String, String> headers,
+            required CancelToken cancelToken,
             void Function(int, int)? onProgress,
-          }) async => <int>[1, 2, 3],
+          }) async {
+            await File(savePath).writeAsBytes(<int>[1, 2, 3]);
+          },
     );
     await repository.downloadTrack(item: _item(), stream: _stream());
 
@@ -59,9 +64,13 @@ void main() {
       fetcher:
           ({
             required String url,
+            required String savePath,
             required Map<String, String> headers,
+            required CancelToken cancelToken,
             void Function(int, int)? onProgress,
-          }) async => <int>[],
+          }) async {
+            await File(savePath).writeAsBytes(<int>[]);
+          },
     );
 
     final DownloadRepository emptyRepository = DownloadRepository(
@@ -95,9 +104,13 @@ void main() {
       fetcher:
           ({
             required String url,
+            required String savePath,
             required Map<String, String> headers,
+            required CancelToken cancelToken,
             void Function(int, int)? onProgress,
-          }) async => <int>[1, 2, 3],
+          }) async {
+            await File(savePath).writeAsBytes(<int>[1, 2, 3]);
+          },
     );
     final DownloadedTrack track = await repository.downloadTrack(
       item: _item(),

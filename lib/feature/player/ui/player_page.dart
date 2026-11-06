@@ -270,13 +270,18 @@ class _PlayerPageState extends ConsumerState<PlayerPage> {
   }
 
   Future<void> _downloadAllParts(List<PlayableItem> parts) async {
-    final int queued = await ref
-        .read(downloadControllerProvider.notifier)
-        .downloadAll(parts);
-    if (!mounted) {
-      return;
+    try {
+      final int queued = await ref
+          .read(downloadControllerProvider.notifier)
+          .downloadAll(parts);
+      if (mounted) {
+        ToastUtil.show(queued > 0 ? '已加入 $queued 首下载队列' : '这些分P已下载或正在下载');
+      }
+    } on Object {
+      if (mounted) {
+        ToastUtil.show('加入下载队列失败，请重试');
+      }
     }
-    ToastUtil.show(queued > 0 ? '已加入 $queued 首下载队列' : '这些分P已下载或正在下载');
   }
 
   void _seekFromProgressBar(double value) {
@@ -465,10 +470,14 @@ class _PlayerDownloadTile extends ConsumerWidget {
           return;
         }
         onDone();
-        final bool queued = await ref
-            .read(downloadControllerProvider.notifier)
-            .download(item);
-        ToastUtil.show(queued ? '已加入下载队列' : '下载未开始');
+        try {
+          final bool queued = await ref
+              .read(downloadControllerProvider.notifier)
+              .download(item);
+          ToastUtil.show(queued ? '已加入下载队列' : '下载未开始');
+        } on Object {
+          ToastUtil.show('加入下载队列失败，请重试');
+        }
       },
     );
   }

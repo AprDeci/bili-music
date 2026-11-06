@@ -12,6 +12,7 @@ import 'package:bilimusic/feature/download/logic/download_controller.dart';
 import 'package:bilimusic/feature/player/domain/playable_item.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 class DownloadsPage extends ConsumerStatefulWidget {
   const DownloadsPage({super.key});
@@ -49,9 +50,10 @@ class _DownloadsPageState extends ConsumerState<DownloadsPage> {
       });
     });
     final bool desktop = ScreenUtil.shouldUseDesktopShell(context);
-    final List<DownloadTask> activeTasks = state.tasks.values
-        .where((DownloadTask task) => task.isActive)
-        .toList(growable: false);
+    final int activeCount = state.activeTaskCount;
+    final int failedCount = state.tasks.values
+        .where((DownloadTask task) => task.status == DownloadTaskStatus.failed)
+        .length;
 
     return Scaffold(
       appBar: desktop ? null : AppBar(title: const Text('离线下载')),
@@ -66,9 +68,34 @@ class _DownloadsPageState extends ConsumerState<DownloadsPage> {
                 style: Theme.of(context).textTheme.titleMedium,
               ),
             ),
+          if (state.errorMessage != null)
+            ListTile(
+              leading: const Icon(Icons.error_outline_rounded),
+              title: Text(state.errorMessage!),
+            ),
+          if (activeCount > 0 || failedCount > 0)
+            ListTile(
+              contentPadding: const EdgeInsets.symmetric(horizontal: 14),
+              leading: Icon(
+                activeCount > 0
+                    ? Icons.downloading_rounded
+                    : Icons.error_outline_rounded,
+              ),
+              title: Text(
+                activeCount > 0
+                    ? '正在下载 $activeCount 首歌曲'
+                    : '$failedCount 首歌曲下载失败',
+              ),
+              subtitle: activeCount > 0 && failedCount > 0
+                  ? Text('$failedCount 首歌曲下载失败')
+                  : null,
+              trailing: const Icon(Icons.chevron_right_rounded),
+              onTap: () =>
+                  context.push('${GoRouterState.of(context).uri.path}/queue'),
+            ),
           if (state.tracks.isNotEmpty) _buildToolbar(state),
           Expanded(
-            child: state.tracks.isEmpty && activeTasks.isEmpty
+            child: state.tracks.isEmpty && state.tasks.isEmpty
                 ? const StatusView(
                     icon: Icons.download_done_rounded,
                     title: '还没有下载的歌曲',
@@ -90,14 +117,6 @@ class _DownloadsPageState extends ConsumerState<DownloadsPage> {
                             state.tracks.indexOf(track),
                           ),
                           padding: EdgeInsets.zero,
-                          header: activeTasks.isEmpty
-                              ? null
-                              : Column(
-                                  children: <Widget>[
-                                    for (final DownloadTask task in activeTasks)
-                                      _DownloadingTile(task: task),
-                                  ],
-                                ),
                           footer: const BottomPageSpacer(),
                           titleBuilder: (context, track, itemState) =>
                               Text(track.title),
@@ -257,59 +276,15 @@ class _DownloadsPageState extends ConsumerState<DownloadsPage> {
         _setSelectionMode(false);
         ToastUtil.show(clearAll ? '已清空下载' : '已删除 ${tracks.length} 首下载');
       }
+    } on Object {
+      if (mounted) {
+        ToastUtil.show('删除下载失败，请重试');
+      }
     } finally {
       if (mounted) {
         setState(() => _deleting = false);
       }
     }
-  }
-}
-
-class _DownloadingTile extends StatelessWidget {
-  const _DownloadingTile({required this.task});
-
-  final DownloadTask task;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final double? progress = task.progress;
-    final String label = switch (task.status) {
-      DownloadTaskStatus.queued => '等待下载',
-      DownloadTaskStatus.running =>
-        progress == null
-            ? '下载中'
-            : '下载中 ${(progress * 100).toStringAsFixed(0)}%',
-      DownloadTaskStatus.failed => '下载失败',
-    };
-
-    return ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 14),
-      leading: const SizedBox.square(
-        dimension: 44,
-        child: Icon(Icons.downloading_rounded),
-      ),
-      title: Text(label, style: theme.textTheme.titleSmall),
-      subtitle:
-          task.status == DownloadTaskStatus.failed &&
-              (task.errorMessage?.isNotEmpty ?? false)
-          ? Text(
-              task.errorMessage!,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.error,
-              ),
-            )
-          : Padding(
-              padding: const EdgeInsets.only(top: 6),
-              child: LinearProgressIndicator(
-                value: progress,
-                minHeight: 4,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-    );
   }
 }
 

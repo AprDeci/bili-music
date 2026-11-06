@@ -205,6 +205,33 @@ class _FavoriteCollectionPageState
     }
   }
 
+  Future<void> _downloadSelectedItems(
+    FavoriteCollection collection,
+    List<FavoriteEntry> items,
+  ) async {
+    final List<PlayableItem> selectedItems = _selectedItems(items)
+        .map(
+          (FavoriteEntry item) => item.toPlayableItem(collection: collection),
+        )
+        .toList(growable: false);
+    if (selectedItems.isEmpty) {
+      return;
+    }
+    try {
+      final int count = await ref
+          .read(downloadControllerProvider.notifier)
+          .downloadAll(selectedItems);
+      if (mounted) {
+        _setSelectionMode(false);
+        ToastUtil.show(count > 0 ? '已加入 $count 首歌曲到下载队列' : '已下载或正在下载');
+      }
+    } on Object {
+      if (mounted) {
+        ToastUtil.show('加入下载队列失败，请重试');
+      }
+    }
+  }
+
   Future<void> _deleteSelectedItems({
     required FavoriteCollection collection,
     required List<FavoriteEntry> items,
@@ -422,6 +449,7 @@ class _FavoriteCollectionPageState
         child: _FavoriteBatchActionBar(
           selectedCount: _selectedItemIds.length,
           onAdd: () => _addSelectedItems(collection, visibleItems),
+          onDownload: () => _downloadSelectedItems(collection, visibleItems),
           onDelete: () =>
               _deleteSelectedItems(collection: collection, items: visibleItems),
           onExit: () => _setSelectionMode(false),
@@ -689,13 +717,18 @@ class _FavoriteCollectionPageState
                     title: '下载',
                     onTap: () async {
                       Navigator.of(sheetContext).pop();
-                      final bool queued = await ref
-                          .read(downloadControllerProvider.notifier)
-                          .download(playableItem);
-                      if (!context.mounted) {
-                        return;
+                      try {
+                        final bool queued = await ref
+                            .read(downloadControllerProvider.notifier)
+                            .download(playableItem);
+                        if (context.mounted) {
+                          ToastUtil.show(queued ? '已加入下载队列' : '已下载或正在下载');
+                        }
+                      } on Object {
+                        if (context.mounted) {
+                          ToastUtil.show('加入下载队列失败，请重试');
+                        }
                       }
-                      ToastUtil.show(queued ? '已加入下载队列' : '已下载或正在下载');
                     },
                   ),
                   _FavoriteActionTile(
@@ -795,12 +828,14 @@ class _FavoriteBatchActionBar extends StatelessWidget {
   const _FavoriteBatchActionBar({
     required this.selectedCount,
     required this.onAdd,
+    required this.onDownload,
     required this.onDelete,
     required this.onExit,
   });
 
   final int selectedCount;
   final VoidCallback onAdd;
+  final VoidCallback onDownload;
   final VoidCallback onDelete;
   final VoidCallback onExit;
 
@@ -822,6 +857,11 @@ class _FavoriteBatchActionBar extends StatelessWidget {
           tooltip: '添加到歌单',
           onPressed: hasSelection ? onAdd : null,
           icon: const Icon(Icons.playlist_add_rounded),
+        ),
+        IconButton(
+          tooltip: '下载所选歌曲',
+          onPressed: hasSelection ? onDownload : null,
+          icon: const Icon(Icons.download_rounded),
         ),
         IconButton(
           tooltip: '删除',

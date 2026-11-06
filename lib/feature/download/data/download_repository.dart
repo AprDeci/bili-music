@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:bilimusic/common/logger.dart';
 import 'package:bilimusic/common/util/platform_util.dart';
+import 'package:bilimusic/feature/download/domain/download_task.dart';
 import 'package:bilimusic/feature/download/domain/downloaded_track.dart';
 import 'package:bilimusic/feature/player/domain/audio_stream_info.dart';
 import 'package:bilimusic/feature/player/domain/playable_item.dart';
@@ -15,11 +16,13 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 part 'download_repository.g.dart';
 
 const String downloadedTracksBoxName = 'downloaded_tracks';
+const String downloadTasksBoxName = 'download_tasks';
 
 @riverpod
 DownloadRepository downloadRepository(Ref ref) {
   return DownloadRepository(
     HiveDownloadIndexStore(Hive.box<String>(downloadedTracksBoxName)),
+    taskStore: HiveDownloadIndexStore(Hive.box<String>(downloadTasksBoxName)),
   );
 }
 
@@ -61,15 +64,18 @@ class HiveDownloadIndexStore implements DownloadIndexStore {
 }
 
 typedef DownloadFetcher =
-    Future<List<int>> Function({
+    Future<void> Function({
       required String url,
+      required String savePath,
       required Map<String, String> headers,
+      required CancelToken cancelToken,
       void Function(int received, int total)? onProgress,
     });
 
 class DownloadRepository {
   DownloadRepository(
     this._store, {
+    this.taskStore,
     DownloadFetcher? fetcher,
     Future<Directory> Function()? readDirectory,
   }) : _fetcher = fetcher ?? _defaultFetcher,
@@ -78,8 +84,46 @@ class DownloadRepository {
   static final AppLogger _logger = AppLogger('DownloadRepository');
 
   final DownloadIndexStore _store;
+  final DownloadIndexStore? taskStore;
   final DownloadFetcher _fetcher;
   final Future<Directory> Function() _readDirectory;
+
+  List<DownloadTask> loadTasks() {
+    final String? snapshot = taskStore?.loadAll()['queue'];
+    if (snapshot == null) {
+      return <DownloadTask>[];
+    }
+    final Object? value;
+    try {
+      value = jsonDecode(snapshot);
+    } on FormatException {
+      return <DownloadTask>[];
+    }
+    if (value is! List<dynamic>) {
+      return <DownloadTask>[];
+    }
+    return value
+        .map(DownloadTask.fromJson)
+        .whereType<DownloadTask>()
+        .map(
+          (DownloadTask task) => task.status == DownloadTaskStatus.running
+              ? task.copyWith(
+                  status: DownloadTaskStatus.queued,
+                  receivedBytes: 0,
+                  totalBytes: 0,
+                  errorMessage: null,
+                )
+              : task,
+        )
+        .toList(growable: false);
+  }
+
+  Future<void> saveTasks(List<DownloadTask> tasks) async {
+    await taskStore?.put(
+      'queue',
+      jsonEncode(tasks.map((DownloadTask task) => task.toJson()).toList()),
+    );
+  }
 
   List<DownloadedTrack> loadAll() {
     final List<DownloadedTrack> tracks = <DownloadedTrack>[];
@@ -124,43 +168,119 @@ class DownloadRepository {
   Future<DownloadedTrack> downloadTrack({
     required PlayableItem item,
     required AudioStreamInfo stream,
+    CancelToken? cancelToken,
     void Function(int received, int total)? onProgress,
   }) async {
-    final File file = await _targetFile(item);
-    final List<int> bytes = await _fetcher(
-      url: stream.streamUrl,
-      headers: stream.headers,
-      onProgress: onProgress,
-    );
-    if (bytes.isEmpty) {
-      throw const FileSystemException('音频下载结果为空');
+    final CancelToken token = cancelToken ?? CancelToken();
+    _checkCancelled(token);
+    final DownloadedTrack? existing = findByContentId(item.contentId);
+    if (existing != null) {
+      final File existingFile = File(existing.filePath);
+      if (await existingFile.exists() &&
+          existing.byteLength > 0 &&
+          await existingFile.length() == existing.byteLength) {
+        _checkCancelled(token);
+        return existing;
+      }
     }
+    final File file = await _targetFile(item);
+    final File partial = File('${file.path}.part');
+    bool committed = false;
+    bool indexing = false;
+    int expectedBytes = 0;
+    try {
+      _checkCancelled(token);
+      await file.parent.create(recursive: true);
+      if (await partial.exists()) {
+        await partial.delete();
+      }
+      _checkCancelled(token);
+      await _fetcher(
+        url: stream.streamUrl,
+        savePath: partial.path,
+        headers: stream.headers,
+        cancelToken: token,
+        onProgress: (int received, int total) {
+          if (total > 0) {
+            expectedBytes = total;
+          }
+          onProgress?.call(received, total);
+        },
+      );
+      _checkCancelled(token);
+      final int byteLength = await partial.length();
+      if (byteLength <= 0) {
+        throw const FileSystemException('音频下载结果为空');
+      }
+      if (expectedBytes > 0 && byteLength != expectedBytes) {
+        throw const FileSystemException('音频下载不完整');
+      }
+      _checkCancelled(token);
+      await partial.rename(file.path);
+      committed = true;
+      _checkCancelled(token);
+      final DownloadedTrack track = DownloadedTrack(
+        contentId: item.contentId,
+        aid: item.aid,
+        bvid: item.bvid,
+        cid: stream.cid > 0 ? stream.cid : (item.cid ?? 0),
+        page: item.page ?? 1,
+        pageTitle: stream.pageTitle ?? item.pageTitle,
+        title: item.title,
+        author: item.author,
+        coverUrl: item.coverUrl,
+        filePath: file.path,
+        byteLength: byteLength,
+        downloadedAtMs: DateTime.now().millisecondsSinceEpoch,
+        durationMs: stream.duration?.inMilliseconds,
+        qualityId: stream.qualityId,
+        qualityLabel: stream.qualityLabel,
+        bandwidth: stream.bandwidth,
+        collectionId: item.collectionId,
+        kind: item.kind,
+      );
+      indexing = true;
+      await _store.put(track.contentId, jsonEncode(track.toJson()));
+      _checkCancelled(token);
+      return track;
+    } on Object {
+      if (indexing) {
+        try {
+          await _store.remove(item.contentId);
+        } on Object {
+          _logger.w('rollback download index failed');
+        }
+      }
+      await _deleteFile(partial);
+      if (committed) {
+        await _deleteFile(file);
+      }
+      rethrow;
+    }
+  }
 
-    await file.parent.create(recursive: true);
-    await file.writeAsBytes(bytes, flush: true);
+  static void _checkCancelled(CancelToken token) {
+    if (token.isCancelled) {
+      throw token.cancelError!;
+    }
+  }
 
-    final DownloadedTrack track = DownloadedTrack(
-      contentId: item.contentId,
-      aid: item.aid,
-      bvid: item.bvid,
-      cid: stream.cid > 0 ? stream.cid : (item.cid ?? 0),
-      page: item.page ?? 1,
-      pageTitle: stream.pageTitle ?? item.pageTitle,
-      title: item.title,
-      author: item.author,
-      coverUrl: item.coverUrl,
-      filePath: file.path,
-      byteLength: bytes.length,
-      downloadedAtMs: DateTime.now().millisecondsSinceEpoch,
-      durationMs: stream.duration?.inMilliseconds,
-      qualityId: stream.qualityId,
-      qualityLabel: stream.qualityLabel,
-      bandwidth: stream.bandwidth,
-      collectionId: item.collectionId,
-      kind: item.kind,
-    );
-    await _store.put(track.contentId, jsonEncode(track.toJson()));
-    return track;
+  static Future<void> _deleteFile(File file) async {
+    try {
+      if (await file.exists()) {
+        await file.delete();
+      }
+    } on Object {
+      _logger.w('cleanup download file failed');
+    }
+  }
+
+  Future<void> discardPartial(PlayableItem item) async {
+    final File target = await _targetFile(item);
+    final File partial = File('${target.path}.part');
+    if (await partial.exists()) {
+      await partial.delete();
+    }
   }
 
   Future<void> remove(DownloadedTrack track) async {
@@ -196,9 +316,11 @@ class DownloadRepository {
     return File('${directory.path}${Platform.pathSeparator}$name.m4a');
   }
 
-  static Future<List<int>> _defaultFetcher({
+  static Future<void> _defaultFetcher({
     required String url,
+    required String savePath,
     required Map<String, String> headers,
+    required CancelToken cancelToken,
     void Function(int received, int total)? onProgress,
   }) async {
     final Dio dio = Dio(
@@ -208,16 +330,17 @@ class DownloadRepository {
       ),
     );
     try {
-      final Response<List<int>> response = await dio.get<List<int>>(
+      await dio.download(
         url,
+        savePath,
+        cancelToken: cancelToken,
         options: Options(
-          responseType: ResponseType.bytes,
           headers: headers,
           followRedirects: true,
+          receiveDataWhenStatusError: false,
         ),
         onReceiveProgress: onProgress,
       );
-      return response.data ?? const <int>[];
     } finally {
       dio.close();
     }
