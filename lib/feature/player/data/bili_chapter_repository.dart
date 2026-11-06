@@ -4,6 +4,7 @@ import 'package:bilimusic/core/net/bili_client.dart';
 import 'package:bilimusic/feature/comment/data/bilibili_comment_repository.dart';
 import 'package:bilimusic/feature/comment/domain/comment_item.dart';
 import 'package:bilimusic/feature/comment/domain/comment_page_result.dart';
+import 'package:bilimusic/feature/comment/domain/comment_sort.dart';
 import 'package:bilimusic/feature/comment/domain/comment_target.dart';
 import 'package:bilimusic/feature/player/domain/playable_item.dart';
 import 'package:bilimusic/feature/player/domain/playback_chapter.dart';
@@ -135,10 +136,12 @@ class BiliChapterRepository {
               title: item.title,
               coverUrl: item.coverUrl,
             ),
+            sort: CommentSort.like,
+            includeHot: false,
           );
       final List<CommentItem> candidates = <CommentItem>[
         if (result.topItem != null) result.topItem!,
-        ...result.items,
+        ...result.items.take(1),
       ];
       for (final CommentItem comment in candidates) {
         final List<PlaybackChapter> chapters = PlaybackChapterParser.parse(

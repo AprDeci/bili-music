@@ -94,9 +94,10 @@ void main() {
     final _FakeCommentRepository comments = _FakeCommentRepository(
       CommentPageResult(
         topItem: _comment('01:00 第一首\n05:00 第二首'),
+        items: <CommentItem>[_comment('00:00 非置顶第一首\n03:00 非置顶第二首')],
         page: 1,
         pageSize: 20,
-        totalCount: 1,
+        totalCount: 2,
         hasMore: false,
       ),
     );
@@ -114,6 +115,61 @@ void main() {
     expect(chapters.first.start, const Duration(minutes: 1));
   });
 
+  for (final bool hasPinnedComment in <bool>[false, true]) {
+    for (final bool firstHasChapters in <bool>[false, true]) {
+      test(
+        'only checks first hottest comment '
+        '(pinned=$hasPinnedComment, firstHasChapters=$firstHasChapters)',
+        () async {
+          final _FakeClient client = _FakeClient(
+            session: const BiliSession(
+              sessData: 'sess',
+              biliJct: 'jct',
+              dedeUserId: '42',
+              refreshToken: '',
+              cookie: '',
+            ),
+          );
+          final _FakeCommentRepository comments = _FakeCommentRepository(
+            CommentPageResult(
+              topItem: hasPinnedComment ? _comment('欢迎收听') : null,
+              items: <CommentItem>[
+                _comment(firstHasChapters ? '00:00 首条歌曲一\n03:00 首条歌曲二' : '好听'),
+                _comment('00:00 后续歌曲一\n03:00 后续歌曲二'),
+              ],
+              hotItems: <CommentItem>[_comment('00:00 热评歌曲一\n03:00 热评歌曲二')],
+              page: 1,
+              pageSize: 2,
+              totalCount: 100,
+              hasMore: true,
+              nextOffset: 'next-page',
+            ),
+          );
+          final BiliChapterRepository repository = BiliChapterRepository(
+            client,
+            comments,
+          );
+
+          final List<PlaybackChapter> chapters = await repository.fetchChapters(
+            _item(),
+          );
+
+          expect(comments.calls, 1);
+          expect(comments.requestedSort, CommentSort.like);
+          expect(comments.requestedIncludeHot, isFalse);
+          if (firstHasChapters) {
+            expect(
+              chapters.map((PlaybackChapter chapter) => chapter.title),
+              <String>['首条歌曲一', '首条歌曲二'],
+            );
+          } else {
+            expect(chapters, isEmpty);
+          }
+        },
+      );
+    }
+  }
+
   test('skips comment fallback when not logged in', () async {
     final _FakeClient client = _FakeClient(
       responses: <String, Map<String, dynamic>>{
@@ -123,9 +179,10 @@ void main() {
     final _FakeCommentRepository comments = _FakeCommentRepository(
       CommentPageResult(
         topItem: _comment('01:00 第一首\n05:00 第二首'),
+        items: <CommentItem>[_comment('00:00 非置顶第一首\n03:00 非置顶第二首')],
         page: 1,
         pageSize: 20,
-        totalCount: 1,
+        totalCount: 2,
         hasMore: false,
       ),
     );
@@ -248,6 +305,8 @@ class _FakeCommentRepository extends BiliCommentRepository {
 
   final CommentPageResult? result;
   int calls = 0;
+  CommentSort? requestedSort;
+  bool? requestedIncludeHot;
 
   @override
   Future<CommentPageResult> fetchRootComments(
@@ -258,6 +317,8 @@ class _FakeCommentRepository extends BiliCommentRepository {
     bool includeHot = true,
   }) async {
     calls++;
+    requestedSort = sort;
+    requestedIncludeHot = includeHot;
     return result ??
         CommentPageResult(page: 1, pageSize: 20, totalCount: 0, hasMore: false);
   }
