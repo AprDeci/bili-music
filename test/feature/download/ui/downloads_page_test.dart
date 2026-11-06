@@ -12,6 +12,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_smart_dialog/flutter_smart_dialog.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lottie/lottie.dart';
 
 void main() {
   testWidgets('shows the empty state when nothing is downloaded', (
@@ -23,6 +24,93 @@ void main() {
     expect(find.byTooltip('多选'), findsNothing);
     expect(find.byType(TextField), findsNothing);
   });
+
+  for (final bool desktop in <bool>[false, true]) {
+    for (final bool reduceMotion in <bool>[false, true]) {
+      testWidgets(
+        'download icon follows tasks and motion settings desktop=$desktop reduceMotion=$reduceMotion',
+        (tester) async {
+          await tester.binding.setSurfaceSize(Size(desktop ? 1200 : 320, 800));
+          tester.platformDispatcher.accessibilityFeaturesTestValue =
+              FakeAccessibilityFeatures(disableAnimations: reduceMotion);
+          addTearDown(() {
+            tester.binding.setSurfaceSize(null);
+            tester.platformDispatcher.clearAccessibilityFeaturesTestValue();
+          });
+          final controller = await _pump(
+            tester,
+            const DownloadState(
+              tasks: <String, DownloadTask>{
+                'active': DownloadTask(item: _item),
+              },
+            ),
+          );
+          await tester.runAsync(
+            () => AssetLottie('assets/lottie/download_v2.json').load(),
+          );
+          await tester.pump();
+          Lottie animation = tester.widget<Lottie>(find.byType(Lottie));
+          expect(animation.composition, isNotNull);
+          expect(animation.composition!.duration.inMilliseconds, 1333);
+          expect(animation.repeat, isTrue);
+          expect(animation.animate, !reduceMotion);
+          expect(tester.getSize(find.byType(Lottie)), const Size(24, 24));
+          final Color color = Theme.of(
+            tester.element(find.byType(Lottie)),
+          ).colorScheme.onSurfaceVariant;
+          expect(
+            tester
+                .widget<ColorFiltered>(find.byType(ColorFiltered))
+                .colorFilter,
+            ColorFilter.mode(color, BlendMode.srcIn),
+          );
+          final double start = tester
+              .widget<RawLottie>(find.byType(RawLottie))
+              .progress;
+          await tester.pump(const Duration(milliseconds: 500));
+          final double next = tester
+              .widget<RawLottie>(find.byType(RawLottie))
+              .progress;
+          expect(next, reduceMotion ? start : greaterThan(start));
+
+          controller.replace(
+            const DownloadState(
+              tasks: <String, DownloadTask>{
+                'active': DownloadTask(
+                  item: _item,
+                  status: DownloadTaskStatus.running,
+                ),
+              },
+            ),
+          );
+          await tester.pump();
+          animation = tester.widget<Lottie>(find.byType(Lottie));
+          expect(animation.animate, !reduceMotion);
+
+          controller.replace(
+            const DownloadState(
+              tasks: <String, DownloadTask>{
+                'failed': DownloadTask(
+                  item: _failedItem,
+                  status: DownloadTaskStatus.failed,
+                ),
+              },
+            ),
+          );
+          await tester.pumpAndSettle();
+          expect(find.byType(Lottie), findsNothing);
+          expect(find.byIcon(Icons.error_outline_rounded), findsOneWidget);
+
+          controller.replace(const DownloadState());
+          await tester.pumpAndSettle();
+          expect(find.byType(Lottie), findsNothing);
+          expect(find.byIcon(Icons.download_rounded), findsOneWidget);
+          expect(find.text('0 首歌曲下载失败'), findsNothing);
+          expect(tester.takeException(), isNull);
+        },
+      );
+    }
+  }
 
   for (final double width in <double>[320, 1200]) {
     testWidgets('matches favorite list dimensions at width $width', (
@@ -137,6 +225,9 @@ void main() {
   });
 
   testWidgets('clear downloads preserves active tasks', (tester) async {
+    tester.platformDispatcher.accessibilityFeaturesTestValue =
+        FakeAccessibilityFeatures(disableAnimations: true);
+    addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
     final controller = await _pump(
       tester,
       DownloadState(

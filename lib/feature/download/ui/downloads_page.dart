@@ -13,6 +13,7 @@ import 'package:bilimusic/feature/player/domain/playable_item.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:lottie/lottie.dart';
 
 class DownloadsPage extends ConsumerStatefulWidget {
   const DownloadsPage({super.key});
@@ -76,15 +77,35 @@ class _DownloadsPageState extends ConsumerState<DownloadsPage> {
           if (activeCount > 0 || failedCount > 0)
             ListTile(
               contentPadding: const EdgeInsets.symmetric(horizontal: 14),
-              leading: Icon(
-                activeCount > 0
-                    ? Icons.downloading_rounded
-                    : Icons.error_outline_rounded,
-              ),
+              leading: activeCount > 0
+                  ? ExcludeSemantics(
+                      child: ColorFiltered(
+                        colorFilter: ColorFilter.mode(
+                          Theme.of(context).colorScheme.onSurfaceVariant,
+                          BlendMode.srcIn,
+                        ),
+                        child: Lottie.asset(
+                          'assets/lottie/download_v2.json',
+                          width: 24,
+                          height: 24,
+                          animate: !MediaQuery.disableAnimationsOf(context),
+                          repeat: true,
+                          errorBuilder: (context, error, stackTrace) =>
+                              const Icon(Icons.downloading_rounded),
+                        ),
+                      ),
+                    )
+                  : Icon(
+                      failedCount > 0
+                          ? Icons.error_outline_rounded
+                          : Icons.download_rounded,
+                    ),
               title: Text(
                 activeCount > 0
                     ? '正在下载 $activeCount 首歌曲'
-                    : '$failedCount 首歌曲下载失败',
+                    : failedCount > 0
+                    ? '$failedCount 首歌曲下载失败'
+                    : '暂无下载任务',
               ),
               subtitle: activeCount > 0 && failedCount > 0
                   ? Text('$failedCount 首歌曲下载失败')
