@@ -131,6 +131,28 @@ void main() {
               ),
             );
             await tester.pumpAndSettle();
+            expect(find.text('加载更多'), findsNothing);
+            if (!empty) {
+              if (desktop) {
+                expect(
+                  tester
+                      .widget<DesktopFavoriteCollectionItemsList>(
+                        find.byType(DesktopFavoriteCollectionItemsList),
+                      )
+                      .onNotification,
+                  isNull,
+                );
+              } else {
+                expect(
+                  tester
+                      .widget<FavoriteCollectionItemsList>(
+                        find.byType(FavoriteCollectionItemsList),
+                      )
+                      .onNotification,
+                  isNull,
+                );
+              }
+            }
             expect(find.byType(FavoriteCollectionKindSelector), findsNothing);
             expect(find.byType(ListeningContinueButton), findsNothing);
             expect(find.byType(CollectionKindTag), findsOneWidget);

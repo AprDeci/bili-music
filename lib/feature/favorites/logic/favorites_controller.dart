@@ -275,16 +275,6 @@ class FavoritesController extends _$FavoritesController {
     );
   }
 
-  Future<BiliFavoriteCollectionPage?> loadMoreRemoteCollectionItems({
-    required String collectionId,
-    required int pageNumber,
-  }) async {
-    return _syncRemoteCollectionItemsPage(
-      collectionId: collectionId,
-      pageNumber: pageNumber,
-    );
-  }
-
   Future<BiliFavoriteCollectionPage?> _syncRemoteCollectionItemsPage({
     required String collectionId,
     required int pageNumber,

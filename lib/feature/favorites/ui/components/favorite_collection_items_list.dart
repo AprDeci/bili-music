@@ -19,7 +19,7 @@ class FavoriteCollectionItemsList extends ConsumerWidget {
     super.key,
     required this.items,
     required this.footer,
-    required this.onNotification,
+    this.onNotification,
     required this.selectedItemIds,
     required this.selectionMode,
     required this.onSelectionModeChanged,
@@ -33,7 +33,7 @@ class FavoriteCollectionItemsList extends ConsumerWidget {
 
   final List<FavoriteEntry> items;
   final Widget footer;
-  final NotificationListenerCallback<ScrollNotification> onNotification;
+  final NotificationListenerCallback<ScrollNotification>? onNotification;
   final Set<String> selectedItemIds;
   final bool selectionMode;
   final ValueChanged<bool> onSelectionModeChanged;

@@ -90,42 +90,6 @@ class _DesktopFavoriteCollectionPageState
     });
   }
 
-  Future<void> _loadMoreRemoteItems() {
-    return ref
-        .read(
-          remoteCollectionSyncControllerProvider(widget.collectionId).notifier,
-        )
-        .loadMore();
-  }
-
-  bool _onScrollNotification(ScrollNotification notification) {
-    if (notification.metrics.extentAfter <= 200) {
-      unawaited(_loadMoreRemoteItems());
-    }
-    return false;
-  }
-
-  Widget _buildRemoteLoadMoreFooter(bool isRemote) {
-    if (!isRemote || !_syncState.hasMoreRemotePages) {
-      return const BottomPageSpacer();
-    }
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-      child: Center(
-        child: _syncState.isLoadingMore
-            ? const SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              )
-            : TextButton(
-                onPressed: () => unawaited(_loadMoreRemoteItems()),
-                child: const Text('加载更多'),
-              ),
-      ),
-    );
-  }
-
   @override
   void deactivate() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -395,10 +359,7 @@ class _DesktopFavoriteCollectionPageState
                             )
                           : DesktopFavoriteCollectionItemsList(
                               items: visibleItems,
-                              footer: _buildRemoteLoadMoreFooter(
-                                collection.isRemote,
-                              ),
-                              onNotification: _onScrollNotification,
+                              footer: const BottomPageSpacer(),
                               selectedItemIds: _selectedItemIds,
                               selectionMode: _selectionMode,
                               onSelectionModeChanged: _setSelectionMode,

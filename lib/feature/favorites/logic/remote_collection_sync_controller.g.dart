@@ -65,7 +65,7 @@ final class RemoteCollectionSyncControllerProvider
 }
 
 String _$remoteCollectionSyncControllerHash() =>
-    r'5d9f1ac7f080d59fb77f38d1d58e667e12847397';
+    r'0fb83ace679cc1622e6436686c85b5700b267f6b';
 
 final class RemoteCollectionSyncControllerFamily extends $Family
     with

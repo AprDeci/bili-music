@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:bilimusic/common/logger.dart';
 import 'package:bilimusic/common/util/toast_util.dart';
-import 'package:bilimusic/feature/favorites/domain/bili_favorite_collection_page.dart';
 import 'package:bilimusic/feature/favorites/domain/favorite_collection.dart';
 import 'package:bilimusic/feature/favorites/domain/remote_collection_sync_state.dart';
 import 'package:bilimusic/feature/favorites/logic/favorites_controller.dart';
@@ -40,49 +39,6 @@ class RemoteCollectionSyncController extends _$RemoteCollectionSyncController {
     });
   }
 
-  Future<void> loadMore() async {
-    if (state.isLoadingMore || !state.hasMoreRemotePages) {
-      return;
-    }
-    final FavoriteCollection? collection = _collection();
-    if (collection == null || !collection.isRemote) {
-      return;
-    }
-
-    state = state.copyWith(isLoadingMore: true);
-    final int pageNumber = state.nextPage;
-    try {
-      final BiliFavoriteCollectionPage? page = await ref
-          .read(favoritesControllerProvider.notifier)
-          .loadMoreRemoteCollectionItems(
-            collectionId: collection.id,
-            pageNumber: pageNumber,
-          );
-      if (!ref.mounted) {
-        return;
-      }
-      if (page == null) {
-        state = state.copyWith(isLoadingMore: false, hasMoreRemotePages: false);
-        return;
-      }
-      state = state.copyWith(
-        isLoadingMore: false,
-        hasMoreRemotePages: page.hasMore,
-        nextPage: pageNumber + 1,
-      );
-    } on Object catch (error, stackTrace) {
-      if (!ref.mounted) {
-        return;
-      }
-      _logger.w(
-        'Failed to load more remote collection items',
-        error,
-        stackTrace,
-      );
-      state = state.copyWith(isLoadingMore: false);
-    }
-  }
-
   Future<void> _runSync({required bool force}) async {
     final FavoriteCollection? collection = _collection();
     if (collection == null || !collection.isRemote) {
@@ -96,9 +52,7 @@ class RemoteCollectionSyncController extends _$RemoteCollectionSyncController {
     }
 
     _statusTimer?.cancel();
-    state = state
-        .withPagination(hasMore: true, nextPage: 2, isLoadingMore: false)
-        .copyWith(status: RemoteCollectionSyncStatus.syncing);
+    state = state.copyWith(status: RemoteCollectionSyncStatus.syncing);
     try {
       final RemoteCollectionSyncResult result = await ref
           .read(favoritesControllerProvider.notifier)

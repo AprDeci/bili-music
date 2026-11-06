@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:bilimusic/feature/favorites/domain/bili_favorite_collection_page.dart';
 import 'package:bilimusic/feature/favorites/domain/favorite_collection.dart';
 import 'package:bilimusic/feature/favorites/domain/favorites_state.dart';
 import 'package:bilimusic/feature/favorites/domain/remote_collection_sync_state.dart';
@@ -48,31 +47,6 @@ void main() {
         favorites.syncResult.completeError(StateError('offline'));
       } else {
         favorites.syncResult.complete(result);
-      }
-      await completed;
-
-      expect(container.exists(provider), isFalse);
-      expect(updates, hasLength(1));
-    });
-  }
-
-  for (final String outcome in <String>['page', 'null', 'error']) {
-    test('loadMore ignores $outcome after autoDispose', () async {
-      setUpContainer();
-      final Future<void> pending = controller.loadMore();
-      expect(subscription.read().isLoadingMore, isTrue);
-      subscription.close();
-      await container.pump();
-      expect(container.exists(provider), isFalse);
-
-      final Future<void> completed = expectLater(pending, completes);
-      switch (outcome) {
-        case 'page':
-          favorites.pageResult.complete(_page);
-        case 'null':
-          favorites.pageResult.complete(null);
-        case 'error':
-          favorites.pageResult.completeError(StateError('offline'));
       }
       await completed;
 
@@ -154,18 +128,9 @@ final FavoriteCollection _collection = FavoriteCollection(
   updatedAt: DateTime(2026),
 );
 
-final BiliFavoriteCollectionPage _page = BiliFavoriteCollectionPage(
-  collection: _collection,
-  items: const [],
-  hasMore: false,
-  pageNumber: 2,
-);
-
 class _Favorites extends FavoritesController {
   Completer<RemoteCollectionSyncResult> syncResult =
       Completer<RemoteCollectionSyncResult>();
-  final Completer<BiliFavoriteCollectionPage?> pageResult =
-      Completer<BiliFavoriteCollectionPage?>();
 
   @override
   FavoritesState build() => FavoritesState(collections: [_collection]);
@@ -175,12 +140,6 @@ class _Favorites extends FavoritesController {
     String collectionId, {
     bool force = false,
   }) => syncResult.future;
-
-  @override
-  Future<BiliFavoriteCollectionPage?> loadMoreRemoteCollectionItems({
-    required String collectionId,
-    required int pageNumber,
-  }) => pageResult.future;
 }
 
 Future<void> _initToasts(WidgetTester tester) async {
