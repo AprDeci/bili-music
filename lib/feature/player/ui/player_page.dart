@@ -266,18 +266,7 @@ class _PlayerPageState extends ConsumerState<PlayerPage> {
       position: liveState.position,
       isPlaying: liveState.isPlaying,
       onSeek: controller.seek,
-      onDownload: () => _downloadItem(item),
     );
-  }
-
-  Future<void> _downloadItem(PlayableItem item) async {
-    final bool queued = await ref
-        .read(downloadControllerProvider.notifier)
-        .download(item);
-    if (!mounted) {
-      return;
-    }
-    ToastUtil.show(queued ? '已加入下载队列' : '已下载或正在下载');
   }
 
   Future<void> _downloadAllParts(List<PlayableItem> parts) async {
@@ -339,10 +328,6 @@ class _PlayerPageState extends ConsumerState<PlayerPage> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
-                _PlayerDownloadTile(
-                  item: item,
-                  onDone: () => Navigator.of(context).pop(),
-                ),
                 ListTile(
                   key: const Key('sleepTimerMenuEntry'),
                   leading: const Icon(Icons.timer_outlined),
@@ -369,6 +354,10 @@ class _PlayerPageState extends ConsumerState<PlayerPage> {
                     Navigator.of(context).pop();
                     _showPlaybackSpeedSheet();
                   },
+                ),
+                _PlayerDownloadTile(
+                  item: item,
+                  onDone: () => Navigator.of(context).pop(),
                 ),
                 ListTile(
                   leading: const Icon(Icons.open_in_new_rounded),

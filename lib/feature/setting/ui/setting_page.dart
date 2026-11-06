@@ -1,7 +1,6 @@
 import 'package:bilimusic/common/util/format_util.dart';
 import 'package:bilimusic/common/util/platform_util.dart';
 import 'package:bilimusic/core/cache/cache_util.dart';
-import 'package:bilimusic/feature/download/logic/download_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -31,7 +30,6 @@ class _SettingPageState extends ConsumerState<SettingPage> {
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
-    final DownloadState downloadState = ref.watch(downloadControllerProvider);
 
     return Scaffold(
       appBar: AppBar(title: const Text('设置')),
@@ -53,19 +51,6 @@ class _SettingPageState extends ConsumerState<SettingPage> {
             subtitle: Text('后台播放与音频策略', style: theme.textTheme.bodySmall),
             trailing: const Icon(Icons.chevron_right_rounded),
             onTap: () => context.push('/settings/player'),
-          ),
-          ListTile(
-            contentPadding: EdgeInsets.zero,
-            leading: const Icon(Icons.download_done_rounded),
-            title: const Text('离线下载'),
-            subtitle: Text(
-              downloadState.tracks.isEmpty
-                  ? '暂无下载'
-                  : '已下载 ${downloadState.tracks.length} 首 · ${formatBytes(downloadState.totalBytes)}',
-              style: theme.textTheme.bodySmall,
-            ),
-            trailing: const Icon(Icons.chevron_right_rounded),
-            onTap: () => context.push('/settings/downloads'),
           ),
           ListTile(
             contentPadding: EdgeInsets.zero,

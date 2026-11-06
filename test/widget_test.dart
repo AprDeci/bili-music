@@ -301,6 +301,16 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byKey(const Key('playbackSpeedMenuEntry')), findsOneWidget);
+    expect(
+      tester.getTopLeft(find.byKey(const Key('downloadMenuEntry'))).dy,
+      greaterThan(
+        tester.getTopLeft(find.byKey(const Key('playbackSpeedMenuEntry'))).dy,
+      ),
+    );
+    expect(
+      tester.getTopLeft(find.byKey(const Key('downloadMenuEntry'))).dy,
+      lessThan(tester.getTopLeft(find.text('外部应用打开')).dy),
+    );
 
     await tester.tap(find.byKey(const Key('playbackSpeedMenuEntry')));
     await tester.pumpAndSettle();

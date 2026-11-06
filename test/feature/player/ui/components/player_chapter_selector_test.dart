@@ -40,6 +40,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('时间轴'), findsOneWidget);
+    expect(find.byTooltip('下载本视频'), findsNothing);
     expect(find.text('3 首'), findsOneWidget);
     expect(find.text('夜曲'), findsOneWidget);
     expect(find.text('01:40'), findsOneWidget);
