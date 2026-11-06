@@ -14,7 +14,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$PlayerState {
 
- PlayableItem? get currentItem; AudioStreamInfo? get audioStream; List<PlayableItem> get availableParts; List<PlayableItem> get queue; int? get currentQueueIndex; String? get queueSourceLabel; PlayerQueueMode get queueMode; bool get isLoading; bool get isReady; bool get isPlaying; bool get isBuffering; double get volume; double get speed; Duration get position; Duration get bufferedPosition; Duration? get duration; PlayerStatusHint? get statusHint; String? get errorMessage;
+ PlayableItem? get currentItem; AudioStreamInfo? get audioStream; List<PlayableItem> get availableParts; List<PlaybackChapter> get chapters; List<PlayableItem> get queue; int? get currentQueueIndex; String? get queueSourceLabel; PlayerQueueMode get queueMode; bool get isLoading; bool get isReady; bool get isPlaying; bool get isBuffering; double get volume; double get speed; Duration get position; Duration get bufferedPosition; Duration? get duration; PlayerStatusHint? get statusHint; String? get errorMessage;
 /// Create a copy of PlayerState
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -25,16 +25,16 @@ $PlayerStateCopyWith<PlayerState> get copyWith => _$PlayerStateCopyWithImpl<Play
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is PlayerState&&(identical(other.currentItem, currentItem) || other.currentItem == currentItem)&&(identical(other.audioStream, audioStream) || other.audioStream == audioStream)&&const DeepCollectionEquality().equals(other.availableParts, availableParts)&&const DeepCollectionEquality().equals(other.queue, queue)&&(identical(other.currentQueueIndex, currentQueueIndex) || other.currentQueueIndex == currentQueueIndex)&&(identical(other.queueSourceLabel, queueSourceLabel) || other.queueSourceLabel == queueSourceLabel)&&(identical(other.queueMode, queueMode) || other.queueMode == queueMode)&&(identical(other.isLoading, isLoading) || other.isLoading == isLoading)&&(identical(other.isReady, isReady) || other.isReady == isReady)&&(identical(other.isPlaying, isPlaying) || other.isPlaying == isPlaying)&&(identical(other.isBuffering, isBuffering) || other.isBuffering == isBuffering)&&(identical(other.volume, volume) || other.volume == volume)&&(identical(other.speed, speed) || other.speed == speed)&&(identical(other.position, position) || other.position == position)&&(identical(other.bufferedPosition, bufferedPosition) || other.bufferedPosition == bufferedPosition)&&(identical(other.duration, duration) || other.duration == duration)&&(identical(other.statusHint, statusHint) || other.statusHint == statusHint)&&(identical(other.errorMessage, errorMessage) || other.errorMessage == errorMessage));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is PlayerState&&(identical(other.currentItem, currentItem) || other.currentItem == currentItem)&&(identical(other.audioStream, audioStream) || other.audioStream == audioStream)&&const DeepCollectionEquality().equals(other.availableParts, availableParts)&&const DeepCollectionEquality().equals(other.chapters, chapters)&&const DeepCollectionEquality().equals(other.queue, queue)&&(identical(other.currentQueueIndex, currentQueueIndex) || other.currentQueueIndex == currentQueueIndex)&&(identical(other.queueSourceLabel, queueSourceLabel) || other.queueSourceLabel == queueSourceLabel)&&(identical(other.queueMode, queueMode) || other.queueMode == queueMode)&&(identical(other.isLoading, isLoading) || other.isLoading == isLoading)&&(identical(other.isReady, isReady) || other.isReady == isReady)&&(identical(other.isPlaying, isPlaying) || other.isPlaying == isPlaying)&&(identical(other.isBuffering, isBuffering) || other.isBuffering == isBuffering)&&(identical(other.volume, volume) || other.volume == volume)&&(identical(other.speed, speed) || other.speed == speed)&&(identical(other.position, position) || other.position == position)&&(identical(other.bufferedPosition, bufferedPosition) || other.bufferedPosition == bufferedPosition)&&(identical(other.duration, duration) || other.duration == duration)&&(identical(other.statusHint, statusHint) || other.statusHint == statusHint)&&(identical(other.errorMessage, errorMessage) || other.errorMessage == errorMessage));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,currentItem,audioStream,const DeepCollectionEquality().hash(availableParts),const DeepCollectionEquality().hash(queue),currentQueueIndex,queueSourceLabel,queueMode,isLoading,isReady,isPlaying,isBuffering,volume,speed,position,bufferedPosition,duration,statusHint,errorMessage);
+int get hashCode => Object.hashAll([runtimeType,currentItem,audioStream,const DeepCollectionEquality().hash(availableParts),const DeepCollectionEquality().hash(chapters),const DeepCollectionEquality().hash(queue),currentQueueIndex,queueSourceLabel,queueMode,isLoading,isReady,isPlaying,isBuffering,volume,speed,position,bufferedPosition,duration,statusHint,errorMessage]);
 
 @override
 String toString() {
-  return 'PlayerState(currentItem: $currentItem, audioStream: $audioStream, availableParts: $availableParts, queue: $queue, currentQueueIndex: $currentQueueIndex, queueSourceLabel: $queueSourceLabel, queueMode: $queueMode, isLoading: $isLoading, isReady: $isReady, isPlaying: $isPlaying, isBuffering: $isBuffering, volume: $volume, speed: $speed, position: $position, bufferedPosition: $bufferedPosition, duration: $duration, statusHint: $statusHint, errorMessage: $errorMessage)';
+  return 'PlayerState(currentItem: $currentItem, audioStream: $audioStream, availableParts: $availableParts, chapters: $chapters, queue: $queue, currentQueueIndex: $currentQueueIndex, queueSourceLabel: $queueSourceLabel, queueMode: $queueMode, isLoading: $isLoading, isReady: $isReady, isPlaying: $isPlaying, isBuffering: $isBuffering, volume: $volume, speed: $speed, position: $position, bufferedPosition: $bufferedPosition, duration: $duration, statusHint: $statusHint, errorMessage: $errorMessage)';
 }
 
 
@@ -45,7 +45,7 @@ abstract mixin class $PlayerStateCopyWith<$Res>  {
   factory $PlayerStateCopyWith(PlayerState value, $Res Function(PlayerState) _then) = _$PlayerStateCopyWithImpl;
 @useResult
 $Res call({
- PlayableItem? currentItem, AudioStreamInfo? audioStream, List<PlayableItem> availableParts, List<PlayableItem> queue, int? currentQueueIndex, String? queueSourceLabel, PlayerQueueMode queueMode, bool isLoading, bool isReady, bool isPlaying, bool isBuffering, double volume, double speed, Duration position, Duration bufferedPosition, Duration? duration, PlayerStatusHint? statusHint, String? errorMessage
+ PlayableItem? currentItem, AudioStreamInfo? audioStream, List<PlayableItem> availableParts, List<PlaybackChapter> chapters, List<PlayableItem> queue, int? currentQueueIndex, String? queueSourceLabel, PlayerQueueMode queueMode, bool isLoading, bool isReady, bool isPlaying, bool isBuffering, double volume, double speed, Duration position, Duration bufferedPosition, Duration? duration, PlayerStatusHint? statusHint, String? errorMessage
 });
 
 
@@ -62,12 +62,13 @@ class _$PlayerStateCopyWithImpl<$Res>
 
 /// Create a copy of PlayerState
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? currentItem = freezed,Object? audioStream = freezed,Object? availableParts = null,Object? queue = null,Object? currentQueueIndex = freezed,Object? queueSourceLabel = freezed,Object? queueMode = null,Object? isLoading = null,Object? isReady = null,Object? isPlaying = null,Object? isBuffering = null,Object? volume = null,Object? speed = null,Object? position = null,Object? bufferedPosition = null,Object? duration = freezed,Object? statusHint = freezed,Object? errorMessage = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? currentItem = freezed,Object? audioStream = freezed,Object? availableParts = null,Object? chapters = null,Object? queue = null,Object? currentQueueIndex = freezed,Object? queueSourceLabel = freezed,Object? queueMode = null,Object? isLoading = null,Object? isReady = null,Object? isPlaying = null,Object? isBuffering = null,Object? volume = null,Object? speed = null,Object? position = null,Object? bufferedPosition = null,Object? duration = freezed,Object? statusHint = freezed,Object? errorMessage = freezed,}) {
   return _then(_self.copyWith(
 currentItem: freezed == currentItem ? _self.currentItem : currentItem // ignore: cast_nullable_to_non_nullable
 as PlayableItem?,audioStream: freezed == audioStream ? _self.audioStream : audioStream // ignore: cast_nullable_to_non_nullable
 as AudioStreamInfo?,availableParts: null == availableParts ? _self.availableParts : availableParts // ignore: cast_nullable_to_non_nullable
-as List<PlayableItem>,queue: null == queue ? _self.queue : queue // ignore: cast_nullable_to_non_nullable
+as List<PlayableItem>,chapters: null == chapters ? _self.chapters : chapters // ignore: cast_nullable_to_non_nullable
+as List<PlaybackChapter>,queue: null == queue ? _self.queue : queue // ignore: cast_nullable_to_non_nullable
 as List<PlayableItem>,currentQueueIndex: freezed == currentQueueIndex ? _self.currentQueueIndex : currentQueueIndex // ignore: cast_nullable_to_non_nullable
 as int?,queueSourceLabel: freezed == queueSourceLabel ? _self.queueSourceLabel : queueSourceLabel // ignore: cast_nullable_to_non_nullable
 as String?,queueMode: null == queueMode ? _self.queueMode : queueMode // ignore: cast_nullable_to_non_nullable
@@ -179,10 +180,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( PlayableItem? currentItem,  AudioStreamInfo? audioStream,  List<PlayableItem> availableParts,  List<PlayableItem> queue,  int? currentQueueIndex,  String? queueSourceLabel,  PlayerQueueMode queueMode,  bool isLoading,  bool isReady,  bool isPlaying,  bool isBuffering,  double volume,  double speed,  Duration position,  Duration bufferedPosition,  Duration? duration,  PlayerStatusHint? statusHint,  String? errorMessage)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( PlayableItem? currentItem,  AudioStreamInfo? audioStream,  List<PlayableItem> availableParts,  List<PlaybackChapter> chapters,  List<PlayableItem> queue,  int? currentQueueIndex,  String? queueSourceLabel,  PlayerQueueMode queueMode,  bool isLoading,  bool isReady,  bool isPlaying,  bool isBuffering,  double volume,  double speed,  Duration position,  Duration bufferedPosition,  Duration? duration,  PlayerStatusHint? statusHint,  String? errorMessage)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _PlayerState() when $default != null:
-return $default(_that.currentItem,_that.audioStream,_that.availableParts,_that.queue,_that.currentQueueIndex,_that.queueSourceLabel,_that.queueMode,_that.isLoading,_that.isReady,_that.isPlaying,_that.isBuffering,_that.volume,_that.speed,_that.position,_that.bufferedPosition,_that.duration,_that.statusHint,_that.errorMessage);case _:
+return $default(_that.currentItem,_that.audioStream,_that.availableParts,_that.chapters,_that.queue,_that.currentQueueIndex,_that.queueSourceLabel,_that.queueMode,_that.isLoading,_that.isReady,_that.isPlaying,_that.isBuffering,_that.volume,_that.speed,_that.position,_that.bufferedPosition,_that.duration,_that.statusHint,_that.errorMessage);case _:
   return orElse();
 
 }
@@ -200,10 +201,10 @@ return $default(_that.currentItem,_that.audioStream,_that.availableParts,_that.q
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( PlayableItem? currentItem,  AudioStreamInfo? audioStream,  List<PlayableItem> availableParts,  List<PlayableItem> queue,  int? currentQueueIndex,  String? queueSourceLabel,  PlayerQueueMode queueMode,  bool isLoading,  bool isReady,  bool isPlaying,  bool isBuffering,  double volume,  double speed,  Duration position,  Duration bufferedPosition,  Duration? duration,  PlayerStatusHint? statusHint,  String? errorMessage)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( PlayableItem? currentItem,  AudioStreamInfo? audioStream,  List<PlayableItem> availableParts,  List<PlaybackChapter> chapters,  List<PlayableItem> queue,  int? currentQueueIndex,  String? queueSourceLabel,  PlayerQueueMode queueMode,  bool isLoading,  bool isReady,  bool isPlaying,  bool isBuffering,  double volume,  double speed,  Duration position,  Duration bufferedPosition,  Duration? duration,  PlayerStatusHint? statusHint,  String? errorMessage)  $default,) {final _that = this;
 switch (_that) {
 case _PlayerState():
-return $default(_that.currentItem,_that.audioStream,_that.availableParts,_that.queue,_that.currentQueueIndex,_that.queueSourceLabel,_that.queueMode,_that.isLoading,_that.isReady,_that.isPlaying,_that.isBuffering,_that.volume,_that.speed,_that.position,_that.bufferedPosition,_that.duration,_that.statusHint,_that.errorMessage);case _:
+return $default(_that.currentItem,_that.audioStream,_that.availableParts,_that.chapters,_that.queue,_that.currentQueueIndex,_that.queueSourceLabel,_that.queueMode,_that.isLoading,_that.isReady,_that.isPlaying,_that.isBuffering,_that.volume,_that.speed,_that.position,_that.bufferedPosition,_that.duration,_that.statusHint,_that.errorMessage);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -220,10 +221,10 @@ return $default(_that.currentItem,_that.audioStream,_that.availableParts,_that.q
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( PlayableItem? currentItem,  AudioStreamInfo? audioStream,  List<PlayableItem> availableParts,  List<PlayableItem> queue,  int? currentQueueIndex,  String? queueSourceLabel,  PlayerQueueMode queueMode,  bool isLoading,  bool isReady,  bool isPlaying,  bool isBuffering,  double volume,  double speed,  Duration position,  Duration bufferedPosition,  Duration? duration,  PlayerStatusHint? statusHint,  String? errorMessage)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( PlayableItem? currentItem,  AudioStreamInfo? audioStream,  List<PlayableItem> availableParts,  List<PlaybackChapter> chapters,  List<PlayableItem> queue,  int? currentQueueIndex,  String? queueSourceLabel,  PlayerQueueMode queueMode,  bool isLoading,  bool isReady,  bool isPlaying,  bool isBuffering,  double volume,  double speed,  Duration position,  Duration bufferedPosition,  Duration? duration,  PlayerStatusHint? statusHint,  String? errorMessage)?  $default,) {final _that = this;
 switch (_that) {
 case _PlayerState() when $default != null:
-return $default(_that.currentItem,_that.audioStream,_that.availableParts,_that.queue,_that.currentQueueIndex,_that.queueSourceLabel,_that.queueMode,_that.isLoading,_that.isReady,_that.isPlaying,_that.isBuffering,_that.volume,_that.speed,_that.position,_that.bufferedPosition,_that.duration,_that.statusHint,_that.errorMessage);case _:
+return $default(_that.currentItem,_that.audioStream,_that.availableParts,_that.chapters,_that.queue,_that.currentQueueIndex,_that.queueSourceLabel,_that.queueMode,_that.isLoading,_that.isReady,_that.isPlaying,_that.isBuffering,_that.volume,_that.speed,_that.position,_that.bufferedPosition,_that.duration,_that.statusHint,_that.errorMessage);case _:
   return null;
 
 }
@@ -235,7 +236,7 @@ return $default(_that.currentItem,_that.audioStream,_that.availableParts,_that.q
 
 
 class _PlayerState extends PlayerState {
-  const _PlayerState({this.currentItem, this.audioStream, final  List<PlayableItem> availableParts = const <PlayableItem>[], final  List<PlayableItem> queue = const <PlayableItem>[], this.currentQueueIndex, this.queueSourceLabel, this.queueMode = PlayerQueueMode.sequence, this.isLoading = false, this.isReady = false, this.isPlaying = false, this.isBuffering = false, this.volume = 1.0, this.speed = 1.0, this.position = Duration.zero, this.bufferedPosition = Duration.zero, this.duration, this.statusHint, this.errorMessage}): _availableParts = availableParts,_queue = queue,super._();
+  const _PlayerState({this.currentItem, this.audioStream, final  List<PlayableItem> availableParts = const <PlayableItem>[], final  List<PlaybackChapter> chapters = const <PlaybackChapter>[], final  List<PlayableItem> queue = const <PlayableItem>[], this.currentQueueIndex, this.queueSourceLabel, this.queueMode = PlayerQueueMode.sequence, this.isLoading = false, this.isReady = false, this.isPlaying = false, this.isBuffering = false, this.volume = 1.0, this.speed = 1.0, this.position = Duration.zero, this.bufferedPosition = Duration.zero, this.duration, this.statusHint, this.errorMessage}): _availableParts = availableParts,_chapters = chapters,_queue = queue,super._();
   
 
 @override final  PlayableItem? currentItem;
@@ -245,6 +246,13 @@ class _PlayerState extends PlayerState {
   if (_availableParts is EqualUnmodifiableListView) return _availableParts;
   // ignore: implicit_dynamic_type
   return EqualUnmodifiableListView(_availableParts);
+}
+
+ final  List<PlaybackChapter> _chapters;
+@override@JsonKey() List<PlaybackChapter> get chapters {
+  if (_chapters is EqualUnmodifiableListView) return _chapters;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_chapters);
 }
 
  final  List<PlayableItem> _queue;
@@ -279,16 +287,16 @@ _$PlayerStateCopyWith<_PlayerState> get copyWith => __$PlayerStateCopyWithImpl<_
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _PlayerState&&(identical(other.currentItem, currentItem) || other.currentItem == currentItem)&&(identical(other.audioStream, audioStream) || other.audioStream == audioStream)&&const DeepCollectionEquality().equals(other._availableParts, _availableParts)&&const DeepCollectionEquality().equals(other._queue, _queue)&&(identical(other.currentQueueIndex, currentQueueIndex) || other.currentQueueIndex == currentQueueIndex)&&(identical(other.queueSourceLabel, queueSourceLabel) || other.queueSourceLabel == queueSourceLabel)&&(identical(other.queueMode, queueMode) || other.queueMode == queueMode)&&(identical(other.isLoading, isLoading) || other.isLoading == isLoading)&&(identical(other.isReady, isReady) || other.isReady == isReady)&&(identical(other.isPlaying, isPlaying) || other.isPlaying == isPlaying)&&(identical(other.isBuffering, isBuffering) || other.isBuffering == isBuffering)&&(identical(other.volume, volume) || other.volume == volume)&&(identical(other.speed, speed) || other.speed == speed)&&(identical(other.position, position) || other.position == position)&&(identical(other.bufferedPosition, bufferedPosition) || other.bufferedPosition == bufferedPosition)&&(identical(other.duration, duration) || other.duration == duration)&&(identical(other.statusHint, statusHint) || other.statusHint == statusHint)&&(identical(other.errorMessage, errorMessage) || other.errorMessage == errorMessage));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _PlayerState&&(identical(other.currentItem, currentItem) || other.currentItem == currentItem)&&(identical(other.audioStream, audioStream) || other.audioStream == audioStream)&&const DeepCollectionEquality().equals(other._availableParts, _availableParts)&&const DeepCollectionEquality().equals(other._chapters, _chapters)&&const DeepCollectionEquality().equals(other._queue, _queue)&&(identical(other.currentQueueIndex, currentQueueIndex) || other.currentQueueIndex == currentQueueIndex)&&(identical(other.queueSourceLabel, queueSourceLabel) || other.queueSourceLabel == queueSourceLabel)&&(identical(other.queueMode, queueMode) || other.queueMode == queueMode)&&(identical(other.isLoading, isLoading) || other.isLoading == isLoading)&&(identical(other.isReady, isReady) || other.isReady == isReady)&&(identical(other.isPlaying, isPlaying) || other.isPlaying == isPlaying)&&(identical(other.isBuffering, isBuffering) || other.isBuffering == isBuffering)&&(identical(other.volume, volume) || other.volume == volume)&&(identical(other.speed, speed) || other.speed == speed)&&(identical(other.position, position) || other.position == position)&&(identical(other.bufferedPosition, bufferedPosition) || other.bufferedPosition == bufferedPosition)&&(identical(other.duration, duration) || other.duration == duration)&&(identical(other.statusHint, statusHint) || other.statusHint == statusHint)&&(identical(other.errorMessage, errorMessage) || other.errorMessage == errorMessage));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,currentItem,audioStream,const DeepCollectionEquality().hash(_availableParts),const DeepCollectionEquality().hash(_queue),currentQueueIndex,queueSourceLabel,queueMode,isLoading,isReady,isPlaying,isBuffering,volume,speed,position,bufferedPosition,duration,statusHint,errorMessage);
+int get hashCode => Object.hashAll([runtimeType,currentItem,audioStream,const DeepCollectionEquality().hash(_availableParts),const DeepCollectionEquality().hash(_chapters),const DeepCollectionEquality().hash(_queue),currentQueueIndex,queueSourceLabel,queueMode,isLoading,isReady,isPlaying,isBuffering,volume,speed,position,bufferedPosition,duration,statusHint,errorMessage]);
 
 @override
 String toString() {
-  return 'PlayerState(currentItem: $currentItem, audioStream: $audioStream, availableParts: $availableParts, queue: $queue, currentQueueIndex: $currentQueueIndex, queueSourceLabel: $queueSourceLabel, queueMode: $queueMode, isLoading: $isLoading, isReady: $isReady, isPlaying: $isPlaying, isBuffering: $isBuffering, volume: $volume, speed: $speed, position: $position, bufferedPosition: $bufferedPosition, duration: $duration, statusHint: $statusHint, errorMessage: $errorMessage)';
+  return 'PlayerState(currentItem: $currentItem, audioStream: $audioStream, availableParts: $availableParts, chapters: $chapters, queue: $queue, currentQueueIndex: $currentQueueIndex, queueSourceLabel: $queueSourceLabel, queueMode: $queueMode, isLoading: $isLoading, isReady: $isReady, isPlaying: $isPlaying, isBuffering: $isBuffering, volume: $volume, speed: $speed, position: $position, bufferedPosition: $bufferedPosition, duration: $duration, statusHint: $statusHint, errorMessage: $errorMessage)';
 }
 
 
@@ -299,7 +307,7 @@ abstract mixin class _$PlayerStateCopyWith<$Res> implements $PlayerStateCopyWith
   factory _$PlayerStateCopyWith(_PlayerState value, $Res Function(_PlayerState) _then) = __$PlayerStateCopyWithImpl;
 @override @useResult
 $Res call({
- PlayableItem? currentItem, AudioStreamInfo? audioStream, List<PlayableItem> availableParts, List<PlayableItem> queue, int? currentQueueIndex, String? queueSourceLabel, PlayerQueueMode queueMode, bool isLoading, bool isReady, bool isPlaying, bool isBuffering, double volume, double speed, Duration position, Duration bufferedPosition, Duration? duration, PlayerStatusHint? statusHint, String? errorMessage
+ PlayableItem? currentItem, AudioStreamInfo? audioStream, List<PlayableItem> availableParts, List<PlaybackChapter> chapters, List<PlayableItem> queue, int? currentQueueIndex, String? queueSourceLabel, PlayerQueueMode queueMode, bool isLoading, bool isReady, bool isPlaying, bool isBuffering, double volume, double speed, Duration position, Duration bufferedPosition, Duration? duration, PlayerStatusHint? statusHint, String? errorMessage
 });
 
 
@@ -316,12 +324,13 @@ class __$PlayerStateCopyWithImpl<$Res>
 
 /// Create a copy of PlayerState
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? currentItem = freezed,Object? audioStream = freezed,Object? availableParts = null,Object? queue = null,Object? currentQueueIndex = freezed,Object? queueSourceLabel = freezed,Object? queueMode = null,Object? isLoading = null,Object? isReady = null,Object? isPlaying = null,Object? isBuffering = null,Object? volume = null,Object? speed = null,Object? position = null,Object? bufferedPosition = null,Object? duration = freezed,Object? statusHint = freezed,Object? errorMessage = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? currentItem = freezed,Object? audioStream = freezed,Object? availableParts = null,Object? chapters = null,Object? queue = null,Object? currentQueueIndex = freezed,Object? queueSourceLabel = freezed,Object? queueMode = null,Object? isLoading = null,Object? isReady = null,Object? isPlaying = null,Object? isBuffering = null,Object? volume = null,Object? speed = null,Object? position = null,Object? bufferedPosition = null,Object? duration = freezed,Object? statusHint = freezed,Object? errorMessage = freezed,}) {
   return _then(_PlayerState(
 currentItem: freezed == currentItem ? _self.currentItem : currentItem // ignore: cast_nullable_to_non_nullable
 as PlayableItem?,audioStream: freezed == audioStream ? _self.audioStream : audioStream // ignore: cast_nullable_to_non_nullable
 as AudioStreamInfo?,availableParts: null == availableParts ? _self._availableParts : availableParts // ignore: cast_nullable_to_non_nullable
-as List<PlayableItem>,queue: null == queue ? _self._queue : queue // ignore: cast_nullable_to_non_nullable
+as List<PlayableItem>,chapters: null == chapters ? _self._chapters : chapters // ignore: cast_nullable_to_non_nullable
+as List<PlaybackChapter>,queue: null == queue ? _self._queue : queue // ignore: cast_nullable_to_non_nullable
 as List<PlayableItem>,currentQueueIndex: freezed == currentQueueIndex ? _self.currentQueueIndex : currentQueueIndex // ignore: cast_nullable_to_non_nullable
 as int?,queueSourceLabel: freezed == queueSourceLabel ? _self.queueSourceLabel : queueSourceLabel // ignore: cast_nullable_to_non_nullable
 as String?,queueMode: null == queueMode ? _self.queueMode : queueMode // ignore: cast_nullable_to_non_nullable

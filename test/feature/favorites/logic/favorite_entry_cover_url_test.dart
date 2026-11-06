@@ -1,4 +1,9 @@
 import 'dart:async';
+import 'dart:io';
+
+import 'package:bilimusic/feature/player/data/chapter_cache_repository.dart';
+import 'package:bilimusic/feature/player/domain/playback_chapter.dart';
+import 'package:hive_ce/hive.dart';
 
 import 'package:bilimusic/common/domain/collection_kind.dart';
 import 'package:bilimusic/feature/favorites/domain/favorite_collection.dart';
@@ -28,7 +33,12 @@ void main() {
   late Completer<Metadata?> metadata;
   late bool requestedMetadata;
 
-  setUp(() {
+  late Directory directory;
+
+  setUp(() async {
+    directory = await Directory.systemTemp.createTemp('entry_cover_test_');
+    Hive.init(directory.path);
+    await Hive.openBox<String>(chapterCacheBoxName);
     metadata = Completer<Metadata?>();
     requestedMetadata = false;
     container = ProviderContainer(
@@ -53,7 +63,11 @@ void main() {
     );
   });
 
-  tearDown(() => container.dispose());
+  tearDown(() async {
+    container.dispose();
+    await Hive.close();
+    await directory.delete(recursive: true);
+  });
 
   test(
     'cover follows view mode and late metadata without fetching in video mode',
@@ -208,6 +222,63 @@ void main() {
     );
     expect(requestedMetadata, isFalse);
   });
+
+  test(
+    'compilation keeps video cover without requesting old metadata',
+    () async {
+      await container
+          .read(favoritesViewModeLogicProvider('collection-a').notifier)
+          .setViewMode(FavoriteListViewMode.metadata);
+      final FavoriteEntry compilation = _entry.copyWith(title: '歌曲合集');
+
+      expect(
+        container.read(
+          favoriteEntryCoverUrlProvider('collection-a', compilation),
+        ),
+        compilation.coverUrl,
+      );
+      expect(requestedMetadata, isFalse);
+    },
+  );
+
+  test(
+    'chapter cache changes restore the video cover and clearing restores metadata',
+    () async {
+      await container
+          .read(favoritesViewModeLogicProvider('collection-a').notifier)
+          .setViewMode(FavoriteListViewMode.metadata);
+      final provider = favoriteEntryCoverUrlProvider('collection-a', _entry);
+      container.read(provider);
+      metadata.complete(
+        Metadata(
+          stableId: _entry.itemId,
+          albumArtUrl: 'https://example.com/album.jpg',
+        ),
+      );
+      await container.read(
+        favoriteEntryMetadataProvider(_entry.contentId).future,
+      );
+      await container.pump();
+      expect(container.read(provider), 'https://example.com/album.jpg');
+
+      final ChapterCacheRepository cache = ChapterCacheRepository(
+        Hive.box<String>(chapterCacheBoxName),
+      );
+      await cache.putChapters(_entry.contentId, const <PlaybackChapter>[
+        PlaybackChapter(start: Duration.zero, title: '第一首'),
+        PlaybackChapter(start: Duration(minutes: 3), title: '第二首'),
+      ]);
+      await container.pump();
+      expect(container.read(provider), _entry.coverUrl);
+      await cache.clear();
+      await container.pump();
+      await container.read(
+        favoriteEntryMetadataProvider(_entry.contentId).future,
+      );
+      await container.pump();
+      expect(container.read(provider), 'https://example.com/album.jpg');
+    },
+  );
 
   test('empty collection keeps its placeholder without reading metadata', () {
     expect(

@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:bilimusic/common/components/badged_icon_button.dart';
 import 'package:bilimusic/feature/favorites/domain/favorites_state.dart';
 import 'package:bilimusic/feature/favorites/logic/favorites_controller.dart';
 import 'package:bilimusic/feature/metadata/domain/metadata.dart';
@@ -10,6 +11,7 @@ import 'package:bilimusic/feature/player/domain/player_display_info.dart';
 import 'package:bilimusic/feature/player/domain/player_lyric_settings.dart';
 import 'package:bilimusic/feature/player/domain/player_online_audience.dart';
 import 'package:bilimusic/feature/player/domain/player_state.dart';
+import 'package:bilimusic/feature/player/domain/playback_chapter.dart';
 import 'package:bilimusic/feature/player/logic/lyrics/desktop_lyrics_controller.dart';
 import 'package:bilimusic/feature/player/logic/player_controller.dart';
 import 'package:bilimusic/feature/player/logic/display/player_cover_color_provider.dart';
@@ -1245,6 +1247,57 @@ void main() {
       expect(tester.takeException(), isNull);
     });
   }
+
+  testWidgets('timeline highlights the chapter for the live position', (
+    WidgetTester tester,
+  ) async {
+    final ProviderContainer container = await _pumpPlayer(tester, null);
+    (container.read(playerControllerProvider.notifier) as _FakePlayerController)
+        .show(
+          const PlayerState(
+            currentItem: _item,
+            queue: <PlayableItem>[_item],
+            currentQueueIndex: 0,
+            isReady: true,
+            duration: Duration(minutes: 5),
+            position: Duration(minutes: 2, seconds: 30),
+            chapters: <PlaybackChapter>[
+              PlaybackChapter(start: Duration.zero, title: '夜曲'),
+              PlaybackChapter(start: Duration(minutes: 2), title: '晴天'),
+              PlaybackChapter(start: Duration(minutes: 4), title: '稻香'),
+            ],
+          ),
+        );
+    await tester.pump();
+
+    await tester.tap(find.byType(BadgedIconButton).first);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+
+    expect(find.text('时间轴'), findsOneWidget);
+    final Finder sheetChapters = find.descendant(
+      of: find.byType(BottomSheet),
+      matching: find.text('晴天'),
+    );
+    final BuildContext timelineContext = tester.element(sheetChapters);
+    final ColorScheme colorScheme = Theme.of(timelineContext).colorScheme;
+    expect(
+      tester.widget<Text>(sheetChapters).style?.color,
+      colorScheme.primary,
+    );
+    expect(
+      tester
+          .widget<Text>(
+            find.descendant(
+              of: find.byType(BottomSheet),
+              matching: find.text('夜曲'),
+            ),
+          )
+          .style
+          ?.color,
+      colorScheme.onSurface,
+    );
+  });
 }
 
 Future<ProviderContainer> _pumpPlayer(

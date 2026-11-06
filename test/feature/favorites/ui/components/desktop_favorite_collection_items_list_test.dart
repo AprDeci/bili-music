@@ -1,5 +1,7 @@
 import 'dart:io';
 
+import 'package:bilimusic/feature/player/data/chapter_cache_repository.dart';
+
 import 'package:bilimusic/feature/favorites/domain/favorite_collection.dart';
 import 'package:bilimusic/feature/favorites/domain/favorite_entry.dart';
 import 'package:bilimusic/feature/favorites/domain/favorite_membership.dart';
@@ -28,6 +30,7 @@ void main() {
   setUp(() async {
     directory = await Directory.systemTemp.createTemp('desktop_favorite_rows_');
     Hive.init(directory.path);
+    await Hive.openBox<String>(chapterCacheBoxName);
     box = await Hive.openBox<Map>('statistics');
     tracker = StatisticsTracker(
       const Stream.empty(),
@@ -38,6 +41,7 @@ void main() {
   tearDown(() async {
     await tracker.dispose();
     await box.close();
+    await Hive.box<String>(chapterCacheBoxName).close();
     await directory.delete(recursive: true);
   });
 

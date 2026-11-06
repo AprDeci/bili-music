@@ -7,13 +7,17 @@ import 'package:bilimusic/core/bili/session/bili_session_controller.dart';
 import 'package:bilimusic/core/hive/hive_keys.dart';
 import 'package:bilimusic/core/settings/app_settings_store.dart';
 import 'package:bilimusic/core/window/windows_taskbar_thumbnail_toolbar.dart';
+import 'package:bilimusic/feature/download/data/download_repository.dart';
+import 'package:bilimusic/feature/download/logic/downloaded_audio_source_resolver.dart';
 import 'package:bilimusic/feature/listening/logic/listening_progress_controller.dart';
 import 'package:bilimusic/feature/player/data/audio_cache_repository.dart';
+import 'package:bilimusic/feature/player/data/bili_chapter_repository.dart';
 import 'package:bilimusic/feature/player/data/bili_player_repository.dart';
 import 'package:bilimusic/feature/player/data/player_queue_local_repository.dart';
 import 'package:bilimusic/feature/player/domain/player_audio_quality_preference.dart';
 import 'package:bilimusic/feature/player/domain/player_event.dart';
 import 'package:bilimusic/feature/player/domain/playable_item.dart';
+import 'package:bilimusic/feature/player/domain/playback_chapter.dart';
 import 'package:bilimusic/feature/player/domain/persisted_playback_queue.dart';
 import 'package:bilimusic/feature/player/domain/player_state.dart';
 import 'package:bilimusic/feature/player/logic/media_session/app_audio_handler.dart';
@@ -26,6 +30,7 @@ import 'package:bilimusic/feature/player/logic/playback/player_audio_session_coo
 import 'package:bilimusic/feature/player/logic/player_event_hub.dart';
 import 'package:bilimusic/feature/player/logic/playback/player_settings_logic.dart';
 import 'package:bilimusic/feature/recent/logic/recent_playback_controller.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 final NotifierProvider<PlayerController, PlayerState> playerControllerProvider =
@@ -56,8 +61,25 @@ class PlayerController extends Notifier<PlayerState>
     readQualityPreference: () =>
         ref.read(playerAudioQualityPreferenceLogicProvider),
     logEvent: _logPlayerEvent,
+    downloadedSource: _downloadedAudioSource,
   );
+  late final DownloadedAudioSourceResolver? _downloadedAudioSource =
+      _buildDownloadedAudioSource();
+
+  DownloadedAudioSourceResolver? _buildDownloadedAudioSource() {
+    try {
+      return DownloadedAudioSourceResolver(
+        ref.read(downloadRepositoryProvider),
+      );
+    } on Object {
+      return null;
+    }
+  }
+
   late final PlayerQueueManager _queueManager = PlayerQueueManager();
+  late final BiliChapterRepository _chapterRepository = ref.read(
+    biliChapterRepositoryProvider,
+  );
   late final PlayerSessionCoordinator _session = PlayerSessionCoordinator(
     host: this,
     playbackLoader: _playbackLoader,
@@ -97,6 +119,7 @@ class PlayerController extends Notifier<PlayerState>
   double _lastAudibleVolume = 1.0;
   int _operationGeneration = 0;
   Duration _lastPersistedProgress = Duration.zero;
+  Duration? _pendingSeekTarget;
 
   static const Duration _persistProgressStep = Duration(seconds: 10);
 
@@ -301,9 +324,20 @@ class PlayerController extends Notifier<PlayerState>
   }
 
   @override
-  Future<void> seek(Duration position) {
+  Future<void> seek(Duration position) async {
     _emitPlayerEvent(PlayerEventType.seek, position: position);
-    return _audioEngine.seek(position);
+    final Duration target = position < Duration.zero ? Duration.zero : position;
+    _pendingSeekTarget = target;
+    state = state.copyWith(position: target);
+    try {
+      await _audioEngine.seek(target);
+    } finally {
+      Future<void>.delayed(const Duration(milliseconds: 600), () {
+        if (_pendingSeekTarget == target) {
+          _pendingSeekTarget = null;
+        }
+      });
+    }
   }
 
   // seek即播放
@@ -410,6 +444,7 @@ class PlayerController extends Notifier<PlayerState>
       currentItem: queue[resolvedIndex],
       queueSourceLabel: sourceLabel,
       availableParts: const <PlayableItem>[],
+      chapters: const <PlaybackChapter>[],
       audioStream: null,
       duration: null,
       position: Duration.zero,
@@ -458,6 +493,7 @@ class PlayerController extends Notifier<PlayerState>
       currentQueueIndex: currentIndex,
       currentItem: item,
       availableParts: const <PlayableItem>[],
+      chapters: const <PlaybackChapter>[],
       audioStream: null,
       duration: null,
       position: Duration.zero,
@@ -477,6 +513,10 @@ class PlayerController extends Notifier<PlayerState>
       generation: generation,
     );
   }
+
+  @override
+  Future<void> enqueueAvailableParts(List<PlayableItem> parts) =>
+      enqueue(parts);
 
   Future<void> enqueue(List<PlayableItem> items) async {
     if (items.isEmpty) {
@@ -645,6 +685,7 @@ class PlayerController extends Notifier<PlayerState>
       currentQueueIndex: null,
       currentItem: null,
       availableParts: const <PlayableItem>[],
+      chapters: const <PlaybackChapter>[],
       audioStream: null,
       queueSourceLabel: null,
       isLoading: false,
@@ -764,6 +805,7 @@ class PlayerController extends Notifier<PlayerState>
       queueMode: snapshot.queueMode,
       queueSourceLabel: snapshot.queueSourceLabel,
       availableParts: const <PlayableItem>[],
+      chapters: const <PlaybackChapter>[],
       audioStream: null,
       duration: null,
       position: Duration.zero,
@@ -826,6 +868,15 @@ class PlayerController extends Notifier<PlayerState>
   }
 
   void _onEnginePositionChanged(Duration position) {
+    final Duration? seekTarget = _pendingSeekTarget;
+    if (seekTarget != null) {
+      final bool reachedTarget =
+          (position - seekTarget).abs() <= const Duration(milliseconds: 1500);
+      if (!reachedTarget) {
+        return;
+      }
+      _pendingSeekTarget = null;
+    }
     _applyEnginePlaybackChange(
       _EnginePlaybackChange.position,
       _enginePlaybackSnapshot.copyWith(position: position),
@@ -1076,6 +1127,46 @@ class PlayerController extends Notifier<PlayerState>
 
   @override
   void publishPlaybackState() => _publishPlaybackState();
+
+  @override
+  void scheduleChapterResolution() {
+    unawaited(_resolveChaptersForCurrentItem());
+  }
+
+  Future<void> _resolveChaptersForCurrentItem() async {
+    final PlayableItem? item = state.currentItem;
+    if (item == null) {
+      return;
+    }
+
+    final String stableId = item.stableId;
+    final List<PlaybackChapter> chapters;
+    try {
+      chapters = await _chapterRepository.fetchChapters(
+        item,
+        duration: state.duration,
+      );
+    } on Object catch (error) {
+      _logPlayerEvent(
+        'chapters:failed',
+        details: <String, Object?>{'error': error.toString()},
+      );
+      return;
+    }
+
+    if (!ref.mounted || state.currentItem?.stableId != stableId) {
+      return;
+    }
+    if (listEquals(state.chapters, chapters)) {
+      return;
+    }
+
+    state = state.copyWith(chapters: chapters);
+    _logPlayerEvent(
+      'chapters:resolved',
+      details: <String, Object?>{'count': chapters.length},
+    );
+  }
 
   @override
   Future<void> persistQueueSnapshot() => _persistQueueSnapshot();

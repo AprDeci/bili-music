@@ -8,6 +8,7 @@ import 'package:bilimusic/feature/metadata/domain/metadata.dart';
 import 'package:bilimusic/feature/metadata/domain/metadata_backfill_state.dart';
 import 'package:bilimusic/feature/metadata/logic/metadata_lookup_service.dart';
 import 'package:bilimusic/feature/player/domain/playable_item.dart';
+import 'package:bilimusic/feature/player/logic/chapters/chapter_cache_provider.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'metadata_backfill_controller.g.dart';
@@ -31,6 +32,7 @@ class MetadataBackfillController extends _$MetadataBackfillController {
   // 加入收藏后入队；命中缓存的行会在 _drain 里被跳过。
   void enqueue(PlayableItem item) {
     if (item.isSpoken ||
+        _isCompilation(item) ||
         !item.hasIdentity ||
         !_pendingContentIds.add(item.contentId)) {
       return;
@@ -54,6 +56,7 @@ class MetadataBackfillController extends _$MetadataBackfillController {
     int queued = 0;
     for (final PlayableItem item in items) {
       if (item.isSpoken ||
+          _isCompilation(item) ||
           !item.hasIdentity ||
           _pendingContentIds.contains(item.contentId)) {
         continue;
@@ -92,7 +95,7 @@ class MetadataBackfillController extends _$MetadataBackfillController {
     try {
       while (_pending.isNotEmpty && !_cancelRequested) {
         final PlayableItem item = _pending.removeAt(0);
-        if (item.isSpoken) {
+        if (item.isSpoken || _isCompilation(item)) {
           _pendingContentIds.remove(item.contentId);
           _processed++;
           _publish();
@@ -113,14 +116,16 @@ class MetadataBackfillController extends _$MetadataBackfillController {
               item: item,
               title: _lookupTitle(item),
             );
-            await repository.putCachedMetadata(
-              item: item,
-              metadata: result.metadata,
-            );
-            if (result.metadata.hasContent) {
-              _matched++;
+            if (!_isCompilation(item)) {
+              await repository.putCachedMetadata(
+                item: item,
+                metadata: result.metadata,
+              );
+              if (result.metadata.hasContent) {
+                _matched++;
+              }
+              ref.invalidate(favoriteEntryMetadataProvider(item.contentId));
             }
-            ref.invalidate(favoriteEntryMetadataProvider(item.contentId));
           }
         } on Object catch (error) {
           _logger.d('backfill failed for ${item.contentId}: $error');
@@ -143,6 +148,9 @@ class MetadataBackfillController extends _$MetadataBackfillController {
       _publish();
     }
   }
+
+  bool _isCompilation(PlayableItem item) =>
+      ref.read(chapterCacheRepositoryProvider).isCompilation(item);
 
   String _lookupTitle(PlayableItem item) {
     final String pageTitle = item.pageTitle?.trim() ?? '';

@@ -1,4 +1,8 @@
 import 'dart:async';
+import 'dart:io';
+
+import 'package:bilimusic/feature/player/data/chapter_cache_repository.dart';
+import 'package:hive_ce/hive.dart';
 
 import 'package:bilimusic/common/domain/collection_kind.dart';
 import 'package:bilimusic/feature/favorites/domain/favorites_state.dart';
@@ -14,6 +18,7 @@ import 'package:bilimusic/feature/meting/domain/meting_search_item.dart';
 import 'package:bilimusic/feature/meting/domain/meting_server.dart';
 import 'package:bilimusic/feature/player/domain/playable_item.dart';
 import 'package:bilimusic/feature/player/domain/player_state.dart';
+import 'package:bilimusic/feature/player/domain/playback_chapter.dart';
 import 'package:bilimusic/feature/player/logic/player_controller.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -39,6 +44,57 @@ final _metadata = Metadata(
 );
 
 void main() {
+  late Directory directory;
+  setUp(() async {
+    directory = await Directory.systemTemp.createTemp('spoken_metadata_');
+    Hive.init(directory.path);
+    await Hive.openBox<String>(chapterCacheBoxName);
+  });
+  tearDown(() async {
+    await Hive.close();
+    await directory.delete(recursive: true);
+  });
+
+  test(
+    'compilations skip whole-video matching but retain chapter matching',
+    () async {
+      const List<PlaybackChapter> chapters = <PlaybackChapter>[
+        PlaybackChapter(start: Duration.zero, title: '第一首'),
+        PlaybackChapter(start: Duration(minutes: 3), title: '第二首'),
+      ];
+      await ChapterCacheRepository(
+        Hive.box<String>(chapterCacheBoxName),
+      ).putChapters(_music.contentId, chapters);
+      final fixture = _Fixture(_music);
+      fixture.controller;
+      await fixture.flush();
+      expect(fixture.cache.reads, isEmpty);
+      expect(fixture.lookup.lookups, isEmpty);
+      expect(
+        fixture.container.read(metadataControllerProvider).isLoading,
+        isFalse,
+      );
+
+      fixture.player.setChapters(chapters);
+      await fixture.flush();
+      expect(fixture.lookup.lookups, [_music]);
+      expect(fixture.cache.reads, [_music]);
+    },
+  );
+
+  test(
+    'title fallback skips whole-video matching without cached chapters',
+    () async {
+      final fixture = _Fixture(_music.copyWith(title: '歌曲合集'));
+      fixture.controller;
+      await fixture.flush();
+      expect(fixture.lookup.lookups, isEmpty);
+      expect(fixture.cache.reads, isEmpty);
+      await fixture.controller.retryCurrent();
+      expect(fixture.lookup.lookups, isEmpty);
+    },
+  );
+
   test('spoken skips metadata cache, lookup and every manual entry', () async {
     final fixture = _Fixture(_music.copyWith(kind: CollectionKind.spoken));
     final controller = fixture.controller;
@@ -252,6 +308,8 @@ class _Player extends PlayerController {
   @override
   PlayerState build() => PlayerState(currentItem: initial);
   void show(PlayableItem item) => state = state.copyWith(currentItem: item);
+  void setChapters(List<PlaybackChapter> chapters) =>
+      state = state.copyWith(chapters: chapters);
 }
 
 class _Favorites extends FavoritesController {
@@ -265,7 +323,10 @@ class _Cache implements MetadataCacheRepository {
   final List<PlayableItem> writes = [];
   Future<Metadata?> Function(PlayableItem) load = (_) async => null;
   @override
-  Future<Metadata?> getCachedMetadata({required PlayableItem item}) {
+  Future<Metadata?> getCachedMetadata({
+    required PlayableItem item,
+    int? chapterStartMs,
+  }) {
     reads.add(item);
     return load(item);
   }
@@ -280,6 +341,7 @@ class _Cache implements MetadataCacheRepository {
   Future<void> putCachedMetadata({
     required PlayableItem item,
     required Metadata metadata,
+    int? chapterStartMs,
   }) async {
     writes.add(item);
   }
@@ -303,6 +365,7 @@ class _Lookup extends MetadataLookupService {
   Future<MetadataLookupResult> lookup({
     required PlayableItem item,
     required String title,
+    bool normalizeKeyword = true,
     bool Function()? isActive,
   }) {
     lookups.add(item);

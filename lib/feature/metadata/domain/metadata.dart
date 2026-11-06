@@ -13,6 +13,7 @@ abstract class Metadata with _$Metadata {
     String? lyrics,
     MetaLyrics? metaLyrics,
     String? albumArtUrl,
+    @Default(0) int lyricBaseOffsetMs,
     @Default(0) int lyricOffsetMs,
     DateTime? updatedAt,
   }) = _Metadata;

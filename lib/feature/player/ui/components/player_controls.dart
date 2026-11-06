@@ -2,10 +2,12 @@ import 'dart:async';
 
 import 'package:bilimusic/common/components/queue_mode_icon.dart';
 import 'package:bilimusic/core/theme/theme_colors.dart';
+import 'package:bilimusic/feature/player/domain/playback_chapter.dart';
 import 'package:bilimusic/feature/player/domain/player_state.dart';
 import 'package:bilimusic/feature/player/logic/player_progress_provider.dart';
 import 'package:bilimusic/feature/player/logic/utils/player_progress_ui_helpers.dart';
 import 'package:bilimusic/feature/player/logic/utils/player_ui_helpers.dart';
+import 'package:bilimusic/feature/player/ui/components/player_chapter_markers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hugeicons/hugeicons.dart';
@@ -31,6 +33,7 @@ class PlayerProgressHost extends ConsumerWidget {
       position: progress.position,
       duration: progress.duration,
       isReady: progress.isReady,
+      chapters: state.chapters,
       onChanged: onChanged,
     );
   }
@@ -43,12 +46,14 @@ class PlayerProgressSection extends StatefulWidget {
     required this.duration,
     required this.isReady,
     required this.onChanged,
+    this.chapters = const <PlaybackChapter>[],
   });
 
   final Duration position;
   final Duration? duration;
   final bool isReady;
   final ValueChanged<double> onChanged;
+  final List<PlaybackChapter> chapters;
 
   @override
   State<PlayerProgressSection> createState() => _PlayerProgressSectionState();
@@ -98,54 +103,71 @@ class _PlayerProgressSectionState extends State<PlayerProgressSection> {
       children: <Widget>[
         SizedBox(
           height: 48,
-          child: SliderTheme(
-            data: SliderTheme.of(context).copyWith(
-              trackHeight: 2,
-              inactiveTrackColor: neutralColor.withValues(alpha: 0.18),
-              activeTrackColor: neutralColor,
-              thumbColor: neutralColor,
-              thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 3),
-              overlayShape: const RoundSliderOverlayShape(overlayRadius: 16),
-              overlayColor: neutralColor.withValues(alpha: 0.14),
-            ),
-            child: Slider(
-              key: ValueKey<bool>(widget.isReady),
-              padding: EdgeInsets.zero,
-              value: visualProgress,
-              onChangeStart: widget.isReady
-                  ? (double value) {
-                      _settleTimer?.cancel();
-                      setState(() {
-                        _isDragging = true;
-                        _dragProgress = value;
-                        _settledProgress = null;
-                      });
-                    }
-                  : null,
-              onChanged: widget.isReady
-                  ? (double value) {
-                      setState(() {
-                        _dragProgress = value;
-                      });
-                    }
-                  : null,
-              onChangeEnd: widget.isReady
-                  ? (double value) {
-                      setState(() {
-                        _isDragging = false;
-                        _dragProgress = value;
-                        _settledProgress = value;
-                      });
-                      _settleTimer = Timer(
-                        const Duration(milliseconds: 500),
-                        () {
-                          setState(() => _settledProgress = null);
-                        },
-                      );
-                      widget.onChanged(value);
-                    }
-                  : null,
-            ),
+          child: Stack(
+            children: <Widget>[
+              Positioned.fill(
+                child: IgnorePointer(
+                  child: ChapterMarkers(
+                    chapters: widget.chapters,
+                    total: total,
+                    color: neutralColor.withValues(alpha: 0.45),
+                  ),
+                ),
+              ),
+              SliderTheme(
+                data: SliderTheme.of(context).copyWith(
+                  trackHeight: 2,
+                  inactiveTrackColor: neutralColor.withValues(alpha: 0.18),
+                  activeTrackColor: neutralColor,
+                  thumbColor: neutralColor,
+                  thumbShape: const RoundSliderThumbShape(
+                    enabledThumbRadius: 3,
+                  ),
+                  overlayShape: const RoundSliderOverlayShape(
+                    overlayRadius: 16,
+                  ),
+                  overlayColor: neutralColor.withValues(alpha: 0.14),
+                ),
+                child: Slider(
+                  key: ValueKey<bool>(widget.isReady),
+                  padding: EdgeInsets.zero,
+                  value: visualProgress,
+                  onChangeStart: widget.isReady
+                      ? (double value) {
+                          _settleTimer?.cancel();
+                          setState(() {
+                            _isDragging = true;
+                            _dragProgress = value;
+                            _settledProgress = null;
+                          });
+                        }
+                      : null,
+                  onChanged: widget.isReady
+                      ? (double value) {
+                          setState(() {
+                            _dragProgress = value;
+                          });
+                        }
+                      : null,
+                  onChangeEnd: widget.isReady
+                      ? (double value) {
+                          setState(() {
+                            _isDragging = false;
+                            _dragProgress = value;
+                            _settledProgress = value;
+                          });
+                          _settleTimer = Timer(
+                            const Duration(milliseconds: 500),
+                            () {
+                              setState(() => _settledProgress = null);
+                            },
+                          );
+                          widget.onChanged(value);
+                        }
+                      : null,
+                ),
+              ),
+            ],
           ),
         ),
         Row(

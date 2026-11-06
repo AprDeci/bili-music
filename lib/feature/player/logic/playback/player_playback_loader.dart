@@ -26,6 +26,7 @@ class PlayerPlaybackLoader {
     required this._logEvent,
     Future<List<PlayableItem>> Function(PlayableItem item)? resolveAllParts,
     Future<bool> Function()? isOffline,
+    this.downloadedSource,
     List<AudioSourceResolver> extraSources = const <AudioSourceResolver>[],
   }) : _resolveAllParts = resolveAllParts ?? _repository.resolveAllParts,
        _isOffline = isOffline ?? NetUtil.isOffline,
@@ -39,6 +40,7 @@ class PlayerPlaybackLoader {
   final PlayerControllerLogger _logEvent;
   final Future<List<PlayableItem>> Function(PlayableItem item) _resolveAllParts;
   final Future<bool> Function() _isOffline;
+  final AudioSourceResolver? downloadedSource;
   final List<AudioSourceResolver> _extraSources;
 
   late final CachedAudioSourceResolver _cachedSource =
@@ -106,13 +108,21 @@ class PlayerPlaybackLoader {
       preferredQualityId: preferredQualityId,
     );
 
+    final ResolvedQueueEntry? downloaded = await downloadedSource?.resolve(
+      request,
+    );
+    if (downloaded != null) {
+      return downloaded;
+    }
+
     final ResolvedQueueEntry? diskCache = await _cachedSource.resolve(request);
     if (diskCache != null) {
       return diskCache;
     }
 
     if (await _isOffline()) {
-      return await _cachedSource.resolve(request.withQualityFallback()) ??
+      return await downloadedSource?.resolve(request.withQualityFallback()) ??
+          await _cachedSource.resolve(request.withQualityFallback()) ??
           (throw const BiliPlayerException('设备处于离线状态，且没有可用的音频缓存。'));
     }
 
@@ -132,9 +142,9 @@ class PlayerPlaybackLoader {
       throw const BiliPlayerException('未能解析出可播放的音频源。');
     } on Object catch (error, stackTrace) {
       if (_isRetryableNetworkError(error)) {
-        final ResolvedQueueEntry? fallback = await _cachedSource.resolve(
-          request.withQualityFallback(),
-        );
+        final ResolvedQueueEntry? fallback =
+            await downloadedSource?.resolve(request.withQualityFallback()) ??
+            await _cachedSource.resolve(request.withQualityFallback());
         if (fallback != null) {
           return fallback;
         }

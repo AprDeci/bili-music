@@ -19,6 +19,41 @@ class UpdateChecker {
   static final AppLogger _logger = AppLogger('UpdateChecker');
   static const UpdateDismissedStore _dismissedStore = UpdateDismissedStore();
 
+  static const Duration startupCheckDelay = Duration(milliseconds: 600);
+  static bool _startupCheckScheduled = false;
+
+  @visibleForTesting
+  static Future<void> Function()? debugStartupCheckRunner;
+
+  @visibleForTesting
+  static bool get startupCheckScheduled => _startupCheckScheduled;
+
+  @visibleForTesting
+  static void resetStartupCheckForTest() {
+    _startupCheckScheduled = false;
+    debugStartupCheckRunner = null;
+  }
+
+  /// 启动后延迟检查一次更新；同一进程内重复调用只生效一次。
+  static void scheduleStartupCheck(BuildContext context) {
+    if (_startupCheckScheduled) {
+      return;
+    }
+    _startupCheckScheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await Future<void>.delayed(startupCheckDelay);
+      if (!context.mounted) {
+        return;
+      }
+      final Future<void> Function()? runner = debugStartupCheckRunner;
+      if (runner != null) {
+        await runner();
+        return;
+      }
+      await checkAndPrompt(context);
+    });
+  }
+
   static Future<void> checkAndPrompt(
     BuildContext context, {
     bool manual = false,

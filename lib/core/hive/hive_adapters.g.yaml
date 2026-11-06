@@ -189,7 +189,7 @@ types:
         index: 4
   Metadata:
     typeId: 9
-    nextIndex: 8
+    nextIndex: 9
     fields:
       stableId:
         index: 0
@@ -207,6 +207,8 @@ types:
         index: 6
       updatedAt:
         index: 7
+      lyricBaseOffsetMs:
+        index: 8
   FavoriteCollectionSource:
     typeId: 10
     nextIndex: 2

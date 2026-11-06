@@ -4,6 +4,7 @@ import 'package:bilimusic/common/components/tag.dart';
 import 'package:bilimusic/feature/favorites/domain/favorite_entry.dart';
 import 'package:bilimusic/feature/favorites/logic/favorite_entry_metadata.dart';
 import 'package:bilimusic/feature/metadata/domain/metadata.dart';
+import 'package:bilimusic/feature/player/logic/chapters/chapter_cache_provider.dart';
 import 'package:bilimusic/feature/statistics/logic/statistics_tracker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -37,9 +38,12 @@ class FavoriteMetadataTile extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
-    final AsyncValue<Metadata?> metadataAsync = ref.watch(
-      favoriteEntryMetadataProvider(entry.contentId),
+    final bool isCompilation = ref.watch(
+      itemIsCompilationProvider(entry.toPlayableItem()),
     );
+    final AsyncValue<Metadata?> metadataAsync = isCompilation
+        ? const AsyncData<Metadata?>(null)
+        : ref.watch(favoriteEntryMetadataProvider(entry.contentId));
     final Metadata? metadata = switch (metadataAsync) {
       AsyncData<Metadata?>(:final value) => value,
       _ => null,
@@ -108,7 +112,7 @@ class FavoriteMetadataTile extends ConsumerWidget {
                 ),
               ),
             ],
-            if (!resolved) ...<Widget>[
+            if (!resolved && !isCompilation) ...<Widget>[
               const SizedBox(width: 6),
               Tag(
                 text: '未解析',

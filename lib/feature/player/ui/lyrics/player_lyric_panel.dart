@@ -204,7 +204,12 @@ class _PlayerLyricPanelState extends ConsumerState<PlayerLyricPanel> {
             preset: _buildLyricPreset(context, useSubtitles: useSubtitles),
             onLineTap: (LyricLineDetails details) {
               if (_loadedStableId != widget.item?.stableId) return;
-              widget.onSeek(details.seekPosition);
+              final int baseOffsetMs = useSubtitles
+                  ? 0
+                  : (metadataState.metadata?.lyricBaseOffsetMs ?? 0);
+              widget.onSeek(
+                details.seekPosition - Duration(milliseconds: baseOffsetMs),
+              );
             },
           ),
         ),

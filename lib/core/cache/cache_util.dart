@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:bilimusic/core/cache/app_cache_manager.dart';
 import 'package:bilimusic/feature/metadata/data/metadata_cache_repository.dart';
 import 'package:bilimusic/feature/metadata/domain/metadata.dart';
+import 'package:bilimusic/feature/player/data/chapter_cache_repository.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:hive_ce/hive.dart';
 
@@ -23,6 +24,7 @@ class CacheUtil {
 
   static Future<void> clearMetadataCache() async {
     await Hive.lazyBox<Metadata>(metadataCacheBoxName).clear();
+    await ChapterCacheRepository(Hive.box<String>(chapterCacheBoxName)).clear();
   }
 
   static Future<void> clearAllCache() async {
@@ -80,7 +82,10 @@ class CacheUtil {
 
   static Future<int> getMetadataCacheSizeBytes() async {
     final LazyBox<Metadata> box = Hive.lazyBox<Metadata>(metadataCacheBoxName);
-    int total = 0;
+    int total = Hive.box<String>(chapterCacheBoxName).values.fold<int>(
+      0,
+      (int bytes, String value) => bytes + utf8.encode(value).length,
+    );
     for (final Object key in box.keys) {
       final Metadata? metadata = await box.get(key);
       if (metadata == null) {

@@ -1,10 +1,13 @@
 import 'package:bilimusic/common/util/toast_util.dart';
 import 'package:bilimusic/feature/comment/domain/comment_target.dart';
 import 'package:bilimusic/feature/comment/ui/comment_page.dart';
+import 'package:bilimusic/feature/download/domain/download_task.dart';
+import 'package:bilimusic/feature/download/logic/download_controller.dart';
 import 'package:bilimusic/feature/favorites/logic/favorites_controller.dart';
 import 'package:bilimusic/feature/player/domain/playable_item.dart';
 import 'package:bilimusic/feature/player/domain/player_playback_speed.dart';
 import 'package:bilimusic/feature/player/domain/player_state.dart';
+import 'package:bilimusic/feature/player/domain/playback_chapter.dart';
 import 'package:bilimusic/feature/player/logic/player_controller.dart';
 import 'package:bilimusic/feature/player/domain/player_display_info.dart';
 import 'package:bilimusic/feature/player/logic/display/player_display_provider.dart';
@@ -14,6 +17,7 @@ import 'package:bilimusic/feature/player/ui/components/player_dynamic_backdrop.d
 import 'package:bilimusic/feature/player/ui/components/player_landscape_page.dart';
 import 'package:bilimusic/feature/player/ui/lyrics/player_lyric_page.dart';
 import 'package:bilimusic/feature/player/ui/components/player_main_page.dart';
+import 'package:bilimusic/feature/player/ui/components/player_chapter_selector.dart';
 import 'package:bilimusic/feature/player/ui/components/player_collection_sheet.dart';
 import 'package:bilimusic/feature/player/ui/components/player_meta_page.dart';
 import 'package:bilimusic/feature/player/ui/components/player_part_selector.dart';
@@ -94,6 +98,9 @@ class _PlayerPageState extends ConsumerState<PlayerPage> {
     );
     final PlayableItem? item = state.currentItem ?? widget.initialItem;
     final List<PlayableItem> availableParts = state.availableParts;
+    final List<PlaybackChapter> chapters = state.chapters;
+    final bool canOpenJumpPanel =
+        item != null && (availableParts.length > 1 || chapters.length > 1);
     final bool isFavorite = item != null ? favoritesState.isLiked(item) : false;
     final bool isLyricPageActive = _currentPage == 2;
     final ThemeData theme = Theme.of(context);
@@ -167,16 +174,15 @@ class _PlayerPageState extends ConsumerState<PlayerPage> {
                               item: item,
                               display: display,
                               commentCount: item?.replyCount,
-                              availableParts: availableParts,
-                              onPartTap:
-                                  item == null || availableParts.length < 2
+                              canOpenJumpPanel: canOpenJumpPanel,
+                              onPartTap: !canOpenJumpPanel
                                   ? null
-                                  : () => showPlayerPartSelector(
-                                      context: context,
-                                      parts: availableParts,
-                                      currentItem: item,
-                                      state: state,
-                                      controller: playerController,
+                                  : () => _openJumpPanel(
+                                      context,
+                                      state,
+                                      item,
+                                      availableParts,
+                                      playerController,
                                     ),
                               onOpenCollectionSheet: item == null
                                   ? null
@@ -230,6 +236,47 @@ class _PlayerPageState extends ConsumerState<PlayerPage> {
   void _toggleDisplaySource() {
     HapticFeedback.lightImpact();
     ref.read(playerDisplaySourceLogicProvider.notifier).toggle();
+  }
+
+  Future<void> _openJumpPanel(
+    BuildContext context,
+    PlayerState state,
+    PlayableItem item,
+    List<PlayableItem> availableParts,
+    PlayerController controller,
+  ) async {
+    if (availableParts.length > 1) {
+      await showPlayerPartSelector(
+        context: context,
+        parts: availableParts,
+        currentItem: item,
+        state: state,
+        controller: controller,
+        onDownloadAll: () => _downloadAllParts(availableParts),
+      );
+      return;
+    }
+    final PlayerState liveState = ref.read(playerControllerProvider);
+    if (liveState.chapters.length < 2) {
+      return;
+    }
+    await showPlayerChapterSelector(
+      context: context,
+      chapters: liveState.chapters,
+      position: liveState.position,
+      isPlaying: liveState.isPlaying,
+      onSeek: controller.seek,
+    );
+  }
+
+  Future<void> _downloadAllParts(List<PlayableItem> parts) async {
+    final int queued = await ref
+        .read(downloadControllerProvider.notifier)
+        .downloadAll(parts);
+    if (!mounted) {
+      return;
+    }
+    ToastUtil.show(queued > 0 ? '已加入 $queued 首下载队列' : '这些分P已下载或正在下载');
   }
 
   void _seekFromProgressBar(double value) {
@@ -308,6 +355,10 @@ class _PlayerPageState extends ConsumerState<PlayerPage> {
                     _showPlaybackSpeedSheet();
                   },
                 ),
+                _PlayerDownloadTile(
+                  item: item,
+                  onDone: () => Navigator.of(context).pop(),
+                ),
                 ListTile(
                   leading: const Icon(Icons.open_in_new_rounded),
                   title: const Text('外部应用打开'),
@@ -372,6 +423,55 @@ PlayerState _withoutPlaybackPosition(PlayerState state) {
     return state;
   }
   return state.copyWith(position: Duration.zero);
+}
+
+class _PlayerDownloadTile extends ConsumerWidget {
+  const _PlayerDownloadTile({required this.item, required this.onDone});
+
+  final PlayableItem item;
+  final VoidCallback onDone;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final DownloadState state = ref.watch(downloadControllerProvider);
+    final bool downloaded = state.contains(item.contentId);
+    final DownloadTask? task = state.taskFor(item.contentId);
+    final String? subtitle = downloaded
+        ? '已下载，可离线播放'
+        : switch (task?.status) {
+            DownloadTaskStatus.queued => '等待下载',
+            DownloadTaskStatus.running =>
+              task?.progress == null
+                  ? '下载中'
+                  : '下载中 ${(task!.progress! * 100).toStringAsFixed(0)}%',
+            DownloadTaskStatus.failed => '下载失败，点按重试',
+            null => null,
+          };
+
+    return ListTile(
+      key: const Key('downloadMenuEntry'),
+      leading: Icon(
+        downloaded ? Icons.download_done_rounded : Icons.download_rounded,
+      ),
+      title: const Text('下载'),
+      subtitle: subtitle == null ? null : Text(subtitle),
+      onTap: () async {
+        if (downloaded) {
+          ToastUtil.show('已经下载过了');
+          return;
+        }
+        if (task?.isActive ?? false) {
+          ToastUtil.show('正在下载中');
+          return;
+        }
+        onDone();
+        final bool queued = await ref
+            .read(downloadControllerProvider.notifier)
+            .download(item);
+        ToastUtil.show(queued ? '已加入下载队列' : '下载未开始');
+      },
+    );
+  }
 }
 
 Future<void> _openInBrowser(PlayableItem item) async {

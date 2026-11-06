@@ -10,6 +10,7 @@ import 'package:bilimusic/core/bili/session/bili_session.dart';
 import 'package:bilimusic/core/bili/session/bili_session_controller.dart';
 import 'package:bilimusic/feature/auth/data/bili_auth_repository.dart';
 import 'package:bilimusic/feature/auth/logic/bili_auth_controller.dart';
+import 'package:bilimusic/feature/download/logic/download_controller.dart';
 import 'package:bilimusic/feature/favorites/domain/favorite_collection.dart';
 import 'package:bilimusic/feature/favorites/domain/favorite_entry.dart';
 import 'package:bilimusic/feature/favorites/domain/favorites_state.dart';
@@ -63,6 +64,10 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
       FavoriteCollection.likedCollectionId,
     );
     final int favoriteUpCount = ref.watch(favoriteUpControllerProvider).length;
+    final int downloadCount = ref
+        .watch(downloadControllerProvider)
+        .tracks
+        .length;
     final List<FavoriteCollection> remoteCollections = favoritesState
         .collections
         .where((FavoriteCollection collection) => collection.isRemote)
@@ -104,6 +109,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
           _ProfileQuickActions(
             likedCount: likedCount,
             favoriteUpCount: favoriteUpCount,
+            downloadCount: downloadCount,
             onLikedTap: () => context.push(
               '/profile/favorites/${FavoriteCollection.likedCollectionId}',
             ),
@@ -113,6 +119,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                   collection: favoritesState.likedCollection,
                 ),
             onFavoriteUpTap: () => context.push('/profile/favorite-ups'),
+            onDownloadTap: () => context.push('/profile/downloads'),
           ),
           const SizedBox(height: 16),
           _ProfileSectionHeader(
@@ -729,16 +736,20 @@ class _ProfileQuickActions extends StatelessWidget {
   const _ProfileQuickActions({
     required this.likedCount,
     required this.favoriteUpCount,
+    required this.downloadCount,
     required this.onLikedTap,
     required this.onLikedLongPressStart,
     required this.onFavoriteUpTap,
+    required this.onDownloadTap,
   });
 
   final int likedCount;
   final int favoriteUpCount;
+  final int downloadCount;
   final VoidCallback onLikedTap;
   final GestureLongPressStartCallback onLikedLongPressStart;
   final VoidCallback onFavoriteUpTap;
+  final VoidCallback onDownloadTap;
 
   @override
   Widget build(BuildContext context) {
@@ -763,12 +774,12 @@ class _ProfileQuickActions extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 12),
-        const Expanded(
+        Expanded(
           child: _ProfileQuickActionCard(
             icon: Icons.library_music_rounded,
             title: '本地',
-            count: 0,
-            enabled: false,
+            count: downloadCount,
+            onTap: onDownloadTap,
           ),
         ),
       ],
@@ -781,7 +792,6 @@ class _ProfileQuickActionCard extends StatelessWidget {
     required this.icon,
     required this.title,
     required this.count,
-    this.enabled = true,
     this.onTap,
     this.onLongPressStart,
   });
@@ -789,7 +799,6 @@ class _ProfileQuickActionCard extends StatelessWidget {
   final IconData icon;
   final String title;
   final int count;
-  final bool enabled;
   final VoidCallback? onTap;
   final GestureLongPressStartCallback? onLongPressStart;
 
@@ -797,37 +806,31 @@ class _ProfileQuickActionCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
-    final Color accentColor = enabled
-        ? colorScheme.primary
-        : colorScheme.outline.withValues(alpha: 0.7);
-
     return GestureDetector(
-      onLongPressStart: enabled ? onLongPressStart : null,
+      onLongPressStart: onLongPressStart,
       child: InkWell(
         borderRadius: BorderRadius.circular(16),
-        onTap: enabled ? onTap : null,
+        onTap: onTap,
         hoverColor: Colors.transparent,
         splashFactory: NoSplash.splashFactory,
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: 8),
           child: Column(
             children: <Widget>[
-              Icon(icon, color: accentColor, size: 26),
+              Icon(icon, color: colorScheme.primary, size: 26),
               const SizedBox(height: 4),
               Text(
                 title,
                 style: theme.textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.w700,
-                  color: enabled ? colorScheme.onSurface : colorScheme.outline,
+                  color: colorScheme.onSurface,
                 ),
               ),
               const SizedBox(height: 2),
               Text(
                 '$count',
                 style: theme.textTheme.bodyLarge?.copyWith(
-                  color: enabled
-                      ? colorScheme.onSurfaceVariant
-                      : colorScheme.outline,
+                  color: colorScheme.onSurfaceVariant,
                   fontWeight: FontWeight.w500,
                 ),
               ),

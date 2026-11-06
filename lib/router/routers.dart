@@ -2,6 +2,7 @@ import 'package:bilimusic/common/components/error_page.dart';
 import 'package:bilimusic/common/util/platform_util.dart';
 import 'package:bilimusic/feature/comment/domain/comment_target.dart';
 import 'package:bilimusic/feature/comment/ui/comment_page.dart';
+import 'package:bilimusic/feature/download/ui/downloads_page.dart';
 import 'package:bilimusic/feature/auth/ui/auth_page.dart';
 import 'package:bilimusic/feature/favorites/ui/desktop/desktop_favorite_collection_page.dart';
 import 'package:bilimusic/feature/favorites/ui/favorite_collection_page.dart';
@@ -82,6 +83,10 @@ final List<Map<String, dynamic>> mobileTabs = [
     'builder': (context, state) => const ProfilePage(),
     'routes': <RouteBase>[
       GoRoute(path: 'import', builder: (context, state) => const ImportPage()),
+      GoRoute(
+        path: 'downloads',
+        builder: (context, state) => const DownloadsPage(),
+      ),
       GoRoute(
         path: 'favorite-ups',
         builder: (context, state) => const FavoriteUpListPage(),
@@ -165,6 +170,10 @@ final List<Map<String, dynamic>> mobileHiddenBranches = [
         builder: (context, state) => const PlayerSettingsPage(),
       ),
       GoRoute(
+        path: 'downloads',
+        builder: (context, state) => const DownloadsPage(),
+      ),
+      GoRoute(
         path: 'app-transfer',
         builder: (context, state) => const AppTransferPage(),
       ),
@@ -203,6 +212,10 @@ final List<Map<String, dynamic>> desktopTabs = [
       GoRoute(
         path: 'player',
         builder: (context, state) => const PlayerSettingsPage(),
+      ),
+      GoRoute(
+        path: 'downloads',
+        builder: (context, state) => const DownloadsPage(),
       ),
       GoRoute(
         path: 'app-transfer',
