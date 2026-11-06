@@ -64,7 +64,10 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
       FavoriteCollection.likedCollectionId,
     );
     final int favoriteUpCount = ref.watch(favoriteUpControllerProvider).length;
-    final int downloadCount = ref.watch(downloadControllerProvider).tracks.length;
+    final int downloadCount = ref
+        .watch(downloadControllerProvider)
+        .tracks
+        .length;
     final List<FavoriteCollection> remoteCollections = favoritesState
         .collections
         .where((FavoriteCollection collection) => collection.isRemote)
@@ -814,7 +817,7 @@ class _ProfileQuickActionCard extends StatelessWidget {
           padding: const EdgeInsets.symmetric(vertical: 8),
           child: Column(
             children: <Widget>[
-              Icon(icon, color: accentColor, size: 26),
+              Icon(icon, color: colorScheme.primary, size: 26),
               const SizedBox(height: 4),
               Text(
                 title,

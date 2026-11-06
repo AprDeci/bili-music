@@ -70,14 +70,18 @@ class _DesktopProfileSidebarState extends ConsumerState<DesktopProfileSidebar> {
     );
     final int recentCount = ref.watch(recentPlaybackControllerProvider).length;
     final int favoriteUpCount = ref.watch(favoriteUpControllerProvider).length;
-    final int downloadCount = ref.watch(downloadControllerProvider).tracks.length;
+    final int downloadCount = ref
+        .watch(downloadControllerProvider)
+        .tracks
+        .length;
     final bool isLikedSelected =
         widget.currentLocation ==
         '/profile/favorites/${FavoriteCollection.likedCollectionId}';
     final bool isFavoriteUpSelected =
         widget.currentLocation == '/profile/favorite-ups';
     final bool isRecentSelected = widget.currentLocation == '/profile/recent';
-    final bool isDownloadsSelected = widget.currentLocation == '/profile/downloads';
+    final bool isDownloadsSelected =
+        widget.currentLocation == '/profile/downloads';
     final List<FavoriteCollection> remoteCollections = favoritesState
         .collections
         .where((FavoriteCollection collection) => collection.isRemote)

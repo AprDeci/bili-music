@@ -1,13 +1,15 @@
 import 'package:bilimusic/core/bili/session/bili_session_controller.dart';
 import 'package:bilimusic/feature/download/domain/downloaded_track.dart';
 import 'package:bilimusic/feature/download/logic/download_controller.dart';
-import 'package:bilimusic/feature/download/ui/downloads_page.dart';
+import 'package:bilimusic/feature/up/domain/favorite_up.dart';
+import 'package:bilimusic/feature/up/logic/favorite_up_controller.dart';
 import 'package:bilimusic/feature/favorites/domain/favorites_state.dart';
 import 'package:bilimusic/feature/favorites/logic/favorites_controller.dart';
 import 'package:bilimusic/feature/profile/ui/desktop_profile_sidebar.dart';
 import 'package:bilimusic/feature/profile/ui/profile_page.dart';
 import 'package:bilimusic/feature/recent/domain/recent_playback_entry.dart';
 import 'package:bilimusic/feature/recent/logic/recent_playback_controller.dart';
+import 'package:bilimusic/router/routers.dart' as app_routes;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -73,13 +75,10 @@ Future<void> _pump(
                 ),
               )
             : const ProfilePage(),
-        routes: <RouteBase>[
-          GoRoute(
-            path: 'downloads',
-            builder: (BuildContext context, GoRouterState state) =>
-                const DownloadsPage(),
-          ),
-        ],
+        routes:
+            (desktop ? app_routes.desktopTabs : app_routes.mobileTabs)
+                    .singleWhere((tab) => tab['path'] == '/profile')['routes']
+                as List<RouteBase>,
       ),
     ],
   );
@@ -89,6 +88,7 @@ Future<void> _pump(
       overrides: [
         favoritesControllerProvider.overrideWith(_Favorites.new),
         downloadControllerProvider.overrideWith(() => _Downloads(downloads)),
+        favoriteUpControllerProvider.overrideWithValue(const <FavoriteUp>[]),
         biliSessionControllerProvider.overrideWithValue(null),
         recentPlaybackControllerProvider.overrideWithValue(
           const <RecentPlaybackEntry>[],

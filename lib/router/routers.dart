@@ -84,6 +84,10 @@ final List<Map<String, dynamic>> mobileTabs = [
     'routes': <RouteBase>[
       GoRoute(path: 'import', builder: (context, state) => const ImportPage()),
       GoRoute(
+        path: 'downloads',
+        builder: (context, state) => const DownloadsPage(),
+      ),
+      GoRoute(
         path: 'favorite-ups',
         builder: (context, state) => const FavoriteUpListPage(),
       ),
