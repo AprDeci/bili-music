@@ -3,9 +3,7 @@ import 'dart:async';
 import 'package:bilimusic/common/components/queue_mode_icon.dart';
 import 'package:bilimusic/core/theme/theme_colors.dart';
 import 'package:bilimusic/feature/player/domain/playback_chapter.dart';
-import 'package:bilimusic/feature/player/domain/player_chapter_marker_style.dart';
 import 'package:bilimusic/feature/player/domain/player_state.dart';
-import 'package:bilimusic/feature/player/logic/display/player_chapter_marker_style_logic.dart';
 import 'package:bilimusic/feature/player/logic/player_progress_provider.dart';
 import 'package:bilimusic/feature/player/logic/utils/player_progress_ui_helpers.dart';
 import 'package:bilimusic/feature/player/logic/utils/player_ui_helpers.dart';
@@ -36,7 +34,6 @@ class PlayerProgressHost extends ConsumerWidget {
       duration: progress.duration,
       isReady: progress.isReady,
       chapters: state.chapters,
-      markerStyle: ref.watch(playerChapterMarkerStyleLogicProvider),
       onChanged: onChanged,
     );
   }
@@ -50,7 +47,6 @@ class PlayerProgressSection extends StatefulWidget {
     required this.isReady,
     required this.onChanged,
     this.chapters = const <PlaybackChapter>[],
-    this.markerStyle = PlayerChapterMarkerStyle.line,
   });
 
   final Duration position;
@@ -58,7 +54,6 @@ class PlayerProgressSection extends StatefulWidget {
   final bool isReady;
   final ValueChanged<double> onChanged;
   final List<PlaybackChapter> chapters;
-  final PlayerChapterMarkerStyle markerStyle;
 
   @override
   State<PlayerProgressSection> createState() => _PlayerProgressSectionState();
@@ -115,7 +110,6 @@ class _PlayerProgressSectionState extends State<PlayerProgressSection> {
                   child: ChapterMarkers(
                     chapters: widget.chapters,
                     total: total,
-                    style: widget.markerStyle,
                     color: neutralColor.withValues(alpha: 0.45),
                   ),
                 ),
@@ -186,23 +180,7 @@ class _PlayerProgressSectionState extends State<PlayerProgressSection> {
                 fontSize: 8,
               ),
             ),
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8),
-                child: Text(
-                  resolveCurrentChapterTitle(widget.chapters, visualPosition) ??
-                      '',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  textAlign: TextAlign.center,
-                  style: theme.textTheme.labelMedium?.copyWith(
-                    fontSize: 9,
-                    color: colorScheme.onSurface.withValues(alpha: 0.65),
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            ),
+            const Spacer(),
             Text(
               formatPlayerDuration(total),
               style: theme.textTheme.labelMedium?.copyWith(

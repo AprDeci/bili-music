@@ -1,5 +1,4 @@
 import 'package:bilimusic/feature/player/domain/playback_chapter.dart';
-import 'package:bilimusic/feature/player/domain/player_chapter_marker_style.dart';
 import 'package:bilimusic/feature/player/logic/utils/player_ui_helpers.dart';
 import 'package:flutter/material.dart';
 
@@ -8,13 +7,11 @@ class ChapterMarkers extends StatelessWidget {
     super.key,
     required this.chapters,
     required this.total,
-    required this.style,
     required this.color,
   });
 
   final List<PlaybackChapter> chapters;
   final Duration? total;
-  final PlayerChapterMarkerStyle style;
   final Color color;
 
   @override
@@ -23,7 +20,6 @@ class ChapterMarkers extends StatelessWidget {
       painter: ChapterMarkerPainter(
         chapters: chapters,
         total: total,
-        style: style,
         color: color,
       ),
     );
@@ -34,13 +30,11 @@ class ChapterMarkerPainter extends CustomPainter {
   const ChapterMarkerPainter({
     required this.chapters,
     required this.total,
-    required this.style,
     required this.color,
   });
 
   final List<PlaybackChapter> chapters;
   final Duration? total;
-  final PlayerChapterMarkerStyle style;
   final Color color;
 
   @override
@@ -60,24 +54,9 @@ class ChapterMarkerPainter extends CustomPainter {
       ..color = color
       ..isAntiAlias = true;
     final double centerY = size.height / 2;
-
-    switch (style) {
-      case PlayerChapterMarkerStyle.line:
-        paint
-          ..strokeWidth = 1
-          ..strokeCap = StrokeCap.round;
-        final double top = size.height * 0.34;
-        final double bottom = size.height * 0.66;
-        for (final double ratio in ratios) {
-          final double x = edgeInset + trackWidth * ratio;
-          canvas.drawLine(Offset(x, top), Offset(x, bottom), paint);
-        }
-      case PlayerChapterMarkerStyle.dot:
-        final double radius = (size.height * 0.05).clamp(1.6, 2.6);
-        for (final double ratio in ratios) {
-          final double x = edgeInset + trackWidth * ratio;
-          canvas.drawCircle(Offset(x, centerY), radius, paint);
-        }
+    for (final double ratio in ratios) {
+      final double x = edgeInset + trackWidth * ratio;
+      canvas.drawCircle(Offset(x, centerY), 1.2, paint);
     }
   }
 
@@ -85,7 +64,6 @@ class ChapterMarkerPainter extends CustomPainter {
   bool shouldRepaint(covariant ChapterMarkerPainter oldDelegate) {
     return oldDelegate.chapters != chapters ||
         oldDelegate.total != total ||
-        oldDelegate.style != style ||
         oldDelegate.color != color;
   }
 }

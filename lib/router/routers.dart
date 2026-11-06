@@ -19,7 +19,6 @@ import 'package:bilimusic/feature/setting/ui/cache_settings_page.dart';
 import 'package:bilimusic/feature/setting/ui/app_transfer_page.dart';
 import 'package:bilimusic/feature/setting/ui/hotkey_settings_page.dart';
 import 'package:bilimusic/feature/setting/ui/player_settings_page.dart';
-import 'package:bilimusic/feature/setting/ui/progress_bar_settings_page.dart';
 import 'package:bilimusic/feature/setting/ui/setting_page.dart';
 import 'package:bilimusic/feature/setting/ui/theme_settings_page.dart';
 import 'package:bilimusic/feature/up/ui/collection_detail_page.dart';
@@ -166,10 +165,6 @@ final List<Map<String, dynamic>> mobileHiddenBranches = [
         builder: (context, state) => const PlayerSettingsPage(),
       ),
       GoRoute(
-        path: 'progress',
-        builder: (context, state) => const ProgressBarSettingsPage(),
-      ),
-      GoRoute(
         path: 'app-transfer',
         builder: (context, state) => const AppTransferPage(),
       ),
@@ -208,10 +203,6 @@ final List<Map<String, dynamic>> desktopTabs = [
       GoRoute(
         path: 'player',
         builder: (context, state) => const PlayerSettingsPage(),
-      ),
-      GoRoute(
-        path: 'progress',
-        builder: (context, state) => const ProgressBarSettingsPage(),
       ),
       GoRoute(
         path: 'app-transfer',

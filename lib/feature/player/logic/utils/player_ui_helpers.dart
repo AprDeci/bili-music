@@ -99,13 +99,6 @@ String? formatJumpBadge({
   return formatPartBadge(item);
 }
 
-String? resolveCurrentChapterTitle(
-  List<PlaybackChapter> chapters,
-  Duration position,
-) {
-  return resolveCurrentChapter(chapters, position)?.title;
-}
-
 PlaybackChapter? resolveCurrentChapter(
   List<PlaybackChapter> chapters,
   Duration position,

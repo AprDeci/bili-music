@@ -78,6 +78,17 @@ void main() {
     await tempDirectory.delete(recursive: true);
   });
 
+  test('export ignores the removed chapter marker style preference', () async {
+    await prefsBox.put('player.chapter_marker_style', 'line');
+
+    final AppTransferBundle bundle = AppTransferBundle.fromJson(
+      jsonDecode(await transferRepository.buildExportJson())
+          as Map<String, dynamic>,
+    );
+
+    expect(bundle.settings, isNot(contains('player.chapter_marker_style')));
+  });
+
   test('spoken kind round-trips for liked and custom collections', () async {
     final DateTime now = DateTime(2026);
     final FavoriteCollection spoken = FavoriteCollection(

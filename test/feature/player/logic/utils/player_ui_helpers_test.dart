@@ -85,18 +85,15 @@ void main() {
     );
   });
 
-  test('resolveCurrentChapterTitle hides when there is a single chapter', () {
+  test('resolveCurrentChapter requires at least two chapters', () {
     final List<PlaybackChapter> single = <PlaybackChapter>[
       const PlaybackChapter(start: Duration.zero, title: '只有一首'),
     ];
-    expect(
-      resolveCurrentChapterTitle(single, const Duration(seconds: 10)),
-      isNull,
-    );
+    expect(resolveCurrentChapter(single, const Duration(seconds: 10)), isNull);
 
     final List<PlaybackChapter> chapters = buildChapters(<int>[0, 100]);
     expect(
-      resolveCurrentChapterTitle(chapters, const Duration(seconds: 110)),
+      resolveCurrentChapter(chapters, const Duration(seconds: 110))?.title,
       '歌曲 2',
     );
   });
