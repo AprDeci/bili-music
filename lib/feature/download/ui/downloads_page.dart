@@ -4,8 +4,8 @@ import 'package:bilimusic/common/components/selectable_auto_scroll_list_view.dar
 import 'package:bilimusic/common/components/status_view.dart';
 import 'package:bilimusic/common/util/format_util.dart';
 import 'package:bilimusic/common/util/player_util.dart';
-import 'package:bilimusic/common/util/screen_util.dart';
 import 'package:bilimusic/common/util/toast_util.dart';
+import 'package:bilimusic/core/layout/app_layout.dart';
 import 'package:bilimusic/feature/download/domain/download_task.dart';
 import 'package:bilimusic/feature/download/domain/downloaded_track.dart';
 import 'package:bilimusic/feature/download/logic/download_controller.dart';
@@ -50,7 +50,7 @@ class _DownloadsPageState extends ConsumerState<DownloadsPage> {
         }
       });
     });
-    final bool desktop = ScreenUtil.shouldUseDesktopShell(context);
+    final bool desktop = AppLayoutScope.of(context) == AppLayout.desktop;
     final int activeCount = state.activeTaskCount;
     final int failedCount = state.tasks.values
         .where((DownloadTask task) => task.status == DownloadTaskStatus.failed)

@@ -1,4 +1,4 @@
-import 'package:bilimusic/common/util/platform_util.dart';
+import 'package:bilimusic/core/layout/app_layout.dart';
 import 'package:bilimusic/feature/player/data/bili_player_repository.dart';
 import 'package:bilimusic/feature/player/domain/playable_item.dart';
 import 'package:bilimusic/feature/player/logic/player_controller.dart';
@@ -25,7 +25,9 @@ class PlayerUtil {
         .read(playerControllerProvider.notifier)
         .setQueue(items, startIndex: startIndex, sourceLabel: sourceLabel);
 
-    if (context.mounted && PlatformUtil.isMobile) {
+    if (context.mounted &&
+        !AppLayout.isDesktopPlatform &&
+        AppLayoutScope.of(context) == AppLayout.mobile) {
       await openPlayerPage(context);
     }
 

@@ -1,4 +1,5 @@
 import 'package:bilimusic/common/util/color_util.dart';
+import 'package:bilimusic/core/layout/shell_content_insets.dart';
 import 'package:bilimusic/feature/player/domain/player_state.dart';
 import 'package:bilimusic/feature/player/logic/player_controller.dart';
 import 'package:bilimusic/feature/player/ui/mini/mini_player_bar.dart';
@@ -59,7 +60,7 @@ class _MobileShellScaffoldState extends ConsumerState<MobileShellScaffold> {
     return GlassPage(
       child: Scaffold(
         extendBody: true,
-        body: widget.navigationShell,
+        body: ShellContentInsets(child: widget.navigationShell),
         bottomNavigationBar: _animateChrome(
           visible: showTabs || showMiniPlayer,
           child: () => SafeArea(
@@ -88,7 +89,7 @@ class _MobileShellScaffoldState extends ConsumerState<MobileShellScaffold> {
                   child: () => Padding(
                     padding: EdgeInsets.only(
                       top: showMiniPlayer ? 10 : 0,
-                      bottom: useGlassBar ? 8 : 0,
+                      bottom: useGlassBar ? 11 : 0,
                     ),
                     child: FractionallySizedBox(
                       widthFactor: 0.85,
@@ -158,7 +159,7 @@ class _MobileShellScaffoldState extends ConsumerState<MobileShellScaffold> {
             const LiquidGlassSettings().glassColor,
       ),
       spacing: 4,
-      verticalPadding: 0,
+      verticalPadding: 4,
       barHeight: _bottomBarHeight,
       horizontalPadding: 0,
       unselectedIconColor: theme.textTheme.bodyMedium?.color ?? Colors.black,

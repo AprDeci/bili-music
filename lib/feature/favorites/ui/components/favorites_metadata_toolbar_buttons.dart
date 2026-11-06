@@ -19,10 +19,12 @@ class MetadataViewModeButton extends StatelessWidget {
     super.key,
     required this.viewMode,
     required this.onPressed,
+    this.buttonSize = 32,
   });
 
   final FavoriteListViewMode viewMode;
   final VoidCallback onPressed;
+  final double buttonSize;
 
   @override
   Widget build(BuildContext context) {
@@ -32,8 +34,13 @@ class MetadataViewModeButton extends StatelessWidget {
       child: IconButton(
         onPressed: onPressed,
         padding: EdgeInsets.zero,
-        visualDensity: VisualDensity.compact,
-        constraints: const BoxConstraints.tightFor(width: 32, height: 32),
+        visualDensity: buttonSize >= 48
+            ? VisualDensity.standard
+            : VisualDensity.compact,
+        constraints: BoxConstraints.tightFor(
+          width: buttonSize,
+          height: buttonSize,
+        ),
         icon: HugeIcon(
           icon: isMetadata
               ? HugeIcons.strokeRoundedMusicNoteSquare01

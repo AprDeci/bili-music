@@ -137,6 +137,7 @@ void main() {
         expect(find.textContaining('清空'), findsNothing);
         expect(tester.takeException(), isNull);
       },
+      variant: TargetPlatformVariant({TargetPlatform.macOS}),
     );
 
     for (final int count in <int>[1, 2]) {

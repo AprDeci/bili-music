@@ -45,30 +45,11 @@ class PlayerLyricPage extends ConsumerWidget {
         (settings) => settings.showTranslation,
       ),
     );
-    final double horizontalPadding = ref.watch(
-      playerLyricSettingsLogicProvider.select(
-        (settings) => settings.horizontalPadding,
-      ),
-    );
-    final PlayableItem? item = this.item;
-    final bool isSpoken = item?.isSpoken ?? false;
-    final MetadataState metadataState = isSpoken
-        ? const MetadataState()
-        : ref.watch(metadataControllerProvider);
-    final PlayerSubtitleState subtitleState = ref.watch(
+    final PlayerSubtitleState subtitles = ref.watch(
       playerSubtitleControllerProvider,
     );
     final bool usesSubtitles =
-        subtitleState.stableId == item?.stableId && subtitleState.usesSubtitles;
-    final bool canSelectSubtitles =
-        subtitleState.stableId == item?.stableId && subtitleState.hasTracks;
-    final String translationLyrics =
-        resolveDisplayTranslationLyrics(metadataState.metadata)?.trim() ?? '';
-    final bool canToggleTranslation =
-        !usesSubtitles &&
-        metadataState.stableId == item?.stableId &&
-        translationLyrics.isNotEmpty;
-
+        subtitles.stableId == item?.stableId && subtitles.usesSubtitles;
     final Widget content = _PlayerLyricPanelHost(
       baseState: state,
       item: item,
@@ -80,55 +61,101 @@ class PlayerLyricPage extends ConsumerWidget {
     if (item == null || !showToolbar) {
       return content;
     }
-
     return Column(
       children: <Widget>[
         Expanded(child: content),
-        _PlayerLyricToolbar(
-          horizontalPadding: horizontalPadding,
-          activeColor: ColorUtil.getAllShades(
-            activeColor ?? Theme.of(context).colorScheme.primary,
-          )[600]!,
-          onSearch: isSpoken
-              ? null
-              : () {
-                  ref
-                      .read(playerSubtitleControllerProvider.notifier)
-                      .useMeting();
-                  showManualLyricSearchSheet(
-                    context: context,
-                    initialKeyword: resolveLyricSearchKeyword(
-                      metadataState: metadataState,
-                      item: item,
-                    ),
-                  );
-                },
-          onSubtitles: canSelectSubtitles
-              ? () => showPlayerSubtitleSheet(context)
-              : null,
-          onOffset: isSpoken && !usesSubtitles
-              ? null
-              : () => showLyricOffsetSheet(context),
-          onAppearance: () =>
-              showPlayerLyricSettings(context, activeColor: activeColor),
-          showTranslation: showTranslation,
-          toggleTranslation: canToggleTranslation
-              ? () async {
-                  try {
-                    await ref
-                        .read(playerLyricSettingsLogicProvider.notifier)
-                        .setShowTranslation(!showTranslation);
-                  } on Object {
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('译文设置保存失败，请重试')),
-                      );
-                    }
-                  }
-                }
-              : null,
-        ),
+        PlayerLyricToolbar(item: item!, activeColor: activeColor),
       ],
+    );
+  }
+}
+
+class PlayerLyricToolbar extends ConsumerWidget {
+  const PlayerLyricToolbar({
+    super.key,
+    required this.item,
+    this.activeColor,
+    this.carMode = false,
+  });
+
+  final PlayableItem item;
+  final Color? activeColor;
+  final bool carMode;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final bool showTranslation = ref.watch(
+      playerLyricSettingsLogicProvider.select(
+        (settings) => settings.showTranslation,
+      ),
+    );
+    final double horizontalPadding = ref.watch(
+      playerLyricSettingsLogicProvider.select(
+        (settings) => settings.horizontalPadding,
+      ),
+    );
+    final bool isSpoken = item.isSpoken;
+    final MetadataState metadataState = isSpoken
+        ? const MetadataState()
+        : ref.watch(metadataControllerProvider);
+    final PlayerSubtitleState subtitleState = ref.watch(
+      playerSubtitleControllerProvider,
+    );
+    final bool usesSubtitles =
+        subtitleState.stableId == item.stableId && subtitleState.usesSubtitles;
+    final bool canSelectSubtitles =
+        subtitleState.stableId == item.stableId && subtitleState.hasTracks;
+    final String translationLyrics =
+        resolveDisplayTranslationLyrics(metadataState.metadata)?.trim() ?? '';
+    final bool canToggleTranslation =
+        !usesSubtitles &&
+        metadataState.stableId == item.stableId &&
+        translationLyrics.isNotEmpty;
+
+    return _PlayerLyricToolbar(
+      carMode: carMode,
+      horizontalPadding: carMode ? 17 : horizontalPadding,
+      activeColor: ColorUtil.getAllShades(
+        activeColor ?? Theme.of(context).colorScheme.primary,
+      )[600]!,
+      onSearch: isSpoken
+          ? null
+          : () {
+              showManualLyricSearchSheet(
+                context: context,
+                initialKeyword: resolveLyricSearchKeyword(
+                  metadataState: metadataState,
+                  item: item,
+                ),
+                onApplied: () => ref
+                    .read(playerSubtitleControllerProvider.notifier)
+                    .useMeting(),
+              );
+            },
+      onSubtitles: canSelectSubtitles
+          ? () => showPlayerSubtitleSheet(context)
+          : null,
+      onOffset: isSpoken && !usesSubtitles
+          ? null
+          : () => showLyricOffsetSheet(context),
+      onAppearance: () =>
+          showPlayerLyricSettings(context, activeColor: activeColor),
+      showTranslation: showTranslation,
+      toggleTranslation: canToggleTranslation
+          ? () async {
+              try {
+                await ref
+                    .read(playerLyricSettingsLogicProvider.notifier)
+                    .setShowTranslation(!showTranslation);
+              } on Object {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(
+                    context,
+                  ).showSnackBar(const SnackBar(content: Text('译文设置保存失败，请重试')));
+                }
+              }
+            }
+          : null,
     );
   }
 }
@@ -185,6 +212,7 @@ class _PlayerLyricToolbar extends StatelessWidget {
   const _PlayerLyricToolbar({
     required this.activeColor,
     required this.horizontalPadding,
+    this.carMode = false,
     this.onOffset,
     this.onAppearance,
     this.onSearch,
@@ -195,6 +223,7 @@ class _PlayerLyricToolbar extends StatelessWidget {
 
   final Color activeColor;
   final double horizontalPadding;
+  final bool carMode;
   final VoidCallback? onSearch;
   final VoidCallback? onOffset;
   final VoidCallback? onAppearance;
@@ -220,7 +249,8 @@ class _PlayerLyricToolbar extends StatelessWidget {
             style: IconButton.styleFrom(
               alignment: AlignmentDirectional.centerStart,
               padding: EdgeInsets.zero,
-              minimumSize: const Size.square(kMinInteractiveDimension),
+              minimumSize: Size.square(carMode ? 56 : kMinInteractiveDimension),
+              iconSize: carMode ? 28 : null,
             ),
           ),
           child: SizedBox(
@@ -261,15 +291,16 @@ class _PlayerLyricToolbar extends StatelessWidget {
                       color: iconColor,
                       icon: const Icon(Icons.subtitles_outlined),
                     ),
-                  IconButton(
-                    tooltip: '歌词外观',
-                    onPressed: onAppearance,
-                    color: iconColor,
-                    icon: HugeIcon(
-                      icon: HugeIcons.strokeRoundedPreferenceHorizontal,
+                  if (!carMode)
+                    IconButton(
+                      tooltip: '歌词外观',
+                      onPressed: onAppearance,
                       color: iconColor,
+                      icon: HugeIcon(
+                        icon: HugeIcons.strokeRoundedPreferenceHorizontal,
+                        color: iconColor,
+                      ),
                     ),
-                  ),
                 ],
               ),
             ),

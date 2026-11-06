@@ -1,5 +1,4 @@
 import 'package:bilimusic/common/components/error_page.dart';
-import 'package:bilimusic/common/util/platform_util.dart';
 import 'package:bilimusic/feature/comment/domain/comment_target.dart';
 import 'package:bilimusic/feature/comment/ui/comment_page.dart';
 import 'package:bilimusic/feature/download/ui/downloads_page.dart';
@@ -16,6 +15,7 @@ import 'package:bilimusic/feature/recent/ui/desktop/desktop_recent_playback_page
 import 'package:bilimusic/feature/recent/ui/recent_playback_page.dart';
 import 'package:bilimusic/feature/search/ui/search_page.dart';
 import 'package:bilimusic/feature/statistics/ui/song_statistics_page.dart';
+import 'package:bilimusic/core/layout/app_layout.dart';
 import 'package:bilimusic/feature/setting/ui/about_settings_page.dart';
 import 'package:bilimusic/feature/setting/ui/cache_settings_page.dart';
 import 'package:bilimusic/feature/setting/ui/app_transfer_page.dart';
@@ -28,6 +28,11 @@ import 'package:bilimusic/feature/up/ui/desktop_up_page.dart';
 import 'package:bilimusic/feature/up/ui/favorite_up_list_page.dart';
 import 'package:bilimusic/feature/up/ui/up_page.dart';
 import 'package:bilimusic/router/shell/app_shell.dart';
+import 'package:bilimusic/router/car_ui_page.dart';
+import 'package:bilimusic/feature/home/ui/car/car_home_page.dart';
+import 'package:bilimusic/feature/profile/ui/car/car_profile_page.dart';
+import 'package:bilimusic/feature/favorites/ui/car/car_favorite_collection_page.dart';
+import 'package:bilimusic/feature/recent/ui/car/car_recent_playback_page.dart';
 import 'package:bilimusic/router/util/mobile_branch_navigator_keys.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -69,19 +74,25 @@ CommentTarget? commentTargetFromRoute({
 GoRouter router(Ref ref) => GoRouter(
   navigatorKey: _rootNavigatorKey,
   initialLocation: '/home',
-  routes: PlatformUtil.isDesktop ? desktopRoutes : mobileRoutes,
+  routes: AppLayout.isDesktopPlatform ? desktopRoutes : mobileRoutes,
 );
 
 final List<Map<String, dynamic>> mobileTabs = [
   {
     'path': '/home',
-    'builder': (context, state) => const HomePage(),
+    'builder': (context, state) => CarUiPage(
+      carBuilder: (_) => const CarHomePage(),
+      standardBuilder: (_) => const HomePage(),
+    ),
     'icon': HugeIcon(icon: HugeIcons.strokeRoundedHome07),
     'label': '首页',
   },
   {
     'path': '/profile',
-    'builder': (context, state) => const ProfilePage(),
+    'builder': (context, state) => CarUiPage(
+      carBuilder: (_) => const CarProfilePage(),
+      standardBuilder: (_) => const ProfilePage(),
+    ),
     'routes': <RouteBase>[
       GoRoute(path: 'import', builder: (context, state) => const ImportPage()),
       GoRoute(
@@ -101,18 +112,27 @@ final List<Map<String, dynamic>> mobileTabs = [
       GoRoute(
         path: 'recent',
         builder: (context, state) {
-          return PlatformUtil.isDesktop
-              ? const DesktopRecentPlaybackPage()
-              : const RecentPlaybackPage();
+          return CarUiPage(
+            carBuilder: (_) => const CarRecentPlaybackPage(),
+            standardBuilder: (_) =>
+                AppLayoutScope.of(context) == AppLayout.desktop
+                ? const DesktopRecentPlaybackPage()
+                : const RecentPlaybackPage(),
+          );
         },
       ),
       GoRoute(
         path: 'favorites/:collectionId',
         builder: (context, state) {
           final String collectionId = state.pathParameters['collectionId']!;
-          return PlatformUtil.isDesktop
-              ? DesktopFavoriteCollectionPage(collectionId: collectionId)
-              : FavoriteCollectionPage(collectionId: collectionId);
+          return CarUiPage(
+            carBuilder: (_) =>
+                CarFavoriteCollectionPage(collectionId: collectionId),
+            standardBuilder: (_) =>
+                AppLayoutScope.of(context) == AppLayout.desktop
+                ? DesktopFavoriteCollectionPage(collectionId: collectionId)
+                : FavoriteCollectionPage(collectionId: collectionId),
+          );
         },
       ),
     ],

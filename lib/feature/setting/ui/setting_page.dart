@@ -1,6 +1,7 @@
 import 'package:bilimusic/common/util/format_util.dart';
 import 'package:bilimusic/common/util/platform_util.dart';
 import 'package:bilimusic/core/cache/cache_util.dart';
+import 'package:bilimusic/core/layout/app_layout.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -32,7 +33,10 @@ class _SettingPageState extends ConsumerState<SettingPage> {
     final ThemeData theme = Theme.of(context);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('设置')),
+      appBar: AppBar(
+        title: const Text('设置'),
+        automaticallyImplyLeading: AppLayoutScope.of(context) != AppLayout.car,
+      ),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
         children: <Widget>[

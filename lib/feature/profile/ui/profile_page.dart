@@ -5,7 +5,6 @@ import 'package:bilimusic/common/components/login_required.dart';
 import 'package:bilimusic/common/components/search_bar.dart';
 import 'package:bilimusic/common/domain/collection_kind.dart';
 import 'package:bilimusic/common/util/toast_util.dart';
-import 'package:bilimusic/core/bili/session/bili_auth_required_exception.dart';
 import 'package:bilimusic/core/bili/session/bili_session.dart';
 import 'package:bilimusic/core/bili/session/bili_session_controller.dart';
 import 'package:bilimusic/feature/auth/data/bili_auth_repository.dart';
@@ -17,7 +16,7 @@ import 'package:bilimusic/feature/favorites/domain/favorites_state.dart';
 import 'package:bilimusic/feature/favorites/logic/favorite_entry_metadata.dart';
 import 'package:bilimusic/feature/favorites/logic/favorites_controller.dart';
 import 'package:bilimusic/feature/favorites/ui/components/collection_kind_dialog.dart';
-import 'package:bilimusic/feature/profile/ui/components/remote_collection_import_dialog.dart';
+import 'package:bilimusic/feature/profile/ui/components/add_collection_dialog.dart';
 import 'package:bilimusic/feature/profile/ui/components/user_card.dart';
 import 'package:bilimusic/feature/up/logic/favorite_up_controller.dart';
 import 'package:flutter/material.dart';
@@ -186,126 +185,6 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
     );
   }
 
-  Future<void> _showCreateCollectionDialog(BuildContext context) async {
-    final String? result = await showDialog<String>(
-      context: context,
-      useRootNavigator: true,
-      builder: (BuildContext context) {
-        return const _CollectionNameDialog(
-          title: '新建歌单',
-          hintText: '例如：深夜循环',
-          confirmText: '创建',
-        );
-      },
-    );
-
-    if (result == null || result.trim().isEmpty) {
-      if (result != null) {
-        _showMessage('歌单名称不能为空');
-      }
-      return;
-    }
-
-    if (!context.mounted) return;
-    final CollectionKind? kind = await showCollectionKindDialog(
-      context: context,
-    );
-    if (!mounted || kind == null) return;
-
-    final FavoritesController controller = ref.read(
-      favoritesControllerProvider.notifier,
-    );
-    final FavoriteCollection? collection = await controller.createCollection(
-      result,
-      kind: kind,
-    );
-    if (!mounted) {
-      return;
-    }
-
-    if (collection == null) {
-      _showMessage('歌单名称已存在');
-    }
-  }
-
-  Future<void> _showCreateRemoteCollectionDialog() async {
-    final String? result = await showDialog<String>(
-      context: context,
-      useRootNavigator: true,
-      builder: (BuildContext context) {
-        return const _CollectionNameDialog(
-          title: '新建网络歌单',
-          hintText: '例如：深夜循环',
-          confirmText: '创建',
-        );
-      },
-    );
-
-    if (result == null || result.trim().isEmpty) {
-      if (result != null) {
-        _showMessage('歌单名称不能为空');
-      }
-      return;
-    }
-
-    if (!mounted) return;
-    final CollectionKind? kind = await showCollectionKindDialog(
-      context: context,
-    );
-    if (!mounted || kind == null) return;
-
-    final FavoriteCollection? collection;
-    try {
-      collection = await ref
-          .read(favoritesControllerProvider.notifier)
-          .createRemoteCollection(result, kind: kind);
-    } on BiliAuthRequiredException {
-      if (mounted) {
-        LoginPrompt.show(context, reason: '网络歌单需要登录 B 站账号');
-      }
-      return;
-    }
-    if (!mounted) {
-      return;
-    }
-
-    if (collection == null) {
-      _showMessage('创建网络歌单失败');
-    }
-  }
-
-  Future<void> _showRemoteImportDialog() async {
-    final FavoritesController controller = ref.read(
-      favoritesControllerProvider.notifier,
-    );
-    final FavoriteCollection? collection = await showDialog<FavoriteCollection>(
-      context: context,
-      useRootNavigator: true,
-      builder: (BuildContext context) {
-        return RemoteCollectionImportDialog(
-          collectionsFuture: controller.fetchImportableRemoteCollections(),
-        );
-      },
-    );
-
-    if (!mounted || collection == null) {
-      return;
-    }
-
-    final CollectionKind? kind = await showCollectionKindDialog(
-      context: context,
-      initialKind: collection.kind,
-    );
-    if (!mounted || kind == null) return;
-
-    await controller.bindRemoteCollection(collection.copyWith(kind: kind));
-    await controller.refreshRemoteCollectionItems(collectionId: collection.id);
-    if (!mounted) {
-      return;
-    }
-    _showMessage('已导入“${collection.name}”');
-  }
-
   Future<void> _refreshRemoteCollectionsOnEnter() async {
     if (_didRefreshRemoteCollections || _isRefreshingRemoteCollections) {
       return;
@@ -335,51 +214,6 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
     }
   }
 
-  Future<void> _showRemoteAddOptions(BuildContext context) async {
-    final _RemoteAddAction? action = await showDialog<_RemoteAddAction>(
-      context: context,
-      builder: (BuildContext context) {
-        return SimpleDialog(
-          title: const Text('添加网络歌单'),
-          children: <Widget>[
-            SimpleDialogOption(
-              onPressed: () =>
-                  Navigator.of(context).pop(_RemoteAddAction.import),
-              child: const ListTile(
-                leading: Icon(Icons.cloud_download_outlined),
-                title: Text('导入已有收藏夹'),
-                contentPadding: EdgeInsets.zero,
-              ),
-            ),
-            SimpleDialogOption(
-              onPressed: () =>
-                  Navigator.of(context).pop(_RemoteAddAction.create),
-              child: const ListTile(
-                leading: Icon(Icons.add_rounded),
-                title: Text('新建网络歌单'),
-                contentPadding: EdgeInsets.zero,
-              ),
-            ),
-          ],
-        );
-      },
-    );
-
-    if (!mounted || action == null) {
-      return;
-    }
-
-    switch (action) {
-      case _RemoteAddAction.import:
-        await _showRemoteImportDialog();
-      case _RemoteAddAction.create:
-        if (!mounted) {
-          return;
-        }
-        await _showCreateRemoteCollectionDialog();
-    }
-  }
-
   void _handleTabChanged(_FavoriteListTab tab) {
     if (_selectedTab == tab) {
       return;
@@ -391,16 +225,11 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
   }
 
   void _handleAddPressed() {
-    switch (_selectedTab) {
-      case _FavoriteListTab.remote:
-        if (!(ref.read(biliSessionControllerProvider)?.isLoggedIn ?? false)) {
-          LoginPrompt.show(context, reason: '网络歌单需要登录 B 站账号');
-          return;
-        }
-        _showRemoteAddOptions(context);
-      case _FavoriteListTab.local:
-        _showCreateCollectionDialog(context);
-    }
+    showAddCollectionDialog(
+      context: context,
+      ref: ref,
+      remote: _selectedTab == _FavoriteListTab.remote,
+    );
   }
 
   void _handleImportPressed() {
@@ -506,7 +335,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
       context: context,
       useRootNavigator: true,
       builder: (BuildContext context) {
-        return _CollectionNameDialog(
+        return CollectionNameDialog(
           title: '重命名歌单',
           hintText: '请输入歌单名称',
           confirmText: '保存',
@@ -670,67 +499,6 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
 enum _CollectionAction { rename, delete, remove, changeKind }
 
 enum _FavoriteListTab { remote, local }
-
-enum _RemoteAddAction { import, create }
-
-class _CollectionNameDialog extends StatefulWidget {
-  const _CollectionNameDialog({
-    required this.title,
-    required this.hintText,
-    required this.confirmText,
-    this.initialValue = '',
-  });
-
-  final String title;
-  final String hintText;
-  final String confirmText;
-  final String initialValue;
-
-  @override
-  State<_CollectionNameDialog> createState() => _CollectionNameDialogState();
-}
-
-class _CollectionNameDialogState extends State<_CollectionNameDialog> {
-  late final TextEditingController _controller;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = TextEditingController(text: widget.initialValue);
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      title: Text(widget.title),
-      content: TextField(
-        controller: _controller,
-        maxLength: 24,
-        autofocus: true,
-        decoration: InputDecoration(hintText: widget.hintText),
-        onSubmitted: (String value) {
-          Navigator.of(context).pop(value);
-        },
-      ),
-      actions: <Widget>[
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: const Text('取消'),
-        ),
-        FilledButton(
-          onPressed: () => Navigator.of(context).pop(_controller.text),
-          child: Text(widget.confirmText),
-        ),
-      ],
-    );
-  }
-}
 
 class _ProfileQuickActions extends StatelessWidget {
   const _ProfileQuickActions({

@@ -266,6 +266,9 @@ void main() {
             expect(tester.takeException(), isNull);
             await tester.pumpWidget(const SizedBox.shrink());
           },
+          variant: TargetPlatformVariant({
+            desktop ? TargetPlatform.macOS : TargetPlatform.android,
+          }),
         );
       }
     }

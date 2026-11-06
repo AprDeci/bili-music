@@ -1,7 +1,9 @@
 import 'package:bilimusic/common/logger.dart';
-import 'package:bilimusic/common/util/platform_util.dart';
+import 'package:bilimusic/core/layout/app_layout.dart';
 import 'package:bilimusic/feature/player/domain/playable_item.dart';
 import 'package:bilimusic/feature/player/ui/player_page.dart';
+import 'package:bilimusic/feature/player/ui/car/car_player_page.dart';
+import 'package:bilimusic/router/car_ui_page.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
@@ -33,16 +35,24 @@ Future<void> openPlayerPage(
 
   _playerPageOpening = true;
   try {
-    if (PlatformUtil.isDesktop) {
+    if (AppLayout.isDesktopPlatform) {
       await context.push(playerRoutePath, extra: item);
       return;
     }
     markPlayerPageVisible();
     await (navigator ?? Navigator.of(context)).push<void>(
-      _createMobilePlayerRoute(item),
+      AppLayoutScope.of(context) == AppLayout.car
+          ? MaterialPageRoute<void>(
+              settings: const RouteSettings(name: playerNativeRouteName),
+              builder: (_) => CarUiPage(
+                carBuilder: (_) => CarPlayerPage(initialItem: item),
+                standardBuilder: (_) => PlayerPage(initialItem: item),
+              ),
+            )
+          : _createMobilePlayerRoute(item),
     );
   } finally {
-    if (PlatformUtil.isMobile) {
+    if (!AppLayout.isDesktopPlatform) {
       markPlayerPageHidden();
     }
     _playerPageOpening = false;
@@ -56,7 +66,10 @@ Route<void> _createMobilePlayerRoute(PlayableItem? item) {
     transitionDuration: const Duration(milliseconds: 250),
     reverseTransitionDuration: const Duration(milliseconds: 220),
     pageBuilder: (BuildContext context, Animation<double> animation, _) {
-      return PlayerPage(initialItem: item);
+      return CarUiPage(
+        carBuilder: (_) => CarPlayerPage(initialItem: item),
+        standardBuilder: (_) => PlayerPage(initialItem: item),
+      );
     },
     transitionsBuilder:
         (

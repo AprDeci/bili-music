@@ -1,4 +1,8 @@
+import 'dart:async';
+
 import 'package:bilimusic/common/components/cached_image.dart';
+import 'package:bilimusic/common/components/car/car_side_panel.dart';
+import 'package:bilimusic/core/layout/app_layout.dart';
 import 'package:bilimusic/feature/favorites/domain/favorite_collection.dart';
 import 'package:bilimusic/feature/favorites/domain/favorite_entry.dart';
 import 'package:bilimusic/feature/favorites/domain/favorite_membership.dart';
@@ -12,6 +16,156 @@ import 'package:flutter_smart_dialog/flutter_smart_dialog.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  for (final layout in [AppLayout.mobile, AppLayout.car]) {
+    testWidgets(
+      '$layout waits for additions and blocks repeated taps and dismissal',
+      (WidgetTester tester) async {
+        final Completer<bool> completion = Completer<bool>();
+        final _Favorites favorites = _Favorites(
+          (int call) =>
+              call == 1 ? completion.future : Future<bool>.value(true),
+        );
+        bool? result;
+        await _openBatchSheet(
+          tester,
+          favorites,
+          layout: layout,
+          onResult: (bool? value) => result = value,
+        );
+
+        final Finder tile = find.ancestor(
+          of: find.text('目标歌单'),
+          matching: find.byType(InkWell),
+        );
+        final VoidCallback onTap = tester.widget<InkWell>(tile).onTap!;
+        onTap();
+        onTap();
+        await tester.pump();
+        expect(favorites.addedItems, hasLength(1));
+        expect(result, isNull);
+        expect(find.byType(LinearProgressIndicator), findsOneWidget);
+        expect(find.textContaining('已新增'), findsNothing);
+
+        await tester.tapAt(const Offset(10, 10));
+        await tester.pump();
+        await tester.binding.handlePopRoute();
+        await tester.pump();
+        await tester.dragFrom(
+          tester.getCenter(find.text('添加 2 首到歌单')),
+          const Offset(0, 500),
+        );
+        await tester.pump();
+        expect(find.text('目标歌单'), findsOneWidget);
+        expect(result, isNull);
+
+        completion.complete(true);
+        await tester.pumpAndSettle();
+        expect(favorites.addedItems, hasLength(2));
+        expect(result, isTrue);
+        expect(find.byType(DraggableScrollableSheet), findsNothing);
+        expect(find.byType(CarSidePanel), findsNothing);
+        expect(find.text('已新增 2 / 2 项到“目标歌单”'), findsOneWidget);
+        await _dismissToast(tester);
+        expect(tester.takeException(), isNull);
+      },
+    );
+  }
+
+  for (final bool throwsError in <bool>[true, false]) {
+    testWidgets(
+      'keeps partial results and retries after ${throwsError ? 'exception' : 'false result'}',
+      (WidgetTester tester) async {
+        final _Favorites favorites = _Favorites((int call) async {
+          if (call == 2) {
+            if (throwsError) throw StateError('private failure details');
+            return false;
+          }
+          return true;
+        });
+        bool? result;
+        await _openBatchSheet(
+          tester,
+          favorites,
+          onResult: (bool? value) => result = value,
+        );
+        await tester.tap(find.text('目标歌单'));
+        await tester.pumpAndSettle();
+        expect(result, isNull);
+        expect(find.text('目标歌单'), findsOneWidget);
+        expect(find.text('已新增 1 / 2 项到“目标歌单”，部分添加失败，请点击歌单重试'), findsOneWidget);
+        expect(find.textContaining('private failure details'), findsNothing);
+        expect(find.byType(LinearProgressIndicator), findsNothing);
+
+        await tester.tap(find.text('目标歌单'));
+        await tester.pumpAndSettle();
+        expect(result, isTrue);
+        expect(favorites.addedItems.map((PlayableItem item) => item.aid), <int>[
+          1,
+          2,
+          2,
+        ]);
+        expect(find.text('已新增 1 / 1 项到“目标歌单”'), findsOneWidget);
+        await _dismissToast(tester);
+        expect(tester.takeException(), isNull);
+      },
+    );
+  }
+
+  testWidgets('car layout opens a right panel with large readable targets', (
+    WidgetTester tester,
+  ) async {
+    final _Favorites favorites = _Favorites((_) async => true);
+    tester.view.physicalSize = const Size(1280, 720);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await _openBatchSheet(tester, favorites, layout: AppLayout.car);
+    final Rect panel = tester.getRect(find.byType(CarSidePanel));
+    expect(panel.right, 1256);
+    expect(panel.left, greaterThan(1280 - panel.right));
+    expect(panel.top, 24);
+    expect(panel.bottom, 696);
+    expect(find.byType(BottomSheet), findsNothing);
+    expect(find.byType(DraggableScrollableSheet), findsNothing);
+    for (final String label in <String>['网络歌单', '本地歌单', '目标歌单']) {
+      final Finder target = find.ancestor(
+        of: find.text(label),
+        matching: find.byType(InkWell),
+      );
+      expect(tester.getSize(target).height, greaterThanOrEqualTo(56));
+      expect(
+        tester.widget<Text>(find.text(label)).style?.fontSize,
+        greaterThanOrEqualTo(20),
+      );
+    }
+    expect(tester.widget<Text>(find.text('添加 2 首到歌单')).style?.fontSize, 24);
+    expect(tester.widget<Text>(find.text('0 首')).style?.fontSize, 20);
+    expect(tester.takeException(), isNull);
+  });
+
+  for (final layout in [AppLayout.mobile, AppLayout.desktop]) {
+    testWidgets('$layout keeps the bottom sheet even with car styling', (
+      tester,
+    ) async {
+      await _openBatchSheet(
+        tester,
+        _Favorites((_) async => true),
+        layout: layout,
+        carStyle: true,
+      );
+      expect(find.byType(BottomSheet), findsOneWidget);
+      expect(find.byType(CarSidePanel), findsNothing);
+      expect(
+        tester
+            .widget<DraggableScrollableSheet>(
+              find.byType(DraggableScrollableSheet),
+            )
+            .initialChildSize,
+        0.75,
+      );
+      expect(tester.takeException(), isNull);
+    });
+  }
+
   testWidgets('added collection is masked and tapping only shows a toast', (
     WidgetTester tester,
   ) async {
@@ -265,5 +419,109 @@ void main() {
       expect(tester.widget<Material>(material).color, Colors.transparent);
       expect(tester.takeException(), isNull);
     });
+  }
+}
+
+Future<void> _openBatchSheet(
+  WidgetTester tester,
+  _Favorites favorites, {
+  bool carStyle = false,
+  AppLayout layout = AppLayout.mobile,
+  ValueChanged<bool?>? onResult,
+}) async {
+  await tester.pumpWidget(
+    ProviderScope(
+      overrides: [favoritesControllerProvider.overrideWith(() => favorites)],
+      child: AppLayoutScope(
+        layout: layout,
+        child: MaterialApp(
+          builder: FlutterSmartDialog.init(),
+          home: Scaffold(
+            body: Builder(
+              builder: (BuildContext context) => TextButton(
+                onPressed: () async {
+                  final bool? result = await showPlayerCollectionItemsSheet(
+                    context: context,
+                    items: const <PlayableItem>[
+                      PlayableItem(
+                        aid: 1,
+                        bvid: 'BV1',
+                        title: '歌曲1',
+                        author: '歌手',
+                        coverUrl: '',
+                      ),
+                      PlayableItem(
+                        aid: 2,
+                        bvid: 'BV2',
+                        title: '歌曲2',
+                        author: '歌手',
+                        coverUrl: '',
+                      ),
+                    ],
+                    carStyle: carStyle,
+                  );
+                  onResult?.call(result);
+                },
+                child: const Text('收藏'),
+              ),
+            ),
+          ),
+        ),
+      ),
+    ),
+  );
+  await tester.tap(find.text('收藏'));
+  await tester.pumpAndSettle();
+}
+
+Future<void> _dismissToast(WidgetTester tester) async {
+  final Future<void> dismiss = SmartDialog.dismiss(status: SmartStatus.toast);
+  await tester.pumpAndSettle();
+  await dismiss;
+  await tester.pump(const Duration(seconds: 2));
+  await tester.pumpAndSettle();
+}
+
+class _Favorites extends FavoritesController {
+  _Favorites(this.onAdd);
+
+  final Future<bool> Function(int call) onAdd;
+  final List<PlayableItem> addedItems = <PlayableItem>[];
+
+  @override
+  FavoritesState build() => FavoritesState(
+    collections: <FavoriteCollection>[
+      FavoriteCollection(
+        id: 'remote:1',
+        name: '目标歌单',
+        source: FavoriteCollectionSource.remote,
+        remoteId: '1',
+        createdAt: DateTime(2026),
+        updatedAt: DateTime(2026),
+      ),
+    ],
+  );
+
+  @override
+  Future<bool> addToCollection({
+    required String collectionId,
+    required PlayableItem item,
+  }) async {
+    addedItems.add(item);
+    final bool added = await onAdd(addedItems.length);
+    if (added) {
+      final FavoriteEntry entry = FavoriteEntry.fromPlayableItem(item);
+      state = state.copyWith(
+        entries: <FavoriteEntry>[...state.entries, entry],
+        memberships: <FavoriteMembership>[
+          ...state.memberships,
+          FavoriteMembership.create(
+            collectionId: collectionId,
+            itemId: entry.itemId,
+          ),
+        ],
+      );
+    }
+    return added;
   }
 }

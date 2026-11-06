@@ -50,6 +50,13 @@ Before running any `flutter` or `dart` command, first ensure the command is exec
 ### Small-Screen Testing
 - iPhone SE 1st gen: `adb shell wm size 640x1136 && adb shell wm density 320`
 
+### Car UI Testing
+- **Baseline**: landscape **1920×1080 px @ 140 DPI** (≈2194×1234 logical px before system insets).
+- **Setup**: set the phone emulator to portrait base dimensions **1080×1920**, density **140**, then rotate to landscape (rotation locked to 1) so rendered content aligns with the emulator skin.
+- **Verify**: active display should report `real 1920 x 1080`, `rotation 1`, `density 140`. Also eyeball the emulator window itself — a screenshot via ADB won't show skin/content rotation drift.
+- **Tuning**: keep 1920×1080 / 140 DPI throughout; don't bump the DPI just to make undersized controls look acceptable. Enable car UI in **Settings → Appearance** before testing.
+- **Restore**: reset display size, density, and rotation to the phone's defaults when done.
+
 ### Code Generation
 - One-off codegen: `dart run build_runner build --delete-conflicting-outputs`
 - Watch mode: `dart run build_runner watch --delete-conflicting-outputs`
@@ -153,6 +160,15 @@ Before running any `flutter` or `dart` command, first ensure the command is exec
 - Reuse spacing patterns with `SizedBox` and consistent radii/padding.
 - Preserve the current visual language unless the task asks for a redesign.
 - Keep desktop and mobile behavior sensible; current layouts use `ConstrainedBox` and padded cards.
+
+## UI Design Principles
+Avoid unnecessary secondary labels, descriptions, and redundant explanatory text. Let the layout communicate structure and meaning through visual hierarchy, grouping, spacing, alignment, typography, and clear control names.
+
+Before adding any text, ask whether it provides essential information or merely repeats what the interface already communicates.
+
+Prefer improving unclear layouts over adding explanatory paragraphs. Keep interfaces concise, purposeful, and visually balanced.
+
+Preserve essential labels, accessibility, input constraints, error messages, and confirmation text for consequential actions. Never sacrifice usability for minimalism.
 
 ## Networking and Persistence
 - Network access goes through `BiliClient` and Dio.

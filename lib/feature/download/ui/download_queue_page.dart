@@ -2,8 +2,8 @@ import 'package:bilimusic/common/components/bottom_page_spacer.dart';
 import 'package:bilimusic/common/components/cached_image.dart';
 import 'package:bilimusic/common/components/status_view.dart';
 import 'package:bilimusic/common/util/format_util.dart';
-import 'package:bilimusic/common/util/screen_util.dart';
 import 'package:bilimusic/common/util/toast_util.dart';
+import 'package:bilimusic/core/layout/app_layout.dart';
 import 'package:bilimusic/feature/download/domain/download_task.dart';
 import 'package:bilimusic/feature/download/logic/download_controller.dart';
 import 'package:flutter/material.dart';
@@ -49,7 +49,7 @@ class DownloadQueuePage extends ConsumerWidget {
     final bool hasFailed = tasks.any(
       (DownloadTask task) => task.status == DownloadTaskStatus.failed,
     );
-    final bool desktop = ScreenUtil.shouldUseDesktopShell(context);
+    final bool desktop = AppLayoutScope.of(context) == AppLayout.desktop;
     final Widget retryAll = TextButton(
       onPressed: () => _retryFailed(ref),
       child: const Text('重试失败项'),

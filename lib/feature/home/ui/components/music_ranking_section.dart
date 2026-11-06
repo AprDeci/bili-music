@@ -3,7 +3,7 @@ import 'dart:math' as math;
 import 'package:bilimusic/common/components/bar_icon_button.dart';
 import 'package:bilimusic/common/components/cached_image.dart';
 import 'package:bilimusic/common/components/status_view.dart';
-import 'package:bilimusic/common/util/platform_util.dart';
+import 'package:bilimusic/core/layout/app_layout.dart';
 import 'package:bilimusic/common/util/player_util.dart';
 import 'package:bilimusic/feature/home/domain/music_ranking_item.dart';
 import 'package:bilimusic/feature/home/logic/music_ranking_controller.dart';
@@ -107,7 +107,7 @@ class _MusicRankingSplitView extends StatelessWidget {
 
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
-        if (PlatformUtil.isDesktop) {
+        if (AppLayoutScope.of(context) == AppLayout.desktop) {
           return SizedBox(
             height: 202,
             child: _MusicRankingDesktopPager(
@@ -256,7 +256,7 @@ class _MusicRankingPager extends StatelessWidget {
 
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
-        if (PlatformUtil.isDesktop) {
+        if (AppLayoutScope.of(context) == AppLayout.desktop) {
           return _MusicRankingDesktopPager(
             items: items,
             startRank: startRank,
@@ -528,7 +528,7 @@ class _MusicRankingLoading extends StatelessWidget {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
-        if (PlatformUtil.isDesktop) {
+        if (AppLayoutScope.of(context) == AppLayout.desktop) {
           return const SizedBox(
             height: 202,
             child: Row(
@@ -580,7 +580,7 @@ class _MusicRankingLoadingGroup extends StatelessWidget {
           height: 202,
           child: LayoutBuilder(
             builder: (BuildContext context, BoxConstraints constraints) {
-              if (PlatformUtil.isDesktop) {
+              if (AppLayoutScope.of(context) == AppLayout.desktop) {
                 return const Row(
                   children: <Widget>[
                     Expanded(child: _MusicRankingLoadingColumn()),

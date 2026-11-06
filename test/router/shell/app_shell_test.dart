@@ -65,6 +65,7 @@ void main() {
         await tester.pumpWidget(const SizedBox.shrink());
       },
       skip: !PlatformUtil.isDesktop,
+      variant: TargetPlatformVariant({TargetPlatform.macOS}),
     );
   }
 
