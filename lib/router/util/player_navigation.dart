@@ -18,11 +18,7 @@ bool _playerPageOpening = false;
 
 ValueListenable<bool> get playerPageVisibilityListenable => _playerPageVisible;
 
-Future<void> openPlayerPage(
-  BuildContext context, {
-  PlayableItem? item,
-  NavigatorState? navigator,
-}) async {
+Future<void> openPlayerPage(BuildContext context, {PlayableItem? item}) async {
   final bool blocked = _playerPageVisible.value || _playerPageOpening;
   _logger.d(
     'openPlayerPage | blocked=$blocked, visible=${_playerPageVisible.value}, '
@@ -40,7 +36,7 @@ Future<void> openPlayerPage(
       return;
     }
     markPlayerPageVisible();
-    await (navigator ?? Navigator.of(context)).push<void>(
+    await Navigator.of(context, rootNavigator: true).push<void>(
       AppLayoutScope.of(context) == AppLayout.car
           ? MaterialPageRoute<void>(
               settings: const RouteSettings(name: playerNativeRouteName),

@@ -5,7 +5,6 @@ import 'package:bilimusic/feature/player/logic/player_controller.dart';
 import 'package:bilimusic/feature/player/ui/mini/mini_player_bar.dart';
 import 'package:bilimusic/feature/player/ui/mini/mini_player_glass_bar.dart';
 import 'package:bilimusic/feature/setting/logic/appearance_setting_logic.dart';
-import 'package:bilimusic/router/util/mobile_branch_navigator_keys.dart';
 import 'package:bilimusic/router/util/mobile_chrome_config.dart';
 import 'package:bilimusic/router/util/player_navigation.dart';
 import 'package:flutter/material.dart';
@@ -234,15 +233,7 @@ class _MobileShellScaffoldState extends ConsumerState<MobileShellScaffold> {
     );
   }
 
-  Future<void> _openMiniPlayer() {
-    final int currentIndex = widget.navigationShell.currentIndex;
-    final NavigatorState? branchNavigator =
-        currentIndex >= 0 && currentIndex < mobileBranchNavigatorKeys.length
-        ? mobileBranchNavigatorKeys[currentIndex].currentState
-        : null;
-
-    return openPlayerPage(context, navigator: branchNavigator);
-  }
+  Future<void> _openMiniPlayer() => openPlayerPage(context);
 
   void _togglePlayback() {
     ref.read(playerControllerProvider.notifier).togglePlayback();

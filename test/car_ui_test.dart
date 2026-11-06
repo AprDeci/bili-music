@@ -13,6 +13,7 @@ import 'package:bilimusic/feature/player/ui/player_page.dart';
 import 'package:bilimusic/feature/player/ui/mini/mini_player_bar.dart';
 import 'package:bilimusic/feature/player/ui/mini/mini_player_glass_bar.dart';
 import 'package:bilimusic/router/util/player_navigation.dart';
+import 'package:bilimusic/router/util/mobile_branch_navigator_keys.dart';
 import 'package:bilimusic/router/routers.dart';
 import 'package:bilimusic/router/shell/app_shell.dart';
 import 'package:bilimusic/router/shell/mobile_shell_scaffold.dart';
@@ -666,114 +667,135 @@ void main() {
     container.dispose();
   });
 
-  testWidgets(
-    'open player switches between portrait mobile and landscape car',
-    (tester) async {
-      tester.view.physicalSize = const Size(1080, 2280);
-      tester.view.devicePixelRatio = 440 / 160;
-      addTearDown(tester.view.reset);
-      final router = GoRouter(
-        navigatorKey: rootNavigatorKey,
-        routes: [
-          StatefulShellRoute.indexedStack(
-            builder: (context, state, shell) => AppShell(
-              navigationShell: shell,
-              currentLocation: state.uri.path,
-            ),
-            branches: [
-              StatefulShellBranch(
-                routes: [
-                  GoRoute(
-                    path: '/',
-                    builder: (context, _) => Scaffold(
-                      body: TextButton(
-                        onPressed: () => openPlayerPage(context),
-                        child: const Text('打开播放器'),
+  for (final bool fromMiniPlayer in <bool>[false, true]) {
+    testWidgets(
+      'open player stays fullscreen across rotation, miniPlayer=$fromMiniPlayer',
+      (tester) async {
+        tester.view.physicalSize = const Size(1080, 2280);
+        tester.view.devicePixelRatio = 440 / 160;
+        addTearDown(tester.view.reset);
+        final router = GoRouter(
+          navigatorKey: rootNavigatorKey,
+          routes: [
+            StatefulShellRoute.indexedStack(
+              builder: (context, state, shell) => AppShell(
+                navigationShell: shell,
+                currentLocation: state.uri.path,
+              ),
+              branches: [
+                StatefulShellBranch(
+                  navigatorKey: mobileBranchNavigatorKeys.first,
+                  routes: [
+                    GoRoute(
+                      path: '/',
+                      builder: (context, _) => Scaffold(
+                        body: TextButton(
+                          onPressed: () => openPlayerPage(context),
+                          child: const Text('打开播放器'),
+                        ),
                       ),
                     ),
-                  ),
-                ],
-              ),
-              StatefulShellBranch(
-                routes: [
-                  GoRoute(
-                    path: '/profile',
-                    builder: (_, _) => const Scaffold(),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ],
-      );
-      addTearDown(router.dispose);
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            routerProvider.overrideWithValue(router),
-            carUiSettingLogicProvider.overrideWithValue(true),
-            appearanceSettingLogicProvider.overrideWithValue(false),
-            biliSessionControllerProvider.overrideWith(_Session.new),
-            themeLogicProvider.overrideWithValue(const ThemeUiModel()),
-            listeningProgressControllerProvider.overrideWithValue(
-              const ListeningState(),
-            ),
-            favoritesControllerProvider.overrideWith(_Favorites.new),
-            playerControllerProvider.overrideWith(_Player.new),
-            playerDisplayProvider.overrideWithValue(
-              const PlayerDisplayInfo(title: '音乐'),
-            ),
-            playerCoverColorControllerProvider.overrideWith(_CoverColor.new),
-            metadataControllerProvider.overrideWith(_Metadata.new),
-            playerLyricSettingsLogicProvider.overrideWithValue(
-              const PlayerLyricSettings(),
+                  ],
+                ),
+                StatefulShellBranch(
+                  routes: [
+                    GoRoute(
+                      path: '/profile',
+                      builder: (_, _) => const Scaffold(),
+                    ),
+                  ],
+                ),
+              ],
             ),
           ],
-          child: const MyApp(),
-        ),
-      );
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('打开播放器'));
-      await tester.pumpAndSettle();
-      final route = ModalRoute.of(tester.element(find.byType(PlayerPage)));
-      for (final size in [
-        const Size(1080, 2280),
-        const Size(2280, 1080),
-        const Size(1080, 2280),
-      ]) {
-        tester.view.physicalSize = size;
-        await tester.pumpAndSettle();
-        final bool landscape = size.width > size.height;
-        expect(
-          find.byType(PlayerPage),
-          landscape ? findsNothing : findsOneWidget,
         );
-        expect(
-          find.byType(CarPlayerPage),
-          landscape ? findsOneWidget : findsNothing,
-        );
-        expect(
-          ModalRoute.of(
-            tester.element(find.byType(landscape ? CarPlayerPage : PlayerPage)),
+        addTearDown(router.dispose);
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              routerProvider.overrideWithValue(router),
+              carUiSettingLogicProvider.overrideWithValue(true),
+              appearanceSettingLogicProvider.overrideWithValue(false),
+              biliSessionControllerProvider.overrideWith(_Session.new),
+              themeLogicProvider.overrideWithValue(const ThemeUiModel()),
+              listeningProgressControllerProvider.overrideWithValue(
+                const ListeningState(),
+              ),
+              favoritesControllerProvider.overrideWith(_Favorites.new),
+              playerControllerProvider.overrideWith(_Player.new),
+              playerDisplayProvider.overrideWithValue(
+                const PlayerDisplayInfo(title: '音乐'),
+              ),
+              playerCoverColorControllerProvider.overrideWith(_CoverColor.new),
+              metadataControllerProvider.overrideWith(_Metadata.new),
+              playerLyricSettingsLogicProvider.overrideWithValue(
+                const PlayerLyricSettings(),
+              ),
+            ],
+            child: const MyApp(),
           ),
-          same(route),
         );
-        final container = ProviderScope.containerOf(
-          tester.element(find.byType(MyApp)),
-        );
-        expect(container.read(carUiSettingLogicProvider), isTrue);
-        expect(container.read(playerControllerProvider).queue, [_item]);
-        expect(playerPageVisibilityListenable.value, isTrue);
-        expect(find.byType(MiniPlayerBar), findsNothing);
-        expect(find.byType(MiniPlayerGlassBar), findsNothing);
-        expect(tester.takeException(), isNull);
-      }
-      Navigator.of(tester.element(find.byType(PlayerPage))).pop();
-      await tester.pumpAndSettle();
-      expect(find.text('打开播放器'), findsOneWidget);
-      await tester.pumpWidget(const SizedBox.shrink());
-    },
-  );
+        await tester.pumpAndSettle();
+        if (fromMiniPlayer) {
+          tester.widget<MiniPlayerBar>(find.byType(MiniPlayerBar)).onTap();
+        } else {
+          await tester.tap(find.text('打开播放器'));
+        }
+        await tester.pumpAndSettle();
+        final route = ModalRoute.of(tester.element(find.byType(PlayerPage)));
+        expect(route!.navigator, same(rootNavigatorKey.currentState));
+        for (final size in [
+          const Size(1080, 2280),
+          const Size(2280, 1080),
+          const Size(1080, 2280),
+        ]) {
+          tester.view.physicalSize = size;
+          await tester.pumpAndSettle();
+          final bool landscape = size.width > size.height;
+          expect(
+            find.byType(PlayerPage),
+            landscape ? findsNothing : findsOneWidget,
+          );
+          expect(
+            find.byType(CarPlayerPage),
+            landscape ? findsOneWidget : findsNothing,
+          );
+          expect(
+            ModalRoute.of(
+              tester.element(
+                find.byType(landscape ? CarPlayerPage : PlayerPage),
+              ),
+            ),
+            same(route),
+          );
+          final container = ProviderScope.containerOf(
+            tester.element(find.byType(MyApp)),
+          );
+          expect(container.read(carUiSettingLogicProvider), isTrue);
+          expect(container.read(playerControllerProvider).queue, [_item]);
+          final Rect playerRect = tester.getRect(
+            find.byType(landscape ? CarPlayerPage : PlayerPage),
+          );
+          final Size screenSize =
+              tester.view.physicalSize / tester.view.devicePixelRatio;
+          expect(playerRect.left, closeTo(0, 0.01));
+          expect(playerRect.top, closeTo(0, 0.01));
+          expect(playerRect.width, closeTo(screenSize.width, 0.01));
+          expect(playerRect.height, closeTo(screenSize.height, 0.01));
+          expect(find.byType(CarPlayerPanel), findsNothing);
+          expect(playerPageVisibilityListenable.value, isTrue);
+          expect(find.byType(MiniPlayerBar), findsNothing);
+          expect(find.byType(MiniPlayerGlassBar), findsNothing);
+          expect(tester.takeException(), isNull);
+        }
+        Navigator.of(tester.element(find.byType(PlayerPage))).pop();
+        await tester.pumpAndSettle();
+        expect(find.text('打开播放器'), findsOneWidget);
+        expect(playerPageVisibilityListenable.value, isFalse);
+        await tester.pumpWidget(const SizedBox.shrink());
+      },
+    );
+  }
 
   testWidgets('shell rotation preserves nested navigation and page state', (
     tester,
