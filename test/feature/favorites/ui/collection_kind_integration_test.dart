@@ -1,3 +1,7 @@
+import 'dart:io';
+
+import 'package:bilimusic/feature/player/data/chapter_cache_repository.dart';
+import 'package:hive_ce/hive.dart';
 import 'package:bilimusic/common/domain/collection_kind.dart';
 import 'package:bilimusic/feature/favorites/domain/favorite_collection.dart';
 import 'package:bilimusic/feature/favorites/domain/favorite_entry.dart';
@@ -29,6 +33,17 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  late Directory directory;
+  setUp(() async {
+    directory = await Directory.systemTemp.createTemp('collection_kind_');
+    Hive.init(directory.path);
+    await Hive.openBox<String>(chapterCacheBoxName);
+  });
+  tearDown(() async {
+    await Hive.close();
+    await directory.delete(recursive: true);
+  });
+
   for (final bool desktop in <bool>[false, true]) {
     for (final String id in <String>[
       'local',

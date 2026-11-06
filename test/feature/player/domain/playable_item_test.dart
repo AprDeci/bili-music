@@ -27,6 +27,26 @@ void main() {
       expect(item.lyricSearchTitles, <String>['Same Title']);
     });
 
+    for (final String title in <String>[
+      '歌曲合集',
+      '精选合辑',
+      '精選合輯',
+      '金曲串烧',
+      '金曲串燒',
+    ]) {
+      test('recognizes compilation title $title', () {
+        expect(_item(title: title).isCompilation, isTrue);
+        expect(_item(title: title, pageTitle: title).isCompilation, isTrue);
+        expect(_item(title: title, pageTitle: '晴天').isCompilation, isFalse);
+      });
+    }
+
+    test('does not treat a normal song or long recording as a compilation', () {
+      expect(_item(title: '晴天').isCompilation, isFalse);
+      expect(_item(title: '晴天十小时循环').isCompilation, isFalse);
+      expect(_item(title: '视频', pageTitle: '歌曲合集').isCompilation, isTrue);
+    });
+
     test('content identity ignores cid and normalizes the first page', () {
       final PlayableItem withCid = _item(title: 'Video Title', cid: 10);
       final PlayableItem withoutCid = _item(title: 'Video Title', page: 1);

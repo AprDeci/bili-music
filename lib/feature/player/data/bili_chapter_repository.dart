@@ -6,6 +6,9 @@ import 'package:bilimusic/feature/comment/domain/comment_item.dart';
 import 'package:bilimusic/feature/comment/domain/comment_page_result.dart';
 import 'package:bilimusic/feature/comment/domain/comment_sort.dart';
 import 'package:bilimusic/feature/comment/domain/comment_target.dart';
+import 'package:bilimusic/common/logger.dart';
+import 'package:bilimusic/feature/player/data/chapter_cache_repository.dart';
+import 'package:bilimusic/feature/player/logic/chapters/chapter_cache_provider.dart';
 import 'package:bilimusic/feature/player/domain/playable_item.dart';
 import 'package:bilimusic/feature/player/domain/playback_chapter.dart';
 import 'package:bilimusic/feature/player/logic/chapters/playback_chapter_parser.dart';
@@ -18,12 +21,20 @@ BiliChapterRepository biliChapterRepository(Ref ref) {
   return BiliChapterRepository(
     ref.read(biliClientProvider.notifier),
     ref.read(biliCommentRepositoryProvider),
+    chapterCache: ref.read(chapterCacheRepositoryProvider),
   );
 }
 
 class BiliChapterRepository {
-  BiliChapterRepository(this._client, this._commentRepository);
+  BiliChapterRepository(
+    this._client,
+    this._commentRepository, {
+    this.chapterCache,
+  });
 
+  static final AppLogger _logger = AppLogger('BiliChapters');
+
+  final ChapterCacheRepository? chapterCache;
   final BiliHttpClient _client;
   final BiliCommentRepository _commentRepository;
   final Map<String, List<PlaybackChapter>> _cache =
@@ -39,17 +50,37 @@ class BiliChapterRepository {
 
     final String cacheKey = item.contentId;
     final List<PlaybackChapter>? cached = _cache[cacheKey];
-    if (cached != null) {
-      return _resolveWithinDuration(cached, duration);
+    if (cached != null && cached.isEmpty) {
+      return cached;
+    }
+    final List<PlaybackChapter> persisted =
+        chapterCache?.getChapters(cacheKey) ??
+        cached ??
+        const <PlaybackChapter>[];
+    if (persisted.isNotEmpty) {
+      return _resolveWithinDuration(persisted, duration);
     }
 
-    final List<PlaybackChapter> chapters = await _resolve(item, duration);
-    _cache[cacheKey] = chapters;
-    return _resolveWithinDuration(chapters, duration);
+    final List<PlaybackChapter> chapters = _resolveWithinDuration(
+      await _resolve(item, duration),
+      duration,
+    );
+    if (chapterCache == null || chapters.isEmpty) {
+      _cache[cacheKey] = chapters;
+    }
+    if (chapters.isNotEmpty) {
+      try {
+        await chapterCache?.putChapters(cacheKey, chapters);
+      } on Object catch (error) {
+        _logger.d('chapter cache write failed for $cacheKey: $error');
+      }
+    }
+    return chapters;
   }
 
-  void clearCache() {
+  Future<void> clearCache() async {
     _cache.clear();
+    await chapterCache?.clear();
   }
 
   Future<List<PlaybackChapter>> _resolve(

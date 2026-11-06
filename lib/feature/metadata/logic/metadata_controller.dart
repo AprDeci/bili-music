@@ -16,6 +16,7 @@ import 'package:bilimusic/feature/meting/logic/meting_source_preference_logic.da
 import 'package:bilimusic/feature/player/domain/playable_item.dart';
 import 'package:bilimusic/feature/player/domain/player_state.dart';
 import 'package:bilimusic/feature/player/logic/player_controller.dart';
+import 'package:bilimusic/feature/player/logic/chapters/chapter_cache_provider.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'metadata_controller.g.dart';
@@ -255,6 +256,11 @@ class MetadataController extends _$MetadataController {
     final String stableId = item.stableId;
     final MetadataQueryContext context = _contextFor(item);
     _activeContext = context;
+    if (!context.hasChapter &&
+        ref.read(chapterCacheRepositoryProvider).isCompilation(item)) {
+      state = MetadataState(stableId: stableId);
+      return;
+    }
     state = MetadataState(stableId: stableId, isLoading: true);
 
     if (!ignoreCache) {
@@ -393,7 +399,9 @@ class MetadataController extends _$MetadataController {
     required Metadata metadata,
     MetadataQueryContext? context,
   }) async {
-    if (!_shouldCacheMetadata(item)) {
+    if (!_shouldCacheMetadata(item) ||
+        (!(context?.hasChapter ?? false) &&
+            ref.read(chapterCacheRepositoryProvider).isCompilation(item))) {
       return;
     }
 

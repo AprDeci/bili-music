@@ -1,3 +1,7 @@
+import 'dart:io';
+
+import 'package:bilimusic/feature/player/data/chapter_cache_repository.dart';
+import 'package:hive_ce/hive.dart';
 import 'package:bilimusic/core/bili/session/bili_session.dart';
 import 'package:bilimusic/core/net/bili_client.dart';
 import 'package:bilimusic/feature/comment/data/bilibili_comment_repository.dart';
@@ -14,6 +18,18 @@ import 'package:flutter_test/flutter_test.dart';
 const String _playerPath = '/x/player/wbi/v2';
 
 void main() {
+  late Directory directory;
+  late Box<String> box;
+  setUp(() async {
+    directory = await Directory.systemTemp.createTemp('chapter_repository_');
+    Hive.init(directory.path);
+    box = await Hive.openBox<String>(chapterCacheBoxName);
+  });
+  tearDown(() async {
+    await Hive.close();
+    await directory.delete(recursive: true);
+  });
+
   test('maps bilibili view points into chapters', () async {
     final _FakeClient client = _FakeClient(
       responses: <String, Map<String, dynamic>>{
@@ -219,6 +235,101 @@ void main() {
 
     expect(client.calls, 1);
   });
+
+  test(
+    'persists chapters across a box reopen without network requests',
+    () async {
+      final _FakeClient client = _FakeClient();
+      final BiliChapterRepository first = BiliChapterRepository(
+        client,
+        _FakeCommentRepository(null),
+        chapterCache: ChapterCacheRepository(box),
+      );
+      final List<PlaybackChapter> chapters = await first.fetchChapters(
+        _item(description: '00:00 第一首\n03:00 第二首'),
+      );
+      expect(chapters, hasLength(2));
+      await box.close();
+      box = await Hive.openBox<String>(chapterCacheBoxName);
+      final _FakeClient offlineClient = _FakeClient();
+      final BiliChapterRepository reopened = BiliChapterRepository(
+        offlineClient,
+        _FakeCommentRepository(null),
+        chapterCache: ChapterCacheRepository(box),
+      );
+
+      expect(await reopened.fetchChapters(_item()), chapters);
+      expect(offlineClient.calls, 0);
+      expect(
+        await reopened.fetchChapters(
+          _item(),
+          duration: const Duration(minutes: 1),
+        ),
+        isEmpty,
+      );
+      expect(await reopened.fetchChapters(_item()), chapters);
+      expect(await reopened.fetchChapters(_item().copyWith(page: 2)), isEmpty);
+      expect(offlineClient.calls, 1);
+      await reopened.clearCache();
+      expect(box.isEmpty, isTrue);
+      expect(await reopened.fetchChapters(_item()), isEmpty);
+      expect(offlineClient.calls, 2);
+    },
+  );
+
+  test(
+    'does not persist an empty result across repository instances',
+    () async {
+      final _FakeClient client = _FakeClient();
+      final BiliChapterRepository first = BiliChapterRepository(
+        client,
+        _FakeCommentRepository(null),
+        chapterCache: ChapterCacheRepository(box),
+      );
+      expect(await first.fetchChapters(_item()), isEmpty);
+      expect(box.isEmpty, isTrue);
+      final BiliChapterRepository next = BiliChapterRepository(
+        client,
+        _FakeCommentRepository(null),
+        chapterCache: ChapterCacheRepository(box),
+      );
+      expect(
+        await next.fetchChapters(_item(description: '00:00 第一首\n03:00 第二首')),
+        hasLength(2),
+      );
+      expect(client.calls, 2);
+    },
+  );
+
+  test(
+    'invalid persisted data is ignored and replaced by fresh chapters',
+    () async {
+      for (final String raw in <String>[
+        'broken json',
+        '{}',
+        '[{"startMs":-1,"title":"坏数据"}]',
+        '[{"startMs":"0","title":"坏数据"}]',
+        '[{"startMs":0,"title":"坏数据","endMs":-1}]',
+        '[{"startMs":0,"title":"只有一章"}]',
+      ]) {
+        await box.put(_item().contentId, raw);
+        final ChapterCacheRepository cache = ChapterCacheRepository(box);
+        expect(cache.getChapters(_item().contentId), isEmpty);
+        final BiliChapterRepository repository = BiliChapterRepository(
+          _FakeClient(),
+          _FakeCommentRepository(null),
+          chapterCache: cache,
+        );
+        expect(
+          await repository.fetchChapters(
+            _item(description: '00:00 第一首\n03:00 第二首'),
+          ),
+          hasLength(2),
+        );
+        expect(cache.getChapters(_item().contentId), hasLength(2));
+      }
+    },
+  );
 
   test('drops chapters beyond the media duration', () async {
     final _FakeClient client = _FakeClient(

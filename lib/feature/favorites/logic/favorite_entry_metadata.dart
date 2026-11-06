@@ -2,6 +2,7 @@ import 'package:bilimusic/feature/favorites/domain/favorite_entry.dart';
 import 'package:bilimusic/feature/favorites/logic/favorites_view_mode_logic.dart';
 import 'package:bilimusic/feature/metadata/data/metadata_cache_repository.dart';
 import 'package:bilimusic/feature/metadata/domain/metadata.dart';
+import 'package:bilimusic/feature/player/logic/chapters/chapter_cache_provider.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'favorite_entry_metadata.g.dart';
@@ -23,7 +24,8 @@ String? favoriteEntryCoverUrl(
     return null;
   }
   if (ref.watch(effectiveFavoritesViewModeProvider(collectionId)) ==
-      FavoriteListViewMode.video) {
+          FavoriteListViewMode.video ||
+      ref.watch(itemIsCompilationProvider(entry.toPlayableItem()))) {
     return entry.coverUrl;
   }
   final String coverUrl =

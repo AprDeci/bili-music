@@ -14,7 +14,9 @@ import 'package:bilimusic/feature/metadata/logic/metadata_backfill_controller.da
 import 'package:bilimusic/feature/metadata/logic/metadata_lookup_service.dart';
 import 'package:bilimusic/feature/meting/data/meting_repository.dart';
 import 'package:bilimusic/feature/meting/domain/meting_server.dart';
+import 'package:bilimusic/feature/player/data/chapter_cache_repository.dart';
 import 'package:bilimusic/feature/player/domain/playable_item.dart';
+import 'package:bilimusic/feature/player/domain/playback_chapter.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hive_ce/hive.dart';
@@ -26,6 +28,7 @@ void main() {
   setUp(() async {
     tempDirectory = await Directory.systemTemp.createTemp('backfill-test-');
     Hive.init(tempDirectory.path);
+    await Hive.openBox<String>(chapterCacheBoxName);
     if (!Hive.isAdapterRegistered(1)) {
       Hive.registerAdapter(FavoriteCollectionAdapter());
     }
@@ -77,6 +80,122 @@ void main() {
     expect(cached?.hasContent, isTrue);
     expect(cached?.artist, '周杰伦');
   });
+
+  test(
+    'enqueue and batch backfill skip compilations without searching',
+    () async {
+      int searchCalls = 0;
+      final ProviderContainer container = _container(
+        searchRequest:
+            ({
+              required MetingServer server,
+              required String keyword,
+              required Map<String, dynamic> option,
+            }) async {
+              searchCalls++;
+              return _hitSearchRequest(
+                server: server,
+                keyword: keyword,
+                option: option,
+              );
+            },
+        lyricRequest: _hitLyricRequest,
+      );
+      addTearDown(container.dispose);
+      final PlayableItem item = _item(bvid: 'BVCompilation', title: '周杰伦歌曲合集');
+      final MetadataBackfillController controller = container.read(
+        metadataBackfillControllerProvider.notifier,
+      );
+
+      controller.enqueue(item);
+      expect(await controller.backfillMissing(<PlayableItem>[item]), 0);
+      await _waitIdle(container);
+
+      expect(searchCalls, 0);
+      expect(container.read(metadataBackfillControllerProvider).total, 0);
+      expect(await metadataBox.get('metadata:${item.contentId}'), isNull);
+
+      controller.enqueue(item.copyWith(pageTitle: '晴天'));
+      await _waitIdle(container);
+      expect(searchCalls, 1);
+      expect(
+        (await metadataBox.get('metadata:${item.contentId}'))?.title,
+        '晴天',
+      );
+    },
+  );
+
+  test(
+    'cached chapters skip a plain title and take priority over a part title',
+    () async {
+      final PlayableItem item = _item(
+        bvid: 'BVChapters',
+      ).copyWith(pageTitle: '晴天');
+      final ChapterCacheRepository cache = ChapterCacheRepository(
+        Hive.box<String>(chapterCacheBoxName),
+      );
+      await cache.putChapters(item.contentId, const <PlaybackChapter>[
+        PlaybackChapter(start: Duration.zero, title: '第一首'),
+        PlaybackChapter(start: Duration(minutes: 3), title: '第二首'),
+      ]);
+      final ProviderContainer container = _container(
+        searchRequest: _hitSearchRequest,
+        lyricRequest: _hitLyricRequest,
+      );
+      addTearDown(container.dispose);
+      final MetadataBackfillController controller = container.read(
+        metadataBackfillControllerProvider.notifier,
+      );
+      controller.enqueue(item);
+      expect(await controller.backfillMissing(<PlayableItem>[item]), 0);
+      await _waitIdle(container);
+      expect(container.read(metadataBackfillControllerProvider).total, 0);
+      expect(await metadataBox.get('metadata:${item.contentId}'), isNull);
+
+      final PlayableItem secondPage = item.copyWith(page: 2);
+      controller.enqueue(secondPage);
+      await _waitIdle(container);
+      expect(
+        (await metadataBox.get('metadata:${secondPage.contentId}'))?.title,
+        '晴天',
+      );
+    },
+  );
+
+  test(
+    'chapter discovery during a lookup prevents a whole-video cache write',
+    () async {
+      final Completer<Object?> response = Completer<Object?>();
+      final Completer<void> started = Completer<void>();
+      final ProviderContainer container = _container(
+        searchRequest: ({required server, required keyword, required option}) {
+          started.complete();
+          return response.future;
+        },
+        lyricRequest: _hitLyricRequest,
+      );
+      addTearDown(container.dispose);
+      final PlayableItem item = _item(bvid: 'BVNewChapters');
+      container.read(metadataBackfillControllerProvider.notifier).enqueue(item);
+      await started.future;
+      await ChapterCacheRepository(
+        Hive.box<String>(chapterCacheBoxName),
+      ).putChapters(item.contentId, const <PlaybackChapter>[
+        PlaybackChapter(start: Duration.zero, title: '第一首'),
+        PlaybackChapter(start: Duration(minutes: 3), title: '第二首'),
+      ]);
+      response.complete(
+        await _hitSearchRequest(
+          server: MetingServer.netease,
+          keyword: '',
+          option: <String, dynamic>{},
+        ),
+      );
+      await _waitIdle(container);
+      expect(await metadataBox.get('metadata:${item.contentId}'), isNull);
+      expect(container.read(metadataBackfillControllerProvider).matched, 0);
+    },
+  );
 
   test('enqueue deduplicates the same content id', () async {
     final ProviderContainer container = _container(
