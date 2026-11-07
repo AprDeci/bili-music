@@ -34,6 +34,7 @@ import 'package:bilimusic/feature/player/ui/components/player_top_bar.dart';
 import 'package:bilimusic/feature/player/ui/lyrics/player_lyric_page.dart';
 import 'package:bilimusic/feature/player/ui/desktop/desktop_player_bar.dart';
 import 'package:bilimusic/feature/player/ui/player_page.dart';
+import 'package:bilimusic/router/util/player_page_route.dart';
 import 'package:coverflow_carousel/coverflow_carousel.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_lyric/flutter_lyric.dart';
@@ -57,6 +58,339 @@ final Metadata _metadata = Metadata(
 );
 
 void main() {
+  Future<ProviderContainer> openPlayerRoute(
+    WidgetTester tester, {
+    Size size = const Size(420, 900),
+    TextScaler textScaler = TextScaler.noScaling,
+  }) async {
+    final ProviderContainer container = await _pumpPlayer(
+      tester,
+      _metadata,
+      size: size,
+      textScaler: textScaler,
+      home: Builder(
+        builder: (BuildContext context) => Scaffold(
+          body: TextButton(
+            onPressed: () => Navigator.of(
+              context,
+            ).push<void>(PlayerPageRoute(builder: (_) => const PlayerPage())),
+            child: const Text('原页面'),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('原页面'));
+    await tester.pumpAndSettle();
+    return container;
+  }
+
+  testWidgets(
+    'drag moves the entire page and springs back when cancelled',
+    (WidgetTester tester) async {
+      await openPlayerRoute(tester);
+      final Offset pageBefore = tester.getTopLeft(find.byType(PlayerPage));
+      final Offset topBefore = tester.getTopLeft(find.byType(PlayerTopBar));
+      final Offset coverBefore = tester.getTopLeft(
+        find.byType(PlayerArtworkFrame),
+      );
+      final TestGesture gesture = await tester.startGesture(
+        tester.getCenter(find.byType(PlayerMainPage)),
+      );
+      await gesture.moveBy(const Offset(0, 60));
+      await tester.pump();
+
+      expect(
+        tester.getTopLeft(find.byType(PlayerPage)).dy,
+        closeTo(pageBefore.dy + 60, 0.01),
+      );
+      expect(
+        tester.getTopLeft(find.byType(PlayerTopBar)).dy,
+        closeTo(topBefore.dy + 60, 0.01),
+      );
+      expect(
+        tester.getTopLeft(find.byType(PlayerArtworkFrame)).dy,
+        closeTo(coverBefore.dy + 60, 0.01),
+      );
+      expect(find.text('原页面'), findsOneWidget);
+      expect(
+        ModalRoute.of(tester.element(find.text('原页面')))!.offstage,
+        isFalse,
+      );
+      final NavigatorState navigator = tester.state(find.byType(Navigator));
+      expect(navigator.userGestureInProgress, isTrue);
+
+      await gesture.cancel();
+      await tester.pump(const Duration(milliseconds: 100));
+      final double returningY = tester.getTopLeft(find.byType(PlayerPage)).dy;
+      expect(returningY, inExclusiveRange(pageBefore.dy, pageBefore.dy + 60));
+      await tester.pumpAndSettle();
+      expect(tester.getTopLeft(find.byType(PlayerPage)), pageBefore);
+      expect(navigator.userGestureInProgress, isFalse);
+    },
+    variant: TargetPlatformVariant.only(TargetPlatform.iOS),
+  );
+
+  testWidgets(
+    'dismiss continues from dragged position without jumping',
+    (WidgetTester tester) async {
+      await openPlayerRoute(tester);
+      final TestGesture gesture = await tester.startGesture(
+        tester.getCenter(find.byType(PlayerMainPage)),
+      );
+      await gesture.moveBy(const Offset(0, 140));
+      await tester.pump();
+      final double draggedY = tester.getTopLeft(find.byType(PlayerPage)).dy;
+      expect(draggedY, closeTo(140, 0.01));
+      await gesture.up();
+      await tester.pump();
+      expect(
+        tester.getTopLeft(find.byType(PlayerPage)).dy,
+        closeTo(draggedY, 0.01),
+      );
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(
+        tester.getTopLeft(find.byType(PlayerPage)).dy,
+        greaterThan(draggedY),
+      );
+      await tester.pumpAndSettle();
+      expect(find.byType(PlayerPage), findsNothing);
+      expect(
+        tester
+            .state<NavigatorState>(find.byType(Navigator))
+            .userGestureInProgress,
+        isFalse,
+      );
+    },
+    variant: TargetPlatformVariant.only(TargetPlatform.iOS),
+  );
+
+  testWidgets(
+    'rotation cancels an active drag and releases navigator gesture state',
+    (WidgetTester tester) async {
+      await openPlayerRoute(tester);
+      final NavigatorState navigator = tester.state(find.byType(Navigator));
+      final TestGesture gesture = await tester.startGesture(
+        tester.getCenter(find.byType(PlayerMainPage)),
+      );
+      await gesture.moveBy(const Offset(0, 60));
+      await tester.pump();
+      expect(navigator.userGestureInProgress, isTrue);
+      tester.view.physicalSize = const Size(900, 420);
+      await tester.pumpAndSettle();
+      await gesture.cancel();
+      expect(find.byType(PlayerLandscapePage), findsOneWidget);
+      expect(tester.getTopLeft(find.byType(PlayerPage)).dy, 0);
+      expect(navigator.userGestureInProgress, isFalse);
+      expect(tester.takeException(), isNull);
+    },
+    variant: TargetPlatformVariant.only(TargetPlatform.iOS),
+  );
+
+  testWidgets(
+    'Android does not move or dismiss the page on downward drag',
+    (WidgetTester tester) async {
+      final ProviderContainer container = await openPlayerRoute(tester);
+      final PlayerState playbackBefore = container.read(
+        playerControllerProvider,
+      );
+      final Offset pageBefore = tester.getTopLeft(find.byType(PlayerPage));
+      final NavigatorState navigator = tester.state(find.byType(Navigator));
+      final TestGesture gesture = await tester.startGesture(
+        tester.getCenter(find.byType(PlayerMainPage)),
+      );
+      await gesture.moveBy(const Offset(0, 180));
+      await tester.pump();
+      expect(tester.getTopLeft(find.byType(PlayerPage)), pageBefore);
+      expect(navigator.userGestureInProgress, isFalse);
+      await gesture.up();
+      await tester.pumpAndSettle();
+      expect(find.byType(PlayerPage), findsOneWidget);
+      expect(container.read(playerControllerProvider), playbackBefore);
+      await tester.dragFrom(
+        tester.getCenter(find.byType(PlayerMainPage)),
+        const Offset(-350, 0),
+      );
+      await tester.pumpAndSettle();
+      expect(
+        tester.widget<PageView>(find.byType(PageView)).controller!.page,
+        2,
+      );
+      await tester.tap(find.byTooltip('收起播放页'));
+      await tester.pumpAndSettle();
+      expect(find.byType(PlayerPage), findsNothing);
+      expect(find.text('原页面'), findsOneWidget);
+    },
+    variant: TargetPlatformVariant.only(TargetPlatform.android),
+  );
+
+  for (final bool fling in <bool>[false, true]) {
+    testWidgets(
+      'main page downward drag closes player (fling: $fling)',
+      (WidgetTester tester) async {
+        final ProviderContainer container = await openPlayerRoute(tester);
+        final PlayerState before = container.read(playerControllerProvider);
+        final Offset start = tester.getCenter(find.byType(PlayerMainPage));
+        if (fling) {
+          await tester.flingFrom(start, const Offset(0, 65), 1000);
+        } else {
+          await tester.timedDragFrom(
+            start,
+            const Offset(0, 140),
+            const Duration(seconds: 1),
+          );
+        }
+        await tester.pumpAndSettle();
+
+        expect(find.byType(PlayerPage), findsNothing);
+        expect(find.text('原页面'), findsOneWidget);
+        expect(container.read(playerControllerProvider), before);
+      },
+      variant: TargetPlatformVariant.only(TargetPlatform.iOS),
+    );
+  }
+
+  testWidgets(
+    'main page ignores small, upward and cancelled drags',
+    (WidgetTester tester) async {
+      await openPlayerRoute(tester);
+      final Offset start = tester.getCenter(find.byType(PlayerMainPage));
+      for (final Offset offset in <Offset>[
+        const Offset(0, 30),
+        const Offset(0, -140),
+      ]) {
+        await tester.timedDragFrom(start, offset, const Duration(seconds: 1));
+        await tester.pumpAndSettle();
+        expect(find.byType(PlayerPage), findsOneWidget);
+      }
+      final TestGesture gesture = await tester.startGesture(start);
+      await gesture.moveBy(const Offset(0, 140));
+      await gesture.cancel();
+      await tester.pumpAndSettle();
+      expect(find.byType(PlayerPage), findsOneWidget);
+    },
+    variant: TargetPlatformVariant.only(TargetPlatform.iOS),
+  );
+
+  for (final double direction in <double>[-1, 1]) {
+    testWidgets(
+      'downward drag locks horizontal paging (direction: $direction)',
+      (WidgetTester tester) async {
+        await openPlayerRoute(tester);
+        final PageController controller = tester
+            .widget<PageView>(find.byType(PageView))
+            .controller!;
+        final Offset coverBefore = tester.getTopLeft(
+          find.byType(PlayerArtworkFrame),
+        );
+        final TestGesture gesture = await tester.startGesture(
+          tester.getCenter(find.byType(PlayerMainPage)),
+        );
+        await gesture.moveBy(Offset(12 * direction, 40));
+        await tester.pump();
+        expect(
+          tester.getTopLeft(find.byType(PlayerPage)).dy,
+          closeTo(40, 0.01),
+        );
+        for (int step = 0; step < 4; step++) {
+          await gesture.moveBy(Offset(40 * direction, 5));
+          await tester.pump(const Duration(milliseconds: 16));
+          expect(controller.page, closeTo(1, 0.001));
+          expect(
+            tester.getTopLeft(find.byType(PlayerArtworkFrame)).dx,
+            closeTo(coverBefore.dx, 0.01),
+          );
+        }
+        await gesture.cancel();
+        await tester.pumpAndSettle();
+        expect(tester.getTopLeft(find.byType(PlayerPage)).dy, 0);
+        expect(controller.page, 1);
+        await tester.dragFrom(
+          tester.getCenter(find.byType(PlayerMainPage)),
+          const Offset(-350, 0),
+        );
+        await tester.pumpAndSettle();
+        expect(controller.page, 2);
+      },
+      variant: TargetPlatformVariant.only(TargetPlatform.iOS),
+    );
+  }
+
+  testWidgets(
+    'main page horizontal swipe still opens lyrics',
+    (WidgetTester tester) async {
+      await openPlayerRoute(tester);
+      await tester.dragFrom(
+        tester.getCenter(find.byType(PlayerMainPage)),
+        const Offset(-350, 0),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byType(PlayerPage), findsOneWidget);
+      expect(
+        tester.widget<PageView>(find.byType(PageView)).controller!.page,
+        2,
+      );
+    },
+    variant: TargetPlatformVariant.only(TargetPlatform.iOS),
+  );
+
+  testWidgets(
+    'progress drag does not become a downward dismiss',
+    (WidgetTester tester) async {
+      final ProviderContainer container = await openPlayerRoute(tester);
+      final Rect slider = tester.getRect(find.byType(Slider));
+      final TestGesture gesture = await tester.startGesture(
+        Offset(slider.left + 24, slider.center.dy),
+      );
+      await gesture.moveBy(const Offset(100, 0));
+      await tester.pump(const Duration(milliseconds: 100));
+      await gesture.moveBy(const Offset(0, 140));
+      await gesture.up();
+      await tester.pumpAndSettle();
+
+      expect(find.byType(PlayerPage), findsOneWidget);
+      expect(
+        (container.read(playerControllerProvider.notifier)
+                as _FakePlayerController)
+            .progressSeeks,
+        isNotEmpty,
+      );
+    },
+    variant: TargetPlatformVariant.only(TargetPlatform.iOS),
+  );
+
+  testWidgets(
+    'compact main page scrolls back without dismissing player',
+    (WidgetTester tester) async {
+      await openPlayerRoute(
+        tester,
+        size: const Size(320, 568),
+        textScaler: TextScaler.linear(2),
+      );
+      final Finder scrollView = find.descendant(
+        of: find.byType(PlayerMainPage),
+        matching: find.byType(SingleChildScrollView),
+      );
+      final ScrollController controller = tester
+          .widget<SingleChildScrollView>(scrollView)
+          .controller!;
+      expect(controller.position.maxScrollExtent, greaterThan(0));
+      controller.jumpTo(controller.position.maxScrollExtent);
+      await tester.pump();
+      final double before = controller.offset;
+      await tester.timedDragFrom(
+        tester.getCenter(find.byType(PlayerMainPage)),
+        const Offset(0, 140),
+        const Duration(seconds: 1),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byType(PlayerPage), findsOneWidget);
+      expect(controller.offset, lessThan(before));
+    },
+    variant: TargetPlatformVariant.only(TargetPlatform.iOS),
+  );
+
   for (final double textScale in <double>[1, 2]) {
     testWidgets(
       'slim minibar fits text at scale $textScale and keeps actions',

@@ -12,12 +12,14 @@ import 'package:bilimusic/feature/player/ui/components/player_controls.dart';
 import 'package:bilimusic/feature/player/ui/components/player_quality_badge.dart';
 import 'package:bilimusic/feature/player/ui/components/player_shared.dart';
 import 'package:bilimusic/feature/player/logic/utils/player_ui_helpers.dart';
+import 'package:bilimusic/router/util/player_page_route.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hugeicons/hugeicons.dart';
 
-class PlayerMainPage extends ConsumerWidget {
+class PlayerMainPage extends ConsumerStatefulWidget {
   const PlayerMainPage({
     super.key,
     required this.state,
@@ -58,7 +60,92 @@ class PlayerMainPage extends ConsumerWidget {
   final VoidCallback? onOpenComments;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<PlayerMainPage> createState() => _PlayerMainPageState();
+}
+
+class _PlayerMainPageState extends ConsumerState<PlayerMainPage> {
+  final ScrollController _scrollController = ScrollController();
+  int? _pointer;
+  Offset? _dragStart;
+  VelocityTracker? _velocityTracker;
+  PlayerPageRoute? _dragRoute;
+
+  @override
+  void dispose() {
+    _resetDrag();
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _resetDrag() {
+    _dragRoute?.endDrag();
+    _dragRoute = null;
+    _pointer = null;
+    _dragStart = null;
+    _velocityTracker = null;
+  }
+
+  void _onPointerDown(PointerDownEvent event) {
+    if (_pointer != null) {
+      _resetDrag();
+      return;
+    }
+    final ModalRoute<Object?>? route = ModalRoute.of(context);
+    if (route is! PlayerPageRoute ||
+        !route.canStartDrag ||
+        (_scrollController.hasClients &&
+            _scrollController.offset >
+                _scrollController.position.minScrollExtent + 1)) {
+      return;
+    }
+    _pointer = event.pointer;
+    _dragStart = event.position;
+    _velocityTracker = VelocityTracker.withKind(event.kind)
+      ..addPosition(event.timeStamp, event.position);
+  }
+
+  void _onPointerMove(PointerMoveEvent event) {
+    if (event.pointer != _pointer || _dragStart == null) {
+      return;
+    }
+    final Offset delta = event.position - _dragStart!;
+    if (_dragRoute == null &&
+        (delta.dy < -18 || delta.dx.abs() > 18 && delta.dx.abs() > delta.dy)) {
+      _resetDrag();
+      return;
+    }
+    _velocityTracker?.addPosition(event.timeStamp, event.position);
+    if (_dragRoute == null && delta.dy > 18 && delta.dy > delta.dx.abs()) {
+      final ModalRoute<Object?>? route = ModalRoute.of(context);
+      if (route is! PlayerPageRoute || !route.startDrag()) {
+        _resetDrag();
+        return;
+      }
+      _dragRoute = route;
+    }
+    _dragRoute?.updateDrag(delta.dy / MediaQuery.sizeOf(context).height);
+  }
+
+  void _onPointerUp(PointerUpEvent event) {
+    if (event.pointer != _pointer) {
+      return;
+    }
+    final Offset delta = event.position - (_dragStart ?? event.position);
+    _velocityTracker?.addPosition(event.timeStamp, event.position);
+    final double velocity =
+        _velocityTracker?.getVelocity().pixelsPerSecond.dy ?? 0;
+    final bool shouldClose =
+        _dragStart != null &&
+        delta.dy > delta.dx.abs() &&
+        velocity >= 0 &&
+        (delta.dy >= 80 || (delta.dy >= 24 && velocity >= 700));
+    _dragRoute?.endDrag(dismiss: shouldClose);
+    _dragRoute = null;
+    _resetDrag();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final MediaQueryData mediaQuery = MediaQuery.of(context);
     final Size screenSize = mediaQuery.size;
     final bool isCompact = screenSize.height < 600;
@@ -76,66 +163,77 @@ class PlayerMainPage extends ConsumerWidget {
 
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
-        return SingleChildScrollView(
-          child: ConstrainedBox(
-            constraints: BoxConstraints(minHeight: constraints.maxHeight),
-            child: IntrinsicHeight(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: <Widget>[
-                  _RepaintSection(
-                    child: _PlayerHeroAndTitle(
-                      artworkSize: artworkSize,
-                      isCompact: isCompact,
-                      item: item,
-                      display: display,
-                      isFavorite: isFavorite,
-                      onlineAudienceLabel: onlineAudienceLabel,
-                      onFavoriteToggle: onFavoriteToggle,
-                      onToggleSource: onToggleSource,
+        return Listener(
+          behavior: HitTestBehavior.opaque,
+          onPointerDown: _onPointerDown,
+          onPointerMove: _onPointerMove,
+          onPointerUp: _onPointerUp,
+          onPointerCancel: (_) => _resetDrag(),
+          child: SingleChildScrollView(
+            controller: _scrollController,
+            physics: const AlwaysScrollableScrollPhysics(
+              parent: ClampingScrollPhysics(),
+            ),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(minHeight: constraints.maxHeight),
+              child: IntrinsicHeight(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: <Widget>[
+                    _RepaintSection(
+                      child: _PlayerHeroAndTitle(
+                        artworkSize: artworkSize,
+                        isCompact: isCompact,
+                        item: widget.item,
+                        display: widget.display,
+                        isFavorite: widget.isFavorite,
+                        onlineAudienceLabel: onlineAudienceLabel,
+                        onFavoriteToggle: widget.onFavoriteToggle,
+                        onToggleSource: widget.onToggleSource,
+                      ),
                     ),
-                  ),
-                  const Spacer(),
-                  Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: <Widget>[
-                      _RepaintSection(
-                        child: _PlayerStatusAndTools(
-                          state: state,
-                          item: item,
-                          commentCount: commentCount,
-                          canOpenJumpPanel: canOpenJumpPanel,
-                          onPartTap: onPartTap,
-                          onOpenCollectionSheet: onOpenCollectionSheet,
-                          onOpenComments: onOpenComments,
+                    const Spacer(),
+                    Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: <Widget>[
+                        _RepaintSection(
+                          child: _PlayerStatusAndTools(
+                            state: widget.state,
+                            item: widget.item,
+                            commentCount: widget.commentCount,
+                            canOpenJumpPanel: widget.canOpenJumpPanel,
+                            onPartTap: widget.onPartTap,
+                            onOpenCollectionSheet: widget.onOpenCollectionSheet,
+                            onOpenComments: widget.onOpenComments,
+                          ),
                         ),
-                      ),
-                      SizedBox(height: isCompact ? 6 : 10),
-                      _RepaintSection(
-                        child: PlayerProgressHost(
-                          state: state,
-                          onChanged: onSeek,
+                        SizedBox(height: isCompact ? 6 : 10),
+                        _RepaintSection(
+                          child: PlayerProgressHost(
+                            state: widget.state,
+                            onChanged: widget.onSeek,
+                          ),
                         ),
-                      ),
-                      SizedBox(height: isCompact ? 6 : 10),
-                      _RepaintSection(
-                        child: PlayerTransportControls(
-                          state: state,
-                          onToggleQueueMode: onToggleQueueMode,
-                          onBackward: onBackward,
-                          onTogglePlayback: onTogglePlayback,
-                          onForward: onForward,
-                          onOpenQueue: onOpenQueue,
+                        SizedBox(height: isCompact ? 6 : 10),
+                        _RepaintSection(
+                          child: PlayerTransportControls(
+                            state: widget.state,
+                            onToggleQueueMode: widget.onToggleQueueMode,
+                            onBackward: widget.onBackward,
+                            onTogglePlayback: widget.onTogglePlayback,
+                            onForward: widget.onForward,
+                            onOpenQueue: widget.onOpenQueue,
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
-                  SizedBox(
-                    height: isCompact || mediaQuery.padding.bottom > 0
-                        ? 40
-                        : 50,
-                  ),
-                ],
+                      ],
+                    ),
+                    SizedBox(
+                      height: isCompact || mediaQuery.padding.bottom > 0
+                          ? 40
+                          : 50,
+                    ),
+                  ],
+                ),
               ),
             ),
           ),

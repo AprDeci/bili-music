@@ -22,6 +22,7 @@ class PlayerTopBar extends StatelessWidget {
         children: <Widget>[
           IconButton(
             onPressed: onBack,
+            tooltip: '收起播放页',
             icon: const Icon(Icons.keyboard_arrow_down_rounded),
           ),
           Expanded(

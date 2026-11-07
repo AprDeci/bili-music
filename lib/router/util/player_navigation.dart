@@ -4,6 +4,7 @@ import 'package:bilimusic/feature/player/domain/playable_item.dart';
 import 'package:bilimusic/feature/player/ui/player_page.dart';
 import 'package:bilimusic/feature/player/ui/car/car_player_page.dart';
 import 'package:bilimusic/router/car_ui_page.dart';
+import 'package:bilimusic/router/util/player_page_route.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
@@ -57,37 +58,12 @@ Future<void> openPlayerPage(BuildContext context, {PlayableItem? item}) async {
 
 // 适用navigator进入player页面 不进入主路由栈
 Route<void> _createMobilePlayerRoute(PlayableItem? item) {
-  return PageRouteBuilder<void>(
+  return PlayerPageRoute(
     settings: const RouteSettings(name: playerNativeRouteName),
-    transitionDuration: const Duration(milliseconds: 250),
-    reverseTransitionDuration: const Duration(milliseconds: 220),
-    pageBuilder: (BuildContext context, Animation<double> animation, _) {
-      return CarUiPage(
-        carBuilder: (_) => CarPlayerPage(initialItem: item),
-        standardBuilder: (_) => PlayerPage(initialItem: item),
-      );
-    },
-    transitionsBuilder:
-        (
-          BuildContext context,
-          Animation<double> animation,
-          Animation<double> secondaryAnimation,
-          Widget child,
-        ) {
-          final Animation<Offset> offsetAnimation =
-              Tween<Offset>(
-                begin: const Offset(0, 1),
-                end: Offset.zero,
-              ).animate(
-                CurvedAnimation(
-                  parent: animation,
-                  curve: Curves.easeOutCubic,
-                  reverseCurve: Curves.easeInCubic,
-                ),
-              );
-
-          return SlideTransition(position: offsetAnimation, child: child);
-        },
+    builder: (_) => CarUiPage(
+      carBuilder: (_) => CarPlayerPage(initialItem: item),
+      standardBuilder: (_) => PlayerPage(initialItem: item),
+    ),
   );
 }
 
