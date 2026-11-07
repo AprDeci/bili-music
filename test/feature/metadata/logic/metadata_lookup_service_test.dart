@@ -1,12 +1,14 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:bilimusic/core/net/bm_client.dart';
 import 'package:bilimusic/feature/metadata/data/metadata_resolver.dart';
 import 'package:bilimusic/feature/metadata/logic/metadata_lookup_service.dart';
 import 'package:bilimusic/feature/meting/data/meting_repository.dart';
 import 'package:bilimusic/feature/meting/domain/meting_search_item.dart';
 import 'package:bilimusic/feature/meting/domain/meting_server.dart';
 import 'package:bilimusic/feature/player/domain/playable_item.dart';
+import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -153,6 +155,54 @@ void main() {
       expect(pictureCalls, 0);
     });
 
+    for (final String responseBody in <String>[
+      'null',
+      '"null"',
+      '"  null  "',
+      '""',
+      '"   "',
+    ]) {
+      test(
+        'falls back to local keyword for AI response $responseBody',
+        () async {
+          final BmClient client = _aiClient(responseBody);
+          addTearDown(() => client.dio.close());
+          final List<String> keywords = <String>[];
+          final MetadataLookupService service = _service(
+            bmClient: client,
+            searchRequest:
+                ({
+                  required MetingServer server,
+                  required String keyword,
+                  required Map<String, dynamic> option,
+                }) async {
+                  keywords.add(keyword);
+                  return jsonEncode(<Map<String, dynamic>>[]);
+                },
+          );
+
+          final MetadataLookupResult result = await service.lookup(
+            item: _item(),
+            title: '【MV】周杰伦《晴天》官方版',
+          );
+
+          expect(keywords, <String>['晴天']);
+          expect(result.searchKeyword, '晴天');
+        },
+      );
+    }
+
+    test('uses a valid AI keyword instead of the local keyword', () async {
+      final BmClient client = _aiClient(jsonEncode('晴天 周杰伦'));
+      addTearDown(() => client.dio.close());
+      final MetadataLookupService service = _service(
+        bmClient: client,
+        searchRequest: _unusedSearchRequest,
+      );
+
+      expect(await service.resolveSearchKeyword('【MV】周杰伦《晴天》官方版'), '晴天 周杰伦');
+    });
+
     test('extracts bracketed keyword before falling back', () async {
       final MetadataLookupService service = _service(
         searchRequest: _unusedSearchRequest,
@@ -180,6 +230,7 @@ MetadataLookupService _service({
   required MetingSearchRequest searchRequest,
   MetingLyricRequest? lyricRequest,
   MetingPictureRequest? pictureRequest,
+  BmClient? bmClient,
 }) {
   return MetadataLookupService(
     metingRepository: MetingRepository(
@@ -188,7 +239,25 @@ MetadataLookupService _service({
       pictureRequest: pictureRequest ?? _unusedPictureRequest,
     ),
     resolveServer: (_) => MetingServer.netease,
+    bmClient: bmClient,
   );
+}
+
+BmClient _aiClient(String responseBody) {
+  final BmClient client = BmClient();
+  client.build();
+  client.dio.interceptors.clear();
+  client.dio.interceptors.add(
+    InterceptorsWrapper(
+      onRequest: (options, handler) {
+        expect(options.path, '/ai');
+        handler.resolve(
+          Response<String>(requestOptions: options, data: responseBody),
+        );
+      },
+    ),
+  );
+  return client;
 }
 
 Future<Object?> _unusedSearchRequest({

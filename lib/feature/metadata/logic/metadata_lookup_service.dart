@@ -161,8 +161,11 @@ class MetadataLookupService {
         options: Options(responseType: ResponseType.plain),
       );
       final Object? decoded = jsonDecode(response.data ?? '{}');
-      if (decoded is String && decoded.isNotEmpty) {
-        return decoded;
+      final String? keyword = decoded is String
+          ? _normalizeText(decoded)
+          : null;
+      if (keyword != null && keyword != 'null') {
+        return keyword;
       }
     } on Object catch (error) {
       _logger.d('BM 识别失败，回退正则：$error');
