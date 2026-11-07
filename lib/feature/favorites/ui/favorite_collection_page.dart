@@ -19,6 +19,7 @@ import 'package:bilimusic/feature/favorites/ui/components/collection_kind_tag.da
 import 'package:bilimusic/feature/favorites/ui/components/favorite_collection_items_list.dart';
 import 'package:bilimusic/feature/favorites/ui/components/favorite_collection_search_field.dart';
 import 'package:bilimusic/feature/favorites/ui/components/favorite_entry_subtitle.dart';
+import 'package:bilimusic/feature/favorites/ui/components/favorite_current_track_overlay.dart';
 import 'package:bilimusic/feature/favorites/ui/components/favorited_seasons_list.dart';
 import 'package:bilimusic/feature/favorites/ui/components/favorites_metadata_toolbar_buttons.dart';
 import 'package:bilimusic/feature/favorites/ui/components/remote_collection_sync_status_bar.dart';
@@ -45,6 +46,8 @@ class _FavoriteCollectionPageState
     extends ConsumerState<FavoriteCollectionPage> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
+  String? _scrollToItemId;
+  int _scrollRequest = 0;
   Set<String> _selectedItemIds = <String>{};
   bool _selectionMode = false;
 
@@ -59,6 +62,8 @@ class _FavoriteCollectionPageState
     super.didUpdateWidget(oldWidget);
     if (oldWidget.collectionId != widget.collectionId) {
       _resetSearchState();
+      _scrollToItemId = null;
+      _scrollRequest = 0;
       _selectedItemIds = <String>{};
       _selectionMode = false;
       _scheduleSync();
@@ -125,6 +130,16 @@ class _FavoriteCollectionPageState
     _searchController.clear();
     setState(() {
       _searchQuery = '';
+    });
+  }
+
+  void _locateCurrentItem(String itemId) {
+    FocusScope.of(context).unfocus();
+    _searchController.clear();
+    setState(() {
+      _searchQuery = '';
+      _scrollToItemId = itemId;
+      _scrollRequest++;
     });
   }
 
@@ -353,18 +368,23 @@ class _FavoriteCollectionPageState
     List<FavoriteEntry> visibleItems,
     List<PlayableItem> queueItems,
   ) {
-    return Column(
-      children: <Widget>[
-        RemoteCollectionSyncStatusBar(status: _syncState.status),
-        Expanded(
-          child: _buildCollectionItemsContent(
-            collection,
-            items,
-            visibleItems,
-            queueItems,
+    return FavoriteCurrentTrackOverlay(
+      items: items,
+      selectionMode: _selectionMode,
+      onLocate: _locateCurrentItem,
+      child: Column(
+        children: <Widget>[
+          RemoteCollectionSyncStatusBar(status: _syncState.status),
+          Expanded(
+            child: _buildCollectionItemsContent(
+              collection,
+              items,
+              visibleItems,
+              queueItems,
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -458,7 +478,10 @@ class _FavoriteCollectionPageState
     List<PlayableItem> queueItems,
   ) {
     return FavoriteCollectionItemsList(
+      key: ValueKey<String>(collection.id),
       items: visibleItems,
+      scrollToKey: _scrollToItemId,
+      scrollRequest: _scrollRequest,
       footer: const BottomPageSpacer(),
       selectedItemIds: _selectedItemIds,
       selectionMode: _selectionMode,

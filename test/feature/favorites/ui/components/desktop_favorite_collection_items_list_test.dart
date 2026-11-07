@@ -3,6 +3,8 @@ import 'dart:io';
 import 'package:bilimusic/feature/download/logic/download_controller.dart';
 import 'package:bilimusic/feature/player/data/chapter_cache_repository.dart';
 import 'package:bilimusic/feature/player/domain/playable_item.dart';
+import 'package:bilimusic/feature/player/domain/player_state.dart';
+import 'package:bilimusic/feature/player/logic/player_controller.dart';
 
 import 'package:bilimusic/feature/favorites/domain/favorite_collection.dart';
 import 'package:bilimusic/feature/favorites/domain/favorite_entry.dart';
@@ -24,6 +26,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_smart_dialog/flutter_smart_dialog.dart';
 import 'package:hive_ce/hive.dart';
+
+class _Player extends PlayerController {
+  @override
+  PlayerState build() => const PlayerState();
+}
 
 void main() {
   late Directory directory;
@@ -73,6 +80,7 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
+          playerControllerProvider.overrideWith(_Player.new),
           statisticsTrackerProvider.overrideWithValue(tracker),
           favoritesControllerProvider.overrideWithValue(
             FavoritesState(
@@ -148,6 +156,7 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
+            playerControllerProvider.overrideWith(_Player.new),
             statisticsTrackerProvider.overrideWithValue(tracker),
             favoritesControllerProvider.overrideWithValue(
               FavoritesState(
@@ -230,6 +239,7 @@ void main() {
         await tester.pumpWidget(
           ProviderScope(
             overrides: [
+              playerControllerProvider.overrideWith(_Player.new),
               statisticsTrackerProvider.overrideWithValue(tracker),
               for (final FavoriteEntry item in items)
                 favoriteEntryMetadataProvider(

@@ -29,10 +29,14 @@ class FavoriteCollectionItemsList extends ConsumerWidget {
     required this.onMoreItem,
     this.viewMode = FavoriteListViewMode.video,
     this.onRefresh,
+    this.scrollToKey,
+    this.scrollRequest = 0,
   });
 
   final List<FavoriteEntry> items;
   final Widget footer;
+  final String? scrollToKey;
+  final int scrollRequest;
   final NotificationListenerCallback<ScrollNotification>? onNotification;
   final Set<String> selectedItemIds;
   final bool selectionMode;
@@ -49,6 +53,8 @@ class FavoriteCollectionItemsList extends ConsumerWidget {
     final StatisticsTracker tracker = ref.read(statisticsTrackerProvider);
     final Widget list = SelectableAutoScrollListView<FavoriteEntry, String>(
       items: items,
+      scrollToKey: scrollToKey,
+      scrollRequest: scrollRequest,
       itemKeyOf: (FavoriteEntry item) => item.itemId,
       selectedKeys: selectedItemIds,
       multiSelectEnabled: selectionMode,

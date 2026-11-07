@@ -12,6 +12,8 @@ import 'package:bilimusic/feature/favorites/ui/favorite_collection_page.dart';
 import 'package:bilimusic/feature/metadata/domain/metadata_backfill_state.dart';
 import 'package:bilimusic/feature/metadata/logic/metadata_backfill_controller.dart';
 import 'package:bilimusic/feature/player/domain/playable_item.dart';
+import 'package:bilimusic/feature/player/domain/player_state.dart';
+import 'package:bilimusic/feature/player/logic/player_controller.dart';
 import 'package:bilimusic/feature/statistics/data/statistics_local_repository.dart';
 import 'package:bilimusic/feature/statistics/logic/statistics_tracker.dart';
 import 'package:flutter/material.dart';
@@ -77,6 +79,7 @@ void main() {
           await tester.pumpWidget(
             ProviderScope(
               overrides: [
+                playerControllerProvider.overrideWith(_Player.new),
                 statisticsTrackerProvider.overrideWithValue(tracker),
                 favoritesControllerProvider.overrideWithValue(
                   FavoritesState(
@@ -159,6 +162,11 @@ void main() {
       );
     }
   }
+}
+
+class _Player extends PlayerController {
+  @override
+  PlayerState build() => const PlayerState();
 }
 
 class _Downloads extends DownloadController {

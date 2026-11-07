@@ -55,6 +55,7 @@ class SelectableAutoScrollListView<T, K> extends StatefulWidget {
     required this.onMultiSelectModeChanged,
     this.initialScrollKey,
     this.scrollToKey,
+    this.scrollRequest = 0,
     this.onItemTap,
     this.header,
     this.footer,
@@ -80,6 +81,7 @@ class SelectableAutoScrollListView<T, K> extends StatefulWidget {
   final ValueChanged<bool> onMultiSelectModeChanged;
   final K? initialScrollKey;
   final K? scrollToKey;
+  final int scrollRequest;
   final ValueChanged<T>? onItemTap;
   final Widget? header;
   final Widget? footer;
@@ -106,6 +108,10 @@ class _SelectableAutoScrollListViewState<T, K>
       suggestedRowHeight: widget.estimatedItemExtent,
     );
     _focusInitialItem();
+    final K? scrollToKey = widget.scrollToKey;
+    if (widget.scrollRequest > 0 && scrollToKey != null) {
+      _scrollToKeyAfterFrame(scrollToKey);
+    }
   }
 
   @override
@@ -117,7 +123,9 @@ class _SelectableAutoScrollListViewState<T, K>
     }
 
     final K? scrollToKey = widget.scrollToKey;
-    if (scrollToKey != null && scrollToKey != oldWidget.scrollToKey) {
+    if (scrollToKey != null &&
+        (scrollToKey != oldWidget.scrollToKey ||
+            widget.scrollRequest != oldWidget.scrollRequest)) {
       _scrollToKeyAfterFrame(scrollToKey);
     }
   }

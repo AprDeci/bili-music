@@ -28,10 +28,14 @@ class DesktopFavoriteCollectionItemsList extends ConsumerWidget {
     required this.onPlayItem,
     required this.onMoreItem,
     this.viewMode = FavoriteListViewMode.video,
+    this.scrollToKey,
+    this.scrollRequest = 0,
   });
 
   final List<FavoriteEntry> items;
   final Widget footer;
+  final String? scrollToKey;
+  final int scrollRequest;
   final NotificationListenerCallback<ScrollNotification>? onNotification;
   final Set<String> selectedItemIds;
   final bool selectionMode;
@@ -49,6 +53,8 @@ class DesktopFavoriteCollectionItemsList extends ConsumerWidget {
       onNotification: onNotification,
       child: SelectableAutoScrollListView<FavoriteEntry, String>(
         items: items,
+        scrollToKey: scrollToKey,
+        scrollRequest: scrollRequest,
         itemKeyOf: (FavoriteEntry item) => item.itemId,
         selectedKeys: selectedItemIds,
         multiSelectEnabled: selectionMode,

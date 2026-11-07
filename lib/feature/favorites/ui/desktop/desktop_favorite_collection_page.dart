@@ -20,6 +20,7 @@ import 'package:bilimusic/feature/favorites/ui/components/collection_kind_tag.da
 import 'package:bilimusic/feature/favorites/ui/components/favorite_collection_search_field.dart';
 import 'package:bilimusic/feature/favorites/ui/components/desktop/desktop_favorite_collection_items_list.dart';
 import 'package:bilimusic/feature/favorites/ui/components/favorite_entry_subtitle.dart';
+import 'package:bilimusic/feature/favorites/ui/components/favorite_current_track_overlay.dart';
 import 'package:bilimusic/feature/favorites/ui/components/favorited_seasons_list.dart';
 import 'package:bilimusic/feature/favorites/ui/components/favorites_metadata_toolbar_buttons.dart';
 import 'package:bilimusic/feature/favorites/ui/components/remote_collection_sync_status_bar.dart';
@@ -47,6 +48,8 @@ class _DesktopFavoriteCollectionPageState
     extends ConsumerState<DesktopFavoriteCollectionPage> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
+  String? _scrollToItemId;
+  int _scrollRequest = 0;
   Set<String> _selectedItemIds = <String>{};
   bool _selectionMode = false;
   bool _showFavoritedSeasons = false;
@@ -62,6 +65,8 @@ class _DesktopFavoriteCollectionPageState
     super.didUpdateWidget(oldWidget);
     if (oldWidget.collectionId != widget.collectionId) {
       _resetSearchState();
+      _scrollToItemId = null;
+      _scrollRequest = 0;
       _selectedItemIds = <String>{};
       _selectionMode = false;
       _scheduleSync();
@@ -128,6 +133,16 @@ class _DesktopFavoriteCollectionPageState
     _searchController.clear();
     setState(() {
       _searchQuery = '';
+    });
+  }
+
+  void _locateCurrentItem(String itemId) {
+    FocusScope.of(context).unfocus();
+    _searchController.clear();
+    setState(() {
+      _searchQuery = '';
+      _scrollToItemId = itemId;
+      _scrollRequest++;
     });
   }
 
@@ -293,7 +308,7 @@ class _DesktopFavoriteCollectionPageState
               item.toPlayableItem(collection: resolvedCollection),
         )
         .toList(growable: false);
-    final Widget songsBody = Column(
+    final Widget songsContent = Column(
       children: <Widget>[
         Padding(
           padding: const EdgeInsets.fromLTRB(14, 12, 14, 4),
@@ -358,7 +373,10 @@ class _DesktopFavoriteCollectionPageState
                               ],
                             )
                           : DesktopFavoriteCollectionItemsList(
+                              key: ValueKey<String>(resolvedCollection.id),
                               items: visibleItems,
+                              scrollToKey: _scrollToItemId,
+                              scrollRequest: _scrollRequest,
                               footer: const BottomPageSpacer(),
                               selectedItemIds: _selectedItemIds,
                               selectionMode: _selectionMode,
@@ -406,6 +424,12 @@ class _DesktopFavoriteCollectionPageState
                 ),
         ),
       ],
+    );
+    final Widget songsBody = FavoriteCurrentTrackOverlay(
+      items: items,
+      selectionMode: _selectionMode,
+      onLocate: _locateCurrentItem,
+      child: songsContent,
     );
     if (!resolvedCollection.isLikedCollection) {
       return Scaffold(body: songsBody);
