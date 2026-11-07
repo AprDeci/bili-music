@@ -12,20 +12,41 @@ import 'package:scroll_to_index/scroll_to_index.dart';
 Future<void> showPlayerQueueSheet({
   required BuildContext context,
   required PlayerState state,
+  bool useRootNavigator = false,
 }) async {
   if (!state.hasQueue) {
     return;
   }
 
-  await showModalBottomSheet<void>(
-    context: context,
+  final NavigatorState navigator = Navigator.of(
+    context,
+    rootNavigator: useRootNavigator,
+  );
+  final MaterialLocalizations localizations = MaterialLocalizations.of(context);
+  final ThemeData theme = Theme.of(context);
+  final ModalBottomSheetRoute<void> route = ModalBottomSheetRoute<void>(
+    capturedThemes: InheritedTheme.capture(
+      from: context,
+      to: navigator.context,
+    ),
+    barrierLabel: localizations.scrimLabel,
+    barrierOnTapHint: localizations.scrimOnTapHint(
+      localizations.bottomSheetLabel,
+    ),
+    modalBarrierColor: theme.bottomSheetTheme.modalBarrierColor,
     showDragHandle: true,
     isScrollControlled: true,
-    backgroundColor: Theme.of(context).colorScheme.surface,
+    backgroundColor: theme.colorScheme.surface,
+    sheetAnimationStyle: MediaQuery.disableAnimationsOf(context)
+        ? AnimationStyle.noAnimation
+        : null,
     builder: (BuildContext context) {
       return const SafeArea(child: _PlayerQueueSheet());
     },
   );
+  final Future<void> popped = navigator.push<void>(route);
+  await popped;
+  await route.completed;
 }
 
 Future<void> showDesktopPlayerQueuePanel({

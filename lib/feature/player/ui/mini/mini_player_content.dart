@@ -6,17 +6,20 @@ import 'package:bilimusic/feature/player/domain/player_state.dart';
 import 'package:bilimusic/feature/player/logic/display/player_display_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hugeicons/hugeicons.dart';
 
 class MiniPlayerContent extends ConsumerWidget {
   const MiniPlayerContent({
     super.key,
     required this.state,
     required this.onTogglePlayback,
+    this.onOpenQueue,
     this.padding = const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
   });
 
   final PlayerState state;
   final VoidCallback onTogglePlayback;
+  final VoidCallback? onOpenQueue;
   final EdgeInsets padding;
 
   @override
@@ -70,6 +73,17 @@ class MiniPlayerContent extends ConsumerWidget {
             progress: progress,
             isPlaying: state.isPlaying,
             onPressed: onTogglePlayback,
+          ),
+          GestureDetector(
+            onTap: () {},
+            excludeFromSemantics: true,
+            child: IconButton(
+              tooltip: '播放队列',
+              onPressed: state.hasQueue ? onOpenQueue : null,
+              constraints: const BoxConstraints.tightFor(width: 48, height: 48),
+              icon: const HugeIcon(icon: HugeIcons.strokeRoundedListMusic),
+              color: colorScheme.primary,
+            ),
           ),
         ],
       ),

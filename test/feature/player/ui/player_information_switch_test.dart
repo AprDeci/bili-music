@@ -414,7 +414,7 @@ void main() {
         );
 
         final double height = tester.getSize(find.byType(MiniPlayerBar)).height;
-        expect(height, textScale == 1 ? 46 : greaterThan(46));
+        expect(height, textScale == 1 ? 50 : greaterThan(50));
         expect(
           tester.getSize(find.byType(MiniPlayerArtwork)),
           const Size(36, 36),
@@ -423,8 +423,26 @@ void main() {
           tester.getSize(find.byType(MiniPlayerPlaybackButton)),
           const Size(44, 44),
         );
-        await tester.tap(find.byType(IconButton));
+        await tester.tap(
+          find.descendant(
+            of: find.byType(MiniPlayerPlaybackButton),
+            matching: find.byType(IconButton),
+          ),
+        );
         expect(toggleCalls, 1);
+        expect(openCalls, 0);
+        expect(
+          tester
+              .widget<IconButton>(
+                find.byWidgetPredicate(
+                  (Widget widget) =>
+                      widget is IconButton && widget.tooltip == '播放队列',
+                ),
+              )
+              .onPressed,
+          isNull,
+        );
+        await tester.tap(find.byTooltip('播放队列'));
         expect(openCalls, 0);
         await tester.tap(find.byType(MiniPlayerArtwork));
         expect(openCalls, 1);
@@ -466,7 +484,7 @@ void main() {
         final double restingHeight = tester
             .getSize(find.byType(MiniPlayerGlassBar))
             .height;
-        expect(restingHeight, textScale == 1 ? 44 : greaterThan(44));
+        expect(restingHeight, textScale == 1 ? 48 : greaterThan(48));
 
         final TestGesture press = await tester.startGesture(
           tester.getCenter(artwork),
@@ -489,9 +507,28 @@ void main() {
         expect(tester.getRect(artwork).width, closeTo(restingWidth, 0.01));
         expect(openCalls, 1);
 
-        await tester.tap(find.byType(IconButton));
+        await tester.tap(
+          find.descendant(
+            of: find.byType(MiniPlayerPlaybackButton),
+            matching: find.byType(IconButton),
+          ),
+        );
         await tester.pumpAndSettle();
         expect(toggleCalls, 1);
+        expect(openCalls, 1);
+        expect(
+          tester
+              .widget<IconButton>(
+                find.byWidgetPredicate(
+                  (Widget widget) =>
+                      widget is IconButton && widget.tooltip == '播放队列',
+                ),
+              )
+              .onPressed,
+          isNull,
+        );
+        await tester.tap(find.byTooltip('播放队列'));
+        await tester.pumpAndSettle();
         expect(openCalls, 1);
         expect(tester.takeException(), isNull);
       },

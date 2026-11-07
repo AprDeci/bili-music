@@ -8,11 +8,13 @@ class MiniPlayerBar extends StatelessWidget {
     required this.state,
     required this.onTap,
     required this.onTogglePlayback,
+    this.onOpenQueue,
   });
 
   final PlayerState state;
   final VoidCallback onTap;
   final VoidCallback onTogglePlayback;
+  final VoidCallback? onOpenQueue;
 
   @override
   Widget build(BuildContext context) {
@@ -34,6 +36,7 @@ class MiniPlayerBar extends StatelessWidget {
           child: MiniPlayerContent(
             state: state,
             onTogglePlayback: onTogglePlayback,
+            onOpenQueue: onOpenQueue,
             padding: const EdgeInsets.symmetric(horizontal: 12),
           ),
         ),

@@ -2,6 +2,7 @@ import 'package:bilimusic/common/util/color_util.dart';
 import 'package:bilimusic/core/layout/shell_content_insets.dart';
 import 'package:bilimusic/feature/player/domain/player_state.dart';
 import 'package:bilimusic/feature/player/logic/player_controller.dart';
+import 'package:bilimusic/feature/player/ui/components/player_queue_sheet.dart';
 import 'package:bilimusic/feature/player/ui/mini/mini_player_bar.dart';
 import 'package:bilimusic/feature/player/ui/mini/mini_player_glass_bar.dart';
 import 'package:bilimusic/feature/setting/logic/appearance_setting_logic.dart';
@@ -37,6 +38,8 @@ class _MobileShellScaffoldState extends ConsumerState<MobileShellScaffold> {
   static const double _bottomBarCornerRadius = 40;
   static const double _bottomBarHeight = 52;
 
+  bool _queueSheetOpen = false;
+
   @override
   Widget build(BuildContext context) {
     return ValueListenableBuilder<bool>(
@@ -60,48 +63,60 @@ class _MobileShellScaffoldState extends ConsumerState<MobileShellScaffold> {
       child: Scaffold(
         extendBody: true,
         body: ShellContentInsets(child: widget.navigationShell),
-        bottomNavigationBar: _animateChrome(
-          visible: showTabs || showMiniPlayer,
-          child: () => SafeArea(
-            top: false,
-            minimum: EdgeInsets.only(bottom: showTabs ? 10 : 20),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: <Widget>[
-                if (showMiniPlayer)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    child: useGlassBar
-                        ? MiniPlayerGlassBar(
-                            state: playerState,
-                            onTap: _openMiniPlayer,
-                            onTogglePlayback: _togglePlayback,
-                          )
-                        : MiniPlayerBar(
-                            state: playerState,
-                            onTap: _openMiniPlayer,
-                            onTogglePlayback: _togglePlayback,
-                          ),
-                  ),
-                _animateChrome(
-                  visible: showTabs,
-                  child: () => Padding(
-                    padding: EdgeInsets.only(
-                      top: showMiniPlayer ? 10 : 0,
-                      bottom: useGlassBar ? 11 : 0,
-                    ),
-                    child: FractionallySizedBox(
-                      widthFactor: 0.85,
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 64),
+        bottomNavigationBar: IgnorePointer(
+          ignoring: _queueSheetOpen,
+          child: AnimatedSlide(
+            offset: _queueSheetOpen ? const Offset(0, 1) : Offset.zero,
+            duration: MediaQuery.disableAnimationsOf(context)
+                ? Duration.zero
+                : _animationDuration,
+            curve: _animationCurve,
+            child: _animateChrome(
+              visible: showTabs || showMiniPlayer,
+              child: () => SafeArea(
+                top: false,
+                minimum: EdgeInsets.only(bottom: showTabs ? 10 : 20),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[
+                    if (showMiniPlayer)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
                         child: useGlassBar
-                            ? _buildGlassTabBar(context)
-                            : _buildFallbackTabBar(context),
+                            ? MiniPlayerGlassBar(
+                                state: playerState,
+                                onTap: _openMiniPlayer,
+                                onTogglePlayback: _togglePlayback,
+                                onOpenQueue: _openQueue,
+                              )
+                            : MiniPlayerBar(
+                                state: playerState,
+                                onTap: _openMiniPlayer,
+                                onTogglePlayback: _togglePlayback,
+                                onOpenQueue: _openQueue,
+                              ),
+                      ),
+                    _animateChrome(
+                      visible: showTabs,
+                      child: () => Padding(
+                        padding: EdgeInsets.only(
+                          top: showMiniPlayer ? 10 : 0,
+                          bottom: useGlassBar ? 11 : 0,
+                        ),
+                        child: FractionallySizedBox(
+                          widthFactor: 0.85,
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 64),
+                            child: useGlassBar
+                                ? _buildGlassTabBar(context)
+                                : _buildFallbackTabBar(context),
+                          ),
+                        ),
                       ),
                     ),
-                  ),
+                  ],
                 ),
-              ],
+              ),
             ),
           ),
         ),
@@ -234,6 +249,25 @@ class _MobileShellScaffoldState extends ConsumerState<MobileShellScaffold> {
   }
 
   Future<void> _openMiniPlayer() => openPlayerPage(context);
+
+  Future<void> _openQueue() async {
+    final PlayerState state = ref.read(playerControllerProvider);
+    if (_queueSheetOpen || !state.hasQueue) {
+      return;
+    }
+    setState(() => _queueSheetOpen = true);
+    try {
+      await showPlayerQueueSheet(
+        context: context,
+        state: state,
+        useRootNavigator: true,
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _queueSheetOpen = false);
+      }
+    }
+  }
 
   void _togglePlayback() {
     ref.read(playerControllerProvider.notifier).togglePlayback();

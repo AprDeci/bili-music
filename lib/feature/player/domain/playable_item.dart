@@ -39,7 +39,7 @@ abstract class PlayableItem with _$PlayableItem {
   bool get isCompilation {
     final String partTitle = pageTitle?.trim() ?? '';
     final String lookupTitle = partTitle.isEmpty ? title : partTitle;
-    return RegExp(r'合集|合辑|合輯|串烧|串燒').hasMatch(lookupTitle);
+    return RegExp(r'合集|合辑|合輯|串烧|串燒|全集').hasMatch(lookupTitle);
   }
 
   List<String> get lyricSearchTitles {

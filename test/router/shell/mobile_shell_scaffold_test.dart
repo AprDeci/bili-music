@@ -25,6 +25,13 @@ const PlayableItem _item = PlayableItem(
   author: 'Test artist',
   coverUrl: '',
 );
+const PlayableItem _secondItem = PlayableItem(
+  aid: 2,
+  bvid: 'BV2xx411c7mD',
+  title: 'Second song',
+  author: 'Second artist',
+  coverUrl: '',
+);
 const Key _viewportKey = Key('page viewport');
 const Key _lastItemKey = Key('last item');
 
@@ -66,7 +73,7 @@ void main() {
           expect(tabsRect.height, glass ? 60 : 52);
           expect(tabsRect.width, closeTo(420 * 0.85 - 128, 0.01));
           if (scale == 1) {
-            expect(miniRect.height, glass ? 44 : 46);
+            expect(miniRect.height, glass ? 48 : 50);
             expect(
               tester.getSize(find.byType(MiniPlayerArtwork)),
               const Size(36, 36),
@@ -114,6 +121,142 @@ void main() {
       }
     }
   }
+
+  for (final bool glass in <bool>[false, true]) {
+    testWidgets('queue restores chrome only after sheet closes glass=$glass', (
+      WidgetTester tester,
+    ) async {
+      await _pumpShell(tester, glass: glass, inset: 34);
+      final Finder mini = find.byType(
+        glass ? MiniPlayerGlassBar : MiniPlayerBar,
+      );
+      final Finder tabs = glass
+          ? find.byType(GlassTabBar)
+          : find.byIcon(Icons.home);
+      final double miniY = tester.getTopLeft(mini).dy;
+      final double tabsY = tester.getTopLeft(tabs).dy;
+      final double spacing = _spacerHeight(tester);
+      final NavigatorState root = Navigator.of(
+        tester.element(mini),
+        rootNavigator: true,
+      );
+      final MiniPlayerContent content = tester.widget(
+        find.byType(MiniPlayerContent),
+      );
+      final _FakePlayerController player =
+          ProviderScope.containerOf(
+                tester.element(mini),
+              ).read(playerControllerProvider.notifier)
+              as _FakePlayerController;
+      final Finder queueButton = find.byTooltip('播放队列');
+      expect(tester.getSize(queueButton), const Size(48, 48));
+      expect(tester.getSemantics(queueButton).tooltip, '播放队列');
+      await tester.tap(queueButton);
+      content.onOpenQueue!();
+      await tester.pump();
+      final ModalBottomSheetRoute<void> route =
+          ModalRoute.of(tester.element(find.byType(DraggableScrollableSheet)))!
+              as ModalBottomSheetRoute<void>;
+      expect(route.navigator, same(root));
+      expect(playerPageVisibilityListenable.value, isFalse);
+      expect(player.toggleCalls, 0);
+      expect(find.byType(BottomSheet), findsOneWidget);
+      await tester.pump(const Duration(milliseconds: 100));
+      final double miniDelta = tester.getTopLeft(mini).dy - miniY;
+      expect(miniDelta, greaterThan(0));
+      expect(tester.getTopLeft(tabs).dy - tabsY, closeTo(miniDelta, 0.01));
+      expect(_spacerHeight(tester), spacing);
+      expect(route.animation!.value, inExclusiveRange(0, 1));
+      await tester.pumpAndSettle();
+      expect(tester.getTopLeft(mini).dy, greaterThanOrEqualTo(900));
+      final Rect sheet = tester.getRect(find.byType(BottomSheet));
+      final TestGesture drag = await tester.startGesture(
+        Offset(sheet.center.dx, sheet.top + 16),
+      );
+      await drag.moveBy(const Offset(0, 20));
+      await tester.pump();
+      await drag.moveBy(const Offset(0, 40));
+      await tester.pump();
+      expect(route.animation!.value, lessThan(1));
+      await drag.cancel();
+      await tester.pumpAndSettle();
+      expect(route.animation!.value, 1);
+      root.pop();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 80));
+      expect(route.animation!.value, inExclusiveRange(0, 1));
+      expect(tester.getTopLeft(mini).dy, greaterThanOrEqualTo(900));
+      expect(_spacerHeight(tester), spacing);
+      await tester.pump(route.reverseTransitionDuration);
+      await tester.pump();
+      expect(find.byType(BottomSheet), findsNothing);
+      expect(tester.getTopLeft(mini).dy, greaterThanOrEqualTo(900));
+      await tester.pump(const Duration(milliseconds: 80));
+      expect(tester.getTopLeft(mini).dy, inExclusiveRange(miniY, 900));
+      expect(find.byType(BottomSheet), findsNothing);
+      await tester.pumpAndSettle();
+      expect(find.byType(BottomSheet), findsNothing);
+      expect(tester.getTopLeft(mini).dy, closeTo(miniY, 0.01));
+      expect(tester.getTopLeft(tabs).dy, closeTo(tabsY, 0.01));
+      await tester.tap(find.byTooltip('播放队列'));
+      await tester.pumpAndSettle();
+      await tester.tapAt(const Offset(10, 100));
+      await tester.pumpAndSettle();
+      expect(find.byType(BottomSheet), findsNothing);
+      expect(tester.getTopLeft(mini).dy, closeTo(miniY, 0.01));
+      expect(tester.takeException(), isNull);
+      await _disposeShell(tester);
+    });
+
+    testWidgets(
+      'queue selects track and chrome survives teardown glass=$glass',
+      (WidgetTester tester) async {
+        await _pumpShell(tester, glass: glass, width: 320, scale: 2);
+        final Finder mini = find.byType(
+          glass ? MiniPlayerGlassBar : MiniPlayerBar,
+        );
+        final _FakePlayerController player =
+            ProviderScope.containerOf(
+                  tester.element(mini),
+                ).read(playerControllerProvider.notifier)
+                as _FakePlayerController;
+        await tester.tap(find.byTooltip('播放队列'));
+        await tester.pumpAndSettle();
+        await tester.tap(
+          find.byKey(ValueKey<String>('queue-${_secondItem.stableId}')),
+        );
+        await tester.pumpAndSettle();
+        expect(player.selectedIndex, 1);
+        expect(find.byType(BottomSheet), findsNothing);
+        expect(playerPageVisibilityListenable.value, isFalse);
+        await tester.tap(find.byTooltip('播放队列'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 50));
+        await _disposeShell(tester);
+        expect(tester.takeException(), isNull);
+      },
+    );
+  }
+
+  testWidgets('queue respects reduced motion and clears without stale chrome', (
+    WidgetTester tester,
+  ) async {
+    await _pumpShell(tester, disableAnimations: true);
+    await tester.tap(find.byTooltip('播放队列'));
+    await tester.pump();
+    await tester.pump();
+    final ModalRoute<dynamic> route = ModalRoute.of(
+      tester.element(find.byType(DraggableScrollableSheet)),
+    )!;
+    expect(route.animation!.value, 1);
+    await tester.tap(find.text('清空'));
+    await tester.pumpAndSettle();
+    expect(find.byType(BottomSheet), findsNothing);
+    expect(find.byType(MiniPlayerBar), findsNothing);
+    expect(find.byIcon(Icons.home), findsOneWidget);
+    expect(tester.takeException(), isNull);
+    await _disposeShell(tester);
+  });
 
   for (final double inset in <double>[0, 34]) {
     testWidgets('glass keeps top spacing and bottom paint room inset=$inset', (
@@ -242,7 +385,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.byIcon(Icons.home_outlined), findsNothing);
       expect(tester.getRect(find.byType(MiniPlayerBar)).bottom, 880);
-      expect(_spacerHeight(tester), 82);
+      expect(_spacerHeight(tester), 86);
       expect(tester.getRect(find.byKey(_viewportKey)).bottom, 900);
 
       markPlayerPageVisible();
@@ -295,8 +438,10 @@ Future<GoRouter> _pumpShell(
   Brightness brightness = Brightness.light,
   double inset = 0,
   double scale = 1,
+  double width = 420,
+  bool disableAnimations = false,
 }) async {
-  tester.view.physicalSize = const Size(420, 900);
+  tester.view.physicalSize = Size(width, 900);
   tester.view.devicePixelRatio = 1;
   tester.view.viewPadding = FakeViewPadding(bottom: inset);
   tester.view.padding = FakeViewPadding(bottom: inset);
@@ -346,9 +491,10 @@ Future<GoRouter> _pumpShell(
         theme: ThemeData(brightness: brightness),
         routerConfig: router,
         builder: (context, child) => MediaQuery(
-          data: MediaQuery.of(
-            context,
-          ).copyWith(textScaler: TextScaler.linear(scale)),
+          data: MediaQuery.of(context).copyWith(
+            textScaler: TextScaler.linear(scale),
+            disableAnimations: disableAnimations,
+          ),
           child: child!,
         ),
       ),
@@ -393,9 +539,26 @@ class _TestPage extends StatelessWidget {
 
 class _FakePlayerController extends PlayerController {
   int toggleCalls = 0;
+  int? selectedIndex;
 
   @override
-  PlayerState build() => const PlayerState(currentItem: _item);
+  PlayerState build() => const PlayerState(
+    currentItem: _item,
+    queue: <PlayableItem>[_item, _secondItem],
+    currentQueueIndex: 0,
+  );
+
+  @override
+  Future<void> skipToQueueIndex(int index, {bool autoplay = true}) async {
+    selectedIndex = index;
+    state = state.copyWith(
+      currentQueueIndex: index,
+      currentItem: state.queue[index],
+    );
+  }
+
+  @override
+  Future<void> clearQueue() async => clear();
 
   void clear() => state = const PlayerState();
   void load() => state = const PlayerState(currentItem: _item);
