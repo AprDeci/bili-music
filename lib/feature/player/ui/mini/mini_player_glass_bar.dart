@@ -29,7 +29,7 @@ class MiniPlayerGlassBar extends StatelessWidget {
         state: state,
         onTogglePlayback: onTogglePlayback,
         onOpenQueue: onOpenQueue,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
+        padding: const EdgeInsets.only(left: 16),
       ),
     );
   }
