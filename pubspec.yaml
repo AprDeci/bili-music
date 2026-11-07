@@ -93,7 +93,7 @@ dependencies:
 
   # 桌面端
   window_manager: ^0.5.1
-  hugeicons: ^1.1.6
+  hugeicons: ^4.4.0
   chinese_font_library: ^1.2.0
   tray_manager: ^0.5.2
   hotkey_manager: ^0.2.3

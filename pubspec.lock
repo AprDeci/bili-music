@@ -710,10 +710,10 @@ packages:
     dependency: "direct main"
     description:
       name: hugeicons
-      sha256: "03845d6fc8fed4a9df27d3710c94499f6f624e2cd343e858be2578a4ec69ad0a"
+      sha256: b93f0b14acf5d7491a84950907ae93be56aa35a20cd5619fe1d706aa340d690b
       url: "https://pub.dev"
     source: hosted
-    version: "1.1.6"
+    version: "4.4.0"
   icon_font_generator:
     dependency: "direct dev"
     description:
