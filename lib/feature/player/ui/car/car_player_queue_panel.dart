@@ -1,7 +1,7 @@
 import 'package:bilimusic/common/components/car/car_side_panel.dart';
 import 'package:bilimusic/feature/player/logic/player_controller.dart';
-import 'package:bilimusic/feature/player/ui/car/car_player_parts_list.dart';
-import 'package:bilimusic/feature/player/ui/car/car_player_queue_list.dart';
+import 'package:bilimusic/feature/player/ui/components/player_parts_list.dart';
+import 'package:bilimusic/feature/player/ui/components/player_queue_list.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -87,13 +87,19 @@ class _CarPlayerQueueContentState extends ConsumerState<CarPlayerQueueContent> {
             color: theme.colorScheme.surface,
             clipBehavior: Clip.hardEdge,
             child: switch (tab) {
-              _CarQueueTab.queue => CarPlayerQueueList(
+              _CarQueueTab.queue => PlayerQueueList(
                 state: state,
                 controller: controller,
+                isCar: true,
+                onClose: () async => Navigator.of(context).pop(),
               ),
-              _CarQueueTab.parts => CarPlayerPartsList(
+              _CarQueueTab.parts => PlayerPartsList(
+                parts: state.availableParts,
+                currentItem: state.currentItem,
                 state: state,
                 controller: controller,
+                isCar: true,
+                onClose: () async => Navigator.of(context).pop(),
               ),
             },
           ),

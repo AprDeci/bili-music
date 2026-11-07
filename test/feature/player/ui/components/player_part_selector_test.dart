@@ -2,6 +2,7 @@ import 'package:bilimusic/feature/player/domain/playable_item.dart';
 import 'package:bilimusic/feature/player/domain/player_state.dart';
 import 'package:bilimusic/feature/player/logic/player_controller.dart';
 import 'package:bilimusic/feature/player/ui/components/player_part_selector.dart';
+import 'package:bilimusic/feature/player/ui/components/player_parts_list.dart';
 import 'package:bilimusic/feature/player/ui/components/player_playback_waveform.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -76,6 +77,115 @@ void main() {
     expect(controller.replaced, isNull);
     expect(find.text('分P列表'), findsNothing);
   });
+
+  testWidgets('metadata differences do not restart the current stable part', (
+    WidgetTester tester,
+  ) async {
+    final _RecordingController controller = _RecordingController();
+    await _open(
+      tester,
+      controller,
+      currentItem: _first.copyWith(title: '更新的标题', durationText: '03:00'),
+    );
+
+    final Text selected = tester.widget<Text>(find.text('P1 · 第一首'));
+    final BuildContext context = tester.element(find.text('P1 · 第一首'));
+    expect(selected.style?.color, Theme.of(context).colorScheme.primary);
+    await tester.tap(find.text('P1 · 第一首'));
+    await tester.pumpAndSettle();
+    expect(controller.replaced, isNull);
+    expect(find.text('分P列表'), findsNothing);
+  });
+
+  testWidgets('add all excludes the current part by stable ID', (
+    WidgetTester tester,
+  ) async {
+    final _RecordingController controller = _RecordingController();
+    await _open(
+      tester,
+      controller,
+      currentItem: _first.copyWith(title: '更新的标题'),
+      queue: <PlayableItem>[_second],
+    );
+    expect(
+      tester
+          .widget<TextButton>(find.widgetWithText(TextButton, '全部加入队列'))
+          .onPressed,
+      isNull,
+    );
+    await tester.tap(find.text('P1 · 第一首'));
+    await tester.pumpAndSettle();
+  });
+
+  for (final bool isCar in <bool>[false, true]) {
+    testWidgets(
+      '${isCar ? 'car' : 'compact'} parts focus delayed data without refocusing metadata or progress',
+      (WidgetTester tester) async {
+        final List<PlayableItem> parts = List.generate(
+          80,
+          (int index) => _first.copyWith(
+            cid: index + 1,
+            page: index + 1,
+            pageTitle: '歌曲 ${index + 1}',
+          ),
+        );
+        final _RecordingController controller = _RecordingController();
+        Future<void> pumpParts({
+          required List<PlayableItem> items,
+          required PlayableItem currentItem,
+          Duration position = Duration.zero,
+        }) async {
+          await tester.pumpWidget(
+            MaterialApp(
+              home: Scaffold(
+                body: PlayerPartsList(
+                  parts: items,
+                  currentItem: currentItem,
+                  state: PlayerState(position: position),
+                  controller: controller,
+                  onClose: () async {},
+                  isCar: isCar,
+                ),
+              ),
+            ),
+          );
+          await tester.pumpAndSettle();
+        }
+
+        await pumpParts(items: <PlayableItem>[], currentItem: parts[60]);
+        if (isCar) {
+          expect(find.text('当前视频没有分P'), findsOneWidget);
+        }
+        await pumpParts(
+          items: parts,
+          currentItem: parts[60].copyWith(title: '更新的标题'),
+        );
+        expect(find.text('P61 · 歌曲 61').hitTestable(), findsOneWidget);
+        await tester.tap(find.text('P61 · 歌曲 61'));
+        await tester.pumpAndSettle();
+        expect(controller.replaced, isNull);
+        final ScrollController scrollController = tester
+            .widget<ListView>(find.byType(ListView))
+            .controller!;
+        scrollController.jumpTo(0);
+        await tester.pumpAndSettle();
+        await pumpParts(
+          items: parts
+              .map((PlayableItem item) => item.copyWith(title: '更新的标题'))
+              .toList(),
+          currentItem: parts[60].copyWith(durationText: '03:00'),
+          position: const Duration(seconds: 10),
+        );
+        expect(scrollController.offset, 0);
+        expect(find.text('P1 · 歌曲 1').hitTestable(), findsOneWidget);
+        if (!isCar) {
+          await pumpParts(items: parts, currentItem: parts[30]);
+          expect(find.text('P31 · 歌曲 31').hitTestable(), findsOneWidget);
+        }
+        expect(tester.takeException(), isNull);
+      },
+    );
+  }
 
   testWidgets('add all stays in the header and disables when already queued', (
     WidgetTester tester,

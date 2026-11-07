@@ -1,13 +1,10 @@
 import 'package:bilimusic/common/components/desktop/desktop_side_panel.dart';
-import 'package:bilimusic/feature/player/domain/playable_item.dart';
 import 'package:bilimusic/feature/player/domain/player_state.dart';
 import 'package:bilimusic/feature/player/logic/player_controller.dart';
-import 'package:bilimusic/feature/player/ui/components/player_playback_waveform.dart';
+import 'package:bilimusic/feature/player/ui/components/player_queue_list.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_smart_dialog/flutter_smart_dialog.dart';
-import 'package:hugeicons/hugeicons.dart';
-import 'package:scroll_to_index/scroll_to_index.dart';
 
 Future<void> showPlayerQueueSheet({
   required BuildContext context,
@@ -88,38 +85,13 @@ class _PlayerQueueSheet extends ConsumerWidget {
   }
 }
 
-class _PlayerQueueContent extends ConsumerStatefulWidget {
+class _PlayerQueueContent extends ConsumerWidget {
   const _PlayerQueueContent({required this.closeTarget});
 
   final _QueueCloseTarget closeTarget;
 
   @override
-  ConsumerState<_PlayerQueueContent> createState() =>
-      _PlayerQueueContentState();
-}
-
-class _PlayerQueueContentState extends ConsumerState<_PlayerQueueContent> {
-  static const double _estimatedQueueItemExtent = 56;
-
-  late final AutoScrollController _scrollController;
-  bool _didFocusInitialItem = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _scrollController = AutoScrollController(
-      suggestedRowHeight: _estimatedQueueItemExtent,
-    );
-  }
-
-  @override
-  void dispose() {
-    _scrollController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final PlayerState liveState = ref.watch(playerControllerProvider);
     final PlayerController liveController = ref.read(
       playerControllerProvider.notifier,
@@ -131,7 +103,6 @@ class _PlayerQueueContentState extends ConsumerState<_PlayerQueueContent> {
       PlayerQueueMode.singleRepeat => '单曲循环',
       PlayerQueueMode.shuffle => '随机播放',
     };
-    _focusInitialItem(liveState.currentQueueIndex);
 
     return Column(
       children: <Widget>[
@@ -184,137 +155,18 @@ class _PlayerQueueContentState extends ConsumerState<_PlayerQueueContent> {
           ),
         ),
         Expanded(
-          child: ListView.builder(
-            controller: _scrollController,
-            padding: const EdgeInsets.only(bottom: 24),
-            itemCount: liveState.queue.length,
-            itemBuilder: (BuildContext context, int index) {
-              final PlayableItem queuedItem = liveState.queue[index];
-              final bool isCurrent = liveState.currentQueueIndex == index;
-              final String partTitle = queuedItem.pageTitle?.trim() ?? '';
-              final String title = partTitle.isEmpty
-                  ? queuedItem.title
-                  : partTitle;
-              final String subtitle =
-                  partTitle.isEmpty || partTitle == queuedItem.title.trim()
-                  ? queuedItem.author.trim()
-                  : queuedItem.title.trim();
-
-              return AutoScrollTag(
-                key: ValueKey<String>('queue-${queuedItem.stableId}'),
-                controller: _scrollController,
-                index: index,
-                child: Semantics(
-                  selected: isCurrent,
-                  child: Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      onTap: () async {
-                        await _close(context);
-                        await liveController.skipToQueueIndex(index);
-                      },
-                      child: Padding(
-                        padding: const EdgeInsets.fromLTRB(20, 4, 8, 4),
-                        child: Row(
-                          children: <Widget>[
-                            Expanded(
-                              child: Text.rich(
-                                TextSpan(
-                                  text: title,
-                                  children: <InlineSpan>[
-                                    if (subtitle.isNotEmpty)
-                                      TextSpan(
-                                        text: ' - $subtitle',
-                                        style: theme.textTheme.bodyMedium
-                                            ?.copyWith(
-                                              color: isCurrent
-                                                  ? colorScheme.primary
-                                                  : colorScheme
-                                                        .onSurfaceVariant,
-                                              fontWeight: FontWeight.normal,
-                                            ),
-                                      ),
-                                  ],
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: theme.textTheme.titleSmall?.copyWith(
-                                  color: isCurrent
-                                      ? colorScheme.primary
-                                      : colorScheme.onSurface,
-                                  fontWeight: isCurrent
-                                      ? FontWeight.w600
-                                      : FontWeight.normal,
-                                ),
-                              ),
-                            ),
-                            if (isCurrent) ...<Widget>[
-                              const SizedBox(width: 8),
-                              PlayerPlaybackWaveform(
-                                isPlaying:
-                                    liveState.isPlaying &&
-                                    !liveState.isBuffering &&
-                                    !liveState.isLoading,
-                              ),
-                            ],
-                            IconButton(
-                              constraints: const BoxConstraints.tightFor(
-                                width: 48,
-                                height: 48,
-                              ),
-                              tooltip: '移出队列',
-                              onPressed: () async {
-                                await liveController.removeQueueItemAt(index);
-                                if (!context.mounted) {
-                                  return;
-                                }
-                                final PlayerState refreshedState = ref.read(
-                                  playerControllerProvider,
-                                );
-                                if (!refreshedState.hasQueue) {
-                                  await _close(context);
-                                }
-                              },
-                              icon: HugeIcon(
-                                icon: HugeIcons.strokeRoundedCancel01,
-                                color: colorScheme.onSurfaceVariant,
-                                size: 18,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              );
-            },
+          child: PlayerQueueList(
+            state: liveState,
+            controller: liveController,
+            onClose: () => _close(context),
           ),
         ),
       ],
     );
   }
 
-  void _focusInitialItem(int? currentQueueIndex) {
-    if (_didFocusInitialItem || currentQueueIndex == null) {
-      return;
-    }
-
-    _didFocusInitialItem = true;
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      if (!mounted || !_scrollController.hasClients) {
-        return;
-      }
-
-      await _scrollController.scrollToIndex(
-        currentQueueIndex,
-        preferPosition: AutoScrollPosition.middle,
-      );
-    });
-  }
-
   Future<void> _close(BuildContext context) async {
-    switch (widget.closeTarget) {
+    switch (closeTarget) {
       case _QueueCloseTarget.navigator:
         Navigator.of(context).pop();
       case _QueueCloseTarget.sidePanel:
