@@ -1790,6 +1790,182 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  for (final int? currentIndex in <int?>[0, 60, 99, null]) {
+    testWidgets('car queue focuses current item $currentIndex on opening', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(1920, 1080);
+      tester.view.devicePixelRatio = 140 / 160;
+      addTearDown(tester.view.reset);
+      final queue = List<PlayableItem>.generate(
+        100,
+        (index) => _item.copyWith(
+          aid: index + 1,
+          bvid: 'queue-$index',
+          title: '歌曲 $index',
+        ),
+      );
+      final player = _QueuePlayer(
+        PlayerState(
+          queue: queue,
+          currentQueueIndex: currentIndex,
+          currentItem: currentIndex == null ? null : queue[currentIndex],
+        ),
+      );
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            playerControllerProvider.overrideWith(() => player),
+            for (final item in queue)
+              playerQueueDisplayProvider(item).overrideWith(
+                (_) async =>
+                    PlayerDisplayInfo(title: item.title, artist: item.author),
+              ),
+          ],
+          child: MaterialApp(
+            theme: carDarkTheme(),
+            builder: (context, child) => CarUiViewport(child: child!),
+            home: const Scaffold(body: CarPlayerControls()),
+          ),
+        ),
+      );
+      await tester.tap(find.byTooltip('播放队列（100 首）'));
+      await tester.pumpAndSettle();
+      if (currentIndex == null) {
+        expect(find.text('歌曲 0').hitTestable(), findsOneWidget);
+        player.update(
+          PlayerState(
+            queue: queue,
+            currentQueueIndex: 60,
+            currentItem: queue[60],
+          ),
+        );
+        await tester.pumpAndSettle();
+      }
+      final int index = currentIndex ?? 60;
+      expect(find.text('歌曲 $index').hitTestable(), findsOneWidget);
+      expect(
+        tester
+            .widget<ListTile>(find.widgetWithText(ListTile, '歌曲 $index'))
+            .selected,
+        isTrue,
+      );
+      final scrollable = tester.state<ScrollableState>(
+        find.descendant(
+          of: find.byType(CarPlayerQueueContent),
+          matching: find.byType(Scrollable),
+        ),
+      );
+      scrollable.position.jumpTo(0);
+      await tester.pumpAndSettle();
+      player.update(
+        PlayerState(
+          queue: queue,
+          currentQueueIndex: index,
+          currentItem: queue[index],
+          position: const Duration(seconds: 1),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(scrollable.position.pixels, 0);
+      await tester.tap(find.byTooltip('关闭'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byTooltip('播放队列（100 首）'));
+      await tester.pumpAndSettle();
+      expect(find.text('歌曲 $index').hitTestable(), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+  }
+
+  for (final int? currentIndex in <int?>[0, 60, 99, null]) {
+    testWidgets('car parts focus current item $currentIndex on opening', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(1920, 1080);
+      tester.view.devicePixelRatio = 140 / 160;
+      addTearDown(tester.view.reset);
+      final parts = List<PlayableItem>.generate(
+        100,
+        (index) => _item.copyWith(
+          cid: index + 1,
+          page: index + 1,
+          pageTitle: '分P $index',
+        ),
+      );
+      final player = _QueuePlayer(
+        PlayerState(
+          queue: [_item],
+          currentQueueIndex: 0,
+          availableParts: parts,
+          currentItem: currentIndex == null
+              ? _item
+              : parts[currentIndex].copyWith(title: '更新后的标题'),
+        ),
+      );
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            playerControllerProvider.overrideWith(() => player),
+            playerQueueDisplayProvider(_item).overrideWith(
+              (_) async =>
+                  const PlayerDisplayInfo(title: '队列歌曲', artist: '队列歌手'),
+            ),
+          ],
+          child: MaterialApp(
+            theme: carDarkTheme(),
+            builder: (context, child) => CarUiViewport(child: child!),
+            home: const Scaffold(body: CarPlayerControls()),
+          ),
+        ),
+      );
+      await tester.tap(find.byTooltip('播放队列（1 首）'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('分P'));
+      await tester.pumpAndSettle();
+      if (currentIndex == null) {
+        expect(find.text('P1 · 分P 0').hitTestable(), findsOneWidget);
+        player.update(player.initialState.copyWith(currentItem: parts[60]));
+        await tester.pumpAndSettle();
+      }
+      final int index = currentIndex ?? 60;
+      final Finder current = find.widgetWithText(
+        ListTile,
+        'P${index + 1} · 分P $index',
+      );
+      expect(current.hitTestable(), findsOneWidget);
+      expect(tester.widget<ListTile>(current).selected, isTrue);
+      final scrollable = tester.state<ScrollableState>(
+        find.descendant(
+          of: find.byType(CarPlayerQueueContent),
+          matching: find.byType(Scrollable),
+        ),
+      );
+      scrollable.position.jumpTo(0);
+      await tester.pumpAndSettle();
+      player.update(
+        player.initialState.copyWith(
+          currentItem: parts[index],
+          position: const Duration(seconds: 1),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(scrollable.position.pixels, 0);
+      await tester.tap(find.text('播放队列'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('分P'));
+      await tester.pumpAndSettle();
+      expect(current.hitTestable(), findsOneWidget);
+      await tester.tap(find.byTooltip('关闭'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byTooltip('播放队列（1 首）'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('分P'));
+      await tester.pumpAndSettle();
+      expect(current.hitTestable(), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+  }
+
   testWidgets('player panel always shows full car controls', (tester) async {
     await tester.pumpWidget(
       _scope(
@@ -1930,6 +2106,17 @@ class _Player extends PlayerController {
     isPlaying: true,
     duration: Duration(minutes: 3),
   );
+}
+
+class _QueuePlayer extends _Player {
+  _QueuePlayer(this.initialState);
+
+  final PlayerState initialState;
+
+  @override
+  PlayerState build() => initialState;
+
+  void update(PlayerState next) => state = next;
 }
 
 class _QualityPlayer extends _Player {
