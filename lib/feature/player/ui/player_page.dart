@@ -345,12 +345,11 @@ class _PlayerPageState extends ConsumerState<PlayerPage> {
                     );
                   },
                 ),
-                const _PlayerVolumeTile(),
                 ListTile(
                   key: const Key('playbackSpeedMenuEntry'),
                   leading: const Icon(Icons.speed_rounded),
                   title: const Text('倍速播放'),
-                  subtitle: Text(
+                  trailing: Text(
                     formatPlaybackSpeed(
                       ref.read(playerControllerProvider).speed,
                     ),
@@ -360,6 +359,7 @@ class _PlayerPageState extends ConsumerState<PlayerPage> {
                     _showPlaybackSpeedSheet();
                   },
                 ),
+                const _PlayerVolumeTile(),
                 _PlayerDownloadTile(
                   item: item,
                   onDone: () => Navigator.of(context).pop(),

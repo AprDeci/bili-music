@@ -1620,6 +1620,39 @@ void main() {
   }
 
   for (final Size size in <Size>[const Size(420, 900), const Size(320, 568)]) {
+    testWidgets('player menu shows playback speed on the right at $size', (
+      WidgetTester tester,
+    ) async {
+      final ProviderContainer container = await _pumpPlayer(
+        tester,
+        _metadata,
+        size: size,
+        home: const PlayerPage(),
+      );
+      (container.read(playerControllerProvider.notifier)
+              as _FakePlayerController)
+          .show(container.read(playerControllerProvider).copyWith(speed: 1.5));
+      await tester.pump();
+      await tester.tap(find.byKey(const Key('playerMenuButton')));
+      await tester.pumpAndSettle();
+      final Finder entry = find.byKey(const Key('playbackSpeedMenuEntry'));
+      await tester.ensureVisible(entry);
+      await tester.pumpAndSettle();
+      final ListTile tile = tester.widget<ListTile>(entry);
+      expect(tile.subtitle, isNull);
+      expect((tile.trailing! as Text).data, '1.5x');
+      final Rect title = tester.getRect(find.text('倍速播放'));
+      final Rect value = tester.getRect(find.text('1.5x'));
+      expect(value.left, greaterThan(title.right));
+      expect(value.center.dy, closeTo(title.center.dy, 1));
+      await tester.tap(entry);
+      await tester.pumpAndSettle();
+      expect(find.text('倍速播放'), findsNothing);
+      expect(find.text('1.5x'), findsOneWidget);
+      expect(find.byIcon(Icons.check_rounded), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
     testWidgets('player menu adjusts app volume inline at $size', (
       WidgetTester tester,
     ) async {
