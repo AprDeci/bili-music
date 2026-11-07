@@ -329,9 +329,8 @@ class _PlayerPageState extends ConsumerState<PlayerPage> {
         return SafeArea(
           child: Padding(
             padding: const EdgeInsets.only(bottom: 8),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
+            child: ListView(
+              shrinkWrap: true,
               children: <Widget>[
                 ListTile(
                   key: const Key('sleepTimerMenuEntry'),
@@ -346,6 +345,7 @@ class _PlayerPageState extends ConsumerState<PlayerPage> {
                     );
                   },
                 ),
+                const _PlayerVolumeTile(),
                 ListTile(
                   key: const Key('playbackSpeedMenuEntry'),
                   leading: const Icon(Icons.speed_rounded),
@@ -428,6 +428,69 @@ PlayerState _withoutPlaybackPosition(PlayerState state) {
     return state;
   }
   return state.copyWith(position: Duration.zero);
+}
+
+class _PlayerVolumeTile extends ConsumerWidget {
+  const _PlayerVolumeTile();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final double volume = ref.watch(
+      playerControllerProvider.select((state) => state.volume),
+    );
+    return ListTile(
+      leading: Icon(
+        volume == 0 ? Icons.volume_off_rounded : Icons.volume_up_rounded,
+      ),
+      title: Row(
+        children: <Widget>[
+          const Text('应用内音量'),
+          const SizedBox(width: 8),
+          Expanded(
+            child: SliderTheme(
+              data: SliderTheme.of(context).copyWith(
+                trackHeight: 3,
+                trackShape: const RoundedRectSliderTrackShape(),
+                thumbShape: const RoundSliderThumbShape(
+                  enabledThumbRadius: 6,
+                  elevation: 0,
+                ),
+                overlayShape: const RoundSliderOverlayShape(overlayRadius: 12),
+              ),
+              child: Semantics(
+                label: '应用内音量',
+                child: Slider(
+                  key: const Key('playerVolumeSlider'),
+                  value: volume,
+                  semanticFormatterCallback: (double value) =>
+                      '${(value * 100).round()}%',
+                  onChanged: (double value) async {
+                    try {
+                      await ref
+                          .read(playerControllerProvider.notifier)
+                          .setVolume(value);
+                    } on Object {
+                      if (context.mounted) {
+                        ToastUtil.show('音量设置失败，请重试');
+                      }
+                    }
+                  },
+                ),
+              ),
+            ),
+          ),
+          SizedBox(
+            width: 30,
+            child: Text(
+              '${(volume * 100).round()}',
+              textAlign: TextAlign.end,
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _PlayerDownloadTile extends ConsumerWidget {

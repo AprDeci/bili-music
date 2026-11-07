@@ -1619,6 +1619,77 @@ void main() {
     });
   }
 
+  for (final Size size in <Size>[const Size(420, 900), const Size(320, 568)]) {
+    testWidgets('player menu adjusts app volume inline at $size', (
+      WidgetTester tester,
+    ) async {
+      final ProviderContainer container = await _pumpPlayer(
+        tester,
+        _metadata,
+        size: size,
+        home: const PlayerPage(),
+      );
+      final _FakePlayerController controller =
+          container.read(playerControllerProvider.notifier)
+              as _FakePlayerController;
+      controller.show(
+        container.read(playerControllerProvider).copyWith(volume: 0.25),
+      );
+      await tester.pump();
+      await tester.tap(find.byKey(const Key('playerMenuButton')));
+      await tester.pumpAndSettle();
+      final Finder slider = find.byKey(const Key('playerVolumeSlider'));
+      await tester.ensureVisible(slider);
+      await tester.pumpAndSettle();
+      expect(find.text('应用内音量'), findsOneWidget);
+      expect(find.text('25%'), findsOneWidget);
+      expect(tester.widget<Slider>(slider).value, 0.25);
+      expect(tester.widget<Slider>(slider).divisions, isNull);
+      final Rect labelRect = tester.getRect(find.text('应用内音量'));
+      final Rect sliderRect = tester.getRect(slider);
+      final Rect percentRect = tester.getRect(find.text('25%'));
+      expect(labelRect.center.dy, closeTo(sliderRect.center.dy, 1));
+      expect(percentRect.center.dy, closeTo(sliderRect.center.dy, 1));
+      expect(sliderRect.left, greaterThan(labelRect.right));
+      expect(sliderRect.right, lessThanOrEqualTo(percentRect.left));
+      final SliderThemeData sliderTheme = SliderTheme.of(
+        tester.element(slider),
+      );
+      expect(sliderTheme.trackHeight, 3);
+      expect(sliderTheme.thumbShape, isA<RoundSliderThumbShape>());
+      final TestGesture gesture = await tester.startGesture(
+        tester.getCenter(slider),
+      );
+      await gesture.moveBy(const Offset(20, 0));
+      await tester.pump();
+      expect(controller.volumeChanges, isNotEmpty);
+      final double volume = container.read(playerControllerProvider).volume;
+      expect(volume, greaterThan(0.25));
+      expect(tester.widget<Slider>(slider).value, volume);
+      expect(find.text('${(volume * 100).round()}%'), findsOneWidget);
+      expect(find.byType(BottomSheet), findsOneWidget);
+      await gesture.up();
+      await controller.setVolume(0.005);
+      await tester.pumpAndSettle();
+      expect(tester.widget<Slider>(slider).value, 0.005);
+      tester.widget<Slider>(slider).onChanged!(0);
+      await tester.pumpAndSettle();
+      expect(find.text('0%'), findsOneWidget);
+      expect(find.byIcon(Icons.volume_off_rounded), findsOneWidget);
+      tester.widget<Slider>(slider).onChanged!(1);
+      await tester.pumpAndSettle();
+      expect(find.text('100%'), findsOneWidget);
+      Navigator.of(tester.element(slider)).pop();
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('playerMenuButton')));
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(slider);
+      await tester.pumpAndSettle();
+      expect(tester.widget<Slider>(slider).value, 1);
+      expect(tester.takeException(), isNull);
+    });
+  }
+
   testWidgets('timeline highlights the chapter for the live position', (
     WidgetTester tester,
   ) async {
@@ -1797,6 +1868,7 @@ class _FakePlayerController extends PlayerController {
   final List<int> queueSelections = <int>[];
   final List<Duration> progressSeeks = <Duration>[];
   final List<Duration> lyricSeeks = <Duration>[];
+  final List<double> volumeChanges = <double>[];
 
   @override
   PlayerState build() => const PlayerState(
@@ -1808,6 +1880,12 @@ class _FakePlayerController extends PlayerController {
   );
 
   void show(PlayerState value) => state = value;
+
+  @override
+  Future<void> setVolume(double volume) async {
+    volumeChanges.add(volume);
+    state = state.copyWith(volume: volume);
+  }
 
   @override
   Future<void> togglePlayback() async {
