@@ -90,14 +90,20 @@ class PlayerPlaybackLoader {
   Future<ResolvedQueueEntry> resolveQueueEntry(
     PlayableItem item, {
     int? preferredQualityId,
-  }) => _resolveQueueEntry(
-    item,
-    preferredQualityId: preferredQualityId,
-  ).timeout(const Duration(seconds: 5));
+    bool Function()? isCurrent,
+  }) {
+    bool active = true;
+    return _resolveQueueEntry(
+      item,
+      preferredQualityId: preferredQualityId,
+      protectCache: () => active && (isCurrent?.call() ?? true),
+    ).timeout(const Duration(seconds: 5)).whenComplete(() => active = false);
+  }
 
   Future<ResolvedQueueEntry> _resolveQueueEntry(
     PlayableItem item, {
     int? preferredQualityId,
+    required bool Function() protectCache,
   }) async {
     if (!item.hasIdentity) {
       throw const BiliPlayerException('当前搜索结果缺少可播放的视频标识。');
@@ -106,6 +112,7 @@ class PlayerPlaybackLoader {
       item: item,
       qualityPreference: _readQualityPreference(),
       preferredQualityId: preferredQualityId,
+      protectCache: protectCache,
     );
 
     final ResolvedQueueEntry? downloaded = await downloadedSource?.resolve(
@@ -257,6 +264,7 @@ class PlayerPlaybackLoader {
     cachedFile ??= await _audioCacheRepository.getCachedFile(
       item: entry.item,
       audioStream: entry.audioStream,
+      protect: () => isCurrent?.call() ?? true,
     );
     if (!(isCurrent?.call() ?? true)) return null;
 
@@ -297,6 +305,8 @@ class PlayerPlaybackLoader {
     }
 
     if (!(isCurrent?.call() ?? true)) return null;
+    await releaseCachedFiles();
+    if (!(isCurrent?.call() ?? true)) return null;
     onStatusHint(PlayerStatusHint.connectingStream);
     _logEvent(
       'loadQueueIndex:remote-source',
@@ -334,12 +344,24 @@ class PlayerPlaybackLoader {
     return duration;
   }
 
+  Future<void> releaseCachedFiles() async {
+    try {
+      await _audioCacheRepository.releaseFiles();
+    } on Object catch (error) {
+      _logEvent(
+        'audio-cache:cleanup-failed',
+        details: <String, Object?>{'error': error},
+      );
+    }
+  }
+
   Future<void> _cacheEntry(ResolvedQueueEntry entry) async {
     try {
-      await _audioCacheRepository.cacheAudio(
+      final File? file = await _audioCacheRepository.cacheAudio(
         item: entry.item,
         audioStream: entry.audioStream,
       );
+      if (file == null) return;
       _logEvent(
         'audio-cache:completed',
         details: <String, Object?>{'stableId': entry.item.stableId},

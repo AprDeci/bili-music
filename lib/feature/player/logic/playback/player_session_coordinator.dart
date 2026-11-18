@@ -171,6 +171,7 @@ class PlayerSessionCoordinator {
       final ResolvedQueueEntry entry = await _playbackLoader.resolveQueueEntry(
         targetItem,
         preferredQualityId: _host.qualityOverrideFor(targetItem.stableId),
+        isCurrent: () => _host.isCurrentGeneration(effectiveGeneration),
       );
       if (!_host.isCurrentGeneration(effectiveGeneration)) {
         return false;

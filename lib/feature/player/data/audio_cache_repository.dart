@@ -1,29 +1,12 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:bilimusic/core/cache/app_cache_manager.dart';
-import 'package:bilimusic/core/hive/hive_keys.dart';
-import 'package:bilimusic/core/settings/app_settings_store.dart';
+import 'package:bilimusic/feature/player/domain/audio_cache_limit.dart';
 import 'package:bilimusic/feature/player/domain/audio_stream_info.dart';
 import 'package:bilimusic/feature/player/domain/player_audio_quality_preference.dart';
 import 'package:bilimusic/feature/player/domain/playable_item.dart';
 import 'package:crypto/crypto.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
-import 'package:riverpod_annotation/riverpod_annotation.dart';
-
-part 'audio_cache_repository.g.dart';
-
-@riverpod
-PlayerAudioCacheRepository playerAudioCacheRepository(Ref ref) {
-  final AppSettingsStore store = ref.read(appSettingsStoreProvider);
-  return PlayerAudioCacheRepository(
-    AppAudioCacheManager.instance,
-    readIndex: () async =>
-        store.readString(HiveKeys.playerAudioCacheIndex, defaultValue: '[]'),
-    writeIndex: (String value) =>
-        store.writeString(HiveKeys.playerAudioCacheIndex, value),
-  );
-}
 
 class AudioCacheMetadata {
   const AudioCacheMetadata({
@@ -135,7 +118,19 @@ class PlayerAudioCacheRepository {
     Future<File> Function(String url, String key, Map<String, String>? headers)?
     downloadFile,
     Future<void> Function(String key)? removeFile,
-  }) : _readIndex = readIndex ?? (() async => '[]'),
+    int Function()? readLimitBytes,
+    Future<Iterable<String>> Function()? readStoredKeys,
+  }) : _readStoredKeys =
+           readStoredKeys ??
+           (() async {
+             if (cacheManager == null) return const <String>[];
+             await cacheManager.store.getCacheSize();
+             return (await cacheManager.config.repo.getAllObjects()).map(
+               (entry) => entry.key,
+             );
+           }),
+       _readLimitBytes = readLimitBytes ?? (() => AudioCacheLimit.mb512.bytes),
+       _readIndex = readIndex ?? (() async => '[]'),
        _writeIndex = writeIndex ?? ((String _) async {}),
        _readCachedFile =
            readCachedFile ??
@@ -145,7 +140,15 @@ class PlayerAudioCacheRepository {
            downloadFile ??
            ((String url, String key, Map<String, String>? headers) =>
                cacheManager!.getSingleFile(url, key: key, headers: headers)),
-       _removeFile = removeFile ?? cacheManager!.removeFile;
+       _removeFile =
+           removeFile ??
+           ((String key) async {
+             final File? file = (await cacheManager!.getFileFromCache(
+               key,
+             ))?.file;
+             if (file != null && await file.exists()) await file.delete();
+             await cacheManager.removeFile(key);
+           });
 
   final Future<String> Function() _readIndex;
   final Future<void> Function(String) _writeIndex;
@@ -157,8 +160,67 @@ class PlayerAudioCacheRepository {
   )
   _downloadFile;
   final Future<void> Function(String key) _removeFile;
-  final Map<String, Future<File>> _inflightDownloads = <String, Future<File>>{};
+  final int Function() _readLimitBytes;
+  final Future<Iterable<String>> Function() _readStoredKeys;
+  final Map<String, Future<File?>> _inflightDownloads =
+      <String, Future<File?>>{};
+  final Set<String> _protectedKeys = <String>{};
+  final Set<String> _pendingRemoval = <String>{};
   Future<void> _indexUpdates = Future<void>.value();
+  int _generation = 0;
+  int _playbackGeneration = 0;
+
+  Future<void> releaseFiles() {
+    _playbackGeneration++;
+    _protectedKeys.clear();
+    return trim();
+  }
+
+  Future<void> clear() {
+    _generation++;
+    return _updateIndex((List<AudioCacheMetadata> entries) async {
+      _pendingRemoval.addAll(entries.map((entry) => entry.cacheKey));
+      await _trim(entries);
+    });
+  }
+
+  Future<void> trim() {
+    if (_readLimitBytes() <= 0) _generation++;
+    return _updateIndex(_trim);
+  }
+
+  // ponytail: 容量是下载完成后的目标；需要严格硬配额时再加入下载预留与流式限额。
+  Future<void> _trim(List<AudioCacheMetadata> entries) async {
+    final Set<String> indexed = entries.map((entry) => entry.cacheKey).toSet();
+    for (final String key in await _readStoredKeys()) {
+      if (indexed.contains(key) || _inflightDownloads.containsKey(key)) {
+        continue;
+      }
+      if (_protectedKeys.contains(key)) {
+        _pendingRemoval.add(key);
+      } else {
+        await _removeFile(key);
+        _pendingRemoval.remove(key);
+      }
+    }
+    final int limit = _readLimitBytes();
+    int bytes = entries.fold(
+      0,
+      (int size, AudioCacheMetadata entry) => size + entry.byteLength,
+    );
+    for (final AudioCacheMetadata entry in entries.reversed.toList()) {
+      if (_protectedKeys.contains(entry.cacheKey)) continue;
+      if (!_pendingRemoval.contains(entry.cacheKey) &&
+          (limit <= 0 || bytes <= limit && entries.length <= 120)) {
+        continue;
+      }
+      await _removeFile(entry.cacheKey);
+      entries.remove(entry);
+      _pendingRemoval.remove(entry.cacheKey);
+      bytes -= entry.byteLength;
+    }
+    await _writeMetadata(entries);
+  }
 
   String buildCacheKey({
     required PlayableItem item,
@@ -180,7 +242,9 @@ class PlayerAudioCacheRepository {
     required PlayerAudioQualityPreference preference,
     int? preferredQualityId,
     bool allowQualityFallback = true,
+    bool Function()? protect,
   }) async {
+    final int playbackGeneration = _playbackGeneration;
     final int? cid = item.cid;
     await _indexUpdates;
     final List<AudioCacheMetadata> matching = (await _readMetadata())
@@ -221,7 +285,11 @@ class PlayerAudioCacheRepository {
       return right.bandwidth.compareTo(left.bandwidth);
     });
     for (final AudioCacheMetadata candidate in candidates) {
-      final CachedAudio? cached = await _validated(candidate);
+      final CachedAudio? cached = await _validated(
+        candidate,
+        protect: protect,
+        playbackGeneration: playbackGeneration,
+      );
       if (cached != null) {
         return cached;
       }
@@ -232,7 +300,9 @@ class PlayerAudioCacheRepository {
   Future<File?> getCachedFile({
     required PlayableItem item,
     required AudioStreamInfo audioStream,
+    bool Function()? protect,
   }) async {
+    final int playbackGeneration = _playbackGeneration;
     await _indexUpdates;
     final String key = buildCacheKey(item: item, audioStream: audioStream);
     AudioCacheMetadata? metadata;
@@ -242,7 +312,13 @@ class PlayerAudioCacheRepository {
         break;
       }
     }
-    return metadata == null ? null : (await _validated(metadata))?.file;
+    return metadata == null
+        ? null
+        : (await _validated(
+            metadata,
+            protect: protect,
+            playbackGeneration: playbackGeneration,
+          ))?.file;
   }
 
   Future<void> removeCachedFile({
@@ -252,22 +328,25 @@ class PlayerAudioCacheRepository {
     return _invalidate(buildCacheKey(item: item, audioStream: audioStream));
   }
 
-  Future<File> cacheAudio({
+  Future<File?> cacheAudio({
     required PlayableItem item,
     required AudioStreamInfo audioStream,
   }) async {
+    if (_readLimitBytes() <= 0) return null;
+    final int generation = _generation;
     final File? existing = await getCachedFile(
       item: item,
       audioStream: audioStream,
     );
+    if (generation != _generation || _readLimitBytes() <= 0) return null;
     if (existing != null) {
       return existing;
     }
 
     final String key = buildCacheKey(item: item, audioStream: audioStream);
-    final Future<File> future = _inflightDownloads.putIfAbsent(
+    final Future<File?> future = _inflightDownloads.putIfAbsent(
       key,
-      () => _downloadAndIndex(key, item, audioStream),
+      () => _downloadAndIndex(key, item, audioStream, generation),
     );
     try {
       return await future;
@@ -278,10 +357,11 @@ class PlayerAudioCacheRepository {
     }
   }
 
-  Future<File> _downloadAndIndex(
+  Future<File?> _downloadAndIndex(
     String key,
     PlayableItem item,
     AudioStreamInfo stream,
+    int generation,
   ) async {
     Object? lastError;
     File? file;
@@ -329,40 +409,63 @@ class PlayerAudioCacheRepository {
       sha256Hash: hash,
       completedAt: DateTime.now().millisecondsSinceEpoch,
     );
+    bool retained = false;
     await _updateIndex((List<AudioCacheMetadata> entries) async {
+      final int limit = _readLimitBytes();
+      if (generation != _generation || limit <= 0 || length > limit) {
+        await _removeFile(key);
+        return;
+      }
       entries.removeWhere((AudioCacheMetadata entry) => entry.cacheKey == key);
       entries.insert(0, metadata);
-      final List<AudioCacheMetadata> evicted = entries.length > 120
-          ? entries.sublist(120)
-          : const <AudioCacheMetadata>[];
-      await _writeMetadata(entries.take(120));
-      for (final AudioCacheMetadata entry in evicted) {
-        await _removeFile(entry.cacheKey);
-      }
+      await _trim(entries);
+      retained = entries.contains(metadata);
     });
-    return file;
+    return retained ? file : null;
   }
 
-  Future<CachedAudio?> _validated(AudioCacheMetadata metadata) async {
-    final File? file = await _readCachedFile(metadata.cacheKey);
-    if (file == null || !await file.exists()) {
-      await _invalidate(metadata.cacheKey);
-      return null;
-    }
-    final int length = await file.length();
-    final String hash = length > 0
-        ? (await sha256.bind(file.openRead()).first).toString()
-        : '';
-    if (length != metadata.byteLength || hash != metadata.sha256Hash) {
-      await _invalidate(metadata.cacheKey);
-      return null;
-    }
-    return CachedAudio(file: file, metadata: metadata);
+  Future<CachedAudio?> _validated(
+    AudioCacheMetadata metadata, {
+    bool Function()? protect,
+    required int playbackGeneration,
+  }) async {
+    CachedAudio? result;
+    await _updateIndex((List<AudioCacheMetadata> entries) async {
+      final int index = entries.indexWhere(
+        (entry) => entry.cacheKey == metadata.cacheKey,
+      );
+      if (index < 0) return;
+      final File? file = await _readCachedFile(metadata.cacheKey);
+      final int length = file != null && await file.exists()
+          ? await file.length()
+          : 0;
+      final String hash = length > 0
+          ? (await sha256.bind(file!.openRead()).first).toString()
+          : '';
+      if (length <= 0 ||
+          length != metadata.byteLength ||
+          hash != metadata.sha256Hash) {
+        await _removeFile(metadata.cacheKey);
+        entries.removeAt(index);
+        await _writeMetadata(entries);
+        return;
+      }
+      if (index > 0) {
+        entries.insert(0, entries.removeAt(index));
+        await _writeMetadata(entries);
+      }
+      if (protect != null) {
+        if (playbackGeneration != _playbackGeneration || !protect()) return;
+        _protectedKeys.add(metadata.cacheKey);
+      }
+      result = CachedAudio(file: file!, metadata: metadata);
+    });
+    return result;
   }
 
   Future<void> _invalidate(String key) async {
-    await _removeFile(key);
     await _updateIndex((List<AudioCacheMetadata> entries) async {
+      await _removeFile(key);
       final int previousLength = entries.length;
       entries.removeWhere((AudioCacheMetadata entry) => entry.cacheKey == key);
       if (entries.length != previousLength) {

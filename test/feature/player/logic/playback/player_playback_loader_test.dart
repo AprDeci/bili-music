@@ -49,7 +49,7 @@ void main() {
 
   test('cache hit bypasses a hanging connectivity check', () async {
     final PlayerAudioCacheRepository cache = _cache(directory);
-    final File file = await cache.cacheAudio(
+    final File? file = await cache.cacheAudio(
       item: _item(),
       audioStream: _stream(qualityId: 30232, bandwidth: 132000),
     );
@@ -67,7 +67,7 @@ void main() {
       },
     ).resolveQueueEntry(_item()).timeout(const Duration(seconds: 1));
 
-    expect(entry.cachedFile?.path, file.path);
+    expect(entry.cachedFile?.path, file!.path);
     expect(checks, 0);
     expect(remote.calls, 0);
   });
@@ -76,7 +76,7 @@ void main() {
     final _RecordingRepository remote = _RecordingRepository(_loadResult());
     final PlayerAudioCacheRepository cache = _cache(directory);
     final AudioStreamInfo stream = _loadResult().audioStream;
-    final File file = await cache.cacheAudio(
+    final File? file = await cache.cacheAudio(
       item: _item(),
       audioStream: stream,
     );
@@ -92,7 +92,7 @@ void main() {
     );
 
     expect(remote.calls, 0);
-    expect(entry.cachedFile?.path, file.path);
+    expect(entry.cachedFile?.path, file!.path);
     expect(entry.audioStream.availableQualities, hasLength(1));
 
     final ResolvedQueueEntry? refreshed = await loader.resolveCachedEntryParts(
@@ -886,6 +886,9 @@ class _RecordingAudioEngine implements PlayerAudioEngine {
 }
 
 class _BlockingCache implements PlayerAudioCacheRepository {
+  @override
+  Future<void> releaseFiles() async {}
+
   final Completer<File?> lookup = Completer<File?>();
   final Completer<void> lookupStarted = Completer<void>();
   final Completer<void> removalStarted = Completer<void>();
@@ -897,6 +900,7 @@ class _BlockingCache implements PlayerAudioCacheRepository {
   Future<File?> getCachedFile({
     required PlayableItem item,
     required AudioStreamInfo audioStream,
+    bool Function()? protect,
   }) {
     if (!lookupStarted.isCompleted) lookupStarted.complete();
     return lookup.future;

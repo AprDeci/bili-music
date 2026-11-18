@@ -19,6 +19,7 @@ class HiveKeys {
   static const String playerLyricSettings = 'player.lyric_settings';
   static const String playerVolume = 'player.volume';
   static const String playerAudioCacheIndex = 'player.audio_cache_index';
+  static const String playerAudioCacheLimit = 'player.audio_cache_limit';
   static const String searchHistory = 'search.history';
   static const String metingDefaultServer = 'meting.default_server';
   static const String metingSourceRules = 'meting.source_rules';

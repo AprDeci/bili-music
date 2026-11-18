@@ -2,19 +2,22 @@ import 'package:bilimusic/common/util/color_util.dart';
 import 'package:bilimusic/common/util/format_util.dart';
 import 'package:bilimusic/common/util/toast_util.dart';
 import 'package:bilimusic/core/cache/cache_util.dart';
+import 'package:bilimusic/feature/player/domain/audio_cache_limit.dart';
+import 'package:bilimusic/feature/player/logic/playback/audio_cache_provider.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lottie/lottie.dart';
 
-class CacheSettingsPage extends StatefulWidget {
+class CacheSettingsPage extends ConsumerStatefulWidget {
   const CacheSettingsPage({super.key});
 
   @override
-  State<CacheSettingsPage> createState() => _CacheSettingsPageState();
+  ConsumerState<CacheSettingsPage> createState() => _CacheSettingsPageState();
 }
 
-class _CacheSettingsPageState extends State<CacheSettingsPage>
+class _CacheSettingsPageState extends ConsumerState<CacheSettingsPage>
     with SingleTickerProviderStateMixin {
   int _imageCacheBytes = 0;
   int _audioCacheBytes = 0;
@@ -26,6 +29,7 @@ class _CacheSettingsPageState extends State<CacheSettingsPage>
   bool _metadataSelected = true;
   bool _isLoading = true;
   bool _isClearing = false;
+  bool _isUpdatingLimit = false;
   late final AnimationController _controller;
 
   @override
@@ -87,18 +91,32 @@ class _CacheSettingsPageState extends State<CacheSettingsPage>
     });
   }
 
-  Future<void> _toggleAndClearSelected() async {
-    if (!_hasSelectedCache || _isClearing) {
+  Future<void> _setAudioCacheLimit(AudioCacheLimit? limit) async {
+    if (limit == null || _isUpdatingLimit || _isClearing) {
       return;
     }
 
-    final bool shouldClear =
-        await _showClearCacheDialog(
-          context,
-          cacheSizeLabel: formatBytes(_selectedCacheBytes),
-        ) ??
-        false;
-    if (!shouldClear) {
+    setState(() {
+      _isUpdatingLimit = true;
+    });
+    try {
+      await ref.read(audioCacheLimitLogicProvider.notifier).setLimit(limit);
+      await _loadCacheSizes();
+    } on Object catch (_) {
+      if (mounted) {
+        ToastUtil.show('音频自动缓存额度更新失败，请重试');
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isUpdatingLimit = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _toggleAndClearSelected() async {
+    if (!_hasSelectedCache || _isClearing || _isUpdatingLimit) {
       return;
     }
 
@@ -107,12 +125,23 @@ class _CacheSettingsPageState extends State<CacheSettingsPage>
     });
 
     try {
+      final bool shouldClear =
+          await _showClearCacheDialog(
+            context,
+            cacheSizeLabel: formatBytes(_selectedCacheBytes),
+          ) ??
+          false;
+      if (!shouldClear || !mounted) {
+        return;
+      }
+
+      final bool clearsAudio = _audioSelected;
       final List<Future<void>> tasks = <Future<void>>[];
       if (_imageSelected) {
         tasks.add(CacheUtil.clearImageCache());
       }
-      if (_audioSelected) {
-        tasks.add(CacheUtil.clearAudioCache());
+      if (clearsAudio) {
+        tasks.add(ref.read(playerAudioCacheRepositoryProvider).clear());
       }
       if (_lyricsSelected) {
         tasks.add(CacheUtil.clearLyricsCache());
@@ -132,7 +161,11 @@ class _CacheSettingsPageState extends State<CacheSettingsPage>
         return;
       }
 
-      ToastUtil.show('所选缓存已清理');
+      ToastUtil.show(clearsAudio ? '缓存已清理，播放中的音频将在换曲后清理' : '所选缓存已清理');
+    } on Object catch (_) {
+      if (mounted) {
+        ToastUtil.show('缓存清理失败，请重试');
+      }
     } finally {
       if (mounted) {
         setState(() {
@@ -169,6 +202,9 @@ class _CacheSettingsPageState extends State<CacheSettingsPage>
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
+    final AudioCacheLimit audioCacheLimit = ref.watch(
+      audioCacheLimitLogicProvider,
+    );
 
     return Scaffold(
       appBar: AppBar(title: const Text('缓存管理')),
@@ -182,6 +218,26 @@ class _CacheSettingsPageState extends State<CacheSettingsPage>
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: <Widget>[
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text('缓存存储上限'),
+                    trailing: DropdownButton<AudioCacheLimit>(
+                      value: audioCacheLimit,
+                      onChanged: _isUpdatingLimit || _isClearing
+                          ? null
+                          : _setAudioCacheLimit,
+                      items: AudioCacheLimit.values
+                          .map(
+                            (AudioCacheLimit limit) =>
+                                DropdownMenuItem<AudioCacheLimit>(
+                                  value: limit,
+                                  child: Text(limit.label),
+                                ),
+                          )
+                          .toList(),
+                    ),
+                  ),
+                  const Divider(height: 1),
                   SizedBox(
                     height: 240,
                     child: Center(
@@ -354,7 +410,11 @@ class _CacheSettingsPageState extends State<CacheSettingsPage>
                   ),
                   const SizedBox(height: 24),
                   FilledButton(
-                    onPressed: _hasSelectedCache && !_isLoading && !_isClearing
+                    onPressed:
+                        _hasSelectedCache &&
+                            !_isLoading &&
+                            !_isClearing &&
+                            !_isUpdatingLimit
                         ? _toggleAndClearSelected
                         : null,
                     child: _isClearing

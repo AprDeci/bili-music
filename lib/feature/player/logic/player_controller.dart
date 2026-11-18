@@ -10,7 +10,7 @@ import 'package:bilimusic/core/window/windows_taskbar_thumbnail_toolbar.dart';
 import 'package:bilimusic/feature/download/data/download_repository.dart';
 import 'package:bilimusic/feature/download/logic/downloaded_audio_source_resolver.dart';
 import 'package:bilimusic/feature/listening/logic/listening_progress_controller.dart';
-import 'package:bilimusic/feature/player/data/audio_cache_repository.dart';
+import 'package:bilimusic/feature/player/logic/playback/audio_cache_provider.dart';
 import 'package:bilimusic/feature/player/data/bili_chapter_repository.dart';
 import 'package:bilimusic/feature/player/data/bili_player_repository.dart';
 import 'package:bilimusic/feature/player/data/player_queue_local_repository.dart';
@@ -161,7 +161,7 @@ class PlayerController extends Notifier<PlayerState>
     }
 
     try {
-      await _audioEngine.stop();
+      await stopAudioEngine();
       await _audioEngine.dispose();
     } on Object {
       // Ignore engine dispose failures.
@@ -177,7 +177,7 @@ class PlayerController extends Notifier<PlayerState>
     await _listening?.flush();
     try {
       await _persistQueueSnapshot();
-      await _audioEngine.stop();
+      await stopAudioEngine();
     } finally {
       await _dispose();
     }
@@ -395,7 +395,7 @@ class PlayerController extends Notifier<PlayerState>
   Future<void> stop() async {
     final int generation = _nextGeneration();
     _suspendListening();
-    await _audioEngine.stop();
+    await stopAudioEngine();
     if (!_isCurrentGeneration(generation)) {
       return;
     }
@@ -678,7 +678,7 @@ class PlayerController extends Notifier<PlayerState>
     _suspendListening();
     _queueManager.resetForQueue(currentIndex: null);
     _qualityOverrides.clear();
-    await _audioEngine.stop();
+    await stopAudioEngine();
     _resetEnginePlaybackSnapshot();
     state = state.copyWith(
       queue: const <PlayableItem>[],
@@ -1204,7 +1204,10 @@ class PlayerController extends Notifier<PlayerState>
   Future<void> skipToNextTrack() => skipToNext();
 
   @override
-  Future<void> stopAudioEngine() => _audioEngine.stop();
+  Future<void> stopAudioEngine() async {
+    await _audioEngine.stop();
+    await _playbackLoader.releaseCachedFiles();
+  }
 
   @override
   Future<void> pauseAudioEngine() => _audioEngine.pause();

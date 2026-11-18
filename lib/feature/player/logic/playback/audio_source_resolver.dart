@@ -13,12 +13,14 @@ class AudioResolutionRequest {
     required this.qualityPreference,
     this.preferredQualityId,
     this.allowQualityFallback = false,
+    this.protectCache,
   });
 
   final PlayableItem item;
   final PlayerAudioQualityPreference qualityPreference;
   final int? preferredQualityId;
   final bool allowQualityFallback;
+  final bool Function()? protectCache;
 
   AudioResolutionRequest withQualityFallback() {
     return AudioResolutionRequest(
@@ -26,6 +28,7 @@ class AudioResolutionRequest {
       qualityPreference: qualityPreference,
       preferredQualityId: preferredQualityId,
       allowQualityFallback: true,
+      protectCache: protectCache,
     );
   }
 
@@ -91,6 +94,7 @@ class CachedAudioSourceResolver implements AudioSourceResolver {
       preference: request.qualityPreference,
       preferredQualityId: request.preferredQualityId,
       allowQualityFallback: request.allowQualityFallback,
+      protect: request.protectCache,
     );
     if (diskCache == null) {
       return null;
@@ -144,6 +148,11 @@ class MemoryAudioSourceResolver implements AudioSourceResolver {
   }
 
   void store(AudioResolutionRequest request, ResolvedQueueEntry entry) {
+    entry = ResolvedQueueEntry(
+      item: entry.item,
+      availableParts: entry.availableParts,
+      audioStream: entry.audioStream,
+    );
     _entries[request.cacheKey] = entry;
     _entries[audioSourceCacheKey(
           entry.item,
@@ -202,6 +211,7 @@ class BiliDashAudioSourceResolver implements AudioSourceResolver {
       cachedFile: await _audioCacheRepository.getCachedFile(
         item: loadResult.item,
         audioStream: loadResult.audioStream,
+        protect: request.protectCache,
       ),
     );
   }

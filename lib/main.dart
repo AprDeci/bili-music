@@ -12,6 +12,7 @@ import 'package:bilimusic/feature/favorites/logic/favorites_controller.dart';
 import 'package:bilimusic/feature/player/logic/media_session/app_audio_handler.dart';
 import 'package:bilimusic/feature/player/logic/lyrics/desktop_lyrics_controller.dart';
 import 'package:bilimusic/feature/player/logic/player_controller.dart';
+import 'package:bilimusic/feature/player/logic/playback/audio_cache_provider.dart';
 import 'package:bilimusic/feature/player/logic/media_session/player_media_session_sync.dart';
 import 'package:bilimusic/feature/player/logic/sleep_timer_controller.dart';
 import 'package:bilimusic/feature/statistics/logic/statistics_tracker.dart';
@@ -99,6 +100,20 @@ class _AppBootstrapState extends ConsumerState<_AppBootstrap>
         return;
       }
       _didBootstrap = true;
+      unawaited(
+        ref.read(playerAudioCacheRepositoryProvider).trim().catchError((
+          Object error,
+          StackTrace stackTrace,
+        ) {
+          FlutterError.reportError(
+            FlutterErrorDetails(
+              exception: error,
+              stack: stackTrace,
+              context: ErrorDescription('清理音频缓存'),
+            ),
+          );
+        }),
+      );
       await ref.read(favoritesControllerProvider.notifier).initialize();
       await ref.read(favoriteUpControllerProvider.notifier).initialize();
       await ref.read(favoritedSeasonControllerProvider.notifier).initialize();

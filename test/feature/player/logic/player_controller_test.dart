@@ -8,6 +8,7 @@ import 'package:bilimusic/core/settings/app_settings_store.dart';
 import 'package:bilimusic/feature/listening/domain/listening_state.dart';
 import 'package:bilimusic/feature/listening/logic/listening_progress_controller.dart';
 import 'package:bilimusic/feature/player/data/audio_cache_repository.dart';
+import 'package:bilimusic/feature/player/logic/playback/audio_cache_provider.dart';
 import 'package:bilimusic/feature/player/data/bili_player_repository.dart';
 import 'package:bilimusic/feature/player/data/player_queue_local_repository.dart';
 import 'package:bilimusic/feature/player/domain/audio_stream_info.dart';
@@ -39,6 +40,17 @@ const PlayableItem _second = PlayableItem(
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+  const MethodChannel toolbarChannel = MethodChannel(
+    'bilimusic/windows_taskbar_thumbnail_toolbar',
+  );
+  setUp(() {
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(toolbarChannel, (_) async => null);
+  });
+  tearDown(() {
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(toolbarChannel, null);
+  });
 
   final Map<String, Future<void> Function(PlayerController)> switches =
       <String, Future<void> Function(PlayerController)>{
@@ -346,17 +358,22 @@ class _SourceLookupCache implements PlayerAudioCacheRepository {
   int firstLookups = 0;
 
   @override
+  Future<void> releaseFiles() async {}
+
+  @override
   Future<CachedAudio?> lookupCachedAudio({
     required PlayableItem item,
     required PlayerAudioQualityPreference preference,
     int? preferredQualityId,
     bool allowQualityFallback = true,
+    bool Function()? protect,
   }) async => null;
 
   @override
   Future<File?> getCachedFile({
     required PlayableItem item,
     required AudioStreamInfo audioStream,
+    bool Function()? protect,
   }) {
     if (block && item == _first && ++firstLookups == 2) {
       sourceLookupStarted.complete();
@@ -439,6 +456,9 @@ class _UnusedRepository implements BiliPlayerRepository {
 }
 
 class _UnusedCache implements PlayerAudioCacheRepository {
+  @override
+  Future<void> releaseFiles() async {}
+
   @override
   noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }

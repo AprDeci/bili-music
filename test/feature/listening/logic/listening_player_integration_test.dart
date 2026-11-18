@@ -16,6 +16,7 @@ import 'package:bilimusic/feature/listening/data/listening_progress_local_reposi
 import 'package:bilimusic/feature/listening/domain/listening_progress.dart';
 import 'package:bilimusic/feature/listening/logic/listening_progress_controller.dart';
 import 'package:bilimusic/feature/player/data/audio_cache_repository.dart';
+import 'package:bilimusic/feature/player/logic/playback/audio_cache_provider.dart';
 import 'package:bilimusic/feature/player/data/bili_player_repository.dart';
 import 'package:bilimusic/feature/player/data/player_queue_local_repository.dart';
 import 'package:bilimusic/feature/player/domain/persisted_playback_queue.dart';
@@ -53,6 +54,17 @@ const Duration _duration = Duration(minutes: 10);
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+  const MethodChannel toolbarChannel = MethodChannel(
+    'bilimusic/windows_taskbar_thumbnail_toolbar',
+  );
+  setUp(() {
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(toolbarChannel, (_) async => null);
+  });
+  tearDown(() {
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(toolbarChannel, null);
+  });
 
   for (final bool pauseDuringOpen in [false, true]) {
     test(
@@ -68,7 +80,9 @@ void main() {
             startsWith(Directory.systemTemp.resolveSymbolicLinksSync()),
           );
           expect(
-            directory.path.split('/').last,
+            directory.uri.pathSegments
+                .where((String segment) => segment.isNotEmpty)
+                .last,
             startsWith('listening-player-integration-'),
           );
           await directory.delete(recursive: true);
@@ -326,11 +340,15 @@ class _CachedChapters implements PlayerAudioCacheRepository {
   final File file;
 
   @override
+  Future<void> releaseFiles() async {}
+
+  @override
   Future<CachedAudio?> lookupCachedAudio({
     required PlayableItem item,
     required PlayerAudioQualityPreference preference,
     int? preferredQualityId,
     bool allowQualityFallback = true,
+    bool Function()? protect,
   }) async => CachedAudio(
     file: file,
     metadata: AudioCacheMetadata(
