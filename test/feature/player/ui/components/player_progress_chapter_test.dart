@@ -16,6 +16,7 @@ void main() {
     WidgetTester tester, {
     required List<PlaybackChapter> chapters,
     Duration position = const Duration(minutes: 2, seconds: 30),
+    ValueChanged<double>? onChanged,
   }) {
     return tester.pumpWidget(
       MaterialApp(
@@ -28,7 +29,7 @@ void main() {
                 duration: const Duration(minutes: 5),
                 isReady: true,
                 chapters: chapters,
-                onChanged: (_) {},
+                onChanged: onChanged ?? (_) {},
               ),
             ),
           ),
@@ -48,6 +49,56 @@ void main() {
     expect(find.text('02:30'), findsOneWidget);
     expect(find.text('05:00'), findsOneWidget);
     expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('drag snaps visually, releases when moved away and seeks once', (
+    WidgetTester tester,
+  ) async {
+    final List<double> seeks = <double>[];
+    await pumpProgress(tester, chapters: chapters, onChanged: seeks.add);
+    final Rect rect = tester.getRect(find.byType(Slider));
+    Offset at(double ratio) =>
+        Offset(rect.left + 3 + (rect.width - 6) * ratio, rect.center.dy);
+    final TestGesture gesture = await tester.startGesture(at(0.5));
+    await gesture.moveTo(at(0.405));
+    await tester.pump();
+    expect(tester.widget<Slider>(find.byType(Slider)).value, 0.4);
+    expect(find.text('02:00'), findsOneWidget);
+    expect(seeks, isEmpty);
+    await gesture.moveTo(at(0.46));
+    await tester.pump();
+    expect(
+      tester.widget<Slider>(find.byType(Slider)).value,
+      closeTo(0.46, 0.001),
+    );
+    await gesture.moveTo(at(0.395));
+    await tester.pump();
+    expect(tester.widget<Slider>(find.byType(Slider)).value, 0.4);
+    await gesture.up();
+    await tester.pump();
+    expect(seeks, <double>[0.4]);
+    expect(tester.widget<Slider>(find.byType(Slider)).value, 0.4);
+    await tester.pump(const Duration(milliseconds: 600));
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('progress without chapters keeps continuous seeking', (
+    WidgetTester tester,
+  ) async {
+    final List<double> seeks = <double>[];
+    await pumpProgress(
+      tester,
+      chapters: const <PlaybackChapter>[],
+      onChanged: seeks.add,
+    );
+    final Slider slider = tester.widget(find.byType(Slider));
+    slider.onChangeStart!(0.405);
+    slider.onChanged!(0.405);
+    slider.onChangeEnd!(0.405);
+    await tester.pump();
+    expect(seeks, <double>[0.405]);
+    expect(tester.widget<Slider>(find.byType(Slider)).value, 0.405);
+    await tester.pump(const Duration(milliseconds: 600));
   });
 
   testWidgets('hides the chapter title when chapters are unavailable', (

@@ -128,43 +128,53 @@ class _PlayerProgressSectionState extends State<PlayerProgressSection> {
                   ),
                   overlayColor: neutralColor.withValues(alpha: 0.14),
                 ),
-                child: Slider(
-                  key: ValueKey<bool>(widget.isReady),
-                  padding: EdgeInsets.zero,
-                  value: visualProgress,
-                  onChangeStart: widget.isReady
-                      ? (double value) {
-                          _settleTimer?.cancel();
-                          setState(() {
-                            _isDragging = true;
-                            _dragProgress = value;
-                            _settledProgress = null;
-                          });
-                        }
-                      : null,
-                  onChanged: widget.isReady
-                      ? (double value) {
-                          setState(() {
-                            _dragProgress = value;
-                          });
-                        }
-                      : null,
-                  onChangeEnd: widget.isReady
-                      ? (double value) {
-                          setState(() {
-                            _isDragging = false;
-                            _dragProgress = value;
-                            _settledProgress = value;
-                          });
-                          _settleTimer = Timer(
-                            const Duration(milliseconds: 500),
-                            () {
-                              setState(() => _settledProgress = null);
-                            },
-                          );
-                          widget.onChanged(value);
-                        }
-                      : null,
+                child: LayoutBuilder(
+                  builder: (BuildContext context, BoxConstraints constraints) {
+                    double snap(double value) => snapPlayerProgressToChapter(
+                      value,
+                      widget.chapters,
+                      total,
+                      constraints.maxWidth,
+                    );
+                    return Slider(
+                      key: ValueKey<bool>(widget.isReady),
+                      padding: EdgeInsets.zero,
+                      value: visualProgress,
+                      onChangeStart: widget.isReady
+                          ? (double value) {
+                              _settleTimer?.cancel();
+                              setState(() {
+                                _isDragging = true;
+                                _dragProgress = snap(value);
+                                _settledProgress = null;
+                              });
+                            }
+                          : null,
+                      onChanged: widget.isReady
+                          ? (double value) {
+                              setState(() {
+                                _dragProgress = snap(value);
+                              });
+                            }
+                          : null,
+                      onChangeEnd: widget.isReady
+                          ? (double value) {
+                              setState(() {
+                                _isDragging = false;
+                                _dragProgress = snap(value);
+                                _settledProgress = snap(value);
+                              });
+                              _settleTimer = Timer(
+                                const Duration(milliseconds: 500),
+                                () {
+                                  setState(() => _settledProgress = null);
+                                },
+                              );
+                              widget.onChanged(snap(value));
+                            }
+                          : null,
+                    );
+                  },
                 ),
               ),
             ],

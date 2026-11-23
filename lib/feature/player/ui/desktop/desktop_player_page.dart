@@ -816,12 +816,26 @@ class _DesktopPlayerControlDeck extends StatelessWidget {
                                   overlayColor: colorScheme.onSurface
                                       .withValues(alpha: 0.08),
                                 ),
-                                child: Slider(
-                                  value: progress,
-                                  onChanged:
-                                      total > Duration.zero && state.isReady
-                                      ? onSeek
-                                      : null,
+                                child: LayoutBuilder(
+                                  builder:
+                                      (
+                                        BuildContext context,
+                                        BoxConstraints constraints,
+                                      ) => Slider(
+                                        value: progress,
+                                        onChanged:
+                                            total > Duration.zero &&
+                                                state.isReady
+                                            ? (double value) => onSeek(
+                                                snapPlayerProgressToChapter(
+                                                  value,
+                                                  state.chapters,
+                                                  total,
+                                                  constraints.maxWidth,
+                                                ),
+                                              )
+                                            : null,
+                                      ),
                                 ),
                               ),
                             ),

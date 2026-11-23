@@ -150,7 +150,6 @@ class CarPlayerControls extends ConsumerWidget {
       PlayerQueueMode.shuffle => '随机播放',
     };
 
-
     const double edgeInset = (56 - 22) / 2;
 
     Widget action({
@@ -199,6 +198,7 @@ class CarPlayerControls extends ConsumerWidget {
                 position: progress.position,
                 duration: progress.duration,
                 isReady: canSeek,
+                chapters: state.chapters,
                 onChanged: (double value) => controller.seekFromProgressBar(
                   Duration(milliseconds: (value * milliseconds).round()),
                 ),

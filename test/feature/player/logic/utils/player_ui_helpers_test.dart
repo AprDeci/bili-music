@@ -85,6 +85,101 @@ void main() {
     );
   });
 
+  test(
+    'chapter snapping is local, bidirectional and picks the nearest start',
+    () {
+      final List<PlaybackChapter> chapters = buildChapters(<int>[0, 100, 104]);
+      double snap(double value) => snapPlayerProgressToChapter(
+        value,
+        chapters,
+        const Duration(seconds: 400),
+        400,
+      );
+      expect(snap(0.245), 0.25);
+      expect(snap(0.255), 0.25);
+      expect(snap(0.259), 0.26);
+      expect(snap(0.3), 0.3);
+      expect(snap(0.01), 0);
+      expect(snap(1), 1);
+    },
+  );
+
+  test('chapter snapping scales with width and caps long-video time jumps', () {
+    final List<PlaybackChapter> chapters = buildChapters(<int>[0, 3600]);
+    const Duration total = Duration(hours: 2);
+    expect(snapPlayerProgressToChapter(0.499, chapters, total, 320), 0.5);
+    expect(snapPlayerProgressToChapter(0.497, chapters, total, 320), 0.497);
+    final List<PlaybackChapter> short = buildChapters(<int>[0, 100]);
+    expect(
+      snapPlayerProgressToChapter(
+        0.24,
+        short,
+        const Duration(seconds: 400),
+        400,
+      ),
+      0.25,
+    );
+    expect(
+      snapPlayerProgressToChapter(
+        0.24,
+        short,
+        const Duration(seconds: 400),
+        1600,
+      ),
+      0.24,
+    );
+  });
+
+  test(
+    'chapter snapping ignores unavailable duration and invalid boundaries',
+    () {
+      const List<PlaybackChapter> chapters = <PlaybackChapter>[
+        PlaybackChapter(start: Duration(seconds: -1), title: 'invalid'),
+        PlaybackChapter(start: Duration(seconds: 401), title: 'past end'),
+      ];
+      expect(
+        snapPlayerProgressToChapter(0.5, chapters, Duration.zero, 320),
+        0.5,
+      );
+      expect(
+        snapPlayerProgressToChapter(
+          0.5,
+          chapters,
+          const Duration(seconds: 400),
+          0,
+        ),
+        0.5,
+      );
+      expect(
+        snapPlayerProgressToChapter(
+          0.001,
+          chapters,
+          const Duration(seconds: 400),
+          320,
+        ),
+        0.001,
+      );
+      expect(
+        snapPlayerProgressToChapter(
+          0.999,
+          chapters,
+          const Duration(seconds: 400),
+          320,
+        ),
+        0.999,
+      );
+      expect(
+        snapPlayerProgressToChapter(
+          0.5,
+          const <PlaybackChapter>[],
+          const Duration(seconds: 400),
+          320,
+        ),
+        0.5,
+      );
+    },
+  );
+
   test('resolveCurrentChapter requires at least two chapters', () {
     final List<PlaybackChapter> single = <PlaybackChapter>[
       const PlaybackChapter(start: Duration.zero, title: '只有一首'),

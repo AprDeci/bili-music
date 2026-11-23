@@ -69,6 +69,34 @@ List<double> resolveChapterTickRatios(
       .toList(growable: false);
 }
 
+double snapPlayerProgressToChapter(
+  double progress,
+  List<PlaybackChapter> chapters,
+  Duration total,
+  double trackWidth,
+) {
+  final int totalMs = total.inMilliseconds;
+  if (chapters.length < 2 || totalMs <= 0 || trackWidth <= 0) {
+    return progress;
+  }
+  final double tolerance = (8 / trackWidth).clamp(0.0, 10000 / totalMs);
+  double nearest = progress;
+  double distance = double.infinity;
+  for (final PlaybackChapter chapter in chapters) {
+    final int startMs = chapter.start.inMilliseconds;
+    if (startMs < 0 || startMs >= totalMs) {
+      continue;
+    }
+    final double ratio = startMs / totalMs;
+    final double delta = (ratio - progress).abs();
+    if (delta <= tolerance && delta < distance) {
+      nearest = ratio;
+      distance = delta;
+    }
+  }
+  return nearest;
+}
+
 int? resolveChapterIndex(List<PlaybackChapter> chapters, Duration position) {
   if (chapters.isEmpty) {
     return null;

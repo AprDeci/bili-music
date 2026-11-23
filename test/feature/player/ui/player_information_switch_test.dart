@@ -32,6 +32,7 @@ import 'package:bilimusic/feature/player/ui/components/player_main_page.dart';
 import 'package:bilimusic/feature/player/ui/components/player_shared.dart';
 import 'package:bilimusic/feature/player/ui/components/player_top_bar.dart';
 import 'package:bilimusic/feature/player/ui/lyrics/player_lyric_page.dart';
+import 'package:bilimusic/feature/player/ui/car/car_player_panel.dart';
 import 'package:bilimusic/feature/player/ui/desktop/desktop_player_bar.dart';
 import 'package:bilimusic/feature/player/ui/player_page.dart';
 import 'package:bilimusic/router/util/player_page_route.dart';
@@ -1719,6 +1720,44 @@ void main() {
       await tester.ensureVisible(slider);
       await tester.pumpAndSettle();
       expect(tester.widget<Slider>(slider).value, 1);
+      expect(tester.takeException(), isNull);
+    });
+  }
+
+  for (final bool isCar in <bool>[false, true]) {
+    testWidgets('${isCar ? 'car' : 'desktop bar'} progress snaps to chapters', (
+      WidgetTester tester,
+    ) async {
+      final ProviderContainer container = await _pumpPlayer(
+        tester,
+        null,
+        size: const Size(1440, 900),
+        home: Scaffold(
+          body: isCar ? const CarPlayerControls() : const DesktopPlayerBar(),
+        ),
+      );
+      final _FakePlayerController controller =
+          container.read(playerControllerProvider.notifier)
+              as _FakePlayerController;
+      controller.show(
+        container
+            .read(playerControllerProvider)
+            .copyWith(
+              duration: const Duration(minutes: 5),
+              chapters: const <PlaybackChapter>[
+                PlaybackChapter(start: Duration.zero, title: '夜曲'),
+                PlaybackChapter(start: Duration(minutes: 2), title: '晴天'),
+              ],
+            ),
+      );
+      await tester.pump();
+      final Slider slider = tester.widget(find.byType(Slider));
+      if (isCar) slider.onChangeStart!(0.405);
+      slider.onChanged!(0.405);
+      if (isCar) slider.onChangeEnd!(0.405);
+      await tester.pump();
+      expect(controller.progressSeeks, <Duration>[const Duration(minutes: 2)]);
+      await tester.pump(const Duration(milliseconds: 600));
       expect(tester.takeException(), isNull);
     });
   }
