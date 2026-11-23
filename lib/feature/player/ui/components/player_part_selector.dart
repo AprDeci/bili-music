@@ -45,20 +45,18 @@ Future<void> showDesktopPlayerPartSelectorPanel({
     width: 420,
     builder: (BuildContext context) {
       return SafeArea(
-        child: _PlayerPartSelectorContent(
+        child: PlayerPartSelectorContent(
           parts: parts,
           currentItem: currentItem,
           state: state,
           controller: controller,
-          closeTarget: _PartSelectorCloseTarget.sidePanel,
+          onClose: () => SmartDialog.dismiss<void>(tag: 'player_part_selector'),
           onDownloadAll: onDownloadAll,
         ),
       );
     },
   );
 }
-
-enum _PartSelectorCloseTarget { navigator, sidePanel }
 
 class _PlayerPartSelectorSheet extends StatelessWidget {
   const _PlayerPartSelectorSheet({
@@ -78,25 +76,26 @@ class _PlayerPartSelectorSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SafeArea(
-      child: _PlayerPartSelectorContent(
+      child: PlayerPartSelectorContent(
         parts: parts,
         currentItem: currentItem,
         state: state,
         controller: controller,
-        closeTarget: _PartSelectorCloseTarget.navigator,
+        onClose: () async => Navigator.of(context).pop(),
         onDownloadAll: onDownloadAll,
       ),
     );
   }
 }
 
-class _PlayerPartSelectorContent extends StatelessWidget {
-  const _PlayerPartSelectorContent({
+class PlayerPartSelectorContent extends StatelessWidget {
+  const PlayerPartSelectorContent({
+    super.key,
     required this.parts,
     required this.currentItem,
     required this.state,
     required this.controller,
-    required this.closeTarget,
+    required this.onClose,
     this.onDownloadAll,
   });
 
@@ -104,7 +103,7 @@ class _PlayerPartSelectorContent extends StatelessWidget {
   final PlayableItem currentItem;
   final PlayerState state;
   final PlayerController controller;
-  final _PartSelectorCloseTarget closeTarget;
+  final Future<void> Function() onClose;
   final VoidCallback? onDownloadAll;
 
   @override
@@ -149,7 +148,7 @@ class _PlayerPartSelectorContent extends StatelessWidget {
                 onPressed: partsToEnqueue.isEmpty
                     ? null
                     : () async {
-                        await _close(context);
+                        await onClose();
                         await controller.enqueue(partsToEnqueue);
                         if (!context.mounted) {
                           return;
@@ -176,19 +175,10 @@ class _PlayerPartSelectorContent extends StatelessWidget {
             currentItem: currentItem,
             state: state,
             controller: controller,
-            onClose: () => _close(context),
+            onClose: onClose,
           ),
         ),
       ],
     );
-  }
-
-  Future<void> _close(BuildContext context) async {
-    switch (closeTarget) {
-      case _PartSelectorCloseTarget.navigator:
-        Navigator.of(context).pop();
-      case _PartSelectorCloseTarget.sidePanel:
-        await SmartDialog.dismiss<void>(tag: desktopSidePanelTag);
-    }
   }
 }

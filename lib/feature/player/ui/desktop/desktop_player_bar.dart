@@ -18,8 +18,7 @@ import 'package:bilimusic/feature/player/logic/lyrics/desktop_lyrics_controller.
 import 'package:bilimusic/feature/player/ui/desktop/components/quality_attach.dart';
 import 'package:bilimusic/feature/player/ui/desktop/components/play_pause_button.dart';
 import 'package:bilimusic/feature/player/ui/desktop/components/queue_mode_attach.dart';
-import 'package:bilimusic/feature/player/ui/components/player_chapter_selector.dart';
-import 'package:bilimusic/feature/player/ui/components/player_part_selector.dart';
+import 'package:bilimusic/feature/player/ui/components/player_jump_selector.dart';
 import 'package:bilimusic/feature/player/ui/components/player_queue_sheet.dart';
 import 'package:bilimusic/feature/player/logic/utils/player_ui_helpers.dart';
 import 'package:bilimusic/router/util/player_navigation.dart';
@@ -132,22 +131,10 @@ class DesktopPlayerBar extends ConsumerWidget {
                             state.chapters.length < 2)
                     ? null
                     : () {
-                        if (state.availableParts.length > 1) {
-                          showDesktopPlayerPartSelectorPanel(
-                            context: context,
-                            parts: state.availableParts,
-                            currentItem: item,
-                            state: state,
-                            controller: controller,
-                          );
-                          return;
-                        }
-                        showDesktopPlayerChapterSelectorPanel(
+                        showDesktopPlayerJumpSelectorPanel(
                           context: context,
-                          chapters: state.chapters,
-                          position: state.position,
-                          isPlaying: state.isPlaying,
-                          onSeek: controller.seek,
+                          state: state.copyWith(currentItem: item),
+                          controller: controller,
                         );
                       },
                 onOpenQueue: () =>

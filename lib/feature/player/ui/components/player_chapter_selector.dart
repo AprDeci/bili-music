@@ -19,12 +19,12 @@ Future<void> showPlayerChapterSelector({
     backgroundColor: Theme.of(context).colorScheme.surface,
     builder: (BuildContext context) {
       return SafeArea(
-        child: _PlayerChapterSelectorContent(
+        child: PlayerChapterSelectorContent(
           chapters: chapters,
           position: position,
           isPlaying: isPlaying,
           onSeek: onSeek,
-          closeTarget: _ChapterCloseTarget.navigator,
+          onClose: () async => Navigator.of(context).pop(),
         ),
       );
     },
@@ -44,42 +44,42 @@ Future<void> showDesktopPlayerChapterSelectorPanel({
     width: 420,
     builder: (BuildContext context) {
       return SafeArea(
-        child: _PlayerChapterSelectorContent(
+        child: PlayerChapterSelectorContent(
           chapters: chapters,
           position: position,
           isPlaying: isPlaying,
           onSeek: onSeek,
-          closeTarget: _ChapterCloseTarget.sidePanel,
+          onClose: () =>
+              SmartDialog.dismiss<void>(tag: 'player_chapter_selector'),
         ),
       );
     },
   );
 }
 
-enum _ChapterCloseTarget { navigator, sidePanel }
-
-class _PlayerChapterSelectorContent extends StatefulWidget {
-  const _PlayerChapterSelectorContent({
+class PlayerChapterSelectorContent extends StatefulWidget {
+  const PlayerChapterSelectorContent({
+    super.key,
     required this.chapters,
     required this.position,
     required this.isPlaying,
     required this.onSeek,
-    required this.closeTarget,
+    required this.onClose,
   });
 
   final List<PlaybackChapter> chapters;
   final Duration position;
   final bool isPlaying;
   final ValueChanged<Duration> onSeek;
-  final _ChapterCloseTarget closeTarget;
+  final Future<void> Function() onClose;
 
   @override
-  State<_PlayerChapterSelectorContent> createState() =>
+  State<PlayerChapterSelectorContent> createState() =>
       _PlayerChapterSelectorContentState();
 }
 
 class _PlayerChapterSelectorContentState
-    extends State<_PlayerChapterSelectorContent> {
+    extends State<PlayerChapterSelectorContent> {
   static const double _estimatedRowExtent = 56;
 
   late final AutoScrollController _scrollController;
@@ -152,7 +152,7 @@ class _PlayerChapterSelectorContentState
                     color: Colors.transparent,
                     child: InkWell(
                       onTap: () async {
-                        await _close();
+                        await widget.onClose();
                         widget.onSeek(chapter.start);
                       },
                       child: ConstrainedBox(
@@ -243,17 +243,5 @@ class _PlayerChapterSelectorContentState
         preferPosition: AutoScrollPosition.middle,
       );
     });
-  }
-
-  Future<void> _close() async {
-    switch (widget.closeTarget) {
-      case _ChapterCloseTarget.navigator:
-        if (!mounted) {
-          return;
-        }
-        Navigator.of(context).pop();
-      case _ChapterCloseTarget.sidePanel:
-        await SmartDialog.dismiss<void>(tag: desktopSidePanelTag);
-    }
   }
 }

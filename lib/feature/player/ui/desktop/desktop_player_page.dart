@@ -35,8 +35,7 @@ import 'package:bilimusic/feature/player/ui/components/player_dynamic_backdrop.d
 import 'package:bilimusic/feature/player/ui/lyrics/player_lyric_panel.dart';
 import 'package:bilimusic/feature/player/ui/lyrics/player_lyric_settings_sheet.dart';
 import 'package:bilimusic/feature/player/ui/lyrics/player_subtitle_sheet.dart';
-import 'package:bilimusic/feature/player/ui/components/player_chapter_selector.dart';
-import 'package:bilimusic/feature/player/ui/components/player_part_selector.dart';
+import 'package:bilimusic/feature/player/ui/components/player_jump_selector.dart';
 import 'package:bilimusic/feature/player/ui/components/player_queue_sheet.dart';
 import 'package:bilimusic/feature/player/logic/utils/player_ui_helpers.dart';
 import 'package:bilimusic/router/util/player_navigation.dart';
@@ -235,22 +234,10 @@ class _DesktopPlayerPageState extends ConsumerState<DesktopPlayerPage> {
                               state.chapters.length < 2)
                       ? null
                       : () {
-                          if (state.availableParts.length > 1) {
-                            showDesktopPlayerPartSelectorPanel(
-                              context: context,
-                              parts: state.availableParts,
-                              currentItem: item,
-                              state: state,
-                              controller: controller,
-                            );
-                            return;
-                          }
-                          showDesktopPlayerChapterSelectorPanel(
+                          showDesktopPlayerJumpSelectorPanel(
                             context: context,
-                            chapters: state.chapters,
-                            position: state.position,
-                            isPlaying: state.isPlaying,
-                            onSeek: controller.seek,
+                            state: state.copyWith(currentItem: item),
+                            controller: controller,
                           );
                         },
                   onOpenQueue: () => showDesktopPlayerQueuePanel(

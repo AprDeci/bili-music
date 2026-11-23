@@ -17,10 +17,9 @@ import 'package:bilimusic/feature/player/ui/components/player_dynamic_backdrop.d
 import 'package:bilimusic/feature/player/ui/components/player_landscape_page.dart';
 import 'package:bilimusic/feature/player/ui/lyrics/player_lyric_page.dart';
 import 'package:bilimusic/feature/player/ui/components/player_main_page.dart';
-import 'package:bilimusic/feature/player/ui/components/player_chapter_selector.dart';
+import 'package:bilimusic/feature/player/ui/components/player_jump_selector.dart';
 import 'package:bilimusic/feature/player/ui/components/player_collection_sheet.dart';
 import 'package:bilimusic/feature/player/ui/components/player_meta_page.dart';
-import 'package:bilimusic/feature/player/ui/components/player_part_selector.dart';
 import 'package:bilimusic/feature/player/ui/components/player_queue_sheet.dart';
 import 'package:bilimusic/feature/player/ui/components/player_top_bar.dart';
 import 'package:bilimusic/feature/player/ui/sleep_timer_page.dart';
@@ -179,9 +178,7 @@ class _PlayerPageState extends ConsumerState<PlayerPage> {
                                   ? null
                                   : () => _openJumpPanel(
                                       context,
-                                      state,
                                       item,
-                                      availableParts,
                                       playerController,
                                     ),
                               onOpenCollectionSheet: item == null
@@ -240,32 +237,15 @@ class _PlayerPageState extends ConsumerState<PlayerPage> {
 
   Future<void> _openJumpPanel(
     BuildContext context,
-    PlayerState state,
     PlayableItem item,
-    List<PlayableItem> availableParts,
     PlayerController controller,
   ) async {
-    if (availableParts.length > 1) {
-      await showPlayerPartSelector(
-        context: context,
-        parts: availableParts,
-        currentItem: item,
-        state: state,
-        controller: controller,
-        onDownloadAll: () => _downloadAllParts(availableParts),
-      );
-      return;
-    }
-    final PlayerState liveState = ref.read(playerControllerProvider);
-    if (liveState.chapters.length < 2) {
-      return;
-    }
-    await showPlayerChapterSelector(
+    final PlayerState state = ref.read(playerControllerProvider);
+    await showPlayerJumpSelector(
       context: context,
-      chapters: liveState.chapters,
-      position: liveState.position,
-      isPlaying: liveState.isPlaying,
-      onSeek: controller.seek,
+      state: state.copyWith(currentItem: state.currentItem ?? item),
+      controller: controller,
+      onDownloadAll: () => _downloadAllParts(state.availableParts),
     );
   }
 
