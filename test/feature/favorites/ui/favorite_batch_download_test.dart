@@ -138,7 +138,18 @@ void main() {
                 : tester.widget<IconButton>(download).onPressed,
             isNull,
           );
-          await tester.tap(find.text('歌曲 2'));
+          await tester.tap(find.text('全选'));
+          await tester.pumpAndSettle();
+          expect(find.text('已选 2 项'), findsOneWidget);
+          expect(find.text('取消全选'), findsOneWidget);
+          await tester.tap(find.text('取消全选'));
+          await tester.pumpAndSettle();
+          expect(find.text('已选 0 项'), findsOneWidget);
+          await tester.tap(find.text('全选'));
+          await tester.pumpAndSettle();
+          await tester.tap(find.text('歌曲 1'));
+          await tester.pumpAndSettle();
+          expect(find.text('全选'), findsOneWidget);
           await tester.pumpAndSettle();
           await tester.tap(download);
           await tester.pumpAndSettle();

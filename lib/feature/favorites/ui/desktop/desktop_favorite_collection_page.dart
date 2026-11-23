@@ -472,6 +472,16 @@ class _DesktopFavoriteCollectionPageState
       child: _selectionMode
           ? _DesktopFavoriteBatchActionBar(
               selectedCount: _selectedItemIds.length,
+              allSelected: visibleItems.every(
+                (item) => _selectedItemIds.contains(item.itemId),
+              ),
+              onToggleAll: () => _setSelectedItemIds(
+                visibleItems.every(
+                      (item) => _selectedItemIds.contains(item.itemId),
+                    )
+                    ? <String>{}
+                    : visibleItems.map((item) => item.itemId).toSet(),
+              ),
               onAdd: () => _addSelectedItems(collection, visibleItems),
               onDownload: () =>
                   _downloadSelectedItems(collection, visibleItems),
@@ -783,6 +793,8 @@ class _DesktopFavoriteCollectionPageState
 class _DesktopFavoriteBatchActionBar extends StatelessWidget {
   const _DesktopFavoriteBatchActionBar({
     required this.selectedCount,
+    required this.allSelected,
+    required this.onToggleAll,
     required this.onAdd,
     required this.onDownload,
     required this.onDelete,
@@ -790,6 +802,8 @@ class _DesktopFavoriteBatchActionBar extends StatelessWidget {
   });
 
   final int selectedCount;
+  final bool allSelected;
+  final VoidCallback onToggleAll;
   final VoidCallback onAdd;
   final VoidCallback onDownload;
   final VoidCallback onDelete;
@@ -809,6 +823,11 @@ class _DesktopFavoriteBatchActionBar extends StatelessWidget {
           ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
         ),
         const SizedBox(width: 16),
+        TextButton(
+          onPressed: onToggleAll,
+          child: Text(allSelected ? '取消全选' : '全选'),
+        ),
+        const SizedBox(width: 8),
         FilledButton.icon(
           onPressed: hasSelection ? onAdd : null,
           icon: const Icon(Icons.playlist_add_rounded, size: 18),

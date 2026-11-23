@@ -432,6 +432,14 @@ class _FavoriteCollectionPageState
         padding: const EdgeInsets.fromLTRB(14, 10, 14, 8),
         child: _FavoriteBatchActionBar(
           selectedCount: _selectedItemIds.length,
+          allSelected: visibleItems.every(
+            (item) => _selectedItemIds.contains(item.itemId),
+          ),
+          onToggleAll: () => _setSelectedItemIds(
+            visibleItems.every((item) => _selectedItemIds.contains(item.itemId))
+                ? <String>{}
+                : visibleItems.map((item) => item.itemId).toSet(),
+          ),
           onAdd: () => _addSelectedItems(collection, visibleItems),
           onDownload: () => _downloadSelectedItems(collection, visibleItems),
           onDelete: () =>
@@ -813,6 +821,8 @@ class _FavoriteCollectionPageState
 class _FavoriteBatchActionBar extends StatelessWidget {
   const _FavoriteBatchActionBar({
     required this.selectedCount,
+    required this.allSelected,
+    required this.onToggleAll,
     required this.onAdd,
     required this.onDownload,
     required this.onDelete,
@@ -820,6 +830,8 @@ class _FavoriteBatchActionBar extends StatelessWidget {
   });
 
   final int selectedCount;
+  final bool allSelected;
+  final VoidCallback onToggleAll;
   final VoidCallback onAdd;
   final VoidCallback onDownload;
   final VoidCallback onDelete;
@@ -830,7 +842,9 @@ class _FavoriteBatchActionBar extends StatelessWidget {
     final ColorScheme colorScheme = Theme.of(context).colorScheme;
     final bool hasSelection = selectedCount > 0;
 
-    return Row(
+    return Wrap(
+      alignment: WrapAlignment.end,
+      crossAxisAlignment: WrapCrossAlignment.center,
       children: <Widget>[
         Text(
           '已选 $selectedCount 项',
@@ -838,7 +852,10 @@ class _FavoriteBatchActionBar extends StatelessWidget {
             context,
           ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
         ),
-        const Spacer(),
+        TextButton(
+          onPressed: onToggleAll,
+          child: Text(allSelected ? '取消全选' : '全选'),
+        ),
         IconButton(
           tooltip: '添加到歌单',
           onPressed: hasSelection ? onAdd : null,
