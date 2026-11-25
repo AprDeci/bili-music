@@ -1,3 +1,4 @@
+import 'package:bilimusic/common/components/underline_tab_switcher.dart';
 import 'package:bilimusic/feature/player/domain/playable_item.dart';
 import 'package:bilimusic/feature/player/domain/playback_chapter.dart';
 import 'package:bilimusic/feature/player/domain/player_state.dart';
@@ -33,9 +34,7 @@ final PlayerState _state = PlayerState(
   chapters: _chapters,
   position: const Duration(seconds: 70),
 );
-final Finder _tabs = find.byWidgetPredicate(
-  (Widget widget) => widget is SegmentedButton,
-);
+final Finder _tabs = find.byType(UnderlineTabSwitcher);
 
 void main() {
   testWidgets('mobile defaults to chapters, switches tabs and seeks on close', (
@@ -44,14 +43,28 @@ void main() {
     final _RecordingController controller = _RecordingController();
     await _open(tester, controller);
 
-    final SegmentedButton<dynamic> tabs = tester.widget(_tabs);
+    final UnderlineTabSwitcher tabs = tester.widget(_tabs);
+    expect(tabs.labels, <String>['章节', '分P']);
+    expect(tabs.selectedIndex, 0);
+    expect(tabs.minimumSize, const Size(24, 48));
     expect(
-      tabs.segments.map(
-        (ButtonSegment<dynamic> segment) => (segment.label! as Text).data,
-      ),
-      <String>['章节', '分P'],
+      tabs.textStyle,
+      Theme.of(tester.element(_tabs)).textTheme.titleSmall,
     );
-    expect(tabs.selected, <dynamic>{tabs.segments.first.value});
+    expect(
+      find.descendant(of: _tabs, matching: find.byType(Icon)),
+      findsNothing,
+    );
+    final Finder indicators = find.descendant(
+      of: _tabs,
+      matching: find.byType(AnimatedContainer),
+    );
+    expect(
+      (tester.widget<AnimatedContainer>(indicators.first).decoration!
+              as BoxDecoration)
+          .color,
+      Theme.of(tester.element(_tabs)).colorScheme.primary,
+    );
     expect(
       tester.getTopLeft(find.text('章节')).dx,
       lessThan(tester.getTopLeft(find.text('分P')).dx),
@@ -70,6 +83,19 @@ void main() {
 
     await tester.tap(find.text('分P'));
     await tester.pumpAndSettle();
+    expect(tester.widget<UnderlineTabSwitcher>(_tabs).selectedIndex, 1);
+    expect(
+      (tester.widget<AnimatedContainer>(indicators.first).decoration!
+              as BoxDecoration)
+          .color,
+      Colors.transparent,
+    );
+    expect(
+      (tester.widget<AnimatedContainer>(indicators.last).decoration!
+              as BoxDecoration)
+          .color,
+      Theme.of(tester.element(_tabs)).colorScheme.primary,
+    );
     expect(find.text('分P列表'), findsOneWidget);
     expect(find.text('P2 · 第二首'), findsOneWidget);
     expect(find.text('夜曲'), findsNothing);

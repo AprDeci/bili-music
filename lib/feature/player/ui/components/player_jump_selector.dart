@@ -1,4 +1,5 @@
 import 'package:bilimusic/common/components/desktop/desktop_side_panel.dart';
+import 'package:bilimusic/common/components/underline_tab_switcher.dart';
 import 'package:bilimusic/feature/player/domain/player_state.dart';
 import 'package:bilimusic/feature/player/logic/player_controller.dart';
 import 'package:bilimusic/feature/player/ui/components/player_chapter_selector.dart';
@@ -79,24 +80,17 @@ class _PlayerJumpSelectorContentState
       children: <Widget>[
         if (hasChapters && hasParts)
           Padding(
-            padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
-            child: SegmentedButton<_JumpTab>(
-              segments: const <ButtonSegment<_JumpTab>>[
-                ButtonSegment<_JumpTab>(
-                  value: _JumpTab.chapters,
-                  label: Text('章节'),
-                  icon: Icon(Icons.segment_rounded),
-                ),
-                ButtonSegment<_JumpTab>(
-                  value: _JumpTab.parts,
-                  label: Text('分P'),
-                  icon: Icon(Icons.playlist_play_rounded),
-                ),
-              ],
-              selected: <_JumpTab>{tab},
-              showSelectedIcon: false,
-              onSelectionChanged: (Set<_JumpTab> selection) =>
-                  setState(() => _tab = selection.first),
+            padding: const EdgeInsets.fromLTRB(12, 0, 20, 0),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: UnderlineTabSwitcher(
+                labels: const <String>['章节', '分P'],
+                selectedIndex: tab.index,
+                minimumSize: const Size(24, 48),
+                textStyle: Theme.of(context).textTheme.titleSmall,
+                onChanged: (int index) =>
+                    setState(() => _tab = _JumpTab.values[index]),
+              ),
             ),
           ),
         Expanded(
